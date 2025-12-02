@@ -1,0 +1,74 @@
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_DB: keycloaks
+      POSTGRES_USER: keycloaks
+      POSTGRES_PASSWORD: keycloaks
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - keycloak-network
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:21.1.1
+    container_name: keycloak
+    environment:
+      DB_VENDOR: postgres
+      DB_ADDR: postgres
+      DB_DATABASE: keycloaks
+      DB_USER: keycloaks
+      DB_PASSWORD: keycloaks
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    command: start-dev --http-port=8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - keycloak-network
+
+  go-app:
+    build: ./publicSide
+    container_name: public-side
+    ports:
+      - "8081:8081"
+    networks:
+      - keycloak-network
+
+  go-app-1:
+    build: ./adminPanel
+    container_name: admin-panel
+    ports:
+      - "8082:8082"
+    networks:
+      - keycloak-network
+
+  python-app:
+    build: ./personal-account
+    container_name: personal-account
+    ports:
+      - "8083:8083"
+    networks:
+      - keycloak-network
+
+javalin-app:
+    build: ./testing
+    container_name: testing
+    ports:
+      - "8085:8085"
+    networks:
+      - keycloak-network
+
+  
+
+networks:
+  keycloak-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
