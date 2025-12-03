@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: keycloaks
       POSTGRES_PASSWORD: keycloaks
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - keycloak_data:/var/lib/postgresql/data
     networks:
       - keycloak-network
 
@@ -67,5 +67,5 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data:
+  keycloak_data:
     driver: local
