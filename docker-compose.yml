@@ -11,7 +11,7 @@ services:
     networks:
       - keycloak-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloakdb"]
+      test: ["CMD-SHELL", "pg_isready -U keycloaks -d keycloaks"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -21,28 +21,25 @@ services:
     image: quay.io/keycloak/keycloak:21.1.1
     container_name: keycloak
     environment:
-      DB_VENDOR: postgres
-      DB_ADDR: postgres
-      DB_DATABASE: keycloaks
-      DB_USER: keycloaks
-      DB_PASSWORD: keycloaks
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloaks
+      KC_DB_USERNAME: keycloaks
+      KC_DB_PASSWORD: keycloaks
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
-    command: start-dev --http-port=8080
+      KC_HEALTH_ENABLED: true
+      KC_METRICS_ENABLED: true
+    command:
+      - start-dev
+      - --http-port=8080
     ports:
       - "8080:8080"
     depends_on:
-      - keycloak-db
+      keycloak-db:
+        condition: service_healthy
     networks:
       - keycloak-network
       - app-network
-    healthcheck:
-      test:
-        ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
     restart: unless-stopped
 
   app-db:
@@ -54,7 +51,7 @@ services:
       POSTGRES_PASSWORD: password
     volumes:
       - app_data:/var/lib/postgresql/data
-      - ./init-sql:/docker-entrypoint-initdb.d
+      - ./init-sql:/docker-entrypoint-initdb.d:ro
     networks:
       - app-network
     healthcheck:
@@ -75,7 +72,7 @@ services:
       app-db:
         condition: service_healthy
       keycloak:
-        condition: service_healthy
+        condition: service_started
     restart: unless-stopped
 
   admin-panel:
@@ -89,7 +86,7 @@ services:
       app-db:
         condition: service_healthy
       keycloak:
-        condition: service_healthy
+        condition: service_started
     restart: unless-stopped
 
   personal-account:
@@ -103,7 +100,7 @@ services:
       app-db:
         condition: service_healthy
       keycloak:
-        condition: service_healthy
+        condition: service_started
     restart: unless-stopped
 
   testing:
@@ -117,14 +114,14 @@ services:
       app-db:
         condition: service_healthy
       keycloak:
-        condition: service_healthy
+        condition: service_started
     restart: unless-stopped
 
 networks:
-  keycloak-network: # Изолированная сеть для Keycloak и его БД
+  keycloak-network:
     driver: bridge
     internal: true
-  app-network: # Общая сеть для приложений, общей БД и nginx
+  app-network:
     driver: bridge
 
 volumes:
