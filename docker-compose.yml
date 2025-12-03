@@ -55,7 +55,7 @@ services:
     networks:
       - keycloak-network
 
-javalin-app:
+  javalin-app:
     build: ./testing
     container_name: testing
     ports:
