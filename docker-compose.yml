@@ -10,6 +10,12 @@ services:
       - keycloak_data:/var/lib/postgresql/data
     networks:
       - keycloak-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloakdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
   keycloak:
     image: quay.io/keycloak/keycloak:21.1.1
@@ -30,6 +36,14 @@ services:
     networks:
       - keycloak-network
       - app-network
+    healthcheck:
+      test:
+        ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
 
   public-side:
     build: ./publicSide
@@ -64,7 +78,6 @@ services:
       - app-network
 
 networks:
-  networks:
   keycloak-network: # Изолированная сеть для Keycloak и его БД
     driver: bridge
     internal: true
