@@ -29,6 +29,7 @@ services:
       - keycloak-db
     networks:
       - keycloak-network
+      - app-network
 
   public-side:
     build: ./publicSide
@@ -36,7 +37,7 @@ services:
     ports:
       - "3000:3000"
     networks:
-      - keycloak-network
+      - app-network
 
   admin-panel:
     build: ./adminPanel
@@ -44,7 +45,7 @@ services:
     ports:
       - "4000:4000"
     networks:
-      - keycloak-network
+      - app-network
 
   personal-account:
     build: ./personal-account
@@ -52,7 +53,7 @@ services:
     ports:
       - "8000:8000"
     networks:
-      - keycloak-network
+      - app-network
 
   testing:
     build: ./testing
@@ -60,10 +61,14 @@ services:
     ports:
       - "8085:8085"
     networks:
-      - keycloak-network
+      - app-network
 
 networks:
-  keycloak-network:
+  networks:
+  keycloak-network: # Изолированная сеть для Keycloak и его БД
+    driver: bridge
+    internal: true
+  app-network: # Общая сеть для приложений, общей БД и nginx
     driver: bridge
 
 volumes:
