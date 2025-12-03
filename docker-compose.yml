@@ -1,8 +1,7 @@
-
 services:
-  postgres:
+  keycloak-db:
     image: postgres:15
-    container_name: postgres
+    container_name: keycloak-db
     environment:
       POSTGRES_DB: keycloaks
       POSTGRES_USER: keycloaks
@@ -27,11 +26,11 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - postgres
+      - keycloak-db
     networks:
       - keycloak-network
 
-  go-app:
+  public-side:
     build: ./publicSide
     container_name: public-side
     ports:
@@ -39,7 +38,7 @@ services:
     networks:
       - keycloak-network
 
-  go-app-1:
+  admin-panel:
     build: ./adminPanel
     container_name: admin-panel
     ports:
@@ -47,7 +46,7 @@ services:
     networks:
       - keycloak-network
 
-  python-app:
+  personal-account:
     build: ./personal-account
     container_name: personal-account
     ports:
@@ -55,15 +54,13 @@ services:
     networks:
       - keycloak-network
 
-  javalin-app:
+  testing:
     build: ./testing
     container_name: testing
     ports:
       - "8085:8085"
     networks:
       - keycloak-network
-
-  
 
 networks:
   keycloak-network:
