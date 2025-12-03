@@ -71,6 +71,11 @@ services:
       - "3000:3000"
     networks:
       - app-network
+    depends_on:
+      app-db:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
     restart: unless-stopped
 
   admin-panel:
@@ -80,6 +85,11 @@ services:
       - "4000:4000"
     networks:
       - app-network
+    depends_on:
+      app-db:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
     restart: unless-stopped
 
   personal-account:
@@ -89,6 +99,11 @@ services:
       - "8000:8000"
     networks:
       - app-network
+    depends_on:
+      app-db:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
     restart: unless-stopped
 
   testing:
@@ -98,6 +113,11 @@ services:
       - "8085:8085"
     networks:
       - app-network
+    depends_on:
+      app-db:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
     restart: unless-stopped
 
 networks:
