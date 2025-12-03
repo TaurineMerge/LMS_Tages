@@ -1,4 +1,28 @@
 services:
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      keycloak:
+        condition: service_started
+      public-side:
+        condition: service_started
+      admin-panel:
+        condition: service_started
+      personal-account:
+        condition: service_started
+      testing:
+        condition: service_started
+    networks:
+      - app-network
+    restart: unless-stopped
+
   keycloak-db:
     image: postgres:15
     container_name: keycloak-db
