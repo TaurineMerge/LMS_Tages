@@ -52,6 +52,7 @@ services:
       - "3000:3000"
     networks:
       - app-network
+    restart: unless-stopped
 
   admin-panel:
     build: ./adminPanel
@@ -60,6 +61,7 @@ services:
       - "4000:4000"
     networks:
       - app-network
+    restart: unless-stopped
 
   personal-account:
     build: ./personal-account
@@ -68,6 +70,7 @@ services:
       - "8000:8000"
     networks:
       - app-network
+    restart: unless-stopped
 
   testing:
     build: ./testing
@@ -76,6 +79,7 @@ services:
       - "8085:8085"
     networks:
       - app-network
+    restart: unless-stopped
 
 networks:
   keycloak-network: # Изолированная сеть для Keycloak и его БД
