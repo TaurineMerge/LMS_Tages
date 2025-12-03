@@ -45,6 +45,25 @@ services:
       start_period: 60s
     restart: unless-stopped
 
+  app-db:
+    image: postgres:15
+    container_name: app-db
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: password
+    volumes:
+      - app_data:/var/lib/postgresql/data
+      - ./init-sql:/docker-entrypoint-initdb.d
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   public-side:
     build: ./publicSide
     container_name: public-side
@@ -90,4 +109,6 @@ networks:
 
 volumes:
   keycloak_data:
+    driver: local
+  app_data:
     driver: local
