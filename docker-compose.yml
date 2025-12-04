@@ -1,0 +1,155 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/includes:/etc/nginx/includes:ro
+    depends_on:
+      keycloak:
+        condition: service_started
+      public-side:
+        condition: service_started
+      admin-panel:
+        condition: service_started
+      personal-account:
+        condition: service_started
+      testing:
+        condition: service_started
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  keycloak-db:
+    image: postgres:15
+    container_name: keycloak-db
+    environment:
+      POSTGRES_DB: keycloaks
+      POSTGRES_USER: keycloaks
+      POSTGRES_PASSWORD: keycloaks
+    volumes:
+      - keycloak_data:/var/lib/postgresql/data
+    networks:
+      - keycloak-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloaks -d keycloaks"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:21.1.1
+    container_name: keycloak
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloaks
+      KC_DB_USERNAME: keycloaks
+      KC_DB_PASSWORD: keycloaks
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: true
+      KC_METRICS_ENABLED: true
+    command:
+      - start-dev
+      - --http-port=8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    networks:
+      - keycloak-network
+      - app-network
+    restart: unless-stopped
+
+  app-db:
+    image: postgres:15
+    container_name: app-db
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: password
+    volumes:
+      - app_data:/var/lib/postgresql/data
+      - ./init-sql:/docker-entrypoint-initdb.d:ro
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  public-side:
+    build: ./publicSide
+    container_name: public-side
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+    depends_on:
+      app-db:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    restart: unless-stopped
+
+  admin-panel:
+    build: ./adminPanel
+    container_name: admin-panel
+    ports:
+      - "4000:4000"
+    networks:
+      - app-network
+    depends_on:
+      app-db:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    restart: unless-stopped
+
+  personal-account:
+    build: ./personal-account
+    container_name: personal-account
+    ports:
+      - "8000:8000"
+    networks:
+      - app-network
+    depends_on:
+      app-db:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    restart: unless-stopped
+
+  testing:
+    build: ./testing
+    container_name: testing
+    ports:
+      - "8085:8085"
+    networks:
+      - app-network
+    depends_on:
+      app-db:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    restart: unless-stopped
+
+networks:
+  keycloak-network:
+    driver: bridge
+    internal: true
+  app-network:
+    driver: bridge
+
+volumes:
+  keycloak_data:
+    driver: local
+  app_data:
+    driver: local
