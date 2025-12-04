@@ -1,0 +1,409 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Course Management API",
+    "version": "1.0.0",
+    "description": "API для управления курсами и уроками"
+  },
+  "host": "localhost:4000",
+  "basePath": "/",
+  "schemes": [
+    "http"
+  ],
+  "tags": [
+    {
+      "name": "Health",
+      "description": "Эндпоинты для проверки состояния сервиса"
+    },
+    {
+      "name": "Courses",
+      "description": "Эндпоинты для управления курсами"
+    },
+    {
+      "name": "Lessons",
+      "description": "Эндпоинты для управления уроками"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Проверка здоровья сервиса",
+        "description": "Возвращает статус работы API",
+        "responses": {
+          "200": {
+            "description": "Сервис работает нормально",
+            "schema": {
+              "$ref": "#/definitions/HealthResponse"
+            }
+          }
+        }
+      }
+    },
+    "/courses": {
+      "get": {
+        "tags": ["Courses"],
+        "summary": "Получить все курсы",
+        "description": "Возвращает список всех доступных курсов",
+        "responses": {
+          "200": {
+            "description": "Список курсов успешно получен",
+            "schema": {
+              "$ref": "#/definitions/SuccessResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Courses"],
+        "summary": "Создать новый курс",
+        "description": "Создает новый курс в системе",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CourseRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Курс успешно создан",
+            "schema": {
+              "$ref": "#/definitions/SuccessResponse"
+            }
+          }
+        }
+      }
+    },
+    "/courses/{id}": {
+      "get": {
+        "tags": ["Courses"],
+        "summary": "Получить курс по ID",
+        "description": "Возвращает информацию о конкретном курсе",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "ID курса"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Курс успешно получен",
+            "schema": {
+              "$ref": "#/definitions/CourseResponse"
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Courses"],
+        "summary": "Обновить курс",
+        "description": "Обновляет информацию о курсе",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "ID курса"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CourseRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Курс успешно обновлен",
+            "schema": {
+              "$ref": "#/definitions/CourseResponse"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Courses"],
+        "summary": "Удалить курс",
+        "description": "Удаляет курс из системы",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "ID курса"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Курс успешно удален",
+            "schema": {
+              "$ref": "#/definitions/CourseResponse"
+            }
+          }
+        }
+      }
+    },
+    "/lessons": {
+      "get": {
+        "tags": ["Lessons"],
+        "summary": "Получить все уроки",
+        "description": "Возвращает список всех доступных уроков",
+        "responses": {
+          "200": {
+            "description": "Список уроков успешно получен",
+            "schema": {
+              "$ref": "#/definitions/SuccessResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Lessons"],
+        "summary": "Создать новый урок",
+        "description": "Создает новый урок в системе",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/LessonRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Урок успешно создан",
+            "schema": {
+              "$ref": "#/definitions/SuccessResponse"
+            }
+          }
+        }
+      }
+    },
+    "/lessons/{id}": {
+      "get": {
+        "tags": ["Lessons"],
+        "summary": "Получить урок по ID",
+        "description": "Возвращает информацию о конкретном уроке",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "ID урока"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Урок успешно получен",
+            "schema": {
+              "$ref": "#/definitions/LessonResponse"
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Lessons"],
+        "summary": "Обновить урок",
+        "description": "Обновляет информацию об уроке",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "ID урока"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/LessonRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Урок успешно обновлен",
+            "schema": {
+              "$ref": "#/definitions/LessonResponse"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Lessons"],
+        "summary": "Удалить урок",
+        "description": "Удаляет урок из системы",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "ID урока"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Урок успешно удален",
+            "schema": {
+              "$ref": "#/definitions/LessonResponse"
+            }
+          }
+        }
+      }
+    },
+    "/lessons/course/{course_id}": {
+      "get": {
+        "tags": ["Lessons"],
+        "summary": "Получить уроки по ID курса",
+        "description": "Возвращает список всех уроков для конкретного курса",
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "ID курса"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Уроки для курса успешно получены",
+            "schema": {
+              "$ref": "#/definitions/LessonsByCourseResponse"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "HealthResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "example": "success"
+        },
+        "message": {
+          "type": "string",
+          "example": "API работает нормально"
+        },
+        "port": {
+          "type": "integer",
+          "example": 4000
+        }
+      }
+    },
+    "SuccessResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "example": "success"
+        },
+        "message": {
+          "type": "string",
+          "example": "Операция выполнена успешно"
+        }
+      }
+    },
+    "CourseRequest": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "example": "Введение в программирование"
+        },
+        "description": {
+          "type": "string",
+          "example": "Базовый курс по программированию"
+        }
+      }
+    },
+    "CourseResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "example": "success"
+        },
+        "message": {
+          "type": "string",
+          "example": "Курс успешно получен"
+        },
+        "id": {
+          "type": "string",
+          "example": "1"
+        }
+      }
+    },
+    "LessonRequest": {
+      "type": "object",
+      "properties": {
+        "course_id": {
+          "type": "string",
+          "example": "1"
+        },
+        "title": {
+          "type": "string",
+          "example": "Введение в Go"
+        },
+        "content": {
+          "type": "string",
+          "example": "Содержание урока"
+        }
+      }
+    },
+    "LessonResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "example": "success"
+        },
+        "message": {
+          "type": "string",
+          "example": "Урок успешно получен"
+        },
+        "id": {
+          "type": "string",
+          "example": "1"
+        }
+      }
+    },
+    "LessonsByCourseResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "example": "success"
+        },
+        "message": {
+          "type": "string",
+          "example": "Уроки для курса успешно получены"
+        },
+        "courseId": {
+          "type": "string",
+          "example": "1"
+        }
+      }
+    }
+  }
+}
