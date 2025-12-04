@@ -30,16 +30,13 @@ func main() {
 	// Create a new Fiber app
 	app := fiber.New()
 
-	// Group routes under /api/v1
-	api := app.Group("/api/v1")
-
 	// --- Courses Endpoints ---
-	coursesAPI := api.Group("/courses")
+	coursesAPI := app.Group("/courses")
 	coursesAPI.Get("/", getCourses)
 	coursesAPI.Get("/:id", getCourseByID)
 
 	// --- Lessons Endpoints ---
-	lessonsAPI := api.Group("/lessons")
+	lessonsAPI := app.Group("/lessons")
 	lessonsAPI.Get("/", getLessons)
 	lessonsAPI.Get("/:id", getLessonByID)
 
