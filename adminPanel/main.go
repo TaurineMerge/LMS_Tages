@@ -1,381 +1,165 @@
 package main
 
 import (
+	"embed"
+	"io/fs"
 	"log"
 
-	"github.com/gofiber/fiber/v3"
-	"github.com/google/uuid"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/swagger"
 )
 
-type Course struct {
-	ID          string `json:"id"`
-	Title       string `json:"title"`
-	Description string `json:"description,omitempty"`
-	Level       string `json:"level,omitempty"`
-	CategoryID  string `json:"category_id,omitempty"`
-	Visibility  string `json:"visibility,omitempty"`
-}
-
-type Lesson struct {
-	ID       string                 `json:"id"`
-	Title    string                 `json:"title"`
-	CourseID string                 `json:"course_id"`
-	Content  map[string]interface{} `json:"content,omitempty"`
-}
-
-type CreateCourseRequest struct {
-	Title       string `json:"title" validate:"required"`
-	Description string `json:"description,omitempty"`
-	Level       string `json:"level,omitempty" validate:"omitempty,oneof=hard medium easy"`
-	CategoryID  string `json:"category_id" validate:"required,uuid"`
-	Visibility  string `json:"visibility,omitempty" validate:"omitempty,oneof=draft public private"`
-}
-
-type UpdateCourseRequest struct {
-	Title       string `json:"title,omitempty"`
-	Description string `json:"description,omitempty"`
-	Level       string `json:"level,omitempty" validate:"omitempty,oneof=hard medium easy"`
-	CategoryID  string `json:"category_id,omitempty" validate:"omitempty,uuid"`
-	Visibility  string `json:"visibility,omitempty" validate:"omitempty,oneof=draft public private"`
-}
-
-type CreateLessonRequest struct {
-	Title    string                 `json:"title" validate:"required"`
-	CourseID string                 `json:"course_id" validate:"required,uuid"`
-	Content  map[string]interface{} `json:"content,omitempty"`
-}
-
-type UpdateLessonRequest struct {
-	Title   string                 `json:"title,omitempty"`
-	Content map[string]interface{} `json:"content,omitempty"`
-}
-
-// Хранилище в памяти (для примера)
-var courses = make(map[string]Course)
-var lessons = make(map[string]Lesson)
+//go:embed docs/swagger.json
+var swaggerJSON embed.FS
 
 func main() {
-	app := fiber.New(fiber.Config{
-		AppName: "Education Platform API",
+	app := fiber.New()
+
+	// Middleware CORS
+	app.Use(cors.New())
+
+	// Swagger JSON endpoint
+	app.Get("/swagger/doc.json", func(c *fiber.Ctx) error {
+		data, err := fs.ReadFile(swaggerJSON, "docs/swagger.json")
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{
+				"error": "Failed to read swagger.json",
+			})
+		}
+		c.Set("Content-Type", "application/json")
+		return c.Send(data)
 	})
 
-	// Группа для курсов
-	coursesGroup := app.Group("/courses")
+	// Используем готовый Swagger UI из пакета
+	app.Get("/swagger/*", swagger.New(swagger.Config{
+		URL:         "/swagger/doc.json", // Используем относительный путь
+		DeepLinking: true,
+	}))
+
+	// Course endpoints
+	courseGroup := app.Group("/courses")
 	{
-		// GET /courses - получить все курсы
-		coursesGroup.Get("/", getCourses)
-
-		// GET /courses/:id - получить курс по ID
-		coursesGroup.Get("/:id", getCourseByID)
-
-		// POST /courses - создать новый курс
-		coursesGroup.Post("/", createCourse)
-
-		// PUT /courses/:id - обновить курс
-		coursesGroup.Put("/:id", updateCourse)
-
-		// DELETE /courses/:id - удалить курс
-		coursesGroup.Delete("/:id", deleteCourse)
+		courseGroup.Post("/", createCourse)
+		courseGroup.Get("/", getAllCourses)
+		courseGroup.Get("/:id", getCourseByID)
+		courseGroup.Put("/:id", updateCourse)
+		courseGroup.Delete("/:id", deleteCourse)
 	}
 
-	// Группа для уроков
-	lessonsGroup := app.Group("/lessons")
+	// Lesson endpoints
+	lessonGroup := app.Group("/lessons")
 	{
-		// GET /lessons - получить все уроки
-		lessonsGroup.Get("/", getLessons)
-
-		// GET /lessons/:id - получить урок по ID
-		lessonsGroup.Get("/:id", getLessonByID)
-
-		// POST /lessons - создать новый урок
-		lessonsGroup.Post("/", createLesson)
-
-		// PUT /lessons/:id - обновить урок
-		lessonsGroup.Put("/:id", updateLesson)
-
-		// DELETE /lessons/:id - удалить урок
-		lessonsGroup.Delete("/:id", deleteLesson)
+		lessonGroup.Post("/", createLesson)
+		lessonGroup.Get("/", getAllLessons)
+		lessonGroup.Get("/:id", getLessonByID)
+		lessonGroup.Put("/:id", updateLesson)
+		lessonGroup.Delete("/:id", deleteLesson)
+		lessonGroup.Get("/course/:course_id", getLessonsByCourseID)
 	}
 
-	// Запуск сервера
-	log.Fatal(app.Listen(":3000"))
+	// Health check
+	app.Get("/health", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"status":  "success",
+			"message": "API работает нормально",
+			"port":    4000,
+		})
+	})
+
+	// Redirect root to Swagger UI
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.Redirect("/swagger/")
+	})
+
+	log.Println("🚀 Сервер запущен на http://localhost:4000")
+	log.Println("📚 Swagger UI доступен по адресу http://localhost:4000/swagger/")
+	log.Println("📄 Swagger JSON доступен по адресу http://localhost:4000/swagger/doc.json")
+	log.Fatal(app.Listen(":4000"))
 }
 
-// ==================== Обработчики для курсов ====================
-
-// getCourses - получить все курсы
-func getCourses(c fiber.Ctx) error {
-	// Простая фильтрация по query параметрам
-	level := c.Query("level")
-	visibility := c.Query("visibility")
-	categoryID := c.Query("category_id")
-
-	// Фильтрация курсов
-	filteredCourses := make([]Course, 0)
-	for _, course := range courses {
-		if level != "" && course.Level != level {
-			continue
-		}
-		if visibility != "" && course.Visibility != visibility {
-			continue
-		}
-		if categoryID != "" && course.CategoryID != categoryID {
-			continue
-		}
-		filteredCourses = append(filteredCourses, course)
-	}
-
-	return c.JSON(filteredCourses)
+// Course handlers
+func createCourse(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{
+		"status":  "success",
+		"message": "Курс успешно создан",
+	})
 }
 
-// getCourseByID - получить курс по ID
-func getCourseByID(c fiber.Ctx) error {
-	id := c.Params("id")
-
-	course, exists := courses[id]
-	if !exists {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "Course not found",
-		})
-	}
-
-	return c.JSON(course)
+func getAllCourses(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{
+		"status":  "success",
+		"message": "Список курсов успешно получен",
+	})
 }
 
-// createCourse - создать новый курс
-func createCourse(c fiber.Ctx) error {
-	var req CreateCourseRequest
-
-	// Парсим тело запроса
-	if err := c.Bind().Body(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
-		})
-	}
-
-	// Валидация
-	if req.Level != "" && req.Level != "hard" && req.Level != "medium" && req.Level != "easy" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Level must be one of: hard, medium, easy",
-		})
-	}
-
-	if req.Visibility != "" && req.Visibility != "draft" && req.Visibility != "public" && req.Visibility != "private" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Visibility must be one of: draft, public, private",
-		})
-	}
-
-	// Создаем новый курс
-	course := Course{
-		ID:          uuid.New().String(),
-		Title:       req.Title,
-		Description: req.Description,
-		Level:       req.Level,
-		CategoryID:  req.CategoryID,
-		Visibility:  req.Visibility,
-	}
-
-	// Если видимость не указана, ставим draft по умолчанию
-	if course.Visibility == "" {
-		course.Visibility = "draft"
-	}
-
-	// Сохраняем курс
-	courses[course.ID] = course
-
-	return c.Status(fiber.StatusCreated).JSON(course)
+func getCourseByID(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{
+		"status":  "success",
+		"message": "Курс успешно получен",
+		"id":      c.Params("id"),
+	})
 }
 
-// updateCourse - обновить курс
-func updateCourse(c fiber.Ctx) error {
-	id := c.Params("id")
-
-	// Проверяем существование курса
-	existingCourse, exists := courses[id]
-	if !exists {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "Course not found",
-		})
-	}
-
-	var req UpdateCourseRequest
-
-	// Парсим тело запроса
-	if err := c.Bind().Body(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
-		})
-	}
-
-	// Валидация
-	if req.Level != "" && req.Level != "hard" && req.Level != "medium" && req.Level != "easy" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Level must be one of: hard, medium, easy",
-		})
-	}
-
-	if req.Visibility != "" && req.Visibility != "draft" && req.Visibility != "public" && req.Visibility != "private" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Visibility must be one of: draft, public, private",
-		})
-	}
-
-	// Обновляем поля
-	if req.Title != "" {
-		existingCourse.Title = req.Title
-	}
-	if req.Description != "" {
-		existingCourse.Description = req.Description
-	}
-	if req.Level != "" {
-		existingCourse.Level = req.Level
-	}
-	if req.CategoryID != "" {
-		existingCourse.CategoryID = req.CategoryID
-	}
-	if req.Visibility != "" {
-		existingCourse.Visibility = req.Visibility
-	}
-
-	// Сохраняем обновленный курс
-	courses[id] = existingCourse
-
-	return c.JSON(existingCourse)
+func updateCourse(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{
+		"status":  "success",
+		"message": "Курс успешно обновлен",
+		"id":      c.Params("id"),
+	})
 }
 
-// deleteCourse - удалить курс
-func deleteCourse(c fiber.Ctx) error {
-	id := c.Params("id")
-
-	// Проверяем существование курса
-	_, exists := courses[id]
-	if !exists {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "Course not found",
-		})
-	}
-
-	// Удаляем курс
-	delete(courses, id)
-
-	return c.SendStatus(fiber.StatusNoContent)
+func deleteCourse(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{
+		"status":  "success",
+		"message": "Курс успешно удален",
+		"id":      c.Params("id"),
+	})
 }
 
-// ==================== Обработчики для уроков ====================
-
-// getLessons - получить все уроки
-func getLessons(c fiber.Ctx) error {
-	// Фильтрация по course_id
-	courseID := c.Query("course_id")
-
-	filteredLessons := make([]Lesson, 0)
-	for _, lesson := range lessons {
-		if courseID != "" && lesson.CourseID != courseID {
-			continue
-		}
-		filteredLessons = append(filteredLessons, lesson)
-	}
-
-	return c.JSON(filteredLessons)
+// Lesson handlers
+func createLesson(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{
+		"status":  "success",
+		"message": "Урок успешно создан",
+	})
 }
 
-// getLessonByID - получить урок по ID
-func getLessonByID(c fiber.Ctx) error {
-	id := c.Params("id")
-
-	lesson, exists := lessons[id]
-	if !exists {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "Lesson not found",
-		})
-	}
-
-	return c.JSON(lesson)
+func getAllLessons(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{
+		"status":  "success",
+		"message": "Список уроков успешно получен",
+	})
 }
 
-// createLesson - создать новый урок
-func createLesson(c fiber.Ctx) error {
-	var req CreateLessonRequest
-
-	// Парсим тело запроса
-	if err := c.Bind().Body(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
-		})
-	}
-
-	// Проверяем существование курса
-	_, courseExists := courses[req.CourseID]
-	if !courseExists {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Course not found",
-		})
-	}
-
-	// Создаем новый урок
-	lesson := Lesson{
-		ID:       uuid.New().String(),
-		Title:    req.Title,
-		CourseID: req.CourseID,
-		Content:  req.Content,
-	}
-
-	// Сохраняем урок
-	lessons[lesson.ID] = lesson
-
-	return c.Status(fiber.StatusCreated).JSON(lesson)
+func getLessonByID(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{
+		"status":  "success",
+		"message": "Урок успешно получен",
+		"id":      c.Params("id"),
+	})
 }
 
-// updateLesson - обновить урок
-func updateLesson(c fiber.Ctx) error {
-	id := c.Params("id")
-
-	// Проверяем существование урока
-	existingLesson, exists := lessons[id]
-	if !exists {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "Lesson not found",
-		})
-	}
-
-	var req UpdateLessonRequest
-
-	// Парсим тело запроса
-	if err := c.Bind().Body(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
-		})
-	}
-
-	// Обновляем поля
-	if req.Title != "" {
-		existingLesson.Title = req.Title
-	}
-	if req.Content != nil {
-		existingLesson.Content = req.Content
-	}
-
-	// Сохраняем обновленный урок
-	lessons[id] = existingLesson
-
-	return c.JSON(existingLesson)
+func updateLesson(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{
+		"status":  "success",
+		"message": "Урок успешно обновлен",
+		"id":      c.Params("id"),
+	})
 }
 
-// deleteLesson - удалить урок
-func deleteLesson(c fiber.Ctx) error {
-	id := c.Params("id")
+func deleteLesson(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{
+		"status":  "success",
+		"message": "Урок успешно удален",
+		"id":      c.Params("id"),
+	})
+}
 
-	// Проверяем существование урока
-	_, exists := lessons[id]
-	if !exists {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "Lesson not found",
-		})
-	}
-
-	// Удаляем урок
-	delete(lessons, id)
-
-	return c.SendStatus(fiber.StatusNoContent)
+func getLessonsByCourseID(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{
+		"status":   "success",
+		"message":  "Уроки для курса успешно получены",
+		"courseId": c.Params("course_id"),
+	})
 }
