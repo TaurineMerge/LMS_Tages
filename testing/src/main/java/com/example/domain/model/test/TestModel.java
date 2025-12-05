@@ -3,7 +3,7 @@ package com.example.lms.domain.model.test;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public class Test {
+public class TestModel {
     private UUID id;
     private UUID courseId;
     private String title;
@@ -12,7 +12,7 @@ public class Test {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public Test(UUID courseId, String title, Integer minPoint, String description) {
+    public TestModel(UUID courseId, String title, Integer minPoint, String description) {
         this.courseId = courseId;
         this.title = title;
         this.minPoint = minPoint != null ? minPoint : 0;
