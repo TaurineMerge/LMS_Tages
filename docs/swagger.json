@@ -1,0 +1,1314 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Education Platform API",
+    "description": "API для системы онлайн образования",
+    "version": "1.0.0"
+  },
+  "host": "api.education-platform.com",
+  "basePath": "/api/v1",
+  "schemes": ["https", "http"],
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
+
+  "paths": {
+    "/students": {
+      "get": {
+        "tags": ["Students"],
+        "summary": "Получить список студентов",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "default": 1,
+            "description": "Номер страницы"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "type": "integer",
+            "default": 20,
+            "description": "Количество элементов на странице"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список студентов",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Student"
+                  }
+                },
+                "total": {
+                  "type": "integer"
+                },
+                "page": {
+                  "type": "integer"
+                },
+                "limit": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Students"],
+        "summary": "Создать нового студента",
+        "parameters": [
+          {
+            "name": "student",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/StudentCreate"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Студент успешно создан",
+            "schema": {
+              "$ref": "#/definitions/Student"
+            }
+          },
+          "400": {
+            "description": "Неверные данные",
+            "schema": {
+              "$ref": "#/responses/BadRequest"
+            }
+          }
+        }
+      }
+    },
+
+    "/students/{id}": {
+      "get": {
+        "tags": ["Students"],
+        "summary": "Получить студента по ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Данные студента",
+            "schema": {
+              "$ref": "#/definitions/Student"
+            }
+          },
+          "404": {
+            "description": "Студент не найден",
+            "schema": {
+              "$ref": "#/responses/NotFound"
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Students"],
+        "summary": "Обновить данные студента",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "name": "student",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/StudentUpdate"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Данные студента обновлены",
+            "schema": {
+              "$ref": "#/definitions/Student"
+            }
+          },
+          "404": {
+            "description": "Студент не найден",
+            "schema": {
+              "$ref": "#/responses/NotFound"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Students"],
+        "summary": "Удалить студента",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Студент успешно удален"
+          },
+          "404": {
+            "description": "Студент не найден",
+            "schema": {
+              "$ref": "#/responses/NotFound"
+            }
+          }
+        }
+      }
+    },
+
+    "/courses": {
+      "get": {
+        "tags": ["Courses"],
+        "summary": "Получить список курсов",
+        "parameters": [
+          {
+            "name": "level",
+            "in": "query",
+            "type": "string",
+            "enum": ["hard", "medium", "easy"],
+            "description": "Фильтр по уровню сложности"
+          },
+          {
+            "name": "visibility",
+            "in": "query",
+            "type": "string",
+            "enum": ["draft", "public", "private"],
+            "description": "Фильтр по видимости"
+          },
+          {
+            "name": "category_id",
+            "in": "query",
+            "type": "string",
+            "format": "uuid",
+            "description": "Фильтр по категории"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список курсов",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Course"
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Courses"],
+        "summary": "Создать новый курс",
+        "parameters": [
+          {
+            "name": "course",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CourseCreate"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Курс успешно создан",
+            "schema": {
+              "$ref": "#/definitions/Course"
+            }
+          }
+        }
+      }
+    },
+
+    "/courses/{id}": {
+      "get": {
+        "tags": ["Courses"],
+        "summary": "Получить курс по ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Данные курса",
+            "schema": {
+              "$ref": "#/definitions/Course"
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Courses"],
+        "summary": "Обновить данные курса",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "name": "course",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CourseUpdate"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Данные курса обновлены",
+            "schema": {
+              "$ref": "#/definitions/Course"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Courses"],
+        "summary": "Удалить курс",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Курс успешно удален"
+          }
+        }
+      }
+    },
+
+    "/tests": {
+      "get": {
+        "tags": ["Tests"],
+        "summary": "Получить список тестов",
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "query",
+            "type": "string",
+            "format": "uuid",
+            "description": "Фильтр по курсу"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список тестов",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Test"
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Tests"],
+        "summary": "Создать новый тест",
+        "parameters": [
+          {
+            "name": "test",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/TestCreate"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Тест успешно создан",
+            "schema": {
+              "$ref": "#/definitions/Test"
+            }
+          }
+        }
+      }
+    },
+
+    "/tests/{id}": {
+      "get": {
+        "tags": ["Tests"],
+        "summary": "Получить тест по ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Данные теста с вопросами",
+            "schema": {
+              "$ref": "#/definitions/TestWithQuestions"
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Tests"],
+        "summary": "Обновить данные теста",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "name": "test",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/TestUpdate"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Данные теста обновлены",
+            "schema": {
+              "$ref": "#/definitions/Test"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Tests"],
+        "summary": "Удалить тест",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Тест успешно удален"
+          }
+        }
+      }
+    },
+
+    "/lessons": {
+      "get": {
+        "tags": ["Lessons"],
+        "summary": "Получить список уроков",
+        "parameters": [
+          {
+            "name": "course_id",
+            "in": "query",
+            "type": "string",
+            "format": "uuid",
+            "description": "Фильтр по курсу"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список уроков",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Lesson"
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Lessons"],
+        "summary": "Создать новый урок",
+        "parameters": [
+          {
+            "name": "lesson",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/LessonCreate"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Урок успешно создан",
+            "schema": {
+              "$ref": "#/definitions/Lesson"
+            }
+          }
+        }
+      }
+    },
+
+    "/lessons/{id}": {
+      "get": {
+        "tags": ["Lessons"],
+        "summary": "Получить урок по ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Данные урока",
+            "schema": {
+              "$ref": "#/definitions/Lesson"
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Lessons"],
+        "summary": "Обновить данные урока",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "name": "lesson",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/LessonUpdate"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Данные урока обновлены",
+            "schema": {
+              "$ref": "#/definitions/Lesson"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Lessons"],
+        "summary": "Удалить урок",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Урок успешно удален"
+          }
+        }
+      }
+    },
+
+    "/test-attempts": {
+      "get": {
+        "tags": ["TestAttempts"],
+        "summary": "Получить список попыток тестов",
+        "parameters": [
+          {
+            "name": "student_id",
+            "in": "query",
+            "type": "string",
+            "format": "uuid",
+            "description": "Фильтр по студенту"
+          },
+          {
+            "name": "test_id",
+            "in": "query",
+            "type": "string",
+            "format": "uuid",
+            "description": "Фильтр по тесту"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список попыток",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/TestAttempt"
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["TestAttempts"],
+        "summary": "Создать новую попытку теста",
+        "parameters": [
+          {
+            "name": "attempt",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/TestAttemptCreate"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Попытка теста создана",
+            "schema": {
+              "$ref": "#/definitions/TestAttempt"
+            }
+          }
+        }
+      }
+    },
+
+    "/test-attempts/{id}": {
+      "get": {
+        "tags": ["TestAttempts"],
+        "summary": "Получить попытку теста по ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Данные попытки",
+            "schema": {
+              "$ref": "#/definitions/TestAttempt"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["TestAttempts"],
+        "summary": "Удалить попытку теста",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Попытка успешно удалена"
+          }
+        }
+      }
+    },
+
+    "/certificates": {
+      "get": {
+        "tags": ["Certificates"],
+        "summary": "Получить список сертификатов",
+        "parameters": [
+          {
+            "name": "student_id",
+            "in": "query",
+            "type": "string",
+            "format": "uuid",
+            "description": "Фильтр по студенту"
+          },
+          {
+            "name": "course_id",
+            "in": "query",
+            "type": "string",
+            "format": "uuid",
+            "description": "Фильтр по курсу"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список сертификатов",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Certificate"
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/certificates/{id}": {
+      "get": {
+        "tags": ["Certificates"],
+        "summary": "Получить сертификат по ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Данные сертификата",
+            "schema": {
+              "$ref": "#/definitions/Certificate"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Certificates"],
+        "summary": "Удалить сертификат",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Сертификат успешно удален"
+          }
+        }
+      }
+    },
+
+    "/visits": {
+      "get": {
+        "tags": ["Visits"],
+        "summary": "Получить список посещений уроков",
+        "parameters": [
+          {
+            "name": "student_id",
+            "in": "query",
+            "type": "string",
+            "format": "uuid",
+            "description": "Фильтр по студенту"
+          },
+          {
+            "name": "lesson_id",
+            "in": "query",
+            "type": "string",
+            "format": "uuid",
+            "description": "Фильтр по уроку"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список посещений",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Visit"
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Visits"],
+        "summary": "Зарегистрировать посещение урока",
+        "parameters": [
+          {
+            "name": "visit",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/VisitCreate"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Посещение зарегистрировано",
+            "schema": {
+              "$ref": "#/definitions/Visit"
+            }
+          }
+        }
+      }
+    }
+  },
+
+  "definitions": {
+    "Student": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "example": "123e4567-e89b-12d3-a456-426614174000"
+        },
+        "name": {
+          "type": "string",
+          "example": "Иван"
+        },
+        "surname": {
+          "type": "string",
+          "example": "Иванов"
+        },
+        "birth_date": {
+          "type": "string",
+          "format": "date",
+          "example": "2000-01-15"
+        },
+        "avatar": {
+          "type": "string",
+          "example": "https://example.com/avatar.jpg"
+        },
+        "contacts": {
+          "type": "object",
+          "additionalProperties": true,
+          "example": {
+            "telegram": "@ivanov",
+            "github": "ivanov"
+          }
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "example": "ivan@example.com"
+        },
+        "phone": {
+          "type": "string",
+          "example": "+7 (999) 123-45-67"
+        }
+      }
+    },
+
+    "StudentCreate": {
+      "type": "object",
+      "required": ["name", "surname", "email"],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "surname": {
+          "type": "string"
+        },
+        "birth_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "avatar": {
+          "type": "string"
+        },
+        "contacts": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string"
+        }
+      }
+    },
+
+    "StudentUpdate": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "surname": {
+          "type": "string"
+        },
+        "birth_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "avatar": {
+          "type": "string"
+        },
+        "contacts": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string"
+        }
+      }
+    },
+
+    "Course": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string",
+          "example": "Основы программирования"
+        },
+        "description": {
+          "type": "string"
+        },
+        "level": {
+          "type": "string",
+          "enum": ["hard", "medium", "easy"],
+          "example": "medium"
+        },
+        "category_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "visibility": {
+          "type": "string",
+          "enum": ["draft", "public", "private"],
+          "example": "public"
+        }
+      }
+    },
+
+    "CourseCreate": {
+      "type": "object",
+      "required": ["title", "category_id"],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "level": {
+          "type": "string",
+          "enum": ["hard", "medium", "easy"]
+        },
+        "category_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "visibility": {
+          "type": "string",
+          "enum": ["draft", "public", "private"],
+          "default": "draft"
+        }
+      }
+    },
+
+    "CourseUpdate": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "level": {
+          "type": "string",
+          "enum": ["hard", "medium", "easy"]
+        },
+        "category_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "visibility": {
+          "type": "string",
+          "enum": ["draft", "public", "private"]
+        }
+      }
+    },
+
+    "Test": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "course_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string",
+          "example": "Финальный тест"
+        },
+        "min_point": {
+          "type": "integer",
+          "example": 60
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+
+    "TestCreate": {
+      "type": "object",
+      "required": ["course_id", "title"],
+      "properties": {
+        "course_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string"
+        },
+        "min_point": {
+          "type": "integer",
+          "default": 0
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+
+    "TestUpdate": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "min_point": {
+          "type": "integer"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+
+    "TestWithQuestions": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "course_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string"
+        },
+        "min_point": {
+          "type": "integer"
+        },
+        "description": {
+          "type": "string"
+        },
+        "questions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/QuestionWithAnswers"
+          }
+        }
+      }
+    },
+
+    "Lesson": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string",
+          "example": "Введение в Python"
+        },
+        "course_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "content": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+
+    "LessonCreate": {
+      "type": "object",
+      "required": ["title", "course_id"],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "course_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "content": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+
+    "LessonUpdate": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "content": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+
+    "TestAttempt": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "student_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "test_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "date_of_attempt": {
+          "type": "string",
+          "format": "date"
+        },
+        "point": {
+          "type": "integer"
+        },
+        "certificate_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "attempt_version": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+
+    "TestAttemptCreate": {
+      "type": "object",
+      "required": ["student_id", "test_id"],
+      "properties": {
+        "student_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "test_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "attempt_version": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+
+    "Certificate": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "certificate_number": {
+          "type": "integer"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date"
+        },
+        "content": {
+          "type": "string"
+        },
+        "student_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "course_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+
+    "Visit": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "student_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "lesson_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+
+    "VisitCreate": {
+      "type": "object",
+      "required": ["student_id", "lesson_id"],
+      "properties": {
+        "student_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "lesson_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+
+    "QuestionWithAnswers": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "test_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "text_of_question": {
+          "type": "string"
+        },
+        "order": {
+          "type": "integer"
+        },
+        "answers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Answer"
+          }
+        }
+      }
+    },
+
+    "Answer": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "text": {
+          "type": "string"
+        },
+        "question_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "score": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+
+  "responses": {
+    "NotFound": {
+      "description": "Ресурс не найден",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "Resource not found"
+          }
+        }
+      }
+    },
+    "BadRequest": {
+      "description": "Неверные данные запроса",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "Invalid input data"
+          }
+        }
+      }
+    },
+    "Unauthorized": {
+      "description": "Не авторизован",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "Authentication required"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,35 +1,22 @@
-# Этап сборки
 FROM golang:1.25-alpine AS builder
 
-# Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Копируем go.mod и go.sum
-COPY go.mod ./
-COPY go.sum ./
+# Копируем go.mod и go.sum для кэширования зависимостей
+COPY go.mod go.sum ./
 
 # Загружаем зависимости
 RUN go mod download
 
-# Копируем исходный код
+# Копируем весь исходный код
 COPY . .
 
 # Собираем приложение
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+RUN CGO_ENABLED=0 GOOS=linux go build -o main main.go
 
-# Финальный этап
 FROM alpine:latest
-
-# Устанавливаем ca-certificates для HTTPS запросов
-RUN apk --no-cache add ca-certificates
-
+RUN apk --no-cache add ca-certificates tzdata
 WORKDIR /root/
-
-# Копируем бинарник из этапа сборки
 COPY --from=builder /app/main .
-
-# Открываем порт 3000
 EXPOSE 3000
-
-# Запускаем приложение
 CMD ["./main"]
