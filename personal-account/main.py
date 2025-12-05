@@ -41,6 +41,7 @@ app = FastAPI(
     title="Personal Account API",
     description="API для личного кабинета системы онлайн образования",
     version="1.0.0",
+    root_path="/account",
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
