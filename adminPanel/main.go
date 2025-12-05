@@ -17,29 +17,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-<<<<<<< Updated upstream
-func main() {
-	app := fiber.New(fiber.Config{
-		AppName: "Education Platform API",
-	})
-
-	courses := app.Group("/courses")
-	courses.Get("/", getCourses)
-	courses.Get("/:id", getCourseByID)
-	courses.Post("/", createCourse)
-	courses.Put("/:id", updateCourse)
-	courses.Delete("/:id", deleteCourse)
-
-	lessons := app.Group("/lessons")
-	lessons.Get("/", getLessons)
-	lessons.Get("/:id", getLessonByID)
-	lessons.Post("/", createLesson)
-	lessons.Put("/:id", updateLesson)
-	lessons.Delete("/:id", deleteLesson)
-
-	log.Fatal(app.Listen("0.0.0.0:4000"))
-}
-=======
 // ============ КОНФИГУРАЦИЯ ============
 
 type Config struct {
@@ -1627,4 +1604,3 @@ func isValidUUID(u string) bool {
 	_, err := uuid.Parse(u)
 	return err == nil
 }
->>>>>>> Stashed changes
