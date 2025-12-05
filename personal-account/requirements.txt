@@ -1,4 +1,5 @@
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
-pydantic==2.5.0
+pydantic[email]==2.5.0
 python-dotenv==1.0.0
+psycopg[binary,pool]==3.1.14

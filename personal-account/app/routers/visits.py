@@ -1,0 +1,58 @@
+"""Visit API endpoints."""
+from uuid import UUID
+
+from fastapi import APIRouter, Query, status
+
+from app.schemas.visit import VisitCreate, VisitResponse
+from app.services.visit import visit_service
+
+router = APIRouter(prefix="/visits", tags=["Visits"])
+
+
+@router.get(
+    "",
+    response_model=list[VisitResponse],
+    summary="Получить список посещений уроков",
+    description="Возвращает список посещений с опциональной фильтрацией по студенту и уроку"
+)
+async def get_visits(
+    student_id: UUID | None = Query(default=None, description="Фильтр по студенту"),
+    lesson_id: UUID | None = Query(default=None, description="Фильтр по уроку")
+):
+    """Get list of visits with optional filters."""
+    return await visit_service.get_visits(student_id, lesson_id)
+
+
+@router.get(
+    "/{visit_id}",
+    response_model=VisitResponse,
+    summary="Получить посещение по ID",
+    description="Возвращает данные посещения по указанному ID"
+)
+async def get_visit(visit_id: UUID):
+    """Get visit by ID."""
+    return await visit_service.get_visit(visit_id)
+
+
+@router.post(
+    "",
+    response_model=VisitResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Зарегистрировать посещение урока",
+    description="Регистрирует посещение урока студентом"
+)
+async def create_visit(visit: VisitCreate):
+    """Create a new visit record."""
+    return await visit_service.create_visit(visit)
+
+
+@router.delete(
+    "/{visit_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Удалить запись о посещении",
+    description="Удаляет запись о посещении урока"
+)
+async def delete_visit(visit_id: UUID):
+    """Delete visit by ID."""
+    await visit_service.delete_visit(visit_id)
+    return None
