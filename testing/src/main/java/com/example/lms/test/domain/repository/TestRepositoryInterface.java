@@ -1,1 +1,1 @@
-package com.example.lms.test.domain.repository.test;
+package com.example.lms.test.domain.repository;
