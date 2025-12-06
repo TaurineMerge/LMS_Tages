@@ -1,10 +1,11 @@
-package com.example.api.dto;
+package com.example.lms.test_attempt.api.dto;
+
 import java.io.Serializable;
 import java.sql.Date;
 
 //import javax.xml.crypto.Data;
 
-public class Test_Attempt implements Serializable {
+public class TestAttempt implements Serializable {
 
     private static final long serialVersionUID = 1L; // Для сериализации
 
@@ -13,10 +14,10 @@ public class Test_Attempt implements Serializable {
     private Integer point;
     private String result;
 
-    public Test_Attempt() {
+    public TestAttempt() {
     }
 
-    public Test_Attempt(Long id, Date date_of_attempt, Integer point, String result) {
+    public TestAttempt(Long id, Date date_of_attempt, Integer point, String result) {
         this.id = id;
         this.date_of_attempt = date_of_attempt;
         this.point = point;

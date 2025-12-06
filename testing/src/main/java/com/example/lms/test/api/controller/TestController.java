@@ -1,9 +1,9 @@
-package com.example.api.controller;
+package com.example.lms.test.api.controller;
 
 import io.javalin.http.Context;
 
 public class TestController {
-    
+
     public static void getTests(Context ctx) {
         ctx.json("GET /tests");
     }

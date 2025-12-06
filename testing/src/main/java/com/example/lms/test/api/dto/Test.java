@@ -1,7 +1,8 @@
-package com.example.api.dto;
+package com.example.lms.test.api.dto;
+
 import java.io.Serializable;
 
-public class CreateTestRequestDto implements Serializable {
+public class Test implements Serializable {
 
     private static final long serialVersionUID = 1L; // Для сериализации
 
@@ -10,10 +11,10 @@ public class CreateTestRequestDto implements Serializable {
     private Integer min_point;
     private String description;
 
-    public CreateTestRequestDto() {
+    public Test() {
     }
 
-    public CreateTestRequestDto(Long id, String title, Integer min_point, String description) {
+    public Test(Long id, String title, Integer min_point, String description) {
         this.id = id;
         this.title = title;
         this.min_point = min_point;

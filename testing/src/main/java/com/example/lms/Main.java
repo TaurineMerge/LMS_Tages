@@ -1,10 +1,11 @@
-package com.example;
+package com.example.lms;
 
-import com.example.api.controller.TestAttemptController;
-import com.example.api.controller.TestController;
 import io.javalin.Javalin;
 
 import static io.javalin.apibuilder.ApiBuilder.*;
+
+import com.example.lms.test_attempt.api.controller.TestAttemptController;
+import com.example.lms.test.api.controller.TestController;
 
 public class Main {
 
@@ -22,7 +23,7 @@ public class Main {
         path("/tests", () -> {
             get(TestController::getTests);
             post(TestController::createTest);
-            
+
             path("/{id}", () -> {
                 get(TestController::getTestById);
                 put(TestController::updateTest);
@@ -36,7 +37,7 @@ public class Main {
         path("/test-attempts", () -> {
             get(TestAttemptController::getTestAttempts);
             post(TestAttemptController::createTestAttempt);
-            
+
             path("/{id}", () -> {
                 get(TestAttemptController::getTestAttemptById);
                 delete(TestAttemptController::deleteTestAttempt);
