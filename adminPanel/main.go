@@ -15,6 +15,9 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	
+	// Swagger UI
+	"github.com/gofiber/swagger"
 )
 
 // ============ КОНФИГУРАЦИЯ ============
@@ -24,7 +27,6 @@ type Config struct {
 }
 
 func getConfig() Config {
-	// Можно взять из переменных окружения или использовать значение по умолчанию
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		dbURL = "postgresql://appuser:password@app-db:5432/appdb?sslmode=disable"
@@ -47,7 +49,6 @@ func initDB() error {
 		return fmt.Errorf("ошибка парсинга конфигурации БД: %w", err)
 	}
 
-	// Настройка пула соединений
 	poolConfig.MaxConns = 20
 	poolConfig.MinConns = 5
 
@@ -57,7 +58,6 @@ func initDB() error {
 		return fmt.Errorf("ошибка создания пула соединений: %w", err)
 	}
 
-	// Проверка соединения
 	if err := dbPool.Ping(ctx); err != nil {
 		return fmt.Errorf("ошибка подключения к БД: %w", err)
 	}
@@ -169,13 +169,11 @@ func main() {
 		return c.Next()
 	})
 
-	// Serve Swagger JSON
-	app.Get("/swagger.json", func(c *fiber.Ctx) error {
-		return c.SendFile("docs/swagger.json")
-	})
+	// Swagger UI (использует ваш существующий swagger.json)
+	setupSwagger(app)
 
 	// API routes
-	api := app.Group("/api")
+	api := app.Group("/api/v1")
 
 	// Health check
 	api.Get("/health", healthCheck)
@@ -209,15 +207,52 @@ func main() {
 	// Start server
 	log.Println("🚀 Сервер запущен на :4000")
 	log.Println("📚 API доступен по адресу: http://localhost:4000/api")
-	log.Println("📄 Swagger спецификация: http://localhost:4000/swagger.json")
+	log.Println("📄 Swagger UI: http://localhost:4000/swagger/index.html")
 	log.Fatal(app.Listen(":4000"))
+}
+
+// ============ SWAGGER SETUP ============
+
+func setupSwagger(app *fiber.App) {
+	// 1. Endpoint для вашего swagger.json
+	app.Get("/swagger.json", func(c *fiber.Ctx) error {
+		data, err := os.ReadFile("docs/swagger.json")
+		if err != nil {
+			log.Printf("❌ Ошибка чтения swagger.json: %v", err)
+			return c.Status(500).JSON(ErrorResponse{
+				Error: "Failed to load Swagger documentation",
+				Code:  "INTERNAL_ERROR",
+			})
+		}
+
+		var swaggerSpec map[string]interface{}
+		if err := json.Unmarshal(data, &swaggerSpec); err != nil {
+			log.Printf("❌ Ошибка парсинга swagger.json: %v", err)
+			return c.Status(500).JSON(ErrorResponse{
+				Error: "Invalid Swagger JSON",
+				Code:  "INTERNAL_ERROR",
+			})
+		}
+
+		// Обновляем basePath и host для вашего API
+		swaggerSpec["basePath"] = "/api/v1"
+		swaggerSpec["host"] = "localhost:4000"
+
+		return c.JSON(swaggerSpec)
+	})
+
+	// 2. Swagger UI от библиотеки (будет использовать наш /swagger.json)
+	app.Get("/swagger/*", swagger.New(swagger.Config{
+	URL:          "/swagger.json",
+	DeepLinking:  true,
+	DocExpansion: "list",
+}))
 }
 
 // ============ HANDLERS ============
 
 // Health check
 func healthCheck(c *fiber.Ctx) error {
-	// Проверяем соединение с БД
 	ctx := context.Background()
 	err := dbPool.Ping(ctx)
 	dbStatus := "connected"
@@ -318,7 +353,6 @@ func createCategory(c *fiber.Ctx) error {
 
 	if err != nil {
 		log.Printf("❌ Ошибка создания категории: %v", err)
-		// Проверяем, не дублируется ли название
 		if strings.Contains(err.Error(), "duplicate key") {
 			return c.Status(409).JSON(ErrorResponse{
 				Error: "Category with this title already exists",
@@ -390,7 +424,6 @@ func updateCategory(c *fiber.Ctx) error {
 		})
 	}
 
-	// Сначала проверяем существование категории
 	ctx := context.Background()
 	checkQuery := `SELECT id FROM knowledge_base.category_d WHERE id = $1`
 	var existingID string
@@ -470,7 +503,6 @@ func deleteCategory(c *fiber.Ctx) error {
 		})
 	}
 
-	// Проверяем есть ли курсы с этой категорией
 	ctx := context.Background()
 	checkQuery := `
 		SELECT COUNT(*) 
@@ -495,7 +527,6 @@ func deleteCategory(c *fiber.Ctx) error {
 		})
 	}
 
-	// Удаляем категорию
 	deleteQuery := `DELETE FROM knowledge_base.category_d WHERE id = $1`
 	result, err := dbPool.Exec(ctx, deleteQuery, categoryID)
 	if err != nil {
@@ -528,7 +559,6 @@ func getCategoryCourses(c *fiber.Ctx) error {
 		})
 	}
 
-	// Проверяем существование категории
 	ctx := context.Background()
 	checkQuery := `SELECT id FROM knowledge_base.category_d WHERE id = $1`
 	var existingID string
@@ -612,7 +642,6 @@ func getCourses(c *fiber.Ctx) error {
 
 	ctx := context.Background()
 
-	// Строим динамический запрос
 	baseQuery := `
 		SELECT id, title, description, level, category_id, visibility, created_at, updated_at
 		FROM knowledge_base.course_b
@@ -624,7 +653,6 @@ func getCourses(c *fiber.Ctx) error {
 	var countParams []interface{}
 	paramCounter := 1
 
-	// Добавляем фильтры
 	if level != "" {
 		baseQuery += fmt.Sprintf(" AND level = $%d", paramCounter)
 		countQuery += fmt.Sprintf(" AND level = $%d", paramCounter)
@@ -655,7 +683,6 @@ func getCourses(c *fiber.Ctx) error {
 		paramCounter++
 	}
 
-	// Добавляем сортировку и пагинацию
 	baseQuery += " ORDER BY created_at DESC"
 	baseQuery += fmt.Sprintf(" LIMIT $%d OFFSET $%d", paramCounter, paramCounter+1)
 	queryParams = append(queryParams, limit, offset)
@@ -663,7 +690,6 @@ func getCourses(c *fiber.Ctx) error {
 	log.Printf("🔍 Поиск курсов: page=%d, limit=%d, level=%s, visibility=%s, category=%s",
 		page, limit, level, visibility, categoryID)
 
-	// Получаем общее количество
 	var total int
 	err := dbPool.QueryRow(ctx, countQuery, countParams...).Scan(&total)
 	if err != nil {
@@ -674,7 +700,6 @@ func getCourses(c *fiber.Ctx) error {
 		})
 	}
 
-	// Получаем данные
 	rows, err := dbPool.Query(ctx, baseQuery, queryParams...)
 	if err != nil {
 		log.Printf("❌ Ошибка запроса курсов: %v", err)
@@ -736,7 +761,6 @@ func createCourse(c *fiber.Ctx) error {
 		})
 	}
 
-	// Валидация обязательных полей
 	if input.Title == "" {
 		return c.Status(400).JSON(ErrorResponse{
 			Error: "Title is required",
@@ -758,7 +782,6 @@ func createCourse(c *fiber.Ctx) error {
 		})
 	}
 
-	// Валидация уровня
 	if input.Level != "" && !isValidLevel(input.Level) {
 		return c.Status(400).JSON(ErrorResponse{
 			Error: "Level must be one of: hard, medium, easy",
@@ -766,7 +789,6 @@ func createCourse(c *fiber.Ctx) error {
 		})
 	}
 
-	// Валидация видимости
 	if input.Visibility != "" && !isValidVisibility(input.Visibility) {
 		return c.Status(400).JSON(ErrorResponse{
 			Error: "Visibility must be one of: draft, public, private",
@@ -774,7 +796,6 @@ func createCourse(c *fiber.Ctx) error {
 		})
 	}
 
-	// Устанавливаем значения по умолчанию
 	if input.Level == "" {
 		input.Level = "medium"
 	}
@@ -782,7 +803,6 @@ func createCourse(c *fiber.Ctx) error {
 		input.Visibility = "draft"
 	}
 
-	// Проверяем существование категории
 	ctx := context.Background()
 	checkQuery := `SELECT id FROM knowledge_base.category_d WHERE id = $1`
 	var categoryExists string
@@ -802,7 +822,6 @@ func createCourse(c *fiber.Ctx) error {
 		})
 	}
 
-	// Создаем курс
 	courseID := uuid.NewString()
 	now := time.Now()
 
@@ -905,7 +924,6 @@ func updateCourse(c *fiber.Ctx) error {
 		})
 	}
 
-	// Сначала проверяем существование курса
 	ctx := context.Background()
 	checkQuery := `SELECT id FROM knowledge_base.course_b WHERE id = $1`
 	var existingID string
@@ -934,7 +952,6 @@ func updateCourse(c *fiber.Ctx) error {
 		})
 	}
 
-	// Обновляем поля если они переданы
 	if input.Title != "" {
 		if len(input.Title) > 255 {
 			return c.Status(400).JSON(ErrorResponse{
@@ -965,7 +982,6 @@ func updateCourse(c *fiber.Ctx) error {
 				Code:  "BAD_REQUEST",
 			})
 		}
-		// Проверяем существование категории
 		var categoryExists string
 		err := dbPool.QueryRow(ctx, "SELECT id FROM knowledge_base.category_d WHERE id = $1", input.CategoryID).Scan(&categoryExists)
 		if err != nil {
@@ -983,7 +999,6 @@ func updateCourse(c *fiber.Ctx) error {
 		}
 	}
 
-	// Строим динамический запрос UPDATE
 	updateQuery := `UPDATE knowledge_base.course_b SET `
 	var params []interface{}
 	paramCounter := 1
@@ -1018,7 +1033,6 @@ func updateCourse(c *fiber.Ctx) error {
 		paramCounter++
 	}
 
-	// Всегда обновляем updated_at
 	updateQuery += fmt.Sprintf("updated_at = $%d ", paramCounter)
 	params = append(params, time.Now())
 	paramCounter++
@@ -1064,7 +1078,6 @@ func deleteCourse(c *fiber.Ctx) error {
 		})
 	}
 
-	// Сначала проверяем существование курса
 	ctx := context.Background()
 	checkQuery := `SELECT id FROM knowledge_base.course_b WHERE id = $1`
 	var existingID string
@@ -1084,7 +1097,6 @@ func deleteCourse(c *fiber.Ctx) error {
 		})
 	}
 
-	// Каскадно удаляем курс (удалятся все уроки из-за ON DELETE CASCADE)
 	deleteQuery := `DELETE FROM knowledge_base.course_b WHERE id = $1`
 	result, err := dbPool.Exec(ctx, deleteQuery, courseID)
 	if err != nil {
@@ -1117,7 +1129,6 @@ func getCourseLessons(c *fiber.Ctx) error {
 		})
 	}
 
-	// Проверяем существование курса
 	ctx := context.Background()
 	checkQuery := `SELECT id FROM knowledge_base.course_b WHERE id = $1`
 	var courseExists string
@@ -1171,7 +1182,6 @@ func getCourseLessons(c *fiber.Ctx) error {
 			continue
 		}
 
-		// Парсим JSON из content
 		if len(contentJSON) > 0 {
 			if err := json.Unmarshal(contentJSON, &lesson.Content); err != nil {
 				log.Printf("❌ Ошибка парсинга content урока: %v", err)
@@ -1210,7 +1220,6 @@ func createLesson(c *fiber.Ctx) error {
 		})
 	}
 
-	// Проверяем существование курса
 	ctx := context.Background()
 	checkQuery := `SELECT id, title FROM knowledge_base.course_b WHERE id = $1`
 	var courseTitle string
@@ -1253,7 +1262,6 @@ func createLesson(c *fiber.Ctx) error {
 		})
 	}
 
-	// Подготавливаем content JSON
 	contentJSON := []byte("{}")
 	if input.Content != nil {
 		var err error
@@ -1267,7 +1275,6 @@ func createLesson(c *fiber.Ctx) error {
 		}
 	}
 
-	// Создаем урок
 	lessonID := uuid.NewString()
 	now := time.Now()
 
@@ -1305,7 +1312,6 @@ func createLesson(c *fiber.Ctx) error {
 		})
 	}
 
-	// Парсим content обратно
 	if len(contentBytes) > 0 {
 		if err := json.Unmarshal(contentBytes, &lesson.Content); err != nil {
 			log.Printf("❌ Ошибка парсинга content: %v", err)
@@ -1333,7 +1339,6 @@ func getLesson(c *fiber.Ctx) error {
 		})
 	}
 
-	// Проверяем существование курса
 	ctx := context.Background()
 	checkCourseQuery := `SELECT id FROM knowledge_base.course_b WHERE id = $1`
 	var courseExists string
@@ -1385,7 +1390,6 @@ func getLesson(c *fiber.Ctx) error {
 		})
 	}
 
-	// Парсим JSON из content
 	if len(contentJSON) > 0 {
 		if err := json.Unmarshal(contentJSON, &lesson.Content); err != nil {
 			log.Printf("❌ Ошибка парсинга content урока: %v", err)
@@ -1411,7 +1415,6 @@ func updateLesson(c *fiber.Ctx) error {
 		})
 	}
 
-	// Сначала проверяем существование урока и принадлежность к курсу
 	ctx := context.Background()
 	checkQuery := `SELECT id FROM knowledge_base.lesson_d WHERE id = $1 AND course_id = $2`
 	var existingID string
@@ -1440,7 +1443,6 @@ func updateLesson(c *fiber.Ctx) error {
 		})
 	}
 
-	// Валидация
 	if input.Title != "" && len(input.Title) > 255 {
 		return c.Status(400).JSON(ErrorResponse{
 			Error: "Title must be less than 255 characters",
@@ -1448,7 +1450,6 @@ func updateLesson(c *fiber.Ctx) error {
 		})
 	}
 
-	// Подготавливаем content JSON если он передан
 	var contentJSON []byte
 	var updateContent bool
 	if input.Content != nil {
@@ -1464,7 +1465,6 @@ func updateLesson(c *fiber.Ctx) error {
 		updateContent = true
 	}
 
-	// Строим динамический запрос UPDATE
 	updateQuery := `UPDATE knowledge_base.lesson_d SET `
 	var params []interface{}
 	paramCounter := 1
@@ -1481,7 +1481,6 @@ func updateLesson(c *fiber.Ctx) error {
 		paramCounter++
 	}
 
-	// Всегда обновляем updated_at
 	updateQuery += fmt.Sprintf("updated_at = $%d ", paramCounter)
 	params = append(params, time.Now())
 	paramCounter++
@@ -1512,7 +1511,6 @@ func updateLesson(c *fiber.Ctx) error {
 		})
 	}
 
-	// Парсим content обратно
 	if len(contentBytes) > 0 {
 		if err := json.Unmarshal(contentBytes, &lesson.Content); err != nil {
 			log.Printf("❌ Ошибка парсинга content: %v", err)
@@ -1538,7 +1536,6 @@ func deleteLesson(c *fiber.Ctx) error {
 		})
 	}
 
-	// Сначала проверяем существование урока и принадлежность к курсу
 	ctx := context.Background()
 	checkQuery := `SELECT id, title FROM knowledge_base.lesson_d WHERE id = $1 AND course_id = $2`
 	var lessonTitle string
@@ -1558,7 +1555,6 @@ func deleteLesson(c *fiber.Ctx) error {
 		})
 	}
 
-	// Удаляем урок
 	deleteQuery := `DELETE FROM knowledge_base.lesson_d WHERE id = $1 AND course_id = $2`
 	result, err := dbPool.Exec(ctx, deleteQuery, lessonID, courseID)
 	if err != nil {

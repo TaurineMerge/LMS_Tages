@@ -21,7 +21,11 @@ RUN apk --no-cache add ca-certificates
 
 WORKDIR /root/
 
+# Копируем бинарник
 COPY --from=builder /app/main .
+
+# Копируем swagger.json
+COPY --from=builder /app/docs ./docs/
 
 EXPOSE 4000
 
