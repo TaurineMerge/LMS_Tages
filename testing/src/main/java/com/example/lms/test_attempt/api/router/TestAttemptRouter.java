@@ -1,17 +1,21 @@
 package com.example.lms.test_attempt.api.router;
 
-import com.example.lms.test_attempt.api.controller.TestAttemptController;
-import com.example.lms.security.JwtHandler;
 import static io.javalin.apibuilder.ApiBuilder.*;
+
+import com.example.lms.security.JwtHandler;
+import com.example.lms.test_attempt.api.controller.TestAttemptController;
 
 public class TestAttemptRouter {
     public static void register() {
         path("/test-attempts", () -> {
-            before(JwtHandler.authenticate()); // JWT проверка
+            before(JwtHandler.authenticate());
+            get(TestAttemptController::getTestAttempts);
+            post(TestAttemptController::createTestAttempt);
 
-            get(TestAttemptController::getAttempts);
-            post(TestAttemptController::createAttempt);
-            // остальные роуты...
+            path("/{id}", () -> {
+                get(TestAttemptController::getTestAttemptById);
+                delete(TestAttemptController::deleteTestAttempt);
+            });
         });
     }
 }
