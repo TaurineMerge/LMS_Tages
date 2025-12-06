@@ -1,4 +1,4 @@
-package com.example.controller;
+package com.example.api.controller;
 
 import io.javalin.http.Context;
 

@@ -1,7 +1,7 @@
 package com.example;
 
-import com.example.controller.TestAttemptController;
-import com.example.controller.TestController;
+import com.example.api.controller.TestAttemptController;
+import com.example.api.controller.TestController;
 import io.javalin.Javalin;
 
 import static io.javalin.apibuilder.ApiBuilder.*;
