@@ -8,6 +8,8 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
 import java.net.URI;
@@ -18,13 +20,16 @@ import java.security.KeyFactory;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.RSAPublicKeySpec;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class JwtHandler {
 
-    private static final Map<String, RSAPublicKey> publicKeys = new ConcurrentHashMap<>();
+    private static final Logger log = LoggerFactory.getLogger(JwtHandler.class);
+
+    private static final Map<String, CachedKey> publicKeys = new ConcurrentHashMap<>();
     private static final Object lock = new Object();
     private static final String KEYCLOAK_INTERNAL_URL = System.getenv().getOrDefault("KEYCLOAK_INTERNAL_URL",
             "http://keycloak:8080");
@@ -32,11 +37,27 @@ public class JwtHandler {
     private static final String REALM = System.getenv().getOrDefault("KEYCLOAK_REALM", "lms-realm");
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
+    private static final Duration CACHE_TTL = Duration.ofHours(1);
+
+    private record CachedKey(RSAPublicKey key, Instant loadedAt) {
+    }
+
     private static void ensurePublicKeyLoaded(String kid) throws Exception {
-        if (!publicKeys.containsKey(kid)) {
+        CachedKey cached = publicKeys.get(kid);
+        if (cached == null || cached.loadedAt.plus(CACHE_TTL).isBefore(Instant.now())) {
             synchronized (lock) {
-                if (!publicKeys.containsKey(kid)) {
-                    loadPublicKeys();
+                cached = publicKeys.get(kid);
+                if (cached == null || cached.loadedAt.plus(CACHE_TTL).isBefore(Instant.now())) {
+                    try {
+                        loadPublicKeys();
+                        log.info("JWKS успешно загружены и кэш обновлён");
+                    } catch (Exception e) {
+                        if (cached != null) {
+                            log.warn("Не удалось обновить JWKS, использую старый ключ: {}", e.getMessage());
+                        } else {
+                            throw e;
+                        }
+                    }
                 }
             }
         }
@@ -61,9 +82,8 @@ public class JwtHandler {
 
         JsonNode root = OBJECT_MAPPER.readTree(response.body());
         JsonNode keysNode = root.path("keys");
-        if (keysNode == null || !keysNode.isArray()) {
+        if (!keysNode.isArray())
             throw new RuntimeException("JWKS не содержит keys");
-        }
 
         for (JsonNode keyNode : keysNode) {
             if (!"RSA".equals(keyNode.path("kty").asText()))
@@ -78,14 +98,13 @@ public class JwtHandler {
 
             byte[] nBytes = Base64.getUrlDecoder().decode(nValue);
             byte[] eBytes = Base64.getUrlDecoder().decode(eValue);
-
             BigInteger modulus = new BigInteger(1, nBytes);
             BigInteger exponent = new BigInteger(1, eBytes);
-            RSAPublicKeySpec spec = new RSAPublicKeySpec(modulus, exponent);
-            KeyFactory factory = KeyFactory.getInstance("RSA");
-            RSAPublicKey key = (RSAPublicKey) factory.generatePublic(spec);
 
-            publicKeys.put(kid, key);
+            KeyFactory factory = KeyFactory.getInstance("RSA");
+            RSAPublicKey key = (RSAPublicKey) factory.generatePublic(new RSAPublicKeySpec(modulus, exponent));
+
+            publicKeys.put(kid, new CachedKey(key, Instant.now()));
         }
     }
 
@@ -105,25 +124,21 @@ public class JwtHandler {
             String token = authHeader.substring(7);
             String kid = extractKid(token);
 
+            log.debug("KID токена: {}", kid);
+
             try {
                 ensurePublicKeyLoaded(kid);
             } catch (Exception e) {
                 throw new UnauthorizedResponse("Сервер не готов: " + e.getMessage());
             }
 
-            RSAPublicKey key = publicKeys.get(kid);
-            if (key == null) {
-                synchronized (lock) {
-                    loadPublicKeys();
-                    key = publicKeys.get(kid);
-                    if (key == null) {
-                        throw new UnauthorizedResponse("JWT key not found for kid: " + kid);
-                    }
-                }
+            CachedKey cached = publicKeys.get(kid);
+            if (cached == null) {
+                throw new UnauthorizedResponse("JWT key not found for kid: " + kid);
             }
 
             try {
-                Algorithm algorithm = Algorithm.RSA256(key, null);
+                Algorithm algorithm = Algorithm.RSA256(cached.key(), null);
                 DecodedJWT jwt = JWT.require(algorithm)
                         .withIssuer(KEYCLOAK_URL + "/realms/" + REALM)
                         .build()
