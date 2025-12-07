@@ -1,0 +1,31 @@
+{
+    "$schema": "category_schema.json",
+    "type": "object",
+    "properties": {
+        "uuid": {
+            "type": "string",
+            "format": "uuid",
+            "example": "550e8400-e29b-41d4-a716-446655440000",
+            "description": "Уникальный идентификатор категории в формате UUID"
+        },
+        "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "example": "Программирование",
+            "description": "Название категории"
+        },
+        "courses": {
+            "type": "array",
+            "items": {
+                "$ref": "course_schema.json"
+            },
+            "description": "Список курсов в этой категории"
+        }
+    },
+    "required": [
+        "uuid",
+        "title",
+        "courses"
+    ]
+}

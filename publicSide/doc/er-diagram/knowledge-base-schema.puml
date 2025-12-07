@@ -1,0 +1,59 @@
+@startuml
+
+!define table(x) class x << (T,#FFAAAA) >>
+!define primary_key(x) <b>x</b>
+!define foreign_key(x) <i>x</i>
+
+hide methods
+hide stereotypes
+
+table(course_b) {
+  primary_key(id): uuid <<PK>>
+  title: varchar
+  description: text
+  level: varchar
+  foreign_key(category_id): uuid <<FK>>
+  visibility: varchar
+  --
+  PK: not null, unique
+  FK: not null
+  level: hard, medium, easy
+  visibility: draft, public, private
+}
+
+table(category_d) {
+  primary_key(id): uuid <<PK>>
+  title: varchar
+  --
+  PK: not null, unique
+}
+
+table(lesson_d) {
+  primary_key(id): uuid <<PK>>
+  title: varchar
+  foreign_key(course_id): uuid <<FK>>
+  content: json
+  --
+  PK: not null, unique
+  FK: not null
+}
+
+course_b }o--o| category_d : "category_id"
+lesson_d }o--|| course_b : "course_id"
+
+note right of course_b
+  Курсы с информацией о 
+  категории, уровне сложности
+  и видимости
+end note
+
+note right of lesson_d
+  Уроки, привязанные к курсам
+  с JSON контентом
+end note
+
+note right of category_d
+  Категории курсов
+end note
+
+@enduml
