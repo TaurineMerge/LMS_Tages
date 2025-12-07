@@ -6,7 +6,7 @@
     "version": "1.0.0"
   },
   "host": "localhost:4000",
-  "basePath": "/api/v1",
+  "basePath": "/admin/api/v1",
   "schemes": ["http"],
   "consumes": ["application/json"],
   "produces": ["application/json"],
