@@ -17,127 +17,81 @@ import java.net.http.HttpResponse;
 import java.security.KeyFactory;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.RSAPublicKeySpec;
-import java.util.Base64;
 import java.time.Duration;
+import java.util.Base64;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class JwtHandler {
 
-    private static volatile RSAPublicKey publicKey = null;
+    private static final Map<String, RSAPublicKey> publicKeys = new ConcurrentHashMap<>();
     private static final Object lock = new Object();
     private static final String KEYCLOAK_INTERNAL_URL = System.getenv().getOrDefault("KEYCLOAK_INTERNAL_URL",
             "http://keycloak:8080");
     private static final String KEYCLOAK_URL = System.getenv().getOrDefault("KEYCLOAK_URL", "http://localhost:8080");
     private static final String REALM = System.getenv().getOrDefault("KEYCLOAK_REALM", "lms-realm");
-
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private static void ensurePublicKeyLoaded(String kid) throws Exception {
-        if (publicKey == null) {
+        if (!publicKeys.containsKey(kid)) {
             synchronized (lock) {
-                if (publicKey == null) {
-                    loadPublicKeyFromCerts(kid);
+                if (!publicKeys.containsKey(kid)) {
+                    loadPublicKeys();
                 }
             }
         }
     }
 
-    private static void loadPublicKeyFromCerts(String kid) throws Exception {
-        try {
-            HttpClient client = HttpClient.newBuilder()
-                    .connectTimeout(Duration.ofSeconds(10))
-                    .build();
+    private static void loadPublicKeys() throws Exception {
+        HttpClient client = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .build();
 
-            String certsUrl = KEYCLOAK_INTERNAL_URL + "/realms/" + REALM + "/protocol/openid-connect/certs";
-            System.out.println("Получение JWKS с: " + certsUrl);
+        String certsUrl = KEYCLOAK_INTERNAL_URL + "/realms/" + REALM + "/protocol/openid-connect/certs";
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(certsUrl))
+                .timeout(Duration.ofSeconds(10))
+                .GET()
+                .build();
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(certsUrl))
-                    .timeout(Duration.ofSeconds(10))
-                    .GET()
-                    .build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("Keycloak вернул статус " + response.statusCode());
+        }
 
-            System.out.println("Отправка HTTP-запроса...");
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            System.out.println("Получен HTTP-ответ: " + response.statusCode());
+        JsonNode root = OBJECT_MAPPER.readTree(response.body());
+        JsonNode keysNode = root.path("keys");
+        if (keysNode == null || !keysNode.isArray()) {
+            throw new RuntimeException("JWKS не содержит keys");
+        }
 
-            if (response.statusCode() != 200) {
-                throw new RuntimeException("Keycloak вернул статус " + response.statusCode());
-            }
+        for (JsonNode keyNode : keysNode) {
+            if (!"RSA".equals(keyNode.path("kty").asText()))
+                continue;
 
-            String body = response.body();
-            System.out.println("Длина тела ответа: " + (body != null ? body.length() : "null"));
+            String kid = keyNode.path("kid").asText(null);
+            String nValue = keyNode.path("n").asText(null);
+            String eValue = keyNode.path("e").asText(null);
 
-            if (body == null || body.isEmpty()) {
-                throw new RuntimeException("Тело ответа пустое");
-            }
+            if (kid == null || nValue == null || eValue == null)
+                continue;
 
-            JsonNode root = OBJECT_MAPPER.readTree(body);
-            JsonNode keysNode = root.path("keys");
-            if (keysNode == null || !keysNode.isArray() || keysNode.size() == 0) {
-                throw new RuntimeException("JWKS не содержит keys");
-            }
+            byte[] nBytes = Base64.getUrlDecoder().decode(nValue);
+            byte[] eBytes = Base64.getUrlDecoder().decode(eValue);
 
-            JsonNode chosenKey = null;
-            for (JsonNode keyNode : keysNode) {
-                if (keyNode.path("kid").asText("").equals(kid)) {
-                    chosenKey = keyNode;
-                    break;
-                }
-            }
-
-            if (chosenKey == null) {
-                throw new RuntimeException("Не найден ключ в JWKS с kid=" + kid);
-            }
-
-            String nValue = chosenKey.path("n").asText(null);
-            String eValue = chosenKey.path("e").asText(null);
-
-            System.out.println("Извлечено n: " + (nValue != null ? ("длина=" + nValue.length()) : "null"));
-            System.out.println("Извлечено e: " + (eValue != null ? eValue : "null"));
-
-            if (nValue == null || eValue == null) {
-                throw new RuntimeException("Не удалось извлечь n или e из ключа");
-            }
-
-            System.out.println("Декодирование base64...");
-            byte[] nBytes;
-            byte[] eBytes;
-            try {
-                nBytes = Base64.getUrlDecoder().decode(nValue);
-                eBytes = Base64.getUrlDecoder().decode(eValue);
-            } catch (IllegalArgumentException ex) {
-                throw new RuntimeException("Ошибка при base64url декодировании n/e: " + ex.getMessage(), ex);
-            }
-
-            System.out.println("Создание BigInteger...");
             BigInteger modulus = new BigInteger(1, nBytes);
             BigInteger exponent = new BigInteger(1, eBytes);
             RSAPublicKeySpec spec = new RSAPublicKeySpec(modulus, exponent);
-
             KeyFactory factory = KeyFactory.getInstance("RSA");
-            publicKey = (RSAPublicKey) factory.generatePublic(spec);
+            RSAPublicKey key = (RSAPublicKey) factory.generatePublic(spec);
 
-            if (publicKey == null) {
-                throw new RuntimeException("Публичный ключ равен null после генерации");
-            }
-
-            System.out.println("Публичный ключ успешно создан: " + publicKey.getModulus().bitLength() + " бит");
-
-        } catch (Exception e) {
-            System.err.println("Исключение при загрузке ключа: " + e.getClass().getName());
-            System.err.println("Сообщение исключения: " + e.getMessage());
-            e.printStackTrace();
-            throw e;
+            publicKeys.put(kid, key);
         }
     }
 
     private static String extractKid(String token) {
-        try {
-            DecodedJWT jwt = JWT.decode(token);
-            return jwt.getKeyId();
-        } catch (Exception e) {
-            throw new RuntimeException("Не удалось извлечь kid из токена: " + e.getMessage(), e);
-        }
+        DecodedJWT jwt = JWT.decode(token);
+        return jwt.getKeyId();
     }
 
     public static Handler authenticate() {
@@ -149,20 +103,27 @@ public class JwtHandler {
             }
 
             String token = authHeader.substring(7);
-
             String kid = extractKid(token);
-            System.out.println("KID токена: " + kid);
 
             try {
                 ensurePublicKeyLoaded(kid);
             } catch (Exception e) {
-                System.err.println("Не удалось загрузить публичный ключ: " + e.getMessage());
                 throw new UnauthorizedResponse("Сервер не готов: " + e.getMessage());
             }
 
-            try {
-                Algorithm algorithm = Algorithm.RSA256(publicKey, null);
+            RSAPublicKey key = publicKeys.get(kid);
+            if (key == null) {
+                synchronized (lock) {
+                    loadPublicKeys();
+                    key = publicKeys.get(kid);
+                    if (key == null) {
+                        throw new UnauthorizedResponse("JWT key not found for kid: " + kid);
+                    }
+                }
+            }
 
+            try {
+                Algorithm algorithm = Algorithm.RSA256(key, null);
                 DecodedJWT jwt = JWT.require(algorithm)
                         .withIssuer(KEYCLOAK_URL + "/realms/" + REALM)
                         .build()
@@ -179,11 +140,7 @@ public class JwtHandler {
 
                 ctx.attribute("jwt", jwt);
 
-                System.out.println("Аутентифицирован пользователь: "
-                        + jwt.getClaim("preferred_username").asString());
-
             } catch (JWTVerificationException e) {
-                System.err.println("Ошибка проверки JWT: " + e.getMessage());
                 throw new UnauthorizedResponse("Неверный JWT токен: " + e.getMessage());
             }
         };
