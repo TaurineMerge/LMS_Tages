@@ -27,7 +27,8 @@ var swaggerJSON embed.FS
 func main() {
 	// Инициализация конфигурации
 	settings := config.NewSettings()
-	
+
+	log.Printf("⚠️  Failed to initialize auth: %v", settings)
 	// Инициализация базы данных
 	db, err := database.InitDB(settings)
 	if err != nil {
@@ -68,9 +69,36 @@ func main() {
 	
 	// Админские маршруты с префиксом /admin
 	adminGroup := app.Group("/admin")
+
+	adminGroup.Use(middleware.AuthMiddleware())
 	
 	// Swagger под префиксом /admin
-	setupSwagger(adminGroup)
+	// Сначала маршрут для doc.json (должен быть до swagger UI)
+	adminGroup.Get("/swagger/doc.json", func(c *fiber.Ctx) error {
+		data, err := fs.ReadFile(swaggerJSON, "docs/swagger.json")
+		if err != nil {
+			log.Printf("Failed to read swagger.json: %v", err)
+			return c.Status(500).JSON(fiber.Map{
+				"error": "Failed to read API documentation",
+			})
+		}
+		
+		c.Set("Content-Type", "application/json")
+		return c.Send(data)
+	})
+	
+	// Затем Swagger UI
+	adminGroup.Get("/swagger/*", swagger.New(swagger.Config{
+		URL:         "/admin/swagger/doc.json",  // Путь должен быть полный
+		DeepLinking: true,
+		Title:       "Admin Panel API",
+		OAuth: &swagger.OAuthConfig{
+			ClientId:     settings.ClientId,
+			ClientSecret: settings.ClientSecret,
+			AppName:      settings.AppName,
+			Scopes:       []string{"openid", "profile", "email"},
+		},
+	}))
 	
 	// API маршруты с префиксом /admin/api/v1
 	api := adminGroup.Group("/api/v1")
@@ -114,29 +142,6 @@ func main() {
 	}
 }
 
-// setupSwagger настраивает Swagger документацию
-func setupSwagger(router fiber.Router) {
-	// Сначала маршрут для doc.json (должен быть до swagger UI)
-	router.Get("/swagger/doc.json", func(c *fiber.Ctx) error {
-		data, err := fs.ReadFile(swaggerJSON, "docs/swagger.json")
-		if err != nil {
-			log.Printf("Failed to read swagger.json: %v", err)
-			return c.Status(500).JSON(fiber.Map{
-				"error": "Failed to read API documentation",
-			})
-		}
-		
-		c.Set("Content-Type", "application/json")
-		return c.Send(data)
-	})
-	
-	// Затем Swagger UI
-	router.Get("/swagger/*", swagger.New(swagger.Config{
-		URL:         "/admin/swagger/doc.json",  // Путь должен быть полный
-		DeepLinking: true,
-		Title:       "Admin Panel API",
-	}))
-}
 // package main
 
 // import (

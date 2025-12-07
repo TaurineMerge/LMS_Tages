@@ -11,6 +11,29 @@
   "consumes": ["application/json"],
   "produces": ["application/json"],
 
+  "securityDefinitions": {
+        "OAuth2": {
+            "type": "oauth2",
+            "flow": "authorizationCode",
+            "authorizationUrl": "http://localhost:8080/realms/teacher/protocol/openid-connect/auth",
+            "tokenUrl": "http://localhost:8080/realms/teacher/protocol/openid-connect/token",
+            "scopes": {
+                "openid": "OpenID Connect scope",
+                "profile": "User profile information",
+                "email": "User email"
+            }
+        }
+    },
+    "security": [
+        {
+            "OAuth2": [
+                "openid",
+                "profile",
+                "email"
+            ]
+        }
+    ],
+
   "tags": [
     { "name": "Health", "description": "Проверка состояния сервиса" },
     { "name": "Categories", "description": "Управление категориями" },
@@ -23,6 +46,7 @@
       "get": {
         "tags": ["Health"],
         "summary": "Проверка здоровья сервиса",
+        "security": [],
         "responses": {
           "200": {
             "description": "Сервис работает",
