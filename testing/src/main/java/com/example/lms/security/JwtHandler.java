@@ -6,6 +6,8 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.math.BigInteger;
 import java.net.URI;
@@ -16,6 +18,7 @@ import java.security.KeyFactory;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Base64;
+import java.time.Duration;
 
 public class JwtHandler {
 
@@ -26,22 +29,22 @@ public class JwtHandler {
     private static final String KEYCLOAK_URL = System.getenv().getOrDefault("KEYCLOAK_URL", "http://localhost:8080");
     private static final String REALM = System.getenv().getOrDefault("KEYCLOAK_REALM", "lms-realm");
 
-    private static void ensurePublicKeyLoaded() throws Exception {
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    private static void ensurePublicKeyLoaded(String kid) throws Exception {
         if (publicKey == null) {
             synchronized (lock) {
                 if (publicKey == null) {
-                    System.out.println("Загрузка публичного ключа Keycloak...");
-                    loadPublicKeyFromCerts();
-                    System.out.println("Публичный ключ Keycloak успешно загружен из realm: " + REALM);
+                    loadPublicKeyFromCerts(kid);
                 }
             }
         }
     }
 
-    private static void loadPublicKeyFromCerts() throws Exception {
+    private static void loadPublicKeyFromCerts(String kid) throws Exception {
         try {
             HttpClient client = HttpClient.newBuilder()
-                    .connectTimeout(java.time.Duration.ofSeconds(10))
+                    .connectTimeout(Duration.ofSeconds(10))
                     .build();
 
             String certsUrl = KEYCLOAK_INTERNAL_URL + "/realms/" + REALM + "/protocol/openid-connect/certs";
@@ -49,7 +52,7 @@ public class JwtHandler {
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(certsUrl))
-                    .timeout(java.time.Duration.ofSeconds(10))
+                    .timeout(Duration.ofSeconds(10))
                     .GET()
                     .build();
 
@@ -68,26 +71,26 @@ public class JwtHandler {
                 throw new RuntimeException("Тело ответа пустое");
             }
 
-            int firstAqab = body.indexOf("\"e\":\"AQAB\"");
-            System.out.println("Первый AQAB на позиции: " + firstAqab);
-
-            if (firstAqab == -1) {
-                throw new RuntimeException("Не удалось найти RSA ключи");
+            JsonNode root = OBJECT_MAPPER.readTree(body);
+            JsonNode keysNode = root.path("keys");
+            if (keysNode == null || !keysNode.isArray() || keysNode.size() == 0) {
+                throw new RuntimeException("JWKS не содержит keys");
             }
 
-            int secondKeyStart = body.indexOf("\"n\":\"", firstAqab + 20);
-            System.out.println("Второй ключ 'n' начинается на: " + secondKeyStart);
-
-            if (secondKeyStart == -1) {
-                System.out.println("Найден только один ключ, используем его");
-                secondKeyStart = body.indexOf("\"n\":\"");
+            JsonNode chosenKey = null;
+            for (JsonNode keyNode : keysNode) {
+                if (keyNode.path("kid").asText("").equals(kid)) {
+                    chosenKey = keyNode;
+                    break;
+                }
             }
 
-            String remainingBody = body.substring(secondKeyStart);
-            System.out.println("Извлечение из: " + remainingBody.substring(0, Math.min(100, remainingBody.length())));
+            if (chosenKey == null) {
+                throw new RuntimeException("Не найден ключ в JWKS с kid=" + kid);
+            }
 
-            String nValue = extractJsonValue(remainingBody, "\"n\":\"", "\"");
-            String eValue = extractJsonValue(remainingBody, "\"e\":\"", "\"");
+            String nValue = chosenKey.path("n").asText(null);
+            String eValue = chosenKey.path("e").asText(null);
 
             System.out.println("Извлечено n: " + (nValue != null ? ("длина=" + nValue.length()) : "null"));
             System.out.println("Извлечено e: " + (eValue != null ? eValue : "null"));
@@ -97,8 +100,14 @@ public class JwtHandler {
             }
 
             System.out.println("Декодирование base64...");
-            byte[] nBytes = Base64.getUrlDecoder().decode(nValue);
-            byte[] eBytes = Base64.getUrlDecoder().decode(eValue);
+            byte[] nBytes;
+            byte[] eBytes;
+            try {
+                nBytes = Base64.getUrlDecoder().decode(nValue);
+                eBytes = Base64.getUrlDecoder().decode(eValue);
+            } catch (IllegalArgumentException ex) {
+                throw new RuntimeException("Ошибка при base64url декодировании n/e: " + ex.getMessage(), ex);
+            }
 
             System.out.println("Создание BigInteger...");
             BigInteger modulus = new BigInteger(1, nBytes);
@@ -122,41 +131,17 @@ public class JwtHandler {
         }
     }
 
-    private static String extractJsonValue(String json, String startMarker, String endMarker) {
+    private static String extractKid(String token) {
         try {
-            int start = json.indexOf(startMarker);
-            if (start == -1) {
-                System.err.println("Маркер начала не найден: " + startMarker);
-                return null;
-            }
-            start += startMarker.length();
-
-            int end = json.indexOf(endMarker, start);
-            if (end == -1) {
-                System.err.println("Маркер конца не найден: " + endMarker);
-                return null;
-            }
-
-            String result = json.substring(start, end);
-            System.out.println("Извлечено значение между маркерами (длина=" + result.length() + ")");
-            return result;
+            DecodedJWT jwt = JWT.decode(token);
+            return jwt.getKeyId();
         } catch (Exception e) {
-            System.err.println("Ошибка в extractJsonValue: " + e.getMessage());
-            e.printStackTrace();
-            return null;
+            throw new RuntimeException("Не удалось извлечь kid из токена: " + e.getMessage(), e);
         }
     }
 
     public static Handler authenticate() {
         return ctx -> {
-            try {
-                ensurePublicKeyLoaded();
-            } catch (Exception e) {
-                System.err.println("Не удалось загрузить публичный ключ: " + e.getMessage());
-                e.printStackTrace();
-                throw new UnauthorizedResponse("Сервер не готов: " + e.getMessage());
-            }
-
             String authHeader = ctx.header("Authorization");
 
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -165,8 +150,19 @@ public class JwtHandler {
 
             String token = authHeader.substring(7);
 
+            String kid = extractKid(token);
+            System.out.println("KID токена: " + kid);
+
+            try {
+                ensurePublicKeyLoaded(kid);
+            } catch (Exception e) {
+                System.err.println("Не удалось загрузить публичный ключ: " + e.getMessage());
+                throw new UnauthorizedResponse("Сервер не готов: " + e.getMessage());
+            }
+
             try {
                 Algorithm algorithm = Algorithm.RSA256(publicKey, null);
+
                 DecodedJWT jwt = JWT.require(algorithm)
                         .withIssuer(KEYCLOAK_URL + "/realms/" + REALM)
                         .build()
@@ -183,8 +179,8 @@ public class JwtHandler {
 
                 ctx.attribute("jwt", jwt);
 
-                System.out
-                        .println("Аутентифицированный пользователь: " + jwt.getClaim("preferred_username").asString());
+                System.out.println("Аутентифицирован пользователь: "
+                        + jwt.getClaim("preferred_username").asString());
 
             } catch (JWTVerificationException e) {
                 System.err.println("Ошибка проверки JWT: " + e.getMessage());
