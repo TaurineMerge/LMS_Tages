@@ -118,21 +118,11 @@ func AuthMiddleware() fiber.Handler {
 		iss, ok := claims["iss"].(string)
 		if ok && authConfig.IssuerURL != "" && iss != authConfig.IssuerURL {
 			log.Printf("⚠️  Token issuer mismatch. Expected: %s, Got: %s", authConfig.IssuerURL, iss)
-			// Для разработки можно пропустить эту проверку:
-			// return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
-			// 	"error": "Invalid token issuer",
-			// 	"code":  "UNAUTHORIZED",
-			// })
 		}
 
 		// Проверка audience (опционально)
 		if authConfig.Audience != "" && !verifyAudience(claims, authConfig.Audience) {
 			log.Printf("⚠️  Token audience mismatch. Expected: %s", authConfig.Audience)
-			// Для разработки можно пропустить
-			// return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
-			// 	"error": "Invalid token audience",
-			// 	"code":  "UNAUTHORIZED",
-			// })
 		}
 
 		// Логируем информацию о пользователе

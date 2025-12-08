@@ -1,8 +1,5 @@
 package models
 
-// Убираем неиспользуемый импорт time
-// Если нужно время, используйте его, если нет - удалите импорт
-
 type Category struct {
 	BaseModel
 	Title string `json:"title"`

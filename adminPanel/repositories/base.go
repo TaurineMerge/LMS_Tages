@@ -2,11 +2,10 @@ package repositories
 
 import (
 	"context"
-	"fmt"  // Нужен для fmt.Sprintf
-	"strings"  // Нужен для strings.Join
+	"fmt"     // Нужен для fmt.Sprintf
+	"strings" // Нужен для strings.Join
 
 	"adminPanel/database"
-	// "adminPanel/models"  // УДАЛИТЬ если не используется
 )
 
 // BaseRepository - аналог Python BaseRepository
@@ -60,7 +59,7 @@ func (r *BaseRepository) GetAll(ctx context.Context, limit, offset int, orderBy,
 // Count - аналог count из Python
 func (r *BaseRepository) Count(ctx context.Context, whereClause string, params ...interface{}) (int, error) {
 	query := fmt.Sprintf("SELECT COUNT(*) as count FROM %s", r.FullTableName())
-	
+
 	if whereClause != "" {
 		query += " WHERE " + whereClause
 	}
@@ -106,7 +105,7 @@ func (r *BaseRepository) GetFiltered(ctx context.Context, conditions []string, p
 	}
 
 	query := fmt.Sprintf("SELECT * FROM %s", r.FullTableName())
-	
+
 	if len(conditions) > 0 {
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
