@@ -36,20 +36,22 @@
       "consentRequired": false,
       "standardFlowEnabled": true,
       "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": true,
-      "serviceAccountsEnabled": false,
-      "publicClient": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
       "frontchannelLogout": true,
       "protocol": "openid-connect",
       "attributes": {
         "oidc.ciba.grant.enabled": "false",
         "client.secret.creation.time": "0",
         "backchannel.logout.session.required": "true",
-        "display.on.consent.screen": "false",
+        "display.on.consent.screen": "true",
         "oauth2.device.authorization.grant.enabled": "false",
         "backchannel.logout.revoke.offline.tokens": "false"
       },
+      "authorizationServicesEnabled": true,
       "fullScopeAllowed": true,
+      "secret": "STUDENT_SECRET",
       "nodeReRegistrationTimeout": -1,
       "protocolMappers": [
         {
@@ -122,6 +124,21 @@
         {
           "type": "password",
           "value": "pass",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "student",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "student",
+      "lastName": "main",
+      "email": "student@example.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "student",
           "temporary": false
         }
       ]
