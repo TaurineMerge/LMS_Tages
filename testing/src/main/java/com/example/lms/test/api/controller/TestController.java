@@ -2,13 +2,18 @@ package com.example.lms.test.api.controller;
 
 import com.example.lms.test.api.dto.Test;
 import com.example.lms.test.domain.service.TestService;
+import com.github.jknack.handlebars.Handlebars;
+import com.github.jknack.handlebars.Template;
+
 import io.javalin.http.Context;
-import java.util.List;
+
+import java.io.IOException;
 import java.util.Map;
 
 public class TestController {
 
     private final TestService testService;
+    private final Handlebars handlebars = new Handlebars();
 
     public TestController(TestService testService) {
         this.testService = testService;
@@ -16,8 +21,15 @@ public class TestController {
 
     // GET /tests
     public void getTests(Context ctx) {
-        List<Test> tests = testService.getAllTests();
-        ctx.json(tests);
+        try {
+            var tests = testService.getAllTests();
+            Template template = handlebars.compile("/templates/test-list");
+            String html = template.apply(Map.of("tests", tests));
+            ctx.html(html);
+        } catch (IOException e) {
+            e.printStackTrace();
+            ctx.status(500).html("Internal Server Error: " + e.getMessage());
+        }
     }
 
     // POST /tests
