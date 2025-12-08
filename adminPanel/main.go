@@ -115,11 +115,29 @@ func tracingMiddleware(tracer trace.Tracer) fiber.Handler {
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, err.Error())
-			return err
 		}
 		if status >= 500 {
 			span.SetStatus(codes.Error, http.StatusText(status))
 		}
+
+	// Проставляем trace-id/span-id в ответ
+	sc := span.SpanContext()
+	if sc.HasTraceID() {
+		c.Set("Trace-Id", sc.TraceID().String())
+	}
+	if sc.HasSpanID() {
+		c.Set("Span-Id", sc.SpanID().String())
+	}
+
+	// Логируем ошибки
+	if err != nil || status >= 500 {
+		log.Printf("trace=%s span=%s method=%s path=%s status=%d err=%v",
+			sc.TraceID().String(), sc.SpanID().String(), c.Method(), c.Path(), status, err)
+	}
+
+	if err != nil {
+		return err
+	}
 		return nil
 	}
 }
