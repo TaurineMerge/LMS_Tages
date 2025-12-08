@@ -7,6 +7,9 @@ import (
 	"adminPanel/exceptions"
 	"adminPanel/models"
 	"adminPanel/repositories"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
 // LessonService - сервис для работы с уроками
@@ -14,6 +17,8 @@ type LessonService struct {
 	lessonRepo *repositories.LessonRepository
 	courseRepo *repositories.CourseRepository
 }
+
+var lessonTracer = otel.Tracer("admin-panel/lesson-service")
 
 // NewLessonService создает сервис уроков
 func NewLessonService(
@@ -28,9 +33,15 @@ func NewLessonService(
 
 // GetLessons - получение уроков по курсу
 func (s *LessonService) GetLessons(ctx context.Context, courseID string) ([]models.LessonResponse, error) {
+	ctx, span := lessonTracer.Start(ctx, "LessonService.GetLessons")
+	span.SetAttributes(attribute.String("course.id", courseID))
+	defer span.End()
+
 	// Проверяем существование курса
 	courseExists, err := s.courseRepo.Exists(ctx, courseID)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to check course: %v", err))
 	}
 
@@ -41,6 +52,8 @@ func (s *LessonService) GetLessons(ctx context.Context, courseID string) ([]mode
 	// Получаем уроки
 	data, err := s.lessonRepo.GetByCourse(ctx, courseID)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to get lessons: %v", err))
 	}
 
@@ -69,9 +82,18 @@ func (s *LessonService) GetLessons(ctx context.Context, courseID string) ([]mode
 
 // GetLesson - получение урока по ID
 func (s *LessonService) GetLesson(ctx context.Context, id, courseID string) (*models.LessonResponse, error) {
+	ctx, span := lessonTracer.Start(ctx, "LessonService.GetLesson")
+	span.SetAttributes(
+		attribute.String("lesson.id", id),
+		attribute.String("course.id", courseID),
+	)
+	defer span.End()
+
 	// Проверяем существование курса
 	courseExists, err := s.courseRepo.Exists(ctx, courseID)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to check course: %v", err))
 	}
 
@@ -82,6 +104,8 @@ func (s *LessonService) GetLesson(ctx context.Context, id, courseID string) (*mo
 	// Получаем урок
 	data, err := s.lessonRepo.GetByIDAndCourse(ctx, id, courseID)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to get lesson: %v", err))
 	}
 
@@ -110,9 +134,18 @@ func (s *LessonService) GetLesson(ctx context.Context, id, courseID string) (*mo
 
 // CreateLesson - создание урока
 func (s *LessonService) CreateLesson(ctx context.Context, courseID string, input models.LessonCreate) (*models.LessonResponse, error) {
+	ctx, span := lessonTracer.Start(ctx, "LessonService.CreateLesson")
+	span.SetAttributes(
+		attribute.String("course.id", courseID),
+		attribute.String("lesson.title", input.Title),
+	)
+	defer span.End()
+
 	// Проверяем существование курса
 	courseExists, err := s.courseRepo.Exists(ctx, courseID)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to check course: %v", err))
 	}
 
@@ -123,6 +156,8 @@ func (s *LessonService) CreateLesson(ctx context.Context, courseID string, input
 	// Создаем урок
 	data, err := s.lessonRepo.Create(ctx, courseID, input)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to create lesson: %v", err))
 	}
 
@@ -147,9 +182,19 @@ func (s *LessonService) CreateLesson(ctx context.Context, courseID string, input
 
 // UpdateLesson - обновление урока
 func (s *LessonService) UpdateLesson(ctx context.Context, id, courseID string, input models.LessonUpdate) (*models.LessonResponse, error) {
+	ctx, span := lessonTracer.Start(ctx, "LessonService.UpdateLesson")
+	span.SetAttributes(
+		attribute.String("lesson.id", id),
+		attribute.String("course.id", courseID),
+		attribute.String("lesson.title", input.Title),
+	)
+	defer span.End()
+
 	// Проверяем существование урока
 	existing, err := s.lessonRepo.GetByIDAndCourse(ctx, id, courseID)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to check lesson: %v", err))
 	}
 
@@ -160,6 +205,8 @@ func (s *LessonService) UpdateLesson(ctx context.Context, id, courseID string, i
 	// Обновляем урок
 	data, err := s.lessonRepo.Update(ctx, id, courseID, input)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to update lesson: %v", err))
 	}
 
@@ -184,9 +231,18 @@ func (s *LessonService) UpdateLesson(ctx context.Context, id, courseID string, i
 
 // DeleteLesson - удаление урока
 func (s *LessonService) DeleteLesson(ctx context.Context, id, courseID string) error {
+	ctx, span := lessonTracer.Start(ctx, "LessonService.DeleteLesson")
+	span.SetAttributes(
+		attribute.String("lesson.id", id),
+		attribute.String("course.id", courseID),
+	)
+	defer span.End()
+
 	// Проверяем существование урока
 	existing, err := s.lessonRepo.GetByIDAndCourse(ctx, id, courseID)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return exceptions.InternalError(fmt.Sprintf("Failed to check lesson: %v", err))
 	}
 
@@ -197,6 +253,8 @@ func (s *LessonService) DeleteLesson(ctx context.Context, id, courseID string) e
 	// Удаляем урок
 	deleted, err := s.lessonRepo.Delete(ctx, id)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return exceptions.InternalError(fmt.Sprintf("Failed to delete lesson: %v", err))
 	}
 

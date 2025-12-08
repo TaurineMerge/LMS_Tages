@@ -35,7 +35,10 @@ func (h *HealthHandler) HealthCheck(c *fiber.Ctx) error {
 }
 
 func (h *HealthHandler) DBHealthCheck(c *fiber.Ctx) error {
-	ctx := context.Background()
+	ctx := c.UserContext()
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	err := h.db.Pool.Ping(ctx)
 
 	if err != nil {

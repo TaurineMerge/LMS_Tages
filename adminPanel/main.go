@@ -23,7 +23,10 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/swagger"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"net/http"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
@@ -77,10 +80,47 @@ func tracingMiddleware(tracer trace.Tracer) fiber.Handler {
 		}
 		ctx := otel.GetTextMapPropagator().Extract(c.Context(), carrier)
 		spanName := fmt.Sprintf("%s %s", c.Method(), c.Path())
-		ctx, span := tracer.Start(ctx, spanName)
+	ctx, span := tracer.Start(ctx, spanName, trace.WithSpanKind(trace.SpanKindServer))
 		defer span.End()
 		c.SetUserContext(ctx)
-		return c.Next()
+
+		err := c.Next()
+
+		route := c.Route()
+		status := c.Response().StatusCode()
+		attrs := []attribute.KeyValue{
+			semconv.HTTPMethodKey.String(c.Method()),
+			semconv.HTTPRouteKey.String(route.Path),
+			semconv.HTTPTargetKey.String(c.OriginalURL()),
+			semconv.HTTPStatusCodeKey.Int(status),
+			semconv.NetHostNameKey.String(c.Hostname()),
+			semconv.HTTPUserAgentKey.String(c.Get("User-Agent")),
+		}
+		if ip := c.IP(); ip != "" {
+			attrs = append(attrs, attribute.String("net.peer.ip", ip))
+		}
+		if q := c.Context().QueryArgs().String(); q != "" {
+			attrs = append(attrs, attribute.String("http.query", q))
+		}
+		if len(c.Body()) > 0 {
+			body := c.Body()
+			const maxLoggedBody = 2048
+			if len(body) > maxLoggedBody {
+				body = body[:maxLoggedBody]
+			}
+			span.AddEvent("http.request.body", trace.WithAttributes(attribute.String("body", string(body))))
+		}
+		span.SetAttributes(attrs...)
+
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+			return err
+		}
+		if status >= 500 {
+			span.SetStatus(codes.Error, http.StatusText(status))
+		}
+		return nil
 	}
 }
 

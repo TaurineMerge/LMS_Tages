@@ -7,6 +7,9 @@ import (
 	"adminPanel/exceptions"
 	"adminPanel/models"
 	"adminPanel/repositories"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
 // CourseService - сервис для работы с курсами
@@ -14,6 +17,8 @@ type CourseService struct {
 	courseRepo    *repositories.CourseRepository
 	categoryRepo  *repositories.CategoryRepository
 }
+
+var courseTracer = otel.Tracer("admin-panel/course-service")
 
 // NewCourseService создает сервис курсов
 func NewCourseService(
@@ -28,6 +33,16 @@ func NewCourseService(
 
 // GetCourses - получение курсов с фильтрацией
 func (s *CourseService) GetCourses(ctx context.Context, filter models.CourseFilter) (*models.PaginatedCourseResponse, error) {
+	ctx, span := courseTracer.Start(ctx, "CourseService.GetCourses")
+	span.SetAttributes(
+		attribute.String("filter.level", filter.Level),
+		attribute.String("filter.visibility", filter.Visibility),
+		attribute.String("filter.category_id", filter.CategoryID),
+		attribute.Int("filter.page", filter.Page),
+		attribute.Int("filter.limit", filter.Limit),
+	)
+	defer span.End()
+
 	// Устанавливаем значения по умолчанию
 	if filter.Page == 0 {
 		filter.Page = 1
@@ -38,6 +53,8 @@ func (s *CourseService) GetCourses(ctx context.Context, filter models.CourseFilt
 
 	data, total, err := s.courseRepo.GetFiltered(ctx, filter)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to get courses: %v", err))
 	}
 
@@ -74,8 +91,14 @@ func (s *CourseService) GetCourses(ctx context.Context, filter models.CourseFilt
 
 // GetCourse - получение курса по ID
 func (s *CourseService) GetCourse(ctx context.Context, id string) (*models.CourseResponse, error) {
+	ctx, span := courseTracer.Start(ctx, "CourseService.GetCourse")
+	span.SetAttributes(attribute.String("course.id", id))
+	defer span.End()
+
 	data, err := s.courseRepo.GetByID(ctx, id)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to get course: %v", err))
 	}
 
@@ -103,9 +126,20 @@ func (s *CourseService) GetCourse(ctx context.Context, id string) (*models.Cours
 
 // CreateCourse - создание курса
 func (s *CourseService) CreateCourse(ctx context.Context, input models.CourseCreate) (*models.CourseResponse, error) {
+	ctx, span := courseTracer.Start(ctx, "CourseService.CreateCourse")
+	span.SetAttributes(
+		attribute.String("course.category_id", input.CategoryID),
+		attribute.String("course.level", input.Level),
+		attribute.String("course.visibility", input.Visibility),
+		attribute.String("course.title", input.Title),
+	)
+	defer span.End()
+
 	// Проверяем существование категории
 	categoryExists, err := s.courseRepo.ExistsByCategory(ctx, input.CategoryID)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to check category: %v", err))
 	}
 
@@ -116,6 +150,8 @@ func (s *CourseService) CreateCourse(ctx context.Context, input models.CourseCre
 	// Создаем курс
 	data, err := s.courseRepo.Create(ctx, input)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to create course: %v", err))
 	}
 
@@ -139,9 +175,21 @@ func (s *CourseService) CreateCourse(ctx context.Context, input models.CourseCre
 
 // UpdateCourse - обновление курса
 func (s *CourseService) UpdateCourse(ctx context.Context, id string, input models.CourseUpdate) (*models.CourseResponse, error) {
+	ctx, span := courseTracer.Start(ctx, "CourseService.UpdateCourse")
+	span.SetAttributes(
+		attribute.String("course.id", id),
+		attribute.String("course.category_id", input.CategoryID),
+		attribute.String("course.level", input.Level),
+		attribute.String("course.visibility", input.Visibility),
+		attribute.String("course.title", input.Title),
+	)
+	defer span.End()
+
 	// Проверяем существование курса
 	existing, err := s.courseRepo.GetByID(ctx, id)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to check course: %v", err))
 	}
 
@@ -153,6 +201,8 @@ func (s *CourseService) UpdateCourse(ctx context.Context, id string, input model
 	if input.CategoryID != "" && input.CategoryID != fmt.Sprintf("%v", existing["category_id"]) {
 		categoryExists, err := s.courseRepo.ExistsByCategory(ctx, input.CategoryID)
 		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
 			return nil, exceptions.InternalError(fmt.Sprintf("Failed to check category: %v", err))
 		}
 
@@ -164,6 +214,8 @@ func (s *CourseService) UpdateCourse(ctx context.Context, id string, input model
 	// Обновляем курс
 	data, err := s.courseRepo.Update(ctx, id, input)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to update course: %v", err))
 	}
 
@@ -187,9 +239,15 @@ func (s *CourseService) UpdateCourse(ctx context.Context, id string, input model
 
 // DeleteCourse - удаление курса
 func (s *CourseService) DeleteCourse(ctx context.Context, id string) error {
+	ctx, span := courseTracer.Start(ctx, "CourseService.DeleteCourse")
+	span.SetAttributes(attribute.String("course.id", id))
+	defer span.End()
+
 	// Проверяем существование курса
 	existing, err := s.courseRepo.GetByID(ctx, id)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return exceptions.InternalError(fmt.Sprintf("Failed to check course: %v", err))
 	}
 
@@ -202,6 +260,8 @@ func (s *CourseService) DeleteCourse(ctx context.Context, id string) error {
 	// Удаляем курс
 	deleted, err := s.courseRepo.Delete(ctx, id)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return exceptions.InternalError(fmt.Sprintf("Failed to delete course: %v", err))
 	}
 
@@ -214,9 +274,15 @@ func (s *CourseService) DeleteCourse(ctx context.Context, id string) error {
 
 // GetCategoryCourses - получение курсов категории
 func (s *CourseService) GetCategoryCourses(ctx context.Context, categoryID string) ([]models.CourseResponse, error) {
+	ctx, span := courseTracer.Start(ctx, "CourseService.GetCategoryCourses")
+	span.SetAttributes(attribute.String("category.id", categoryID))
+	defer span.End()
+
 	// Проверяем существование категории
 	categoryExists, err := s.courseRepo.ExistsByCategory(ctx, categoryID)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to check category: %v", err))
 	}
 
@@ -227,6 +293,8 @@ func (s *CourseService) GetCategoryCourses(ctx context.Context, categoryID strin
 	// Получаем курсы
 	data, err := s.courseRepo.GetByCategory(ctx, categoryID)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to get courses: %v", err))
 	}
 
