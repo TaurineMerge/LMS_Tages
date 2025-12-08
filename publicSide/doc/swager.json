@@ -1,0 +1,342 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Education Platform API",
+        "description": "API для системы онлайн образования",
+        "version": "1.0.0"
+    },
+    "host": "api.education-platform.com",
+    "basePath": "/api/v1",
+    "schemes": [
+        "https",
+        "http"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/courses": {
+            "get": {
+                "tags": [
+                    "Courses"
+                ],
+                "summary": "Получить список курсов",
+                "parameters": [
+                    {
+                        "name": "level",
+                        "in": "query",
+                        "type": "string",
+                        "enum": [
+                            "hard",
+                            "medium",
+                            "easy"
+                        ],
+                        "description": "Фильтр по уровню сложности"
+                    },
+                    {
+                        "name": "visibility",
+                        "in": "query",
+                        "type": "string",
+                        "enum": [
+                            "draft",
+                            "public",
+                            "private"
+                        ],
+                        "description": "Фильтр по видимости"
+                    },
+                    {
+                        "name": "category_id",
+                        "in": "query",
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Фильтр по категории"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response containing a list of courses.",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponseCoursesList"
+                        }
+                    }
+                }
+            }
+        },
+        "/courses/{course_id}": {
+            "get": {
+                "tags": [
+                    "Courses"
+                ],
+                "summary": "Получить курс по ID",
+                "parameters": [
+                    {
+                        "name": "course_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response containing the course data.",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponseCourse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid course ID supplied.",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponseError"
+                        }
+                    },
+                    "404": {
+                        "description": "Course not found.",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/courses/{course_id}/lessons": {
+            "get": {
+                "tags": [
+                    "Lessons"
+                ],
+                "summary": "Получить список уроков курса",
+                "parameters": [
+                    {
+                        "name": "course_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response containing a list of lessons for the course.",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponseLessonsList"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid course ID supplied.",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponseError"
+                        }
+                    },
+                    "404": {
+                        "description": "Course not found.",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/courses/{course_id}/lessons/{lesson_id}": {
+            "get": {
+                "tags": [
+                    "Lessons"
+                ],
+                "summary": "Получить урок курса по ID",
+                "parameters": [
+                    {
+                        "name": "course_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
+                        "name": "lesson_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response containing the lesson data.",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponseLesson"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid course or lesson ID supplied.",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponseError"
+                        }
+                    },
+                    "404": {
+                        "description": "Course or lesson not found.",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponseError"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "Course": {
+            "type": "object",
+            "required": [
+                "uuid",
+                "title",
+                "description",
+                "level"
+            ],
+            "properties": {
+                "uuid": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "level": {
+                    "type": "string",
+                    "enum": [
+                        "easy",
+                        "medium",
+                        "hard"
+                    ]
+                },
+                "lessons": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Lesson"
+                    }
+                }
+            }
+        },
+        "Lesson": {
+            "type": "object",
+            "required": [
+                "uuid",
+                "title"
+            ],
+            "properties": {
+                "uuid": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "content": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "description": "Текстовый или графический блок контента",
+                        "properties": {
+                            "content_type": {
+                                "type": "string",
+                                "enum": [
+                                    "text",
+                                    "image"
+                                ]
+                            },
+                            "data": {
+                                "type": "string"
+                            },
+                            "url": {
+                                "type": "string",
+                                "format": "uri"
+                            },
+                            "alt": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "content_type"
+                        ]
+                    }
+                }
+            }
+        },
+        "Error": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "description": "A human-readable error message."
+                }
+            }
+        },
+        "ApiResponseError": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                },
+                "error": {
+                    "$ref": "#/definitions/Error"
+                }
+            }
+        },
+        "ApiResponseCourse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "example": "success"
+                },
+                "data": {
+                    "$ref": "#/definitions/Course"
+                }
+            }
+        },
+        "ApiResponseCoursesList": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "example": "success"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Course"
+                    }
+                }
+            }
+        },
+        "ApiResponseLesson": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "example": "success"
+                },
+                "data": {
+                    "$ref": "#/definitions/Lesson"
+                }
+            }
+        },
+        "ApiResponseLessonsList": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "example": "success"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Lesson"
+                    }
+                }
+            }
+        }
+    }
+}
