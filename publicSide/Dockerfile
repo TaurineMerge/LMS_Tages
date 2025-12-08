@@ -23,10 +23,19 @@ FROM alpine:latest
 # Устанавливаем ca-certificates для HTTPS запросов
 RUN apk --no-cache add ca-certificates
 
-WORKDIR /root/
+# Устанавливаем рабочую директорию
+WORKDIR /app
 
 # Копируем бинарник из этапа сборки
-COPY --from=builder /app .
+COPY --from=builder /app/main .
+
+# Копируем шаблоны и статические файлы
+COPY ./templates ./templates
+COPY ./ui/static ./static
+
+# Устанавливаем переменные окружения для путей
+ENV TEMPLATE_PATH=/app/templates
+ENV STATIC_PATH=/app/static
 
 # Открываем порт 3000
 EXPOSE 3000

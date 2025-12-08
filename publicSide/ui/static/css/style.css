@@ -1,0 +1,33 @@
+body { font-family: sans-serif; }
+header { background-color: #f2f2f2; padding: 1em; }
+nav a { margin-right: 1em; }
+
+/* New styles for courses page */
+.category-item {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 1em;
+}
+
+.category-item summary {
+  padding: 1em;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.course-list {
+  list-style-type: none;
+  padding: 0 1em 1em 1em;
+  margin: 0;
+}
+
+.course-item {
+  padding: 0.5em;
+  border-top: 1px solid #eee;
+}
+
+.course-item p {
+  margin: 0.5em 0 0 0;
+  font-size: 0.9em;
+  color: #555;
+}

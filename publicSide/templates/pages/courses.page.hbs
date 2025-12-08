@@ -1,0 +1,17 @@
+<h1>{{pageTitle}}</h1>
+
+<div class="categories-list">
+  {{#each categories}}
+  <details class="category-item">
+    <summary>{{this.Name}}</summary>
+    <ul class="course-list">
+      {{#each this.Courses}}
+      <li class="course-item">
+        <strong>{{this.Title}}</strong>
+        <p>{{this.Description}}</p>
+      </li>
+      {{/each}}
+    </ul>
+  </details>
+  {{/each}}
+</div>

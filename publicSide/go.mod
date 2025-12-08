@@ -3,6 +3,7 @@ module github.com/TaurineMerge/LMS_Tages/publicSide
 go 1.25.0
 
 require (
+	github.com/aymerick/raymond v2.0.2+incompatible
 	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/gofiber/swagger v1.1.0
 	github.com/google/uuid v1.6.0
