@@ -3,7 +3,6 @@ package main
 
 import (
 	"embed"
-	"io/fs"
 	"log"
 	"strings"
 
@@ -28,7 +27,12 @@ func main() {
 	// Инициализация конфигурации
 	settings := config.NewSettings()
 
-	log.Printf("⚠️  Failed to initialize auth: %v", settings)
+	// Инициализация аутентификации
+	if err := middleware.InitAuth(); err != nil {
+		log.Printf("⚠️  Failed to initialize auth123: %v", err)
+		return
+	}
+
 	// Инициализация базы данных
 	db, err := database.InitDB(settings)
 	if err != nil {
@@ -52,7 +56,6 @@ func main() {
 		AllowCredentials: settings.CORSAllowCredentials,
 		ExposeHeaders:    "Content-Length",
 	}))
-	app.Use(middleware.TrustProxyMiddleware())
 
 	// Общий обработчик ошибок
 	app.Use(middleware.ErrorHandlerMiddleware())
@@ -62,29 +65,11 @@ func main() {
 	app.Get("/health", healthHandler.HealthCheck)
 	app.Get("/health/db", healthHandler.DBHealthCheck)
 
-	// Админские маршруты с префиксом /admin
-	adminGroup := app.Group("/admin")
-
-	adminGroup.Use(middleware.AuthMiddleware())
-
-	// Swagger под префиксом /admin
-	// Сначала маршрут для doc.json (должен быть до swagger UI)
-	adminGroup.Get("/swagger/doc.json", func(c *fiber.Ctx) error {
-		data, err := fs.ReadFile(swaggerJSON, "docs/swagger.json")
-		if err != nil {
-			log.Printf("Failed to read swagger.json: %v", err)
-			return c.Status(500).JSON(fiber.Map{
-				"error": "Failed to read API documentation",
-			})
-		}
-
-		c.Set("Content-Type", "application/json")
-		return c.Send(data)
-	})
-
+	app.Static("/doc", "./docs")
+	
 	// Затем Swagger UI
-	adminGroup.Get("/swagger/*", swagger.New(swagger.Config{
-		URL:         "/admin/swagger/doc.json", // Путь должен быть полный
+	app.Get("/swagger/*", swagger.New(swagger.Config{
+		URL: "/doc/swagger.json",
 		DeepLinking: true,
 		Title:       "Admin Panel API",
 		OAuth: &swagger.OAuthConfig{
@@ -96,9 +81,7 @@ func main() {
 	}))
 
 	// API маршруты с префиксом /admin/api/v1
-	api := adminGroup.Group("/api/v1")
-
-	// Аутентификация для API маршрутов
+	api := app.Group("/api/v1")
 	api.Use(middleware.AuthMiddleware())
 
 	// Инициализация репозиториев
@@ -121,21 +104,12 @@ func main() {
 	courseHandler.RegisterRoutes(api)
 	lessonHandler.RegisterRoutes(api)
 
-	// Favicon заглушка
-	app.Get("/favicon.ico", func(c *fiber.Ctx) error {
-		return c.SendStatus(204) // No Content
-	})
-
 	// Запуск сервера
 	log.Printf("🚀 Server starting on %s", settings.APIAddress)
-	log.Printf("📚 Swagger UI: http://localhost%s/admin/swagger/", settings.APIAddress)
-	log.Printf("📖 Swagger JSON: http://localhost%s/admin/swagger/doc.json", settings.APIAddress)
+	log.Printf("📚 Swagger UI: http://localhost%s/swagger/", settings.APIAddress)
+	log.Printf("📖 Swagger JSON: http://localhost%s/swagger/doc.json", settings.APIAddress)
 	log.Printf("🏥 Health check: http://localhost%s/health", settings.APIAddress)
-	// Инициализация аутентификации
-	if err := middleware.InitAuth(); err != nil {
-		log.Printf("⚠️  Failed to initialize auth123: %v", err)
-		return
-	}
+	
 	if err := app.Listen(settings.APIAddress); err != nil {
 		log.Fatalf("❌ Failed to start server: %v", err)
 	}

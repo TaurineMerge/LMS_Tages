@@ -6,7 +6,7 @@
     "version": "1.0.0"
   },
   "host": "localhost:4000",
-  "basePath": "/admin/api/v1",
+  "basePath": "/api/v1",
   "schemes": ["http"],
   "consumes": ["application/json"],
   "produces": ["application/json"],
@@ -15,8 +15,8 @@
         "OAuth2": {
             "type": "oauth2",
             "flow": "authorizationCode",
-            "authorizationUrl": "http://localhost:8080/realms/admin/protocol/openid-connect/auth",
-            "tokenUrl": "http://localhost:8080/realms/admin/protocol/openid-connect/token",
+            "authorizationUrl": "http://localhost:8080/realms/teacher/protocol/openid-connect/auth",
+            "tokenUrl": "http://localhost:8080/realms/teacher/protocol/openid-connect/token",
             "scopes": {
                 "openid": "OpenID Connect scope",
                 "profile": "User profile information",
@@ -35,31 +35,12 @@
     ],
 
   "tags": [
-    { "name": "Health", "description": "Проверка состояния сервиса" },
     { "name": "Categories", "description": "Управление категориями" },
     { "name": "Courses", "description": "Управление курсами" },
     { "name": "Lessons", "description": "Управление уроками" }
   ],
 
   "paths": {
-    "/health": {
-      "get": {
-        "tags": ["Health"],
-        "summary": "Проверка здоровья сервиса",
-        "security": [],
-        "responses": {
-          "200": {
-            "description": "Сервис работает",
-            "schema": { "$ref": "#/definitions/HealthResponse" }
-          },
-          "500": {
-            "description": "Проблемы с подключением к БД",
-            "schema": { "$ref": "#/definitions/ErrorResponse" }
-          }
-        }
-      }
-    },
-
     "/categories": {
       "get": {
         "tags": ["Categories"],
