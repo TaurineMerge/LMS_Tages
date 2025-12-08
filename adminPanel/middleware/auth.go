@@ -79,10 +79,13 @@ func AuthMiddleware() fiber.Handler {
 			return c.Next()
 		}
 
-		// Если аутентификация не настроена
+		// Если аутентификация не настроена — блокируем запросы, чтобы не открыть API в проде
 		if authConfig == nil || jwks == nil {
-			log.Println("⚠️  Authentication not configured, skipping auth check")
-			return c.Next()
+			log.Println("❌ Authentication not configured: KEYCLOAK_* env vars are missing")
+			return c.Status(http.StatusServiceUnavailable).JSON(fiber.Map{
+				"error": "Authentication not configured",
+				"code":  "AUTH_MISCONFIGURED",
+			})
 		}
 
 		// Проверка заголовка Authorization
