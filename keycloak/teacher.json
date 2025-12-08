@@ -1,5 +1,5 @@
 {
-  "realm": "lms-realm",
+  "realm": "teacher",
   "enabled": true,
   "sslRequired": "external",
   "registrationAllowed": false,
@@ -17,37 +17,15 @@
   "accessCodeLifespan": 60,
   "accessCodeLifespanUserAction": 300,
   "accessCodeLifespanLogin": 1800,
-  "roles": {
-    "realm": [
-      {
-        "name": "admin",
-        "description": "Administrator role",
-        "composite": false,
-        "clientRole": false
-      },
-      {
-        "name": "student",
-        "description": "Student role",
-        "composite": false,
-        "clientRole": false
-      }
-    ]
-  },
   "clients": [
     {
-      "clientId": "lms-client",
-      "name": "LMS Client Application",
-      "description": "Public client for LMS",
-      "rootUrl": "",
-      "adminUrl": "",
-      "baseUrl": "",
-      "surrogateAuthRequired": false,
+      "clientId": "teacher-client",
+      "name": "LMS Admin Application",
+      "description": "Client for LMS Admin Panel",
       "enabled": true,
-      "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": ["*"],
       "webOrigins": ["*"],
-      "notBefore": 0,
       "bearerOnly": false,
       "consentRequired": false,
       "standardFlowEnabled": true,
@@ -58,15 +36,9 @@
       "frontchannelLogout": true,
       "protocol": "openid-connect",
       "attributes": {
-        "oidc.ciba.grant.enabled": "false",
-        "client.secret.creation.time": "0",
-        "backchannel.logout.session.required": "true",
-        "display.on.consent.screen": "false",
-        "oauth2.device.authorization.grant.enabled": "false",
-        "backchannel.logout.revoke.offline.tokens": "false"
+        "display.on.consent.screen": "false"
       },
       "fullScopeAllowed": true,
-      "nodeReRegistrationTimeout": -1,
       "protocolMappers": [
         {
           "name": "realm-roles",
@@ -137,27 +109,10 @@
       "credentials": [
         {
           "type": "password",
-          "value": "password123",
+          "value": "pass",
           "temporary": false
         }
-      ],
-      "realmRoles": ["student"]
-    },
-    {
-      "username": "admin",
-      "enabled": true,
-      "emailVerified": true,
-      "firstName": "Admin",
-      "lastName": "User",
-      "email": "admin@example.com",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "admin123",
-          "temporary": false
-        }
-      ],
-      "realmRoles": ["admin"]
+      ]
     }
   ],
   "browserSecurityHeaders": {

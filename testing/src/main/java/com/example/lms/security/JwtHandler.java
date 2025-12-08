@@ -34,7 +34,7 @@ public class JwtHandler {
     private static final String KEYCLOAK_INTERNAL_URL = System.getenv().getOrDefault("KEYCLOAK_INTERNAL_URL",
             "http://keycloak:8080");
     private static final String KEYCLOAK_URL = System.getenv().getOrDefault("KEYCLOAK_URL", "http://localhost:8080");
-    private static final String REALM = System.getenv().getOrDefault("KEYCLOAK_REALM", "lms-realm");
+    private static final String REALM = System.getenv().getOrDefault("KEYCLOAK_REALM", "student");
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private static final Duration CACHE_TTL = Duration.ofHours(1);
@@ -147,12 +147,7 @@ public class JwtHandler {
                 ctx.attribute("userId", jwt.getSubject());
                 ctx.attribute("username", jwt.getClaim("preferred_username").asString());
                 ctx.attribute("email", jwt.getClaim("email").asString());
-
-                var realmAccess = jwt.getClaim("realm_access").asMap();
-                if (realmAccess != null && realmAccess.containsKey("roles")) {
-                    ctx.attribute("roles", realmAccess.get("roles"));
-                }
-
+                
                 ctx.attribute("jwt", jwt);
 
             } catch (JWTVerificationException e) {
