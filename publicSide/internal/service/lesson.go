@@ -3,15 +3,17 @@ package service
 import (
 	"context"
 	"math"
+	"strings"
 
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/dto"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/repository"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apperrors"
 )
 
 type LessonService interface {
 	GetAllByCourseID(ctx context.Context, courseID string, page, limit int) ([]dto.LessonDTO, domain.Pagination, error)
-	GetByID(ctx context.Context, id string) (domain.Lesson, error)
+	GetByID(ctx context.Context, id string) (dto.LessonDTODetailed, error)
 }
 
 type lessonService struct {
@@ -32,6 +34,17 @@ func toLessonDTO(lesson domain.Lesson) dto.LessonDTO {
 	}
 }
 
+func toLessonDTODetailed(lesson domain.Lesson) dto.LessonDTODetailed {
+	return dto.LessonDTODetailed{
+		ID:        lesson.ID,
+		Title:     lesson.Title,
+		CourseID:  lesson.CourseID,
+		Content:   lesson.Content,
+		CreatedAt: lesson.CreatedAt,
+		UpdatedAt: lesson.UpdatedAt,
+	}
+}
+
 func (s *lessonService) GetAllByCourseID(ctx context.Context, courseID string, page, limit int) ([]dto.LessonDTO, domain.Pagination, error) {
 	if page <= 0 {
 		page = 1
@@ -42,7 +55,7 @@ func (s *lessonService) GetAllByCourseID(ctx context.Context, courseID string, p
 
 	lessons, total, err := s.repo.GetAllByCourseID(ctx, courseID, page, limit)
 	if err != nil {
-		return nil, domain.Pagination{}, err
+		return nil, domain.Pagination{}, apperrors.NewInternal()
 	}
 
 	lessonDTOs := make([]dto.LessonDTO, len(lessons))
@@ -60,6 +73,13 @@ func (s *lessonService) GetAllByCourseID(ctx context.Context, courseID string, p
 	return lessonDTOs, pagination, nil
 }
 
-func (s *lessonService) GetByID(ctx context.Context, id string) (domain.Lesson, error) {
-	return s.repo.GetByID(ctx, id)
+func (s *lessonService) GetByID(ctx context.Context, id string) (dto.LessonDTODetailed, error) {
+	lesson, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return dto.LessonDTODetailed{}, apperrors.NewNotFound("Lesson")
+		}
+		return dto.LessonDTODetailed{}, apperrors.NewInternal()
+	}
+	return toLessonDTODetailed(lesson), nil
 }

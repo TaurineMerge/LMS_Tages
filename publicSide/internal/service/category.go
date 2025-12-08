@@ -3,14 +3,17 @@ package service
 import (
 	"context"
 	"math"
+	"strings"
 
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/dto"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/repository"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apperrors"
 )
 
 type CategoryService interface {
-	GetAll(ctx context.Context, page, limit int) ([]domain.Category, domain.Pagination, error)
-	GetByID(ctx context.Context, id string) (domain.Category, error)
+	GetAll(ctx context.Context, page, limit int) ([]dto.CategoryDTO, domain.Pagination, error)
+	GetByID(ctx context.Context, id string) (dto.CategoryDTO, error)
 }
 
 type categoryService struct {
@@ -21,7 +24,16 @@ func NewCategoryService(repo repository.CategoryRepository) CategoryService {
 	return &categoryService{repo: repo}
 }
 
-func (s *categoryService) GetAll(ctx context.Context, page, limit int) ([]domain.Category, domain.Pagination, error) {
+func toCategoryDTO(category domain.Category) dto.CategoryDTO {
+	return dto.CategoryDTO{
+		ID:        category.ID,
+		Title:     category.Title,
+		CreatedAt: category.CreatedAt,
+		UpdatedAt: category.UpdatedAt,
+	}
+}
+
+func (s *categoryService) GetAll(ctx context.Context, page, limit int) ([]dto.CategoryDTO, domain.Pagination, error) {
 	if page <= 0 {
 		page = 1
 	}
@@ -31,7 +43,12 @@ func (s *categoryService) GetAll(ctx context.Context, page, limit int) ([]domain
 
 	categories, total, err := s.repo.GetAll(ctx, page, limit)
 	if err != nil {
-		return nil, domain.Pagination{}, err
+		return nil, domain.Pagination{}, apperrors.NewInternal()
+	}
+
+	categoryDTOs := make([]dto.CategoryDTO, len(categories))
+	for i, category := range categories {
+		categoryDTOs[i] = toCategoryDTO(category)
 	}
 
 	pagination := domain.Pagination{
@@ -41,9 +58,16 @@ func (s *categoryService) GetAll(ctx context.Context, page, limit int) ([]domain
 		Pages: int(math.Ceil(float64(total) / float64(limit))),
 	}
 
-	return categories, pagination, nil
+	return categoryDTOs, pagination, nil
 }
 
-func (s *categoryService) GetByID(ctx context.Context, id string) (domain.Category, error) {
-	return s.repo.GetByID(ctx, id)
+func (s *categoryService) GetByID(ctx context.Context, id string) (dto.CategoryDTO, error) {
+	category, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return dto.CategoryDTO{}, apperrors.NewNotFound("Category")
+		}
+		return dto.CategoryDTO{}, apperrors.NewInternal()
+	}
+	return toCategoryDTO(category), nil
 }

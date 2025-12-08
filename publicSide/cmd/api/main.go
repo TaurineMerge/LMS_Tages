@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/middleware"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/repository"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/service"
 	"github.com/gofiber/fiber/v2"
@@ -12,8 +13,10 @@ import (
 )
 
 func main() {
-	// Create a new Fiber app
-	app := fiber.New()
+	// Create a new Fiber app with a custom error handler
+	app := fiber.New(fiber.Config{
+		ErrorHandler: middleware.GlobalErrorHandler,
+	})
 
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     "http://localhost:3000, http://localhost:9090",
@@ -21,7 +24,7 @@ func main() {
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
 		AllowCredentials: true,
 	}))
-	
+
 	// Serve the `doc` folder so swagger.json is reachable at `/doc/swagger.json`
 	app.Static("/doc", "./doc/swagger")
 

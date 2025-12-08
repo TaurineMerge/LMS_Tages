@@ -18,10 +18,9 @@ func RegisterRoutes(
 	courses := api.Group("/courses")
 	courses.Get("/", courseHandler.GetAllCourses)
 	courses.Get("/:course_id", courseHandler.GetCourseByID)
+
+	// Lessons
 	courses.Get("/:course_id/lessons", lessonHandler.GetLessonsByCourseID)
 	courses.Get("/:course_id/lessons/:lesson_id", lessonHandler.GetLessonByID)
 
-	// Lessons (only accessible through courses)
-	// The swagger implies that there's no top-level /lessons endpoint,
-	// so we only register the nested ones under courses.
 }

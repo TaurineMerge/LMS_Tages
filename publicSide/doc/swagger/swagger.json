@@ -67,12 +67,30 @@
                         "description": "Неверные параметры запроса",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "INVALID_PARAMETERS",
+                                    "message": "Invalid page or limit parameter"
+                                }
+                            }
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "INTERNAL_SERVER_ERROR",
+                                    "message": "An unexpected error occurred"
+                                }
+                            }
                         }
                     }
                 }
@@ -105,18 +123,45 @@
                         "description": "Неверный формат ID",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "INVALID_UUID",
+                                    "message": "Invalid category ID format"
+                                }
+                            }
                         }
                     },
                     "404": {
                         "description": "Категория не найдена",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "NOT_FOUND",
+                                    "message": "Category not found"
+                                }
+                            }
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "INTERNAL_SERVER_ERROR",
+                                    "message": "An unexpected error occurred"
+                                }
+                            }
                         }
                     }
                 }
@@ -167,18 +212,45 @@
                         "description": "Неверный формат ID или параметры запроса",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "INVALID_PARAMETERS",
+                                    "message": "Invalid category ID or pagination parameters"
+                                }
+                            }
                         }
                     },
                     "404": {
                         "description": "Категория не найдена",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "NOT_FOUND",
+                                    "message": "Category not found"
+                                }
+                            }
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "INTERNAL_SERVER_ERROR",
+                                    "message": "An unexpected error occurred"
+                                }
+                            }
                         }
                     }
                 }
@@ -220,12 +292,30 @@
                         "description": "Неверные параметры запроса",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "INVALID_PARAMETERS",
+                                    "message": "Invalid page or limit parameter"
+                                }
+                            }
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "INTERNAL_SERVER_ERROR",
+                                    "message": "An unexpected error occurred"
+                                }
+                            }
                         }
                     }
                 }
@@ -258,18 +348,45 @@
                         "description": "Неверный формат ID",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "INVALID_UUID",
+                                    "message": "Invalid course ID format"
+                                }
+                            }
                         }
                     },
                     "404": {
                         "description": "Курс не найден",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "NOT_FOUND",
+                                    "message": "Course not found"
+                                }
+                            }
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "INTERNAL_SERVER_ERROR",
+                                    "message": "An unexpected error occurred"
+                                }
+                            }
                         }
                     }
                 }
@@ -320,18 +437,45 @@
                         "description": "Неверный формат ID или параметры запроса",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "INVALID_PARAMETERS",
+                                    "message": "Invalid course ID or pagination parameters"
+                                }
+                            }
                         }
                     },
                     "404": {
                         "description": "Курс не найден",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "NOT_FOUND",
+                                    "message": "Course not found"
+                                }
+                            }
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "INTERNAL_SERVER_ERROR",
+                                    "message": "An unexpected error occurred"
+                                }
+                            }
                         }
                     }
                 }
@@ -372,18 +516,45 @@
                         "description": "Неверный формат ID",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "INVALID_UUID",
+                                    "message": "Invalid course ID or lesson ID format"
+                                }
+                            }
                         }
                     },
                     "404": {
                         "description": "Курс или урок не найден",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "NOT_FOUND",
+                                    "message": "Course or lesson not found"
+                                }
+                            }
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "INTERNAL_SERVER_ERROR",
+                                    "message": "An unexpected error occurred"
+                                }
+                            }
                         }
                     }
                 }
@@ -393,7 +564,7 @@
     "definitions": {
         "CategoryDTO": {
             "type": "object",
-            "description": "Объект категории",
+            "description": "Объект категории без списка курсов",
             "properties": {
                 "id": {
                     "type": "string",
@@ -428,7 +599,7 @@
         },
         "CourseDTO": {
             "type": "object",
-            "description": "Объект курса",
+            "description": "Объект курса без списка уроков",
             "properties": {
                 "id": {
                     "type": "string",
@@ -487,7 +658,7 @@
         },
         "LessonDTO": {
             "type": "object",
-            "description": "Объект урока (краткая информация)",
+            "description": "Объект урока без контента",
             "properties": {
                 "id": {
                     "type": "string",
@@ -529,7 +700,7 @@
         },
         "LessonDTODetailed": {
             "type": "object",
-            "description": "Объект урока (детальная информация)",
+            "description": "Объект урока вместе с контентом",
             "properties": {
                 "id": {
                     "type": "string",

@@ -1,10 +1,9 @@
 package handler
 
 import (
-	"strings"
-
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/dto"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/service"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apperrors"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
@@ -20,36 +19,21 @@ func NewLessonHandler(s service.LessonService) *LessonHandler {
 func (h *LessonHandler) GetLessonsByCourseID(c *fiber.Ctx) error {
 	courseID := c.Params("course_id")
 	if _, err := uuid.Parse(courseID); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
-			Status: "error",
-			Error:  dto.ErrorDetail{Code: "INVALID_ID", Message: "Invalid course ID format"},
-		})
+		return apperrors.NewInvalidUUID()
 	}
 
 	var query dto.PaginationQuery
 	if err := c.QueryParser(&query); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
-			Status: "error",
-			Error:  dto.ErrorDetail{Code: "INVALID_REQUEST", Message: "Invalid query parameters"},
-		})
+		return apperrors.NewInvalidRequest("")
 	}
 
 	lessons, pagination, err := h.service.GetAllByCourseID(c.Context(), courseID, query.Page, query.Limit)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			return c.Status(fiber.StatusNotFound).JSON(dto.ErrorResponse{
-				Status: "error",
-				Error:  dto.ErrorDetail{Code: "NOT_FOUND", Message: err.Error()},
-			})
-		}
-		return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{
-			Status: "error",
-			Error:  dto.ErrorDetail{Code: "INTERNAL_ERROR", Message: "Internal server error"},
-		})
+		return err
 	}
 
 	return c.Status(fiber.StatusOK).JSON(dto.SuccessResponse{
-		Status: "success",
+		Status: dto.StatusSuccess,
 		Data: dto.PaginatedLessonsData{
 			Items:      lessons,
 			Pagination: pagination,
@@ -60,47 +44,26 @@ func (h *LessonHandler) GetLessonsByCourseID(c *fiber.Ctx) error {
 func (h *LessonHandler) GetLessonByID(c *fiber.Ctx) error {
 	courseID := c.Params("course_id")
 	if _, err := uuid.Parse(courseID); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
-			Status: "error",
-			Error:  dto.ErrorDetail{Code: "INVALID_ID", Message: "Invalid course ID format"},
-		})
+		return apperrors.NewInvalidUUID()
 	}
 
 	lessonID := c.Params("lesson_id")
 	if _, err := uuid.Parse(lessonID); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
-			Status: "error",
-			Error:  dto.ErrorDetail{Code: "INVALID_ID", Message: "Invalid lesson ID format"},
-		})
+		return apperrors.NewInvalidUUID()
 	}
-
-	// We could also validate that the lesson belongs to the course, but the swagger doesn't require it
-	// and our mock repo doesn't support that check easily.
 
 	lesson, err := h.service.GetByID(c.Context(), lessonID)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			return c.Status(fiber.StatusNotFound).JSON(dto.ErrorResponse{
-				Status: "error",
-				Error:  dto.ErrorDetail{Code: "NOT_FOUND", Message: err.Error()},
-			})
-		}
-		return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{
-			Status: "error",
-			Error:  dto.ErrorDetail{Code: "INTERNAL_ERROR", Message: "Internal server error"},
-		})
+		return err
 	}
 
 	// Ensure the lesson belongs to the course
 	if lesson.CourseID != courseID {
-		return c.Status(fiber.StatusNotFound).JSON(dto.ErrorResponse{
-			Status: "error",
-			Error:  dto.ErrorDetail{Code: "NOT_FOUND", Message: "lesson not found in this course"},
-		})
+		return apperrors.NewNotFound("Lesson in this course")
 	}
 
 	return c.Status(fiber.StatusOK).JSON(dto.SuccessResponse{
-		Status: "success",
+		Status: dto.StatusSuccess,
 		Data:   lesson,
 	})
 }

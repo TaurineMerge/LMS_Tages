@@ -10,7 +10,6 @@ type ContentBlock struct {
 	Alt         string `json:"alt,omitempty"`
 }
 
-// Lesson represents a lesson entity.
 type Lesson struct {
 	ID        string         `json:"id"`
 	Title     string         `json:"title"`

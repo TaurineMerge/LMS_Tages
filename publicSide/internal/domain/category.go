@@ -2,7 +2,6 @@ package domain
 
 import "time"
 
-// Category represents a category entity.
 type Category struct {
 	ID        string    `json:"id"`
 	Title     string    `json:"title"`
