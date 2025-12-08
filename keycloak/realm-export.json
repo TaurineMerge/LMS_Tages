@@ -1,0 +1,65 @@
+{
+  "id": "admin",
+  "realm": "admin",
+  "enabled": true,
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "sslRequired": "none",
+  "clients": [
+    {
+      "clientId": "adminapp",
+      "name": "Admin App",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "rrB0Sls7BcFss14Kn2gk9GqpojrTzBYs",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": [
+        "*"
+      ],
+      "webOrigins": [
+        "*"
+      ],
+      "attributes": {
+        "access.token.lifespan": "300"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "adminapp",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "adminapp",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-admin"
+      ]
+    }
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "default-roles-admin",
+        "description": "Default roles for admin realm",
+        "composite": true,
+        "composites": {
+          "realm": [],
+          "client": {}
+        },
+        "clientRole": false,
+        "containerId": "admin"
+      }
+    ]
+  }
+}
+
