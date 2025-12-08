@@ -1,7 +1,7 @@
 """Custom exceptions for the application."""
 
 
-class AppException(Exception):
+class app_exception(Exception):
     """Base application exception."""
     
     def __init__(self, message: str, status_code: int = 400):
@@ -10,7 +10,7 @@ class AppException(Exception):
         super().__init__(self.message)
 
 
-class NotFoundError(AppException):
+class not_found_error(app_exception):
     """Resource not found exception."""
     
     def __init__(self, resource: str, identifier: str | None = None):
@@ -20,14 +20,14 @@ class NotFoundError(AppException):
         super().__init__(message, status_code=404)
 
 
-class ConflictError(AppException):
+class conflict_error(app_exception):
     """Conflict exception (e.g., duplicate resource)."""
     
     def __init__(self, message: str):
         super().__init__(message, status_code=409)
 
 
-class ValidationError(AppException):
+class validation_error(app_exception):
     """Validation error exception."""
     
     def __init__(self, message: str):

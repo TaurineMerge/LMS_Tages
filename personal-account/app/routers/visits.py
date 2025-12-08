@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query, status
 
-from app.schemas.visit import VisitCreate, VisitResponse
+from app.schemas.visit import visit_create, visit_response
 from app.services.visit import visit_service
 
 router = APIRouter(prefix="/visits", tags=["Visits"])
@@ -11,7 +11,7 @@ router = APIRouter(prefix="/visits", tags=["Visits"])
 
 @router.get(
     "",
-    response_model=list[VisitResponse],
+    response_model=list[visit_response],
     summary="Получить список посещений уроков",
     description="Возвращает список посещений с опциональной фильтрацией по студенту и уроку"
 )
@@ -25,7 +25,7 @@ async def get_visits(
 
 @router.get(
     "/{visit_id}",
-    response_model=VisitResponse,
+    response_model=visit_response,
     summary="Получить посещение по ID",
     description="Возвращает данные посещения по указанному ID"
 )
@@ -36,12 +36,12 @@ async def get_visit(visit_id: UUID):
 
 @router.post(
     "",
-    response_model=VisitResponse,
+    response_model=visit_response,
     status_code=status.HTTP_201_CREATED,
     summary="Зарегистрировать посещение урока",
     description="Регистрирует посещение урока студентом"
 )
-async def create_visit(visit: VisitCreate):
+async def create_visit(visit: visit_create):
     """Create a new visit record."""
     return await visit_service.create_visit(visit)
 

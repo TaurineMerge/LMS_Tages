@@ -4,19 +4,19 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
 
-class VisitBase(BaseModel):
+class visit_base(BaseModel):
     """Base visit schema."""
     
     student_id: UUID
     lesson_id: UUID
 
 
-class VisitCreate(VisitBase):
+class visit_create(visit_base):
     """Schema for creating a visit."""
     pass
 
 
-class VisitResponse(VisitBase):
+class visit_response(visit_base):
     """Schema for visit response."""
     
     model_config = ConfigDict(from_attributes=True)

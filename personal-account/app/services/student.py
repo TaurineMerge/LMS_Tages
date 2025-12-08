@@ -2,68 +2,73 @@
 from uuid import UUID
 
 from app.repositories.student import student_repository
-from app.schemas.student import StudentCreate, StudentUpdate, StudentResponse
-from app.schemas.common import PaginatedResponse
-from app.exceptions import NotFoundError, ConflictError
+from app.schemas.student import student_create, student_update, student_response
+from app.schemas.common import paginated_response
+from app.exceptions import not_found_error, conflict_error
+from app.telemetry import traced
 
 
-class StudentService:
+class student_service:
     """Service for student business logic."""
     
     def __init__(self):
         self.repository = student_repository
     
+    @traced()
     async def get_students(
         self, 
         page: int = 1, 
         limit: int = 20
-    ) -> PaginatedResponse[StudentResponse]:
+    ) -> paginated_response[student_response]:
         """Get paginated list of students."""
         students, total = await self.repository.get_paginated(page, limit)
         
-        return PaginatedResponse(
-            data=[StudentResponse(**s) for s in students],
+        return paginated_response(
+            data=[student_response(**s) for s in students],
             total=total,
             page=page,
             limit=limit
         )
     
-    async def get_student(self, student_id: UUID) -> StudentResponse:
+    @traced()
+    async def get_student(self, student_id: UUID) -> student_response:
         """Get student by ID."""
         student = await self.repository.get_by_id(student_id)
         
         if not student:
-            raise NotFoundError("Student", str(student_id))
+            raise not_found_error("Student", str(student_id))
         
-        return StudentResponse(**student)
+        return student_response(**student)
     
-    async def create_student(self, data: StudentCreate) -> StudentResponse:
+    @traced()
+    async def create_student(self, data: student_create) -> student_response:
         """Create a new student."""
         # Check for duplicate email
         if await self.repository.email_exists(data.email):
-            raise ConflictError(f"Student with email '{data.email}' already exists")
+            raise conflict_error(f"Student with email '{data.email}' already exists")
         
         student = await self.repository.create(data.model_dump())
         
         if not student:
             raise Exception("Failed to create student")
         
-        return StudentResponse(**student)
+        return student_response(**student)
     
+    @traced()
     async def update_student(
         self, 
         student_id: UUID, 
-        data: StudentUpdate
-    ) -> StudentResponse:
+        data: student_update
+    ) -> student_response:
         """Update student by ID."""
         # Check if student exists
         existing = await self.repository.get_by_id(student_id)
         if not existing:
-            raise NotFoundError("Student", str(student_id))
+            raise not_found_error("Student", str(student_id))
         
         # Check for email conflict if email is being updated
         if data.email and await self.repository.email_exists(data.email, student_id):
-            raise ConflictError(f"Email '{data.email}' is already in use")
+            raise conflict_error(f"Email '{data.email}' is already in use")
         
         student = await self.repository.update(
             student_id, 
@@ -73,15 +78,16 @@ class StudentService:
         if not student:
             raise Exception("Failed to update student")
         
-        return StudentResponse(**student)
+        return student_response(**student)
     
+    @traced()
     async def delete_student(self, student_id: UUID) -> bool:
         """Delete student by ID."""
         if not await self.repository.exists(student_id):
-            raise NotFoundError("Student", str(student_id))
+            raise not_found_error("Student", str(student_id))
         
         return await self.repository.delete(student_id)
 
 
 # Singleton instance
-student_service = StudentService()
+student_service = student_service()

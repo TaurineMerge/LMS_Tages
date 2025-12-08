@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query, status
 
-from app.schemas.certificate import CertificateCreate, CertificateResponse
+from app.schemas.certificate import certificate_create, certificate_response
 from app.services.certificate import certificate_service
 
 router = APIRouter(prefix="/certificates", tags=["Certificates"])
@@ -11,7 +11,7 @@ router = APIRouter(prefix="/certificates", tags=["Certificates"])
 
 @router.get(
     "",
-    response_model=list[CertificateResponse],
+    response_model=list[certificate_response],
     summary="Получить список сертификатов",
     description="Возвращает список сертификатов с опциональной фильтрацией по студенту и курсу"
 )
@@ -25,7 +25,7 @@ async def get_certificates(
 
 @router.get(
     "/{certificate_id}",
-    response_model=CertificateResponse,
+    response_model=certificate_response,
     summary="Получить сертификат по ID",
     description="Возвращает данные сертификата по указанному ID"
 )
@@ -36,12 +36,12 @@ async def get_certificate(certificate_id: UUID):
 
 @router.post(
     "",
-    response_model=CertificateResponse,
+    response_model=certificate_response,
     status_code=status.HTTP_201_CREATED,
     summary="Создать новый сертификат",
     description="Создает новый сертификат для студента"
 )
-async def create_certificate(certificate: CertificateCreate):
+async def create_certificate(certificate: certificate_create):
     """Create a new certificate."""
     return await certificate_service.create_certificate(certificate)
 

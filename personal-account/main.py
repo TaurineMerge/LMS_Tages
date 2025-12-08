@@ -5,10 +5,17 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.logging import LoggingInstrumentor
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 from app.config import get_settings
 from app.database import init_db_pool, close_db_pool
-from app.exceptions import AppException
+from app.exceptions import app_exception
 from app.routers import students, certificates, visits, health
 
 # Configure logging
@@ -17,6 +24,37 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
+
+_TRACING_CONFIGURED = False
+_LOGGING_INSTRUMENTED = False
+
+
+def configure_tracing() -> None:
+    """Configure OpenTelemetry tracing once per process."""
+    global _TRACING_CONFIGURED, _LOGGING_INSTRUMENTED
+    if _TRACING_CONFIGURED:
+        return
+
+    try:
+        resource = Resource.create({"service.name": settings.OTEL_SERVICE_NAME})
+        provider = TracerProvider(resource=resource)
+        exporter = OTLPSpanExporter(
+            endpoint=settings.OTEL_EXPORTER_OTLP_ENDPOINT,
+            insecure=settings.OTEL_EXPORTER_OTLP_INSECURE,
+        )
+        provider.add_span_processor(BatchSpanProcessor(exporter))
+        trace.set_tracer_provider(provider)
+        if not _LOGGING_INSTRUMENTED:
+            LoggingInstrumentor().instrument(set_logging_format=False)
+            _LOGGING_INSTRUMENTED = True
+        _TRACING_CONFIGURED = True
+        logger.info(
+            "OpenTelemetry tracing configured for %s",
+            settings.OTEL_SERVICE_NAME,
+        )
+    except Exception as exc:  # pragma: no cover - observability optional
+        logger.warning("Failed to configure OpenTelemetry tracing: %s", exc)
 
 
 @asynccontextmanager
@@ -36,6 +74,7 @@ async def lifespan(app: FastAPI):
 
 
 settings = get_settings()
+configure_tracing()
 
 app = FastAPI(
     title="Personal Account API",
@@ -58,8 +97,21 @@ app.add_middleware(
 )
 
 
-@app.exception_handler(AppException)
-async def app_exception_handler(request: Request, exc: AppException):
+@app.middleware("http")
+async def add_trace_headers(request: Request, call_next):
+    response = await call_next(request)
+    span = trace.get_current_span()
+    span_context = span.get_span_context()
+    if span_context and span_context.is_valid:
+        trace_id = format(span_context.trace_id, "032x")
+        span_id = format(span_context.span_id, "016x")
+        response.headers["X-Trace-Id"] = trace_id
+        response.headers["X-Span-Id"] = span_id
+    return response
+
+
+@app.exception_handler(app_exception)
+async def app_exception_handler(request: Request, exc: app_exception):
     """Handle custom application exceptions."""
     return JSONResponse(
         status_code=exc.status_code,
@@ -82,6 +134,8 @@ app.include_router(health.router)
 app.include_router(students.router, prefix=settings.API_PREFIX)
 app.include_router(certificates.router, prefix=settings.API_PREFIX)
 app.include_router(visits.router, prefix=settings.API_PREFIX)
+
+FastAPIInstrumentor.instrument_app(app, tracer_provider=trace.get_tracer_provider())
 
 
 @app.get("/")

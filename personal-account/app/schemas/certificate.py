@@ -2,24 +2,33 @@
 from datetime import date
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, FieldValidationInfo, field_validator
+
+from app.schemas.validators import ensure_safe_string
 
 
-class CertificateBase(BaseModel):
+class certificate_base(BaseModel):
     """Base certificate schema."""
     
     content: str | None = None
     student_id: UUID
     course_id: UUID
 
+    @field_validator("content", mode="before")
+    @classmethod
+    def _validate_content(
+        cls, value: str | None, info: FieldValidationInfo
+    ) -> str | None:
+        return ensure_safe_string(value, info.field_name)
 
-class CertificateCreate(CertificateBase):
+
+class certificate_create(certificate_base):
     """Schema for creating a certificate."""
     
     test_attempt_id: UUID | None = None
 
 
-class CertificateResponse(BaseModel):
+class certificate_response(BaseModel):
     """Schema for certificate response."""
     
     model_config = ConfigDict(from_attributes=True)

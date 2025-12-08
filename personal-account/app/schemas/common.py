@@ -5,7 +5,7 @@ from pydantic import BaseModel
 T = TypeVar("T")
 
 
-class PaginatedResponse(BaseModel, Generic[T]):
+class paginated_response(BaseModel, Generic[T]):
     """Paginated response schema."""
     
     data: list[T]
@@ -14,13 +14,13 @@ class PaginatedResponse(BaseModel, Generic[T]):
     limit: int
 
 
-class ErrorResponse(BaseModel):
+class error_response(BaseModel):
     """Error response schema."""
     
     error: str
 
 
-class MessageResponse(BaseModel):
+class message_response(BaseModel):
     """Simple message response."""
     
     message: str

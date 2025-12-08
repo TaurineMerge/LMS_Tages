@@ -3,10 +3,19 @@ from datetime import date, datetime
 from uuid import UUID
 from typing import Any
 
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    FieldValidationInfo,
+    field_validator,
+)
+
+from app.schemas.validators import ensure_safe_mapping, ensure_safe_string
 
 
-class StudentBase(BaseModel):
+class student_base(BaseModel):
     """Base student schema with common fields."""
     
     name: str = Field(..., min_length=1, max_length=100, description="Имя студента")
@@ -17,13 +26,34 @@ class StudentBase(BaseModel):
     email: EmailStr = Field(..., description="Email адрес")
     phone: str | None = Field(None, max_length=20, description="Номер телефона")
 
+    @field_validator("name", "surname", "avatar", "phone", mode="before")
+    @classmethod
+    def _validate_safe_strings(
+        cls, value: str | None, info: FieldValidationInfo
+    ) -> str | None:
+        return ensure_safe_string(value, info.field_name)
 
-class StudentCreate(StudentBase):
+    @field_validator("email", mode="before")
+    @classmethod
+    def _validate_email_string(
+        cls, value: str | None, info: FieldValidationInfo
+    ) -> str | None:
+        return ensure_safe_string(value, info.field_name)
+
+    @field_validator("contacts", mode="before")
+    @classmethod
+    def _validate_contacts(
+        cls, value: dict[str, Any] | None, info: FieldValidationInfo
+    ) -> dict[str, Any] | None:
+        return ensure_safe_mapping(value, info.field_name)
+
+
+class student_create(student_base):
     """Schema for creating a student."""
     pass
 
 
-class StudentUpdate(BaseModel):
+class student_update(BaseModel):
     """Schema for updating a student. All fields are optional."""
     
     model_config = ConfigDict(extra="forbid")
@@ -36,8 +66,29 @@ class StudentUpdate(BaseModel):
     email: EmailStr | None = None
     phone: str | None = Field(None, max_length=20)
 
+    @field_validator("name", "surname", "avatar", "phone", mode="before")
+    @classmethod
+    def _validate_update_strings(
+        cls, value: str | None, info: FieldValidationInfo
+    ) -> str | None:
+        return ensure_safe_string(value, info.field_name)
 
-class StudentResponse(StudentBase):
+    @field_validator("email", mode="before")
+    @classmethod
+    def _validate_update_email(
+        cls, value: str | None, info: FieldValidationInfo
+    ) -> str | None:
+        return ensure_safe_string(value, info.field_name)
+
+    @field_validator("contacts", mode="before")
+    @classmethod
+    def _validate_update_contacts(
+        cls, value: dict[str, Any] | None, info: FieldValidationInfo
+    ) -> dict[str, Any] | None:
+        return ensure_safe_mapping(value, info.field_name)
+
+
+class student_response(student_base):
     """Schema for student response."""
     
     model_config = ConfigDict(from_attributes=True)
