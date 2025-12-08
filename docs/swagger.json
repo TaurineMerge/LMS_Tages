@@ -1,0 +1,1015 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Education Platform API",
+    "description": "API для системы онлайн образования (синхронизировано с БД)",
+    "version": "1.0.0"
+  },
+  "host": "localhost",
+  "basePath": "/api/v1",
+  "schemes": ["https", "http"],
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
+
+  "tags": [
+    { "name": "Health", "description": "Проверка состояния сервиса" },
+    { "name": "Students", "description": "personal_account.student_s" },
+    { "name": "Categories", "description": "knowledge_base.category_d" },
+    { "name": "Courses", "description": "knowledge_base.course_b" },
+    { "name": "Lessons", "description": "knowledge_base.lesson_d" },
+    { "name": "Tests", "description": "tests.test_d" },
+    { "name": "Questions", "description": "tests.question_d" },
+    { "name": "Answers", "description": "tests.answer_d" },
+    { "name": "TestAttempts", "description": "tests.test_attempt_b" },
+    { "name": "Certificates", "description": "personal_account.certificate_b" },
+    { "name": "Visits", "description": "personal_account.visit_students_for_lessons" }
+  ],
+
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Проверка здоровья сервиса",
+        "responses": {
+          "200": {
+            "description": "Сервис работает",
+            "schema": { "$ref": "#/definitions/HealthResponse" }
+          }
+        }
+      }
+    },
+
+    "/students": {
+      "get": {
+        "tags": ["Students"],
+        "summary": "Получить список студентов",
+        "parameters": [
+          { "name": "page", "in": "query", "type": "integer", "default": 1 },
+          { "name": "limit", "in": "query", "type": "integer", "default": 20 },
+          { "name": "email", "in": "query", "type": "string", "description": "Фильтр по email" }
+        ],
+        "responses": {
+          "200": { "schema": { "$ref": "#/definitions/PaginatedStudents" } }
+        }
+      },
+      "post": {
+        "tags": ["Students"],
+        "summary": "Создать студента",
+        "parameters": [
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/StudentCreate" } }
+        ],
+        "responses": {
+          "201": { "schema": { "$ref": "#/definitions/Student" } },
+          "400": { "schema": { "$ref": "#/definitions/ErrorResponse" } }
+        }
+      }
+    },
+
+    "/students/{student_id}": {
+      "get": {
+        "tags": ["Students"],
+        "summary": "Получить студента по ID",
+        "parameters": [
+          { "name": "student_id", "in": "path", "required": true, "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "200": { "schema": { "$ref": "#/definitions/Student" } },
+          "404": { "schema": { "$ref": "#/definitions/ErrorResponse" } }
+        }
+      },
+      "put": {
+        "tags": ["Students"],
+        "summary": "Обновить студента",
+        "parameters": [
+          { "name": "student_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/StudentUpdate" } }
+        ],
+        "responses": {
+          "200": { "schema": { "$ref": "#/definitions/Student" } },
+          "404": { "schema": { "$ref": "#/definitions/ErrorResponse" } }
+        }
+      },
+      "delete": {
+        "tags": ["Students"],
+        "summary": "Удалить студента",
+        "parameters": [
+          { "name": "student_id", "in": "path", "required": true, "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "204": { "description": "Удалён" },
+          "404": { "schema": { "$ref": "#/definitions/ErrorResponse" } }
+        }
+      }
+    },
+
+    "/students/{student_id}/certificates": {
+      "get": {
+        "tags": ["Certificates"],
+        "summary": "Получить сертификаты студента",
+        "parameters": [
+          { "name": "student_id", "in": "path", "required": true, "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "200": { "schema": { "type": "array", "items": { "$ref": "#/definitions/Certificate" } } }
+        }
+      }
+    },
+
+    "/students/{student_id}/visits": {
+      "get": {
+        "tags": ["Visits"],
+        "summary": "Получить посещения студента",
+        "parameters": [
+          { "name": "student_id", "in": "path", "required": true, "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "200": { "schema": { "type": "array", "items": { "$ref": "#/definitions/Visit" } } }
+        }
+      }
+    },
+
+    "/students/{student_id}/test-attempts": {
+      "get": {
+        "tags": ["TestAttempts"],
+        "summary": "Получить попытки тестов студента",
+        "parameters": [
+          { "name": "student_id", "in": "path", "required": true, "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "200": { "schema": { "type": "array", "items": { "$ref": "#/definitions/TestAttempt" } } }
+        }
+      }
+    },
+
+    "/categories": {
+      "get": {
+        "tags": ["Categories"],
+        "summary": "Получить список категорий",
+        "responses": {
+          "200": { "schema": { "type": "array", "items": { "$ref": "#/definitions/Category" } } }
+        }
+      },
+      "post": {
+        "tags": ["Categories"],
+        "summary": "Создать категорию",
+        "parameters": [
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/CategoryCreate" } }
+        ],
+        "responses": {
+          "201": { "schema": { "$ref": "#/definitions/Category" } }
+        }
+      }
+    },
+
+    "/categories/{category_id}": {
+      "get": {
+        "tags": ["Categories"],
+        "summary": "Получить категорию по ID",
+        "parameters": [
+          { "name": "category_id", "in": "path", "required": true, "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "200": { "schema": { "$ref": "#/definitions/Category" } },
+          "404": { "schema": { "$ref": "#/definitions/ErrorResponse" } }
+        }
+      },
+      "put": {
+        "tags": ["Categories"],
+        "summary": "Обновить категорию",
+        "parameters": [
+          { "name": "category_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/CategoryUpdate" } }
+        ],
+        "responses": {
+          "200": { "schema": { "$ref": "#/definitions/Category" } }
+        }
+      },
+      "delete": {
+        "tags": ["Categories"],
+        "summary": "Удалить категорию",
+        "description": "Нельзя удалить категорию, если есть связанные курсы (ON DELETE RESTRICT)",
+        "parameters": [
+          { "name": "category_id", "in": "path", "required": true, "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "204": { "description": "Удалена" },
+          "409": { "description": "Есть связанные курсы", "schema": { "$ref": "#/definitions/ErrorResponse" } }
+        }
+      }
+    },
+
+    "/categories/{category_id}/courses": {
+      "get": {
+        "tags": ["Courses"],
+        "summary": "Получить курсы категории",
+        "parameters": [
+          { "name": "category_id", "in": "path", "required": true, "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "200": { "schema": { "type": "array", "items": { "$ref": "#/definitions/Course" } } }
+        }
+      }
+    },
+
+    "/courses": {
+      "get": {
+        "tags": ["Courses"],
+        "summary": "Получить список курсов",
+        "parameters": [
+          { "name": "level", "in": "query", "type": "string", "enum": ["hard", "medium", "easy"] },
+          { "name": "visibility", "in": "query", "type": "string", "enum": ["draft", "public", "private"] },
+          { "name": "category_id", "in": "query", "type": "string", "format": "uuid" },
+          { "name": "page", "in": "query", "type": "integer", "default": 1 },
+          { "name": "limit", "in": "query", "type": "integer", "default": 20 }
+        ],
+        "responses": {
+          "200": { "schema": { "$ref": "#/definitions/PaginatedCourses" } }
+        }
+      },
+      "post": {
+        "tags": ["Courses"],
+        "summary": "Создать курс",
+        "parameters": [
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/CourseCreate" } }
+        ],
+        "responses": {
+          "201": { "schema": { "$ref": "#/definitions/Course" } }
+        }
+      }
+    },
+
+    "/courses/{course_id}": {
+      "get": {
+        "tags": ["Courses"],
+        "summary": "Получить курс по ID",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "200": { "schema": { "$ref": "#/definitions/Course" } },
+          "404": { "schema": { "$ref": "#/definitions/ErrorResponse" } }
+        }
+      },
+      "put": {
+        "tags": ["Courses"],
+        "summary": "Обновить курс",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/CourseUpdate" } }
+        ],
+        "responses": {
+          "200": { "schema": { "$ref": "#/definitions/Course" } }
+        }
+      },
+      "delete": {
+        "tags": ["Courses"],
+        "summary": "Удалить курс",
+        "description": "Каскадно удаляет уроки, тесты, сертификаты",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "204": { "description": "Удалён" }
+        }
+      }
+    },
+
+    "/courses/{course_id}/lessons": {
+      "get": {
+        "tags": ["Lessons"],
+        "summary": "Получить уроки курса",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "200": { "schema": { "type": "array", "items": { "$ref": "#/definitions/Lesson" } } }
+        }
+      },
+      "post": {
+        "tags": ["Lessons"],
+        "summary": "Создать урок в курсе",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/LessonCreate" } }
+        ],
+        "responses": {
+          "201": { "schema": { "$ref": "#/definitions/Lesson" } }
+        }
+      }
+    },
+
+    "/courses/{course_id}/lessons/{lesson_id}": {
+      "get": {
+        "tags": ["Lessons"],
+        "summary": "Получить урок по ID",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "lesson_id", "in": "path", "required": true, "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "200": { "schema": { "$ref": "#/definitions/Lesson" } },
+          "404": { "schema": { "$ref": "#/definitions/ErrorResponse" } }
+        }
+      },
+      "put": {
+        "tags": ["Lessons"],
+        "summary": "Обновить урок",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "lesson_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/LessonUpdate" } }
+        ],
+        "responses": {
+          "200": { "schema": { "$ref": "#/definitions/Lesson" } }
+        }
+      },
+      "delete": {
+        "tags": ["Lessons"],
+        "summary": "Удалить урок",
+        "description": "Каскадно удаляет посещения",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "lesson_id", "in": "path", "required": true, "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "204": { "description": "Удалён" }
+        }
+      }
+    },
+
+    "/courses/{course_id}/lessons/{lesson_id}/visits": {
+      "get": {
+        "tags": ["Visits"],
+        "summary": "Получить посещения урока",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "lesson_id", "in": "path", "required": true, "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "200": { "schema": { "type": "array", "items": { "$ref": "#/definitions/Visit" } } }
+        }
+      },
+      "post": {
+        "tags": ["Visits"],
+        "summary": "Зарегистрировать посещение урока",
+        "description": "Уникальная комбинация student_id + lesson_id",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "lesson_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/VisitCreate" } }
+        ],
+        "responses": {
+          "201": { "schema": { "$ref": "#/definitions/Visit" } },
+          "409": { "description": "Посещение уже существует", "schema": { "$ref": "#/definitions/ErrorResponse" } }
+        }
+      }
+    },
+
+    "/courses/{course_id}/tests": {
+      "get": {
+        "tags": ["Tests"],
+        "summary": "Получить тесты курса",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "200": { "schema": { "type": "array", "items": { "$ref": "#/definitions/Test" } } }
+        }
+      },
+      "post": {
+        "tags": ["Tests"],
+        "summary": "Создать тест в курсе",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/TestCreate" } }
+        ],
+        "responses": {
+          "201": { "schema": { "$ref": "#/definitions/Test" } }
+        }
+      }
+    },
+
+    "/courses/{course_id}/tests/{test_id}": {
+      "get": {
+        "tags": ["Tests"],
+        "summary": "Получить тест по ID",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "test_id", "in": "path", "required": true, "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "200": { "schema": { "$ref": "#/definitions/TestWithQuestions" } }
+        }
+      },
+      "put": {
+        "tags": ["Tests"],
+        "summary": "Обновить тест",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "test_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/TestUpdate" } }
+        ],
+        "responses": {
+          "200": { "schema": { "$ref": "#/definitions/Test" } }
+        }
+      },
+      "delete": {
+        "tags": ["Tests"],
+        "summary": "Удалить тест",
+        "description": "Каскадно удаляет вопросы, ответы, попытки",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "test_id", "in": "path", "required": true, "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "204": { "description": "Удалён" }
+        }
+      }
+    },
+
+    "/courses/{course_id}/tests/{test_id}/questions": {
+      "get": {
+        "tags": ["Questions"],
+        "summary": "Получить вопросы теста",
+        "description": "Сортировка по полю order",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "test_id", "in": "path", "required": true, "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "200": { "schema": { "type": "array", "items": { "$ref": "#/definitions/Question" } } }
+        }
+      },
+      "post": {
+        "tags": ["Questions"],
+        "summary": "Создать вопрос в тесте",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "test_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/QuestionCreate" } }
+        ],
+        "responses": {
+          "201": { "schema": { "$ref": "#/definitions/Question" } }
+        }
+      }
+    },
+
+    "/courses/{course_id}/tests/{test_id}/questions/{question_id}": {
+      "get": {
+        "tags": ["Questions"],
+        "summary": "Получить вопрос по ID",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "test_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "question_id", "in": "path", "required": true, "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "200": { "schema": { "$ref": "#/definitions/QuestionWithAnswers" } }
+        }
+      },
+      "put": {
+        "tags": ["Questions"],
+        "summary": "Обновить вопрос",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "test_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "question_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/QuestionUpdate" } }
+        ],
+        "responses": {
+          "200": { "schema": { "$ref": "#/definitions/Question" } }
+        }
+      },
+      "delete": {
+        "tags": ["Questions"],
+        "summary": "Удалить вопрос",
+        "description": "Каскадно удаляет ответы",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "test_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "question_id", "in": "path", "required": true, "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "204": { "description": "Удалён" }
+        }
+      }
+    },
+
+    "/courses/{course_id}/tests/{test_id}/questions/{question_id}/answers": {
+      "get": {
+        "tags": ["Answers"],
+        "summary": "Получить ответы на вопрос",
+        "description": "Сортировка по полю order",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "test_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "question_id", "in": "path", "required": true, "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "200": { "schema": { "type": "array", "items": { "$ref": "#/definitions/Answer" } } }
+        }
+      },
+      "post": {
+        "tags": ["Answers"],
+        "summary": "Создать ответ на вопрос",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "test_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "question_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/AnswerCreate" } }
+        ],
+        "responses": {
+          "201": { "schema": { "$ref": "#/definitions/Answer" } }
+        }
+      }
+    },
+
+    "/courses/{course_id}/tests/{test_id}/questions/{question_id}/answers/{answer_id}": {
+      "put": {
+        "tags": ["Answers"],
+        "summary": "Обновить ответ",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "test_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "question_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "answer_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/AnswerUpdate" } }
+        ],
+        "responses": {
+          "200": { "schema": { "$ref": "#/definitions/Answer" } }
+        }
+      },
+      "delete": {
+        "tags": ["Answers"],
+        "summary": "Удалить ответ",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "test_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "question_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "answer_id", "in": "path", "required": true, "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "204": { "description": "Удалён" }
+        }
+      }
+    },
+
+    "/courses/{course_id}/tests/{test_id}/attempts": {
+      "get": {
+        "tags": ["TestAttempts"],
+        "summary": "Получить попытки теста",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "test_id", "in": "path", "required": true, "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "200": { "schema": { "type": "array", "items": { "$ref": "#/definitions/TestAttempt" } } }
+        }
+      },
+      "post": {
+        "tags": ["TestAttempts"],
+        "summary": "Создать попытку прохождения теста",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "test_id", "in": "path", "required": true, "type": "string", "format": "uuid" },
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/TestAttemptCreate" } }
+        ],
+        "responses": {
+          "201": { "schema": { "$ref": "#/definitions/TestAttempt" } }
+        }
+      }
+    },
+
+    "/courses/{course_id}/certificates": {
+      "get": {
+        "tags": ["Certificates"],
+        "summary": "Получить сертификаты по курсу",
+        "parameters": [
+          { "name": "course_id", "in": "path", "required": true, "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "200": { "schema": { "type": "array", "items": { "$ref": "#/definitions/Certificate" } } }
+        }
+      }
+    },
+
+    "/certificates": {
+      "get": {
+        "tags": ["Certificates"],
+        "summary": "Получить все сертификаты",
+        "parameters": [
+          { "name": "student_id", "in": "query", "type": "string", "format": "uuid" },
+          { "name": "course_id", "in": "query", "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "200": { "schema": { "type": "array", "items": { "$ref": "#/definitions/Certificate" } } }
+        }
+      },
+      "post": {
+        "tags": ["Certificates"],
+        "summary": "Создать сертификат",
+        "parameters": [
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/CertificateCreate" } }
+        ],
+        "responses": {
+          "201": { "schema": { "$ref": "#/definitions/Certificate" } }
+        }
+      }
+    },
+
+    "/certificates/{certificate_id}": {
+      "get": {
+        "tags": ["Certificates"],
+        "summary": "Получить сертификат по ID",
+        "parameters": [
+          { "name": "certificate_id", "in": "path", "required": true, "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "200": { "schema": { "$ref": "#/definitions/Certificate" } }
+        }
+      },
+      "delete": {
+        "tags": ["Certificates"],
+        "summary": "Удалить сертификат",
+        "parameters": [
+          { "name": "certificate_id", "in": "path", "required": true, "type": "string", "format": "uuid" }
+        ],
+        "responses": {
+          "204": { "description": "Удалён" }
+        }
+      }
+    }
+  },
+
+  "definitions": {
+    "HealthResponse": {
+      "type": "object",
+      "properties": {
+        "status": { "type": "string", "example": "healthy" },
+        "database": { "type": "string", "example": "connected" },
+        "version": { "type": "string", "example": "1.0.0" }
+      }
+    },
+
+    "ErrorResponse": {
+      "type": "object",
+      "properties": {
+        "error": { "type": "string", "example": "Resource not found" },
+        "code": { "type": "string", "example": "NOT_FOUND" }
+      }
+    },
+
+    "PaginatedStudents": {
+      "type": "object",
+      "properties": {
+        "data": { "type": "array", "items": { "$ref": "#/definitions/Student" } },
+        "total": { "type": "integer" },
+        "page": { "type": "integer" },
+        "limit": { "type": "integer" },
+        "pages": { "type": "integer" }
+      }
+    },
+
+    "PaginatedCourses": {
+      "type": "object",
+      "properties": {
+        "data": { "type": "array", "items": { "$ref": "#/definitions/Course" } },
+        "total": { "type": "integer" },
+        "page": { "type": "integer" },
+        "limit": { "type": "integer" },
+        "pages": { "type": "integer" }
+      }
+    },
+
+    "Student": {
+      "type": "object",
+      "description": "personal_account.student_s",
+      "properties": {
+        "id": { "type": "string", "format": "uuid", "description": "PK, gen_random_uuid()" },
+        "name": { "type": "string", "maxLength": 100, "example": "Иван" },
+        "surname": { "type": "string", "maxLength": 100, "example": "Иванов" },
+        "birth_date": { "type": "string", "format": "date", "description": "nullable" },
+        "avatar": { "type": "string", "maxLength": 500, "description": "URL аватара, nullable" },
+        "contacts": { "type": "object", "additionalProperties": true, "description": "JSONB, default '{}'" },
+        "email": { "type": "string", "format": "email", "maxLength": 255, "description": "UNIQUE" },
+        "phone": { "type": "string", "maxLength": 20, "description": "nullable" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+
+    "StudentCreate": {
+      "type": "object",
+      "required": ["name", "surname", "email"],
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "surname": { "type": "string", "maxLength": 100 },
+        "birth_date": { "type": "string", "format": "date" },
+        "avatar": { "type": "string", "maxLength": 500 },
+        "contacts": { "type": "object", "additionalProperties": true },
+        "email": { "type": "string", "format": "email", "maxLength": 255 },
+        "phone": { "type": "string", "maxLength": 20 }
+      }
+    },
+
+    "StudentUpdate": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "surname": { "type": "string", "maxLength": 100 },
+        "birth_date": { "type": "string", "format": "date" },
+        "avatar": { "type": "string", "maxLength": 500 },
+        "contacts": { "type": "object", "additionalProperties": true },
+        "email": { "type": "string", "format": "email", "maxLength": 255 },
+        "phone": { "type": "string", "maxLength": 20 }
+      }
+    },
+
+    "Category": {
+      "type": "object",
+      "description": "knowledge_base.category_d",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "title": { "type": "string", "maxLength": 255 },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+
+    "CategoryCreate": {
+      "type": "object",
+      "required": ["title"],
+      "properties": {
+        "title": { "type": "string", "maxLength": 255 }
+      }
+    },
+
+    "CategoryUpdate": {
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 255 }
+      }
+    },
+
+    "Course": {
+      "type": "object",
+      "description": "knowledge_base.course_b",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "title": { "type": "string", "maxLength": 255 },
+        "description": { "type": "string", "description": "TEXT, nullable" },
+        "level": { "type": "string", "enum": ["hard", "medium", "easy"], "default": "medium" },
+        "category_id": { "type": "string", "format": "uuid", "description": "FK → category_d, NOT NULL" },
+        "visibility": { "type": "string", "enum": ["draft", "public", "private"], "default": "draft" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+
+    "CourseCreate": {
+      "type": "object",
+      "required": ["title", "category_id"],
+      "properties": {
+        "title": { "type": "string", "maxLength": 255 },
+        "description": { "type": "string" },
+        "level": { "type": "string", "enum": ["hard", "medium", "easy"], "default": "medium" },
+        "category_id": { "type": "string", "format": "uuid" },
+        "visibility": { "type": "string", "enum": ["draft", "public", "private"], "default": "draft" }
+      }
+    },
+
+    "CourseUpdate": {
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 255 },
+        "description": { "type": "string" },
+        "level": { "type": "string", "enum": ["hard", "medium", "easy"] },
+        "category_id": { "type": "string", "format": "uuid" },
+        "visibility": { "type": "string", "enum": ["draft", "public", "private"] }
+      }
+    },
+
+    "Lesson": {
+      "type": "object",
+      "description": "knowledge_base.lesson_d",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "title": { "type": "string", "maxLength": 255 },
+        "course_id": { "type": "string", "format": "uuid", "description": "FK → course_b, ON DELETE CASCADE" },
+        "content": { "type": "object", "additionalProperties": true, "description": "JSONB, default '{}'" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+
+    "LessonCreate": {
+      "type": "object",
+      "required": ["title"],
+      "properties": {
+        "title": { "type": "string", "maxLength": 255 },
+        "content": { "type": "object", "additionalProperties": true }
+      }
+    },
+
+    "LessonUpdate": {
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 255 },
+        "content": { "type": "object", "additionalProperties": true }
+      }
+    },
+
+    "Test": {
+      "type": "object",
+      "description": "tests.test_d",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "course_id": { "type": "string", "format": "uuid", "description": "FK → course_b, ON DELETE CASCADE" },
+        "title": { "type": "string", "maxLength": 255 },
+        "min_point": { "type": "integer", "default": 0, "description": "Минимальный балл для прохождения" },
+        "description": { "type": "string", "description": "TEXT, nullable" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+
+    "TestCreate": {
+      "type": "object",
+      "required": ["title"],
+      "properties": {
+        "title": { "type": "string", "maxLength": 255 },
+        "min_point": { "type": "integer", "default": 0 },
+        "description": { "type": "string" }
+      }
+    },
+
+    "TestUpdate": {
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 255 },
+        "min_point": { "type": "integer" },
+        "description": { "type": "string" }
+      }
+    },
+
+    "TestWithQuestions": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "course_id": { "type": "string", "format": "uuid" },
+        "title": { "type": "string" },
+        "min_point": { "type": "integer" },
+        "description": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" },
+        "questions": { "type": "array", "items": { "$ref": "#/definitions/QuestionWithAnswers" } }
+      }
+    },
+
+    "Question": {
+      "type": "object",
+      "description": "tests.question_d",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "test_id": { "type": "string", "format": "uuid", "description": "FK → test_d, ON DELETE CASCADE" },
+        "text_of_question": { "type": "string", "description": "TEXT, NOT NULL" },
+        "order": { "type": "integer", "default": 1, "description": "Порядок вопроса в тесте" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+
+    "QuestionCreate": {
+      "type": "object",
+      "required": ["text_of_question"],
+      "properties": {
+        "text_of_question": { "type": "string" },
+        "order": { "type": "integer", "default": 1 }
+      }
+    },
+
+    "QuestionUpdate": {
+      "type": "object",
+      "properties": {
+        "text_of_question": { "type": "string" },
+        "order": { "type": "integer" }
+      }
+    },
+
+    "QuestionWithAnswers": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "test_id": { "type": "string", "format": "uuid" },
+        "text_of_question": { "type": "string" },
+        "order": { "type": "integer" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" },
+        "answers": { "type": "array", "items": { "$ref": "#/definitions/Answer" } }
+      }
+    },
+
+    "Answer": {
+      "type": "object",
+      "description": "tests.answer_d",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "question_id": { "type": "string", "format": "uuid", "description": "FK → question_d, ON DELETE CASCADE" },
+        "text": { "type": "string", "description": "TEXT, NOT NULL" },
+        "score": { "type": "integer", "default": 0, "description": "Баллы за этот ответ" },
+        "order": { "type": "integer", "default": 1, "description": "Порядок ответа" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+
+    "AnswerCreate": {
+      "type": "object",
+      "required": ["text"],
+      "properties": {
+        "text": { "type": "string" },
+        "score": { "type": "integer", "default": 0 },
+        "order": { "type": "integer", "default": 1 }
+      }
+    },
+
+    "AnswerUpdate": {
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "score": { "type": "integer" },
+        "order": { "type": "integer" }
+      }
+    },
+
+    "TestAttempt": {
+      "type": "object",
+      "description": "tests.test_attempt_b",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "student_id": { "type": "string", "format": "uuid", "description": "FK → student_s, ON DELETE CASCADE" },
+        "test_id": { "type": "string", "format": "uuid", "description": "FK → test_d, ON DELETE CASCADE" },
+        "date_of_attempt": { "type": "string", "format": "date", "description": "Дата попытки, default CURRENT_DATE" },
+        "point": { "type": "integer", "default": 0, "description": "Набранные баллы" },
+        "result": { "type": "object", "additionalProperties": true, "description": "JSONB снапшот ответов" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+
+    "TestAttemptCreate": {
+      "type": "object",
+      "required": ["student_id"],
+      "properties": {
+        "student_id": { "type": "string", "format": "uuid" },
+        "date_of_attempt": { "type": "string", "format": "date" },
+        "point": { "type": "integer", "default": 0 },
+        "result": { "type": "object", "additionalProperties": true }
+      }
+    },
+
+    "Certificate": {
+      "type": "object",
+      "description": "personal_account.certificate_b",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "certificate_number": { "type": "integer", "description": "SERIAL UNIQUE, автогенерация" },
+        "created_at": { "type": "string", "format": "date", "description": "Дата выдачи, default CURRENT_DATE" },
+        "content": { "type": "string", "description": "TEXT, содержимое сертификата" },
+        "student_id": { "type": "string", "format": "uuid", "description": "FK → student_s, ON DELETE CASCADE" },
+        "course_id": { "type": "string", "format": "uuid", "description": "FK → course_b, ON DELETE CASCADE" },
+        "test_attempt_id": { "type": "string", "format": "uuid", "description": "FK → test_attempt_b, ON DELETE CASCADE" }
+      }
+    },
+
+    "CertificateCreate": {
+      "type": "object",
+      "required": ["student_id", "course_id"],
+      "properties": {
+        "content": { "type": "string" },
+        "student_id": { "type": "string", "format": "uuid" },
+        "course_id": { "type": "string", "format": "uuid" },
+        "test_attempt_id": { "type": "string", "format": "uuid" }
+      }
+    },
+
+    "Visit": {
+      "type": "object",
+      "description": "personal_account.visit_students_for_lessons",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "student_id": { "type": "string", "format": "uuid", "description": "FK → student_s, ON DELETE CASCADE" },
+        "lesson_id": { "type": "string", "format": "uuid", "description": "FK → lesson_d, ON DELETE CASCADE" }
+      }
+    },
+
+    "VisitCreate": {
+      "type": "object",
+      "required": ["student_id"],
+      "description": "UNIQUE(student_id, lesson_id) - один студент = одно посещение урока",
+      "properties": {
+        "student_id": { "type": "string", "format": "uuid" }
+      }
+    }
+  }
+}
