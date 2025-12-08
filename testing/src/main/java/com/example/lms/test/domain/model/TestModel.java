@@ -4,7 +4,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Модель теста - представляет строку таблицы TEST_D
+ * Модель теста - представляет строку таблицы test_d
  * Содержит только данные и базовую бизнес-логику
  */
 public class TestModel {

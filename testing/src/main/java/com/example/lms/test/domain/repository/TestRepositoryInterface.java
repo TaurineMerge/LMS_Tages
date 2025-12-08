@@ -7,7 +7,6 @@ import java.util.UUID;
 
 /**
  * Интерфейс репозитория для работы с тестами
- * ОПРЕДЕЛЯЕТ ТОЛЬКО МЕТОДЫ - без моделей!
  */
 public interface TestRepositoryInterface {
     

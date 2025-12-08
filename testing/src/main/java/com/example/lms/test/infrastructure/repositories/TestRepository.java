@@ -12,15 +12,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Реализация репозитория тестов с использованием JDBC
- * Работает с таблицей TEST_D в PostgreSQL
- */
+
 public class TestRepository implements TestRepositoryInterface {
     private static final Logger logger = LoggerFactory.getLogger(TestRepository.class);
     private final DataSource dataSource;
     
-    // SQL запросы для таблицы TEST_D
+    // SQL запросы для таблицы test_d
     private static final String INSERT_SQL = """
         INSERT INTO test_d (course_id, title, min_point, description)
         VALUES (?, ?, ?, ?)
