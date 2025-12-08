@@ -31,6 +31,19 @@ class settings:
             os.getenv("OTEL_EXPORTER_OTLP_INSECURE", "true").lower() == "true"
         )
 
+        # Keycloak Authentication
+        self.KEYCLOAK_SERVER_URL: str = os.getenv("KEYCLOAK_SERVER_URL", "http://keycloak:8080")
+        self.KEYCLOAK_PUBLIC_URL: str = os.getenv("KEYCLOAK_PUBLIC_URL", "http://localhost:8080")
+        self.KEYCLOAK_REALM: str = os.getenv("KEYCLOAK_REALM", "student")
+        self.KEYCLOAK_CLIENT_ID: str = os.getenv("KEYCLOAK_CLIENT_ID", "personal-account-client")
+        self.KEYCLOAK_CLIENT_SECRET: str = os.getenv("KEYCLOAK_CLIENT_SECRET", "secret")
+        self.KEYCLOAK_REDIRECT_URI: str = os.getenv("KEYCLOAK_REDIRECT_URI", "http://localhost/account/callback")
+        
+        # Keycloak Admin credentials (for user registration)
+        self.KEYCLOAK_ADMIN_USERNAME: str = os.getenv("KEYCLOAK_ADMIN_USERNAME", "admin")
+        self.KEYCLOAK_ADMIN_PASSWORD: str = os.getenv("KEYCLOAK_ADMIN_PASSWORD", "admin")
+
+
     @property
     def database_url(self) -> str:
         """Construct database URL."""

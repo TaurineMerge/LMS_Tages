@@ -5,6 +5,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.openapi.utils import get_openapi
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
@@ -16,7 +18,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from app.config import get_settings
 from app.database import init_db_pool, close_db_pool
 from app.exceptions import app_exception
-from app.routers import students, certificates, visits, health
+from app.routers import students, certificates, visits, health, auth, pages
 
 # Configure logging
 logging.basicConfig(
@@ -76,6 +78,22 @@ async def lifespan(app: FastAPI):
 settings = get_settings()
 configure_tracing()
 
+# OAuth2 security scheme for Swagger
+oauth2_scheme = {
+    "type": "oauth2",
+    "flows": {
+        "authorizationCode": {
+            "authorizationUrl": f"{settings.KEYCLOAK_PUBLIC_URL}/realms/{settings.KEYCLOAK_REALM}/protocol/openid-connect/auth",
+            "tokenUrl": f"{settings.KEYCLOAK_PUBLIC_URL}/realms/{settings.KEYCLOAK_REALM}/protocol/openid-connect/token",
+            "scopes": {
+                "openid": "OpenID Connect scope",
+                "profile": "User profile",
+                "email": "User email"
+            }
+        }
+    }
+}
+
 app = FastAPI(
     title="Personal Account API",
     description="API для личного кабинета системы онлайн образования",
@@ -84,8 +102,36 @@ app = FastAPI(
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
-    openapi_url="/openapi.json"
+    openapi_url="/openapi.json",
+    swagger_ui_init_oauth={
+        "clientId": settings.KEYCLOAK_CLIENT_ID,
+        "scopes": "openid profile email"
+    }
 )
+
+# Add security scheme to OpenAPI
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        openapi_version=app.openapi_version,
+        description=app.description,
+        routes=app.routes,
+    )
+    openapi_schema["components"]["securitySchemes"] = {
+        "OAuth2": oauth2_scheme,
+        "BearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT"
+        }
+    }
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
 
 # CORS middleware
 app.add_middleware(
@@ -130,19 +176,17 @@ async def general_exception_handler(request: Request, exc: Exception):
 
 
 # Include routers
+app.include_router(pages.router)  # Frontend pages (no prefix)
 app.include_router(health.router)
+app.include_router(auth.router, prefix=settings.API_PREFIX)
 app.include_router(students.router, prefix=settings.API_PREFIX)
 app.include_router(certificates.router, prefix=settings.API_PREFIX)
 app.include_router(visits.router, prefix=settings.API_PREFIX)
 
+# Mount static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 FastAPIInstrumentor.instrument_app(app, tracer_provider=trace.get_tracer_provider())
 
 
-@app.get("/")
-async def root():
-    """Root endpoint."""
-    return {
-        "message": "Personal Account API",
-        "version": "1.0.0",
-        "docs": "/docs"
-    }
+# Root endpoint removed - pages router handles /

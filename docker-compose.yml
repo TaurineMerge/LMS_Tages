@@ -56,8 +56,11 @@ services:
     command:
       - start-dev
       - --http-port=8080
+      - --import-realm
     ports:
       - "8080:8080"
+    volumes:
+      - ./personal-account/keycloak/student-realm.json:/opt/keycloak/data/import/student-realm.json:ro
     depends_on:
       keycloak-db:
         condition: service_healthy
@@ -80,8 +83,6 @@ services:
       - ./init-sql:/docker-entrypoint-initdb.d:ro
     networks:
       - app-network
-    ports:
-      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
       interval: 10s

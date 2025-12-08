@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block title %}Дашборд - Личный кабинет{% endblock %}
+{% block page_title %}Дашборд{% endblock %}
+{% block page_subtitle %}Обзор вашей активности{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <!-- Statistics Cards -->
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card stat-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="text-muted mb-1">Пройдено курсов</p>
+                    <h3 class="mb-0" id="stat-courses">-</h3>
+                </div>
+                <div class="icon primary">
+                    <i class="bi bi-book"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card stat-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="text-muted mb-1">Сертификатов</p>
+                    <h3 class="mb-0" id="stat-certificates">-</h3>
+                </div>
+                <div class="icon success">
+                    <i class="bi bi-award"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card stat-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="text-muted mb-1">Посещений</p>
+                    <h3 class="mb-0" id="stat-visits">-</h3>
+                </div>
+                <div class="icon warning">
+                    <i class="bi bi-calendar-check"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card stat-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="text-muted mb-1">Средний балл</p>
+                    <h3 class="mb-0" id="stat-score">-</h3>
+                </div>
+                <div class="icon danger">
+                    <i class="bi bi-graph-up"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Activity Chart -->
+    <div class="col-lg-8 mb-4">
+        <div class="card p-4">
+            <h5 class="mb-4"><i class="bi bi-bar-chart me-2"></i>Активность за неделю</h5>
+            <canvas id="activityChart" height="100"></canvas>
+        </div>
+    </div>
+    
+    <!-- Recent Certificates -->
+    <div class="col-lg-4 mb-4">
+        <div class="card p-4">
+            <h5 class="mb-4"><i class="bi bi-award me-2"></i>Последние сертификаты</h5>
+            <div id="recent-certificates">
+                <div class="loading-spinner">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Загрузка...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Visits -->
+    <div class="col-lg-6 mb-4">
+        <div class="card p-4">
+            <h5 class="mb-4"><i class="bi bi-clock-history me-2"></i>Последние посещения</h5>
+            <div id="recent-visits">
+                <div class="loading-spinner">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Загрузка...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="col-lg-6 mb-4">
+        <div class="card p-4">
+            <h5 class="mb-4"><i class="bi bi-lightning me-2"></i>Быстрые действия</h5>
+            <div class="row g-3">
+                <div class="col-6">
+                    <a href="/account/profile" class="btn btn-outline-primary w-100 py-3">
+                        <i class="bi bi-person-gear d-block mb-2" style="font-size: 24px;"></i>
+                        Редактировать профиль
+                    </a>
+                </div>
+                <div class="col-6">
+                    <a href="/account/certificates" class="btn btn-outline-success w-100 py-3">
+                        <i class="bi bi-download d-block mb-2" style="font-size: 24px;"></i>
+                        Скачать сертификаты
+                    </a>
+                </div>
+                <div class="col-6">
+                    <a href="/courses" class="btn btn-outline-info w-100 py-3">
+                        <i class="bi bi-book d-block mb-2" style="font-size: 24px;"></i>
+                        Каталог курсов
+                    </a>
+                </div>
+                <div class="col-6">
+                    <a href="/account/visits" class="btn btn-outline-warning w-100 py-3">
+                        <i class="bi bi-calendar3 d-block mb-2" style="font-size: 24px;"></i>
+                        История посещений
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Handlebars Templates -->
+{% raw %}
+<script id="certificate-item-template" type="text/x-handlebars-template">
+    {{#each certificates}}
+    <div class="d-flex align-items-center mb-3 p-2 bg-light rounded">
+        <div class="icon success me-3" style="width: 40px; height: 40px; font-size: 16px;">
+            <i class="bi bi-award-fill"></i>
+        </div>
+        <div class="flex-grow-1">
+            <h6 class="mb-0">Курс #{{course_id}}</h6>
+            <small class="text-muted">{{formatDate created_at}}</small>
+        </div>
+        <a href="/account/certificates/{{id}}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-eye"></i>
+        </a>
+    </div>
+    {{else}}
+    <p class="text-muted text-center">Сертификатов пока нет</p>
+    {{/each}}
+</script>
+
+<script id="visit-item-template" type="text/x-handlebars-template">
+    {{#each visits}}
+    <div class="d-flex align-items-center mb-3 p-2 bg-light rounded">
+        <div class="icon warning me-3" style="width: 40px; height: 40px; font-size: 16px;">
+            <i class="bi bi-play-circle"></i>
+        </div>
+        <div class="flex-grow-1">
+            <h6 class="mb-0">Урок #{{lesson_id}}</h6>
+            <small class="text-muted">{{formatDate visited_at}}</small>
+        </div>
+    </div>
+    {{else}}
+    <p class="text-muted text-center">Посещений пока нет</p>
+    {{/each}}
+</script>
+{% endraw %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Handlebars helpers
+    Handlebars.registerHelper('formatDate', function(dateString) {
+        if (!dateString) return 'Неизвестно';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('ru-RU', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+        });
+    });
+
+    // Compile templates
+    const certificateTemplate = Handlebars.compile(document.getElementById('certificate-item-template').innerHTML);
+    const visitTemplate = Handlebars.compile(document.getElementById('visit-item-template').innerHTML);
+
+    // Activity Chart
+    let activityChart;
+    
+    function initChart() {
+        const ctx = document.getElementById('activityChart').getContext('2d');
+        activityChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+                datasets: [{
+                    label: 'Часы обучения',
+                    data: [2, 3, 1, 4, 2, 5, 3],
+                    borderColor: '#4361ee',
+                    backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Load dashboard data
+    async function loadDashboardData() {
+        const token = API.getToken();
+        
+        if (!token) {
+            // Show demo data for non-authenticated users
+            document.getElementById('stat-courses').textContent = '0';
+            document.getElementById('stat-certificates').textContent = '0';
+            document.getElementById('stat-visits').textContent = '0';
+            document.getElementById('stat-score').textContent = '-';
+            document.getElementById('recent-certificates').innerHTML = certificateTemplate({ certificates: [] });
+            document.getElementById('recent-visits').innerHTML = visitTemplate({ visits: [] });
+            return;
+        }
+
+        try {
+            // Load certificates
+            const certsResponse = await API.get('/certificates');
+            const certificates = certsResponse.data || [];
+            document.getElementById('stat-certificates').textContent = certificates.length;
+            document.getElementById('recent-certificates').innerHTML = certificateTemplate({
+                certificates: certificates.slice(0, 5)
+            });
+
+            // Load visits
+            const visitsResponse = await API.get('/visits');
+            const visits = visitsResponse.data || [];
+            document.getElementById('stat-visits').textContent = visits.length;
+            document.getElementById('recent-visits').innerHTML = visitTemplate({
+                visits: visits.slice(0, 5)
+            });
+
+            // Demo stats (would come from actual API)
+            document.getElementById('stat-courses').textContent = '3';
+            document.getElementById('stat-score').textContent = '4.5';
+
+        } catch (error) {
+            console.error('Failed to load dashboard data:', error);
+            showToast('Ошибка загрузки данных', 'danger');
+        }
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+        initChart();
+        loadDashboardData();
+    });
+</script>
+{% endblock %}
