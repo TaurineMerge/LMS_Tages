@@ -2,9 +2,12 @@
 package main
 
 import (
+	"context"
 	"embed"
+	"fmt"
 	"io/fs"
 	"log"
+	"os"
 	"strings"
 
 	"adminPanel/config"
@@ -19,22 +22,87 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/swagger"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	tracesdk "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
+	"go.opentelemetry.io/otel/trace"
 )
 
 //go:embed docs/swagger.json
 var swaggerJSON embed.FS
 
+func setupTracerProvider(ctx context.Context, settings *config.Settings) (*tracesdk.TracerProvider, error) {
+	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	if endpoint == "" {
+		endpoint = "http://otel-collector:4317"
+	}
+	target := strings.TrimPrefix(strings.TrimPrefix(endpoint, "http://"), "https://")
+	exp, err := otlptracegrpc.New(ctx,
+		otlptracegrpc.WithEndpoint(target),
+		otlptracegrpc.WithInsecure(),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := resource.New(ctx,
+		resource.WithAttributes(
+			semconv.ServiceNameKey.String("admin-panel"),
+		),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	tp := tracesdk.NewTracerProvider(
+		tracesdk.WithBatcher(exp),
+		tracesdk.WithResource(res),
+	)
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+	return tp, nil
+}
+
+// Простая OTEL middleware для Fiber
+func tracingMiddleware(tracer trace.Tracer) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		carrier := propagation.HeaderCarrier{}
+		for k, v := range c.GetReqHeaders() {
+			if len(v) > 0 {
+				carrier.Set(k, v[0])
+			}
+		}
+		ctx := otel.GetTextMapPropagator().Extract(c.Context(), carrier)
+		spanName := fmt.Sprintf("%s %s", c.Method(), c.Path())
+		ctx, span := tracer.Start(ctx, spanName)
+		defer span.End()
+		c.SetUserContext(ctx)
+		return c.Next()
+	}
+}
+
 func main() {
+	ctx := context.Background()
 	// Инициализация конфигурации
 	settings := config.NewSettings()
 
-	log.Printf("⚠️  Failed to initialize auth: %v", settings)
 	// Инициализация базы данных
 	db, err := database.InitDB(settings)
 	if err != nil {
 		log.Fatalf("❌ Failed to initialize database: %v", err)
 	}
 	defer database.Close()
+
+	// Init tracing
+	tp, err := setupTracerProvider(ctx, settings)
+	if err != nil {
+		log.Printf("⚠️  Failed to initialize tracing: %v", err)
+	} else {
+		defer tp.Shutdown(ctx)
+	}
 
 	// Создание Fiber приложения
 	app := fiber.New(fiber.Config{
@@ -45,6 +113,7 @@ func main() {
 	// Глобальные middleware
 	app.Use(recover.New())
 	app.Use(logger.New())
+	app.Use(tracingMiddleware(otel.Tracer("admin-panel")))
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     strings.Join(settings.GetCORSOrigins(), ","),
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
@@ -133,7 +202,8 @@ func main() {
 	log.Printf("🏥 Health check: http://localhost%s/health", settings.APIAddress)
 	// Инициализация аутентификации
 	if err := middleware.InitAuth(); err != nil {
-		log.Printf("⚠️  Failed to initialize auth123: %v", err)
+		log.Printf("⚠️  Failed to initialize auth: %v", err)
+		// Не стартуем сервер, если auth не поднялся
 		return
 	}
 	if err := app.Listen(settings.APIAddress); err != nil {

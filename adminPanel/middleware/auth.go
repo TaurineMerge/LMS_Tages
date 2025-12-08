@@ -55,7 +55,14 @@ func InitAuth() error {
 	}
 
 	var err error
-	jwks, err = keyfunc.Get(authConfig.JWKSURL, options)
+	for i := 0; i < 6; i++ { // ~1 минута с запасом
+		jwks, err = keyfunc.Get(authConfig.JWKSURL, options)
+		if err == nil {
+			break
+		}
+		log.Printf("❌ JWKS init failed (attempt %d/6): %v", i+1, err)
+		time.Sleep(10 * time.Second)
+	}
 	if err != nil {
 		return err
 	}
