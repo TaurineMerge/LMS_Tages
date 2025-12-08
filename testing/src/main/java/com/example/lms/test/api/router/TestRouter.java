@@ -5,17 +5,17 @@ import com.example.lms.security.JwtHandler;
 import static io.javalin.apibuilder.ApiBuilder.*;
 
 public class TestRouter {
-    public static void register() {
+    public static void register(TestController testController) {
         path("/tests", () -> {
             before(JwtHandler.authenticate());
 
-            get(TestController::getTests);
-            post(TestController::createTest);
+            get(testController::getTests);
+            post(testController::createTest);
 
             path("/{id}", () -> {
-                get(TestController::getTestById);
-                put(TestController::updateTest);
-                delete(TestController::deleteTest);
+                get(testController::getTestById);
+                put(testController::updateTest);
+                delete(testController::deleteTest);
             });
         });
     }
