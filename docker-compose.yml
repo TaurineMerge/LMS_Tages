@@ -105,10 +105,11 @@ services:
     build: ./adminPanel
     container_name: admin-panel
     environment:
-      KEYCLOAK_ISSUER_URL: "http://keycloak:8080/realms/teacher"
-      KEYCLOAK_CLIENT_ID: "teacherapp"
-      KEYCLOAK_CLIENT_SECRET: "beJs1HkSBf0014hVfx1VdnHVEw3uCOYx"
-      KEYCLOAK_APP_NAME: "teacherApp"
+      KEYCLOAK_ISSUER_URL: "http://keycloak:8080/realms/admin"
+      KEYCLOAK_CLIENT_ID: "adminapp"
+      KEYCLOAK_CLIENT_SECRET: "rrB0Sls7BcFss14Kn2gk9GqpojrTzBYs"
+      KEYCLOAK_APP_NAME: "adminApp"
+      WAIT_FOR_KEYCLOAK: "true"
     ports:
       - "4000:4000"
     networks:

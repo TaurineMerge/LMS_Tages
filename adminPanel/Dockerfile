@@ -12,13 +12,6 @@ RUN go mod download
 # Копируем исходный код
 COPY . .
 
-# Устанавливаем переменные окружения по умолчанию
-ENV ROOT_PATH=/admin
-ENV API_PREFIX=/api/v1
-ENV API_ADDRESS=:4000
-ENV CORS_ALLOW_ORIGINS=http://localhost,http://localhost:3000
-ENV CORS_ALLOW_CREDENTIALS=false
-
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
 # Финальный этап

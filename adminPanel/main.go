@@ -6,14 +6,14 @@ import (
 	"io/fs"
 	"log"
 	"strings"
-	
+
 	"adminPanel/config"
 	"adminPanel/database"
 	"adminPanel/handlers"
 	"adminPanel/middleware"
 	"adminPanel/repositories"
 	"adminPanel/services"
-	
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -35,18 +35,13 @@ func main() {
 		log.Fatalf("❌ Failed to initialize database: %v", err)
 	}
 	defer database.Close()
-	
-	// Инициализация аутентификации
-	if err := middleware.InitAuth(); err != nil {
-		log.Printf("⚠️  Failed to initialize auth: %v", err)
-	}
-	
+
 	// Создание Fiber приложения
 	app := fiber.New(fiber.Config{
 		AppName:               "Admin Panel API",
 		DisableStartupMessage: false,
 	})
-	
+
 	// Глобальные middleware
 	app.Use(recover.New())
 	app.Use(logger.New())
@@ -58,20 +53,20 @@ func main() {
 		ExposeHeaders:    "Content-Length",
 	}))
 	app.Use(middleware.TrustProxyMiddleware())
-	
+
 	// Общий обработчик ошибок
 	app.Use(middleware.ErrorHandlerMiddleware())
-	
+
 	// Публичные маршруты (без префикса /admin)
 	healthHandler := handlers.NewHealthHandler(db)
 	app.Get("/health", healthHandler.HealthCheck)
 	app.Get("/health/db", healthHandler.DBHealthCheck)
-	
+
 	// Админские маршруты с префиксом /admin
 	adminGroup := app.Group("/admin")
 
 	adminGroup.Use(middleware.AuthMiddleware())
-	
+
 	// Swagger под префиксом /admin
 	// Сначала маршрут для doc.json (должен быть до swagger UI)
 	adminGroup.Get("/swagger/doc.json", func(c *fiber.Ctx) error {
@@ -82,14 +77,14 @@ func main() {
 				"error": "Failed to read API documentation",
 			})
 		}
-		
+
 		c.Set("Content-Type", "application/json")
 		return c.Send(data)
 	})
-	
+
 	// Затем Swagger UI
 	adminGroup.Get("/swagger/*", swagger.New(swagger.Config{
-		URL:         "/admin/swagger/doc.json",  // Путь должен быть полный
+		URL:         "/admin/swagger/doc.json", // Путь должен быть полный
 		DeepLinking: true,
 		Title:       "Admin Panel API",
 		OAuth: &swagger.OAuthConfig{
@@ -99,47 +94,52 @@ func main() {
 			Scopes:       []string{"openid", "profile", "email"},
 		},
 	}))
-	
+
 	// API маршруты с префиксом /admin/api/v1
 	api := adminGroup.Group("/api/v1")
-	
+
 	// Аутентификация для API маршрутов
 	api.Use(middleware.AuthMiddleware())
-	
+
 	// Инициализация репозиториев
 	categoryRepo := repositories.NewCategoryRepository(db)
 	courseRepo := repositories.NewCourseRepository(db)
 	lessonRepo := repositories.NewLessonRepository(db)
-	
+
 	// Инициализация сервисов
 	categoryService := services.NewCategoryService(categoryRepo)
 	courseService := services.NewCourseService(courseRepo, categoryRepo)
 	lessonService := services.NewLessonService(lessonRepo, courseRepo)
-	
+
 	// Инициализация обработчиков
 	categoryHandler := handlers.NewCategoryHandler(categoryService)
 	courseHandler := handlers.NewCourseHandler(courseService)
 	lessonHandler := handlers.NewLessonHandler(lessonService)
-	
+
 	// Регистрация маршрутов
 	categoryHandler.RegisterRoutes(api)
 	courseHandler.RegisterRoutes(api)
 	lessonHandler.RegisterRoutes(api)
-	
+
 	// Favicon заглушка
 	app.Get("/favicon.ico", func(c *fiber.Ctx) error {
 		return c.SendStatus(204) // No Content
 	})
-	
+
 	// Запуск сервера
 	log.Printf("🚀 Server starting on %s", settings.APIAddress)
 	log.Printf("📚 Swagger UI: http://localhost%s/admin/swagger/", settings.APIAddress)
 	log.Printf("📖 Swagger JSON: http://localhost%s/admin/swagger/doc.json", settings.APIAddress)
 	log.Printf("🏥 Health check: http://localhost%s/health", settings.APIAddress)
-	
+	// Инициализация аутентификации
+	if err := middleware.InitAuth(); err != nil {
+		log.Printf("⚠️  Failed to initialize auth123: %v", err)
+		return
+	}
 	if err := app.Listen(settings.APIAddress); err != nil {
 		log.Fatalf("❌ Failed to start server: %v", err)
 	}
+
 }
 
 // package main
@@ -170,12 +170,12 @@ func main() {
 // func main() {
 // 	// 1. Загружаем конфигурацию
 // 	settings := config.NewSettings()
-	
+
 // 	log.Printf("🚀 Starting Admin Panel API")
 // 	log.Printf("🌐 Listening on: %s", settings.APIAddress)
 // 	log.Printf("🔧 CORS Origins: %s", settings.CORSAllowOrigins)
 // 	log.Printf("🔧 CORS Credentials: %v", settings.CORSAllowCredentials)
-	
+
 // 	// 2. Инициализируем базу данных
 // 	db, err := database.InitDB(settings)
 // 	if err != nil {
@@ -215,15 +215,15 @@ func main() {
 
 // 	// 8. Middleware
 // 	app.Use(middleware.TrustProxyMiddleware())
-	
+
 // 	if settings.Debug {
 // 		app.Use(logger.New(logger.Config{
 // 			Format: "[${time}] ${status} - ${method} ${path}\n",
 // 		}))
 // 	}
-	
+
 // 	app.Use(recover.New())
-	
+
 // 	// Настраиваем CORS из конфигурации
 // 	app.Use(cors.New(cors.Config{
 // 		AllowOrigins:     settings.CORSAllowOrigins,
@@ -231,7 +231,7 @@ func main() {
 // 		AllowHeaders:     "Origin,Content-Type,Accept,Authorization,X-Requested-With",
 // 		AllowCredentials: settings.CORSAllowCredentials,
 // 	}))
-	
+
 // 	app.Use(middleware.ErrorHandlerMiddleware())
 // 	app.Use(middleware.AuthMiddleware())
 
@@ -290,7 +290,7 @@ func main() {
 //             },
 //         })
 //     })
-    
+
 //     app.Get("/swagger/*", swagger.New(swagger.Config{
 //         URL: "/swagger/doc.json",
 //     }))
@@ -300,9 +300,9 @@ func main() {
 //     // Получаем путь к рабочей директории
 //     workDir, _ := os.Getwd()
 //     swaggerPath := filepath.Join(workDir, "docs", "swagger.json")
-    
+
 //     log.Printf("📁 Looking for swagger.json at: %s", swaggerPath)
-    
+
 //     // Проверяем, существует ли файл
 //     if _, err := os.Stat(swaggerPath); os.IsNotExist(err) {
 //         log.Printf("⚠️  Swagger file not found at %s, using default", swaggerPath)
@@ -310,7 +310,7 @@ func main() {
 //         setupDefaultSwagger(app)
 //         return
 //     }
-    
+
 //     // Swagger UI будет доступен по /swagger/index.html
 //     app.Get("/swagger/*", swagger.New(swagger.Config{
 //         URL:          "/swagger/doc.json",  // Исправляем путь!
@@ -318,7 +318,7 @@ func main() {
 //         DocExpansion: "list",
 //         Title:        "Admin Panel API Documentation",
 //     }))
-    
+
 //     // Эндпоинт для отдачи swagger.json
 //     app.Get("/swagger/doc.json", func(c *fiber.Ctx) error {
 //         content, err := ioutil.ReadFile(swaggerPath)
@@ -328,12 +328,12 @@ func main() {
 //                 "error": "Swagger documentation not found",
 //             })
 //         }
-        
+
 //         log.Printf("✅ Swagger.json loaded successfully (%d bytes)", len(content))
 //         c.Set("Content-Type", "application/json; charset=utf-8")
 //         return c.Send(content)
 //     })
-    
+
 //     // Редирект для удобства
 //     app.Get("/swagger", func(c *fiber.Ctx) error {
 //         return c.Redirect("/swagger/index.html")
@@ -347,7 +347,7 @@ func main() {
 //         DeepLinking:  true,
 //         DocExpansion: "list",
 //     }))
-    
+
 //     app.Get("/swagger/doc.json", func(c *fiber.Ctx) error {
 //         return c.JSON(fiber.Map{
 //             "openapi": "3.0.0",
@@ -389,19 +389,19 @@ func registerRoutes(
 ) {
 	// Основная группа API
 	apiGroup := app.Group("/api/v1")
-	
+
 	// Health endpoints
 	healthHandler.RegisterRoutes(apiGroup)
-	
+
 	// Category endpoints
 	categoryHandler.RegisterRoutes(apiGroup)
-	
+
 	// Course endpoints
 	courseHandler.RegisterRoutes(apiGroup)
-	
+
 	// Lesson endpoints
 	lessonHandler.RegisterRoutes(apiGroup)
-	
+
 	// Дополнительный health check
 	apiGroup.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{

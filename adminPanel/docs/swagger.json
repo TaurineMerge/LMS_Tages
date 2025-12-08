@@ -15,8 +15,8 @@
         "OAuth2": {
             "type": "oauth2",
             "flow": "authorizationCode",
-            "authorizationUrl": "http://localhost:8080/realms/teacher/protocol/openid-connect/auth",
-            "tokenUrl": "http://localhost:8080/realms/teacher/protocol/openid-connect/token",
+            "authorizationUrl": "http://localhost:8080/realms/admin/protocol/openid-connect/auth",
+            "tokenUrl": "http://localhost:8080/realms/admin/protocol/openid-connect/token",
             "scopes": {
                 "openid": "OpenID Connect scope",
                 "profile": "User profile information",
