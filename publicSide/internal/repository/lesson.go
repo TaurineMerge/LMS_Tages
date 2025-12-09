@@ -10,13 +10,9 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-const (
-	lessonsTable = "lessons"
-)
-
 type LessonRepository interface {
-	GetAllByCourseID(ctx context.Context, courseID string, page, limit int) ([]domain.Lesson, int, error)
-	GetByID(ctx context.Context, id string) (domain.Lesson, error)
+	GetAllByCourseID(ctx context.Context, categoryID, courseID string, page, limit int) ([]domain.Lesson, int, error)
+	GetByID(ctx context.Context, categoryID, courseID, lessonID string) (domain.Lesson, error)
 }
 
 type lessonRepository struct {
@@ -40,17 +36,21 @@ func (r *lessonRepository) scanLesson(row pgx.Row) (domain.Lesson, error) {
 	return lesson, err
 }
 
-func (r *lessonRepository) GetAllByCourseID(ctx context.Context, courseID string, page, limit int) ([]domain.Lesson, int, error) {
+func (r *lessonRepository) GetAllByCourseID(ctx context.Context, categoryID, courseID string, page, limit int) ([]domain.Lesson, int, error) {
 	var total int
-	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE course_id = $1", lessonsTable)
-	err := r.db.QueryRow(ctx, countQuery, courseID).Scan(&total)
+	countQuery := fmt.Sprintf(`SELECT COUNT(l.*) FROM %s l
+		JOIN %s c ON l.course_id = c.id
+		WHERE c.category_id = $1 AND l.course_id = $2`, lessonsTable, courseTable)
+	err := r.db.QueryRow(ctx, countQuery, categoryID, courseID).Scan(&total)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to count lessons by course: %w", err)
 	}
 
-	query := fmt.Sprintf("SELECT id, title, course_id, content, created_at, updated_at FROM %s WHERE course_id = $1 ORDER BY created_at ASC LIMIT $2 OFFSET $3", lessonsTable)
+	query := fmt.Sprintf(`SELECT l.id, l.title, l.course_id, l.content, l.created_at, l.updated_at FROM %s l
+		JOIN %s c ON l.course_id = c.id
+		WHERE c.category_id = $1 AND l.course_id = $2 ORDER BY l.created_at ASC LIMIT $3 OFFSET $4`, lessonsTable, courseTable)
 	offset := (page - 1) * limit
-	rows, err := r.db.Query(ctx, query, courseID, limit, offset)
+	rows, err := r.db.Query(ctx, query, categoryID, courseID, limit, offset)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get lessons by course: %w", err)
 	}
@@ -58,13 +58,12 @@ func (r *lessonRepository) GetAllByCourseID(ctx context.Context, courseID string
 
 	var lessons []domain.Lesson
 	for rows.Next() {
-		// Note: content is not scanned here for the list view, matching LessonDTO
 		var lesson domain.Lesson
 		err := rows.Scan(
 			&lesson.ID,
 			&lesson.Title,
 			&lesson.CourseID,
-			&lesson.Content, // Still scan it to avoid scan error, but it won't be used by the DTO
+			&lesson.Content, 
 			&lesson.CreatedAt,
 			&lesson.UpdatedAt,
 		)
@@ -77,13 +76,15 @@ func (r *lessonRepository) GetAllByCourseID(ctx context.Context, courseID string
 	return lessons, total, nil
 }
 
-func (r *lessonRepository) GetByID(ctx context.Context, id string) (domain.Lesson, error) {
-	query := fmt.Sprintf("SELECT id, title, course_id, content, created_at, updated_at FROM %s WHERE id = $1", lessonsTable)
-	row := r.db.QueryRow(ctx, query, id)
+func (r *lessonRepository) GetByID(ctx context.Context, categoryID, courseID, lessonID string) (domain.Lesson, error) {
+	query := fmt.Sprintf(`SELECT l.id, l.title, l.course_id, l.content, l.created_at, l.updated_at FROM %s l
+		JOIN %s c ON l.course_id = c.id
+		WHERE c.category_id = $1 AND l.course_id = $2 AND l.id = $3`, lessonsTable, courseTable)
+	row := r.db.QueryRow(ctx, query, categoryID, courseID, lessonID)
 	lesson, err := r.scanLesson(row)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return domain.Lesson{}, fmt.Errorf("lesson with id %s not found", id)
+			return domain.Lesson{}, fmt.Errorf("lesson with id %s not found in course %s", lessonID, courseID)
 		}
 		return domain.Lesson{}, fmt.Errorf("failed to get lesson by id: %w", err)
 	}

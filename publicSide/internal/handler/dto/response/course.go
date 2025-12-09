@@ -1,10 +1,6 @@
-package dto
+package response
 
-import (
-	"time"
-
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
-)
+import "time"
 
 // CourseDTO represents a course data transfer object.
 type CourseDTO struct {
@@ -15,11 +11,4 @@ type CourseDTO struct {
 	CategoryID  string    `json:"category_id"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
-}
-
-// --- Paginated Response for Courses ---
-
-type PaginatedCoursesData struct {
-	Items      []CourseDTO       `json:"items"`
-	Pagination domain.Pagination `json:"pagination"`
 }

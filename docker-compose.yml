@@ -88,21 +88,27 @@ services:
     restart: unless-stopped
 
   public-side:
-    build: ./publicSide
+    image: alpine:latest
     container_name: public-side
-    environment:
-      POSTGRES_DB: "postgres://appuser:password@localhost:5432/appdb?sslmode=disable"
-    ports:
-      - "3000:3000"
+    command: sh -c 'while true; do sleep 3600; done'
     networks:
       - app-network
-    depends_on:
-      app-db:
-        condition: service_healthy
-      keycloak:
-        condition: service_started
-    restart: unless-stopped
 
+  # public-side:
+  #   build: ./publicSide
+  #   container_name: public-side
+  #   environment:
+  #     POSTGRES_DB: "postgres://appuser:password@localhost:5432/appdb?sslmode=disable"
+  #   ports:
+  #     - "3000:3000"
+  #   networks:
+  #     - app-network
+  #   depends_on:
+  #     app-db:
+  #       condition: service_healthy
+  #     keycloak:
+  #       condition: service_started
+  #   restart: unless-stopped
   admin-panel:
     build: ./adminPanel
     container_name: admin-panel

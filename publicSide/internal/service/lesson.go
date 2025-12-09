@@ -6,14 +6,14 @@ import (
 	"strings"
 
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/dto"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/dto/response"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/repository"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apperrors"
 )
 
 type LessonService interface {
-	GetAllByCourseID(ctx context.Context, courseID string, page, limit int) ([]dto.LessonDTO, domain.Pagination, error)
-	GetByID(ctx context.Context, id string) (dto.LessonDTODetailed, error)
+	GetAllByCourseID(ctx context.Context, categoryID, courseID string, page, limit int) ([]response.LessonDTO, response.Pagination, error)
+	GetByID(ctx context.Context, categoryID, courseID, lessonID string) (response.LessonDTODetailed, error)
 }
 
 type lessonService struct {
@@ -24,8 +24,8 @@ func NewLessonService(repo repository.LessonRepository) LessonService {
 	return &lessonService{repo: repo}
 }
 
-func toLessonDTO(lesson domain.Lesson) dto.LessonDTO {
-	return dto.LessonDTO{
+func toLessonDTO(lesson domain.Lesson) response.LessonDTO {
+	return response.LessonDTO{
 		ID:        lesson.ID,
 		Title:     lesson.Title,
 		CourseID:  lesson.CourseID,
@@ -34,8 +34,8 @@ func toLessonDTO(lesson domain.Lesson) dto.LessonDTO {
 	}
 }
 
-func toLessonDTODetailed(lesson domain.Lesson) dto.LessonDTODetailed {
-	return dto.LessonDTODetailed{
+func toLessonDTODetailed(lesson domain.Lesson) response.LessonDTODetailed {
+	return response.LessonDTODetailed{
 		ID:        lesson.ID,
 		Title:     lesson.Title,
 		CourseID:  lesson.CourseID,
@@ -45,25 +45,28 @@ func toLessonDTODetailed(lesson domain.Lesson) dto.LessonDTODetailed {
 	}
 }
 
-func (s *lessonService) GetAllByCourseID(ctx context.Context, courseID string, page, limit int) ([]dto.LessonDTO, domain.Pagination, error) {
+func (s *lessonService) GetAllByCourseID(ctx context.Context, categoryID, courseID string, page, limit int) ([]response.LessonDTO, response.Pagination, error) {
 	if page <= 0 {
 		page = 1
 	}
 	if limit <= 0 {
 		limit = 20
 	}
-
-	lessons, total, err := s.repo.GetAllByCourseID(ctx, courseID, page, limit)
-	if err != nil {
-		return nil, domain.Pagination{}, apperrors.NewInternal()
+	if limit > 100 {
+		limit = 100
 	}
 
-	lessonDTOs := make([]dto.LessonDTO, len(lessons))
+	lessons, total, err := s.repo.GetAllByCourseID(ctx, categoryID, courseID, page, limit)
+	if err != nil {
+		return nil, response.Pagination{}, err
+	}
+
+	lessonDTOs := make([]response.LessonDTO, len(lessons))
 	for i, lesson := range lessons {
 		lessonDTOs[i] = toLessonDTO(lesson)
 	}
 
-	pagination := domain.Pagination{
+	pagination := response.Pagination{
 		Page:  page,
 		Limit: limit,
 		Total: total,
@@ -73,13 +76,13 @@ func (s *lessonService) GetAllByCourseID(ctx context.Context, courseID string, p
 	return lessonDTOs, pagination, nil
 }
 
-func (s *lessonService) GetByID(ctx context.Context, id string) (dto.LessonDTODetailed, error) {
-	lesson, err := s.repo.GetByID(ctx, id)
+func (s *lessonService) GetByID(ctx context.Context, categoryID, courseID, lessonID string) (response.LessonDTODetailed, error) {
+	lesson, err := s.repo.GetByID(ctx, categoryID, courseID, lessonID)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
-			return dto.LessonDTODetailed{}, apperrors.NewNotFound("Lesson")
+			return response.LessonDTODetailed{}, apperrors.NewNotFound("Lesson")
 		}
-		return dto.LessonDTODetailed{}, apperrors.NewInternal()
+		return response.LessonDTODetailed{}, err
 	}
 	return toLessonDTODetailed(lesson), nil
 }

@@ -1,4 +1,4 @@
-package domain
+package response
 
 // Pagination represents pagination info.
 type Pagination struct {

@@ -24,11 +24,11 @@ func NewNotFound(resource string) error {
 	}
 }
 
-func NewInvalidUUID() error {
+func NewInvalidUUID(resource string) error {
 	return &AppError{
 		HTTPStatus: 400,
 		Code:       "INVALID_UUID",
-		Message:    "Invalid UUID format",
+		Message:    fmt.Sprintf("Invalid UUID format for %s", resource),
 	}
 }
 

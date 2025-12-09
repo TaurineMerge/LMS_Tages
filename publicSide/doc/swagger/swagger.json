@@ -170,7 +170,6 @@
         "/categories/{category_id}/courses": {
             "get": {
                 "tags": [
-                    "Categories",
                     "Courses"
                 ],
                 "summary": "Получить список курсов категории",
@@ -256,78 +255,21 @@
                 }
             }
         },
-        "/courses": {
+        "/categories/{category_id}/courses/{course_id}": {
             "get": {
                 "tags": [
                     "Courses"
                 ],
-                "summary": "Получить список всех курсов",
+                "summary": "Получить курс по ID в рамках категории",
                 "parameters": [
                     {
-                        "name": "page",
-                        "in": "query",
-                        "type": "integer",
-                        "default": 1,
-                        "minimum": 1,
-                        "description": "Номер страницы"
+                        "name": "category_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Уникальный идентификатор категории"
                     },
-                    {
-                        "name": "limit",
-                        "in": "query",
-                        "type": "integer",
-                        "default": 20,
-                        "minimum": 1,
-                        "maximum": 100,
-                        "description": "Количество элементов на странице"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Успешно получен список курсов",
-                        "schema": {
-                            "$ref": "#/definitions/SuccessResponsePaginatedCourses"
-                        }
-                    },
-                    "400": {
-                        "description": "Неверные параметры запроса",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        },
-                        "examples": {
-                            "application/json": {
-                                "status": "error",
-                                "error": {
-                                    "code": "INVALID_PARAMETERS",
-                                    "message": "Invalid page or limit parameter"
-                                }
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Внутренняя ошибка сервера",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        },
-                        "examples": {
-                            "application/json": {
-                                "status": "error",
-                                "error": {
-                                    "code": "INTERNAL_SERVER_ERROR",
-                                    "message": "An unexpected error occurred"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/courses/{course_id}": {
-            "get": {
-                "tags": [
-                    "Courses"
-                ],
-                "summary": "Получить курс по ID",
-                "parameters": [
                     {
                         "name": "course_id",
                         "in": "path",
@@ -354,13 +296,13 @@
                                 "status": "error",
                                 "error": {
                                     "code": "INVALID_UUID",
-                                    "message": "Invalid course ID format"
+                                    "message": "Invalid category ID or course ID format"
                                 }
                             }
                         }
                     },
                     "404": {
-                        "description": "Курс не найден",
+                        "description": "Категория или курс не найден",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
                         },
@@ -369,7 +311,7 @@
                                 "status": "error",
                                 "error": {
                                     "code": "NOT_FOUND",
-                                    "message": "Course not found"
+                                    "message": "Category or course not found"
                                 }
                             }
                         }
@@ -392,14 +334,21 @@
                 }
             }
         },
-        "/courses/{course_id}/lessons": {
+        "/categories/{category_id}/courses/{course_id}/lessons": {
             "get": {
                 "tags": [
-                    "Courses",
                     "Lessons"
                 ],
                 "summary": "Получить список уроков курса",
                 "parameters": [
+                    {
+                        "name": "category_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Уникальный идентификатор категории"
+                    },
                     {
                         "name": "course_id",
                         "in": "path",
@@ -443,13 +392,13 @@
                                 "status": "error",
                                 "error": {
                                     "code": "INVALID_PARAMETERS",
-                                    "message": "Invalid course ID or pagination parameters"
+                                    "message": "Invalid category ID, course ID or pagination parameters"
                                 }
                             }
                         }
                     },
                     "404": {
-                        "description": "Курс не найден",
+                        "description": "Категория или курс не найден",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
                         },
@@ -458,7 +407,7 @@
                                 "status": "error",
                                 "error": {
                                     "code": "NOT_FOUND",
-                                    "message": "Course not found"
+                                    "message": "Category or course not found"
                                 }
                             }
                         }
@@ -481,13 +430,21 @@
                 }
             }
         },
-        "/courses/{course_id}/lessons/{lesson_id}": {
+        "/categories/{category_id}/courses/{course_id}/lessons/{lesson_id}": {
             "get": {
                 "tags": [
                     "Lessons"
                 ],
-                "summary": "Получить урок по ID",
+                "summary": "Получить урок по ID в рамках курса и категории",
                 "parameters": [
+                    {
+                        "name": "category_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Уникальный идентификатор категории"
+                    },
                     {
                         "name": "course_id",
                         "in": "path",
@@ -522,13 +479,13 @@
                                 "status": "error",
                                 "error": {
                                     "code": "INVALID_UUID",
-                                    "message": "Invalid course ID or lesson ID format"
+                                    "message": "Invalid category ID, course ID or lesson ID format"
                                 }
                             }
                         }
                     },
                     "404": {
-                        "description": "Курс или урок не найден",
+                        "description": "Категория, курс или урок не найден",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
                         },
@@ -537,7 +494,7 @@
                                 "status": "error",
                                 "error": {
                                     "code": "NOT_FOUND",
-                                    "message": "Course or lesson not found"
+                                    "message": "Category, course or lesson not found"
                                 }
                             }
                         }
