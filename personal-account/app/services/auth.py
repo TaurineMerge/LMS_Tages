@@ -34,7 +34,7 @@ class auth_service:
                 server_url=settings.KEYCLOAK_SERVER_URL,
                 username=settings.KEYCLOAK_ADMIN_USERNAME,
                 password=settings.KEYCLOAK_ADMIN_PASSWORD,
-                realm_name="master",  # Authenticate in master realm
+                realm_name=settings.KEYCLOAK_ADMIN_REALM,  # Authenticate in master realm
                 verify=True
             )
             # Switch to target realm for user management
@@ -46,7 +46,7 @@ class auth_service:
         """Generate Keycloak login URL."""
         url = self.keycloak_openid.auth_url(
             redirect_uri=settings.KEYCLOAK_REDIRECT_URI,
-            scope="openid profile email",
+            scope=settings.KEYCLOAK_DEFAULT_SCOPE,
             state="some_random_state"  # In production, use a secure random state
         )
         # Log generated URL for troubleshooting client lookup issues
@@ -75,7 +75,7 @@ class auth_service:
             f"?client_id={client_id}"
             f"&redirect_uri={redirect_uri}"
             f"&response_type=code"
-            f"&scope=openid profile email"
+            f"&scope={settings.KEYCLOAK_DEFAULT_SCOPE}"
             f"&kc_action=register"
         )
         return register_url
@@ -95,7 +95,7 @@ class auth_service:
                 "username": username,
                 "email": email,
                 "enabled": True,
-                "emailVerified": True,  # Set to False if you want email verification
+                "emailVerified": settings.KEYCLOAK_USER_EMAIL_VERIFIED_DEFAULT,  # Set to False if you want email verification
                 "credentials": [{
                     "type": "password",
                     "value": password,
