@@ -4,95 +4,108 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Модель ответа - представляет строку таблицы answer_d
+ * Доменная модель: AnswerModel
+ *
+ * Соответствует строке таблицы answer_d.
+ *
+ * Поля:
+ *  - id:          UUID   — первичный ключ
+ *  - question_id: UUID   — идентификатор вопроса (FK → question_d.id)
+ *  - text:        String — текст ответа
+ *  - score:       int    — количество баллов за ответ (0 — неверный, >0 — верный)
  */
 public class AnswerModel {
+
+    /** Уникальный идентификатор ответа (PRIMARY KEY). */
     private UUID id;
+
+    /** Идентификатор вопроса, которому принадлежит данный ответ. */
     private UUID questionId;
-    private String answerText;
-    private Boolean isCorrect;
-    private Integer displayOrder;
-    private String explanation;
-    
-    // Конструктор для создания нового ответа
-    public AnswerModel(UUID questionId, String answerText, Boolean isCorrect, 
-                      Integer displayOrder, String explanation) {
-        this.questionId = Objects.requireNonNull(questionId, "Question ID cannot be null");
-        this.answerText = Objects.requireNonNull(answerText, "Answer text cannot be null");
-        this.isCorrect = Objects.requireNonNull(isCorrect, "IsCorrect flag cannot be null");
-        this.displayOrder = displayOrder;
-        this.explanation = explanation;
+
+    /** Текст ответа, отображаемый пользователю. */
+    private String text;
+
+    /** Количество баллов за этот ответ (0 = неверный, >0 = верный). */
+    private Integer score;
+
+
+    /**
+     * Конструктор для создания нового ответа (до сохранения в базу данных).
+     *
+     * @param questionId ID вопроса
+     * @param text       текст ответа
+     * @param score      количество баллов
+     */
+    public AnswerModel(UUID questionId, String text, Integer score) {
+        this.questionId = Objects.requireNonNull(questionId, "Question ID не может быть null");
+        this.text = Objects.requireNonNull(text, "Текст ответа не может быть null");
+        this.score = Objects.requireNonNull(score, "Score не может быть null");
     }
-    
-    // Конструктор для загрузки из БД
-    public AnswerModel(UUID id, UUID questionId, String answerText, Boolean isCorrect, 
-                      Integer displayOrder, String explanation) {
+
+
+    /**
+     * Конструктор для загрузки ответа из базы данных.
+     *
+     * @param id         идентификатор ответа
+     * @param questionId идентификатор вопроса
+     * @param text       текст ответа
+     * @param score      количество баллов
+     */
+    public AnswerModel(UUID id, UUID questionId, String text, Integer score) {
         this.id = id;
         this.questionId = questionId;
-        this.answerText = answerText;
-        this.isCorrect = isCorrect;
-        this.displayOrder = displayOrder;
-        this.explanation = explanation;
+        this.text = text;
+        this.score = score;
     }
-    
-    // Геттеры
+
+
+    // ---------------------- GETTERS ----------------------
+
     public UUID getId() { return id; }
     public UUID getQuestionId() { return questionId; }
-    public String getAnswerText() { return answerText; }
-    public Boolean getIsCorrect() { return isCorrect; }
-    public Integer getDisplayOrder() { return displayOrder; }
-    public String getExplanation() { return explanation; }
-    
-    // Сеттеры с валидацией
-    public void setId(UUID id) { 
-        this.id = Objects.requireNonNull(id, "ID cannot be null");
+    public String getText() { return text; }
+    public Integer getScore() { return score; }
+
+
+    // ---------------------- SETTERS ----------------------
+
+    public void setId(UUID id) {
+        this.id = Objects.requireNonNull(id, "ID не может быть null");
     }
-    
+
     public void setQuestionId(UUID questionId) {
-        this.questionId = Objects.requireNonNull(questionId, "Question ID cannot be null");
+        this.questionId = Objects.requireNonNull(questionId, "Question ID не может быть null");
     }
-    
-    public void setAnswerText(String answerText) {
-        this.answerText = Objects.requireNonNull(answerText, "Answer text cannot be null");
+
+    public void setText(String text) {
+        this.text = Objects.requireNonNull(text, "Текст ответа не может быть null");
     }
-    
-    public void setIsCorrect(Boolean isCorrect) {
-        this.isCorrect = Objects.requireNonNull(isCorrect, "IsCorrect flag cannot be null");
+
+    public void setScore(Integer score) {
+        this.score = Objects.requireNonNull(score, "Score не может быть null");
     }
-    
-    public void setDisplayOrder(Integer displayOrder) {
-        this.displayOrder = displayOrder; // Может быть null
-    }
-    
-    public void setExplanation(String explanation) {
-        this.explanation = explanation; // Может быть null
-    }
-    
+
+
+    // ---------------------- ВАЛИДАЦИЯ ----------------------
+
     /**
-     * Проверить, является ли ответ правильным
-     */
-    public boolean isCorrectAnswer() {
-        return Boolean.TRUE.equals(isCorrect);
-    }
-    
-    /**
-     * Валидация модели перед сохранением
+     * Проверяет корректность данных перед сохранением в БД.
      */
     public void validate() {
-        if (answerText == null || answerText.trim().isEmpty()) {
-            throw new IllegalArgumentException("Answer text cannot be empty");
+        if (text == null || text.trim().isEmpty()) {
+            throw new IllegalArgumentException("Текст ответа не может быть пустым");
+        }
+        if (score == null) {
+            throw new IllegalArgumentException("Score не может быть null");
         }
         if (questionId == null) {
-            throw new IllegalArgumentException("Question ID cannot be null");
-        }
-        if (isCorrect == null) {
-            throw new IllegalArgumentException("IsCorrect flag cannot be null");
-        }
-        if (displayOrder != null && displayOrder < 0) {
-            throw new IllegalArgumentException("Display order cannot be negative");
+            throw new IllegalArgumentException("Question ID не может быть null");
         }
     }
-    
+
+
+    // ---------------------- УТИЛИТЫ ----------------------
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -100,19 +113,21 @@ public class AnswerModel {
         AnswerModel that = (AnswerModel) o;
         return Objects.equals(id, that.id);
     }
-    
+
     @Override
     public int hashCode() {
         return Objects.hash(id);
     }
-    
+
+    /**
+     * Краткое строковое представление объекта для удобного логирования.
+     */
     @Override
     public String toString() {
         return "AnswerModel{" +
                 "id=" + id +
                 ", questionId=" + questionId +
-                ", isCorrect=" + isCorrect +
-                ", displayOrder=" + displayOrder +
+                ", score=" + score +
                 '}';
     }
 }
