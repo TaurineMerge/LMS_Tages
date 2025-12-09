@@ -1,3 +1,12 @@
+version: '3.8'
+
+x-env-vars: &app_db_creds
+  POSTGRES_USER_APP: appuser
+  POSTGRES_PASSWORD_APP: password
+  POSTGRES_DB_APP: appdb
+  POSTGRES_HOST_APP: app-db
+  POSTGRES_PORT_APP: 5432
+
 services:
   nginx:
     image: nginx:alpine
@@ -70,9 +79,10 @@ services:
     image: postgres:15
     container_name: app-db
     environment:
-      POSTGRES_DB: appdb
-      POSTGRES_USER: appuser
-      POSTGRES_PASSWORD: password
+      <<: *app_db_creds
+      POSTGRES_DB: ${POSTGRES_DB_APP}
+      POSTGRES_USER: ${POSTGRES_USER_APP}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_APP}
     volumes:
       - app_data:/var/lib/postgresql/data
       - ./init-sql:/docker-entrypoint-initdb.d:ro
@@ -81,7 +91,7 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER_APP} -d ${POSTGRES_DB_APP}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -90,6 +100,9 @@ services:
   public-side:
     build: ./publicSide
     container_name: public-side
+    environment:
+      <<: *app_db_creds
+      DATABASE_URL: "postgres://${POSTGRES_USER_APP}:${POSTGRES_PASSWORD_APP}@${POSTGRES_HOST_APP}:${POSTGRES_PORT_APP}/${POSTGRES_DB_APP}?sslmode=disable"
     ports:
       - "3000:3000"
     networks:
