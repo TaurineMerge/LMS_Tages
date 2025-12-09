@@ -1,22 +1,32 @@
 package com.example.lms.test_attempt.api.controller;
 
 import io.javalin.http.Context;
+import java.util.Map;
 
 public class TestAttemptController {
 
     public static void getTestAttempts(Context ctx) {
-        ctx.json("GET /test-attempts");
+        // TODO: Заглушка, пока нет подключения к БД
+        ctx.json("[]");
     }
 
     public static void createTestAttempt(Context ctx) {
-        ctx.json("POST /test-attempts");
+        // TODO: Заглушка, пока нет подключения к БД
+        // Предположим, что есть DTO класс TestAttempt
+        // TestAttempt dto = ctx.bodyAsClass(TestAttempt.class);
+        // ctx.json(dto);
+        ctx.json("POST /test-attempts (stub)");
     }
 
     public static void getTestAttemptById(Context ctx) {
-        ctx.json("GET /test-attempts/" + ctx.pathParam("id"));
+        // TODO: Заглушка, пока нет подключения к БД
+        String id = ctx.pathParam("id");
+        ctx.json(Map.of("id", id, "message", "Not implemented yet"));
     }
 
     public static void deleteTestAttempt(Context ctx) {
-        ctx.json("DELETE /test-attempts/" + ctx.pathParam("id"));
+        // TODO: Заглушка, пока нет подключения к БД
+        String id = ctx.pathParam("id");
+        ctx.json(Map.of("deleted", true, "id", id));
     }
 }
