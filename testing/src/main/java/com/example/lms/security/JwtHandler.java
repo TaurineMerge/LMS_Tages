@@ -25,23 +25,53 @@ import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Обработчик JWT токенов для аутентификации и авторизации.
+ * Поддерживает загрузку публичных ключей из Keycloak и верификацию токенов.
+ * Кэширует публичные ключи для улучшения производительности.
+ */
 public class JwtHandler {
 
     private static final Logger log = LoggerFactory.getLogger(JwtHandler.class);
 
+    /** Кэш публичных ключей по идентификатору ключа (kid) */
     private static final Map<String, CachedKey> publicKeys = new ConcurrentHashMap<>();
+    
+    /** Объект для синхронизации при загрузке ключей */
     private static final Object lock = new Object();
+    
+    /** Внутренний URL Keycloak для доступа из контейнерной сети */
     private static final String KEYCLOAK_INTERNAL_URL = System.getenv().getOrDefault("KEYCLOAK_INTERNAL_URL",
             "http://keycloak:8080");
+    
+    /** Публичный URL Keycloak для проверки issuer токена */
     private static final String KEYCLOAK_URL = System.getenv().getOrDefault("KEYCLOAK_URL", "http://localhost:8080");
+    
+    /** Название realm в Keycloak */
     private static final String REALM = System.getenv().getOrDefault("KEYCLOAK_REALM", "student");
+    
+    /** Объект для парсинга JSON */
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
+    /** Время жизни кэша публичных ключей */
     private static final Duration CACHE_TTL = Duration.ofHours(1);
 
+    /**
+     * Запись для хранения публичного ключа и времени его загрузки.
+     * 
+     * @param key публичный RSA ключ
+     * @param loadedAt время загрузки ключа
+     */
     private record CachedKey(RSAPublicKey key, Instant loadedAt) {
     }
 
+    /**
+     * Гарантирует, что публичный ключ для указанного kid загружен и актуален.
+     * Если ключ отсутствует или устарел, происходит загрузка из Keycloak.
+     *
+     * @param kid идентификатор ключа (Key ID) из JWT токена
+     * @throws Exception если произошла ошибка при загрузке ключей
+     */
     private static void ensurePublicKeyLoaded(String kid) throws Exception {
         CachedKey cached = publicKeys.get(kid);
         if (cached == null || cached.loadedAt.plus(CACHE_TTL).isBefore(Instant.now())) {
@@ -63,6 +93,12 @@ public class JwtHandler {
         }
     }
 
+    /**
+     * Загружает публичные ключи из JWKS эндпоинта Keycloak.
+     * Парсит ответ и сохраняет RSA ключи в кэш.
+     *
+     * @throws Exception если произошла ошибка при загрузке или парсинге ключей
+     */
     private static void loadPublicKeys() throws Exception {
         HttpClient client = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
@@ -108,11 +144,36 @@ public class JwtHandler {
         }
     }
 
+    /**
+     * Извлекает идентификатор ключа (kid) из JWT токена без верификации.
+     *
+     * @param token JWT токен в формате строки
+     * @return идентификатор ключа (kid)
+     */
     private static String extractKid(String token) {
         DecodedJWT jwt = JWT.decode(token);
         return jwt.getKeyId();
     }
 
+    /**
+     * Создает обработчик (Handler) для аутентификации JWT токенов в Javalin.
+     * Проверяет наличие и валидность токена, извлекает claims и сохраняет их в контексте.
+     *
+     * @return Handler для использования в маршрутах Javalin
+     * 
+     * @throws UnauthorizedResponse если:
+     *         - отсутствует заголовок Authorization
+     *         - некорректный формат заголовка Authorization
+     *         - не удалось загрузить публичные ключи
+     *         - не найден ключ для указанного kid
+     *         - токен не прошел верификацию (истек, неверная подпись и т.д.)
+     * 
+     * Устанавливает следующие атрибуты в контексте при успешной аутентификации:
+     *   - userId: subject токена
+     *   - username: preferred_username из claims
+     *   - email: email из claims
+     *   - jwt: полный объект DecodedJWT
+     */
     public static Handler authenticate() {
         return ctx -> {
             String authHeader = ctx.header("Authorization");
