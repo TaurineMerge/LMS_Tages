@@ -2,11 +2,16 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"time"
 
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+const (
+	coursesTable = "courses"
 )
 
 type CourseRepository interface {
@@ -15,70 +20,95 @@ type CourseRepository interface {
 	GetByID(ctx context.Context, id string) (domain.Course, error)
 }
 
-type courseMemoryRepository struct {
-	courses []domain.Course
+type courseRepository struct {
+	db *pgxpool.Pool
 }
 
-func NewCourseMemoryRepository() CourseRepository {
-	courses := []domain.Course{
-		{ID: "660e8400-e29b-41d4-a716-446655440001", Title: "Введение в Python", Description: "Базовый курс по программированию на Python для начинающих", Level: "easy", CategoryID: "550e8400-e29b-41d4-a716-446655440000", CreatedAt: time.Now(), UpdatedAt: time.Now()},
-		{ID: "660e8400-e29b-41d4-a716-446655440002", Title: "Веб-разработка на Go", Description: "Создание веб-сервисов с использованием языка Go", Level: "medium", CategoryID: "550e8400-e29b-41d4-a716-446655440000", CreatedAt: time.Now(), UpdatedAt: time.Now()},
-		{ID: "660e8400-e29b-41d4-a716-446655440003", Title: "UI/UX для начинающих", Description: "Основы дизайна пользовательских интерфейсов", Level: "easy", CategoryID: "550e8400-e29b-41d4-a716-446655440001", CreatedAt: time.Now(), UpdatedAt: time.Now()},
-	}
-	return &courseMemoryRepository{courses: courses}
+func NewCourseRepository(db *pgxpool.Pool) CourseRepository {
+	return &courseRepository{db: db}
 }
 
-func (r *courseMemoryRepository) GetAll(ctx context.Context, page, limit int) ([]domain.Course, int, error) {
-	total := len(r.courses)
-	start := (page - 1) * limit
-	end := start + limit
-
-	if start > total {
-		return []domain.Course{}, total, nil
-	}
-	if end > total {
-		end = total
-	}
-
-	return r.courses[start:end], total, nil
+func (r *courseRepository) scanCourse(row pgx.Row) (domain.Course, error) {
+	var course domain.Course
+	err := row.Scan(
+		&course.ID,
+		&course.Title,
+		&course.Description,
+		&course.Level,
+		&course.Visibility,
+		&course.CategoryID,
+		&course.CreatedAt,
+		&course.UpdatedAt,
+	)
+	return course, err
 }
 
-func (r *courseMemoryRepository) GetAllByCategoryID(ctx context.Context, categoryID string, page, limit int) ([]domain.Course, int, error) {
-	_, err := uuid.Parse(categoryID)
+func (r *courseRepository) GetAll(ctx context.Context, page, limit int) ([]domain.Course, int, error) {
+	var total int
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE visibility = 'public'", coursesTable)
+	err := r.db.QueryRow(ctx, countQuery).Scan(&total)
 	if err != nil {
-		return nil, 0, fmt.Errorf("invalid category id: %w", err)
+		return nil, 0, fmt.Errorf("failed to count courses: %w", err)
 	}
 
-	var filtered []domain.Course
-	for _, course := range r.courses {
-		if course.CategoryID == categoryID {
-			filtered = append(filtered, course)
+	query := fmt.Sprintf("SELECT id, title, description, level, visibility, category_id, created_at, updated_at FROM %s WHERE visibility = 'public' ORDER BY created_at DESC LIMIT $1 OFFSET $2", coursesTable)
+	offset := (page - 1) * limit
+	rows, err := r.db.Query(ctx, query, limit, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get all courses: %w", err)
+	}
+	defer rows.Close()
+
+	var courses []domain.Course
+	for rows.Next() {
+		course, err := r.scanCourse(rows)
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to scan course: %w", err)
 		}
+		courses = append(courses, course)
 	}
 
-	total := len(filtered)
-	start := (page - 1) * limit
-	end := start + limit
-
-	if start > total {
-		return []domain.Course{}, total, nil
-	}
-	if end > total {
-		end = total
-	}
-
-	return filtered[start:end], total, nil
+	return courses, total, nil
 }
 
-func (r *courseMemoryRepository) GetByID(ctx context.Context, id string) (domain.Course, error) {
-	_, err := uuid.Parse(id)
+func (r *courseRepository) GetAllByCategoryID(ctx context.Context, categoryID string, page, limit int) ([]domain.Course, int, error) {
+	var total int
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE category_id = $1 AND visibility = 'public'", coursesTable)
+	err := r.db.QueryRow(ctx, countQuery, categoryID).Scan(&total)
 	if err != nil {
-		return domain.Course{}, fmt.Errorf("invalid uuid: %w", err)
+		return nil, 0, fmt.Errorf("failed to count courses by category: %w", err)
 	}
-	for _, course := range r.courses {
-		if course.ID == id {
-			return course, nil
+
+	query := fmt.Sprintf("SELECT id, title, description, level, visibility, category_id, created_at, updated_at FROM %s WHERE category_id = $1 AND visibility = 'public' ORDER BY created_at DESC LIMIT $2 OFFSET $3", coursesTable)
+	offset := (page - 1) * limit
+	rows, err := r.db.Query(ctx, query, categoryID, limit, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get courses by category: %w", err)
+	}
+	defer rows.Close()
+
+	var courses []domain.Course
+	for rows.Next() {
+		course, err := r.scanCourse(rows)
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to scan course: %w", err)
 		}
+		courses = append(courses, course)
 	}
-	return domain.Course{}, fmt.Errorf("course with id %s not found", id)
+
+	return courses, total, nil
+}
+
+func (r *courseRepository) GetByID(ctx context.Context, id string) (domain.Course, error) {
+	query := fmt.Sprintf("SELECT id, title, description, level, visibility, category_id, created_at, updated_at FROM %s WHERE id = $1 AND visibility = 'public'", coursesTable)
+	row := r.db.QueryRow(ctx, query, id)
+	course, err := r.scanCourse(row)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.Course{}, fmt.Errorf("course with id %s not found", id)
+		}
+		return domain.Course{}, fmt.Errorf("failed to get course by id: %w", err)
+	}
+
+	return course, nil
 }

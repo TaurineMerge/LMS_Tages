@@ -3,16 +3,29 @@ package main
 import (
 	"log"
 
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/config"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/middleware"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/repository"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/service"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/database"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/swagger"
 )
 
 func main() {
+	// Initialize config
+	cfg := config.New()
+
+	// Initialize database connection
+	dbPool, err := database.NewConnection(cfg)
+	if err != nil {
+		log.Fatalf("FATAL: could not connect to database: %v", err)
+	}
+	defer dbPool.Close()
+	log.Println("Database connection pool established")
+
 	// Create a new Fiber app with a custom error handler
 	app := fiber.New(fiber.Config{
 		ErrorHandler: middleware.GlobalErrorHandler,
@@ -36,9 +49,12 @@ func main() {
 	}))
 
 	// Initialize repositories
-	categoryRepo := repository.NewCategoryMemoryRepository()
-	courseRepo := repository.NewCourseMemoryRepository()
-	lessonRepo := repository.NewLessonMemoryRepository()
+	// categoryRepo := repository.NewCategoryMemoryRepository()
+	// courseRepo := repository.NewCourseMemoryRepository()
+	// lessonRepo := repository.NewLessonMemoryRepository()
+	categoryRepo := repository.NewCategoryRepository(dbPool)
+	courseRepo := repository.NewCourseRepository(dbPool)
+	lessonRepo := repository.NewLessonRepository(dbPool)
 
 	// Initialize services
 	categoryService := service.NewCategoryService(categoryRepo)

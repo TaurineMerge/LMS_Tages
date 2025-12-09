@@ -2,11 +2,16 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"time"
 
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+const (
+	lessonsTable = "lessons"
 )
 
 type LessonRepository interface {
@@ -14,55 +19,74 @@ type LessonRepository interface {
 	GetByID(ctx context.Context, id string) (domain.Lesson, error)
 }
 
-type lessonMemoryRepository struct {
-	lessons []domain.Lesson
+type lessonRepository struct {
+	db *pgxpool.Pool
 }
 
-func NewLessonMemoryRepository() LessonRepository {
-	lessons := []domain.Lesson{
-		{ID: "770e8400-e29b-41d4-a716-446655440001", Title: "Урок 1: Введение", CourseID: "660e8400-e29b-41d4-a716-446655440001", Content: []domain.ContentBlock{{ContentType: "text", Data: "Это первый урок."}}, CreatedAt: time.Now(), UpdatedAt: time.Now()},
-		{ID: "770e8400-e29b-41d4-a716-446655440002", Title: "Урок 2: Переменные", CourseID: "660e8400-e29b-41d4-a716-446655440001", Content: []domain.ContentBlock{{ContentType: "text", Data: "Это второй урок."}}, CreatedAt: time.Now(), UpdatedAt: time.Now()},
-		{ID: "770e8400-e29b-41d4-a716-446655440003", Title: "Урок 1: HTTP", CourseID: "660e8400-e29b-41d4-a716-446655440002", Content: []domain.ContentBlock{{ContentType: "text", Data: "Это первый урок по Go."}}, CreatedAt: time.Now(), UpdatedAt: time.Now()},
-	}
-	return &lessonMemoryRepository{lessons: lessons}
+func NewLessonRepository(db *pgxpool.Pool) LessonRepository {
+	return &lessonRepository{db: db}
 }
 
-func (r *lessonMemoryRepository) GetAllByCourseID(ctx context.Context, courseID string, page, limit int) ([]domain.Lesson, int, error) {
-	_, err := uuid.Parse(courseID)
+func (r *lessonRepository) scanLesson(row pgx.Row) (domain.Lesson, error) {
+	var lesson domain.Lesson
+	err := row.Scan(
+		&lesson.ID,
+		&lesson.Title,
+		&lesson.CourseID,
+		&lesson.Content,
+		&lesson.CreatedAt,
+		&lesson.UpdatedAt,
+	)
+	return lesson, err
+}
+
+func (r *lessonRepository) GetAllByCourseID(ctx context.Context, courseID string, page, limit int) ([]domain.Lesson, int, error) {
+	var total int
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE course_id = $1", lessonsTable)
+	err := r.db.QueryRow(ctx, countQuery, courseID).Scan(&total)
 	if err != nil {
-		return nil, 0, fmt.Errorf("invalid course id: %w", err)
+		return nil, 0, fmt.Errorf("failed to count lessons by course: %w", err)
 	}
 
-	var filtered []domain.Lesson
-	for _, lesson := range r.lessons {
-		if lesson.CourseID == courseID {
-			filtered = append(filtered, lesson)
+	query := fmt.Sprintf("SELECT id, title, course_id, content, created_at, updated_at FROM %s WHERE course_id = $1 ORDER BY created_at ASC LIMIT $2 OFFSET $3", lessonsTable)
+	offset := (page - 1) * limit
+	rows, err := r.db.Query(ctx, query, courseID, limit, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get lessons by course: %w", err)
+	}
+	defer rows.Close()
+
+	var lessons []domain.Lesson
+	for rows.Next() {
+		// Note: content is not scanned here for the list view, matching LessonDTO
+		var lesson domain.Lesson
+		err := rows.Scan(
+			&lesson.ID,
+			&lesson.Title,
+			&lesson.CourseID,
+			&lesson.Content, // Still scan it to avoid scan error, but it won't be used by the DTO
+			&lesson.CreatedAt,
+			&lesson.UpdatedAt,
+		)
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to scan lesson: %w", err)
 		}
+		lessons = append(lessons, lesson)
 	}
 
-	total := len(filtered)
-	start := (page - 1) * limit
-	end := start + limit
-
-	if start > total {
-		return []domain.Lesson{}, total, nil
-	}
-	if end > total {
-		end = total
-	}
-
-	return filtered[start:end], total, nil
+	return lessons, total, nil
 }
 
-func (r *lessonMemoryRepository) GetByID(ctx context.Context, id string) (domain.Lesson, error) {
-	_, err := uuid.Parse(id)
+func (r *lessonRepository) GetByID(ctx context.Context, id string) (domain.Lesson, error) {
+	query := fmt.Sprintf("SELECT id, title, course_id, content, created_at, updated_at FROM %s WHERE id = $1", lessonsTable)
+	row := r.db.QueryRow(ctx, query, id)
+	lesson, err := r.scanLesson(row)
 	if err != nil {
-		return domain.Lesson{}, fmt.Errorf("invalid uuid: %w", err)
-	}
-	for _, lesson := range r.lessons {
-		if lesson.ID == id {
-			return lesson, nil
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.Lesson{}, fmt.Errorf("lesson with id %s not found", id)
 		}
+		return domain.Lesson{}, fmt.Errorf("failed to get lesson by id: %w", err)
 	}
-	return domain.Lesson{}, fmt.Errorf("lesson with id %s not found", id)
+
+	return lesson, nil
 }
