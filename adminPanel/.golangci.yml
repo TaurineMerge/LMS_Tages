@@ -1,0 +1,31 @@
+version: 2
+
+linters:
+    enable:
+        - staticcheck # баги и производительность
+        - errcheck # необработанные ошибки
+        - govet # встроенный анализатор
+        - ineffassign # неиспользуемые присваивания
+        - revive # стиль кода
+        - misspell # опечатки в комментариях
+        - unconvert # ненужные конверсии типов
+        - unparam # неиспользуемые параметры функций
+        - gosec # проблемы безопасности
+        - bodyclose # незакрытые HTTP body
+        - dupl # дублирование кода
+        - gocyclo # цикломатическая сложность
+
+formatters:
+    enable:
+        - gofmt
+        - goimports
+
+linters-settings:
+    gofmt:
+        simplify: true
+
+    goimports:
+        local-prefixes: "github.com/TaurineMerge"
+
+run:
+    timeout: 1m
