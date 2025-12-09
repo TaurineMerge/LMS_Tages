@@ -49,6 +49,11 @@ class auth_service:
             scope="openid profile email",
             state="some_random_state"  # In production, use a secure random state
         )
+        # Log generated URL for troubleshooting client lookup issues
+        try:
+            logger.debug("Generated Keycloak auth URL (raw): %s", url)
+        except Exception:
+            pass
         # Replace internal URL with public URL for browser redirection
         if settings.KEYCLOAK_SERVER_URL != settings.KEYCLOAK_PUBLIC_URL:
             return url.replace(settings.KEYCLOAK_SERVER_URL, settings.KEYCLOAK_PUBLIC_URL)
@@ -137,15 +142,27 @@ class auth_service:
     async def exchange_code_for_token(self, code: str) -> dict:
         """Exchange authorization code for access token."""
         try:
+            logger.info(f"Attempting to exchange authorization code (length: {len(code)})")
+            logger.debug(f"Redirect URI: {settings.KEYCLOAK_REDIRECT_URI}")
+            logger.debug(f"Keycloak server URL: {settings.KEYCLOAK_SERVER_URL}")
+            
             token = self.keycloak_openid.token(
                 grant_type="authorization_code",
                 code=code,
                 redirect_uri=settings.KEYCLOAK_REDIRECT_URI
             )
+            logger.info("Code exchange successful, token obtained")
             return token
-        except Exception as e:
+        except KeycloakAuthenticationError as e:
+            logger.error(f"Keycloak auth error during code exchange: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Failed to exchange code: {str(e)}"
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error during code exchange: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to exchange code: {str(e)}"
             )
 
@@ -188,9 +205,28 @@ class auth_service:
     async def refresh_token(self, refresh_token: str) -> dict:
         """Refresh access token using refresh token."""
         try:
-            token = self.keycloak_openid.refresh_token(refresh_token)
+            logger.debug(f"Attempting to refresh token (token length: {len(refresh_token)})")
+            # Use internal server URL for refresh to avoid issuer mismatch
+            # Tokens issued by public URL have public issuer, but Keycloak
+            # may expect internal issuer for refresh grant
+            keycloak_for_refresh = KeycloakOpenID(
+                server_url=settings.KEYCLOAK_SERVER_URL,
+                client_id=settings.KEYCLOAK_CLIENT_ID,
+                realm_name=settings.KEYCLOAK_REALM,
+                client_secret_key=settings.KEYCLOAK_CLIENT_SECRET,
+            )
+            logger.debug(f"Keycloak refresh client configured: server={settings.KEYCLOAK_SERVER_URL}, realm={settings.KEYCLOAK_REALM}")
+            token = keycloak_for_refresh.refresh_token(refresh_token)
+            logger.info("Token refresh successful")
             return token
+        except KeycloakAuthenticationError as e:
+            logger.warning(f"Token refresh failed (auth error): {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired refresh token"
+            )
         except Exception as e:
+            logger.error(f"Token refresh failed: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=f"Failed to refresh token: {str(e)}"

@@ -1,5 +1,5 @@
 """Authentication API endpoints."""
-from fastapi import APIRouter, Request, Depends, status, Body
+from fastapi import APIRouter, Request, Depends, status, Body, HTTPException
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
@@ -14,6 +14,8 @@ from app.schemas.common import (
 )
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+import logging
+logger = logging.getLogger(__name__)
 
 
 class refresh_token_request(BaseModel):
@@ -60,6 +62,11 @@ async def get_token(body: password_token_request):
 async def login():
     """Initiate login flow."""
     login_url = auth_service.get_login_url()
+    # Log the redirect URL to help diagnose 'client not found' errors
+    try:
+        logger.debug("Redirecting to Keycloak login URL: %s", login_url)
+    except Exception:
+        pass
     return RedirectResponse(url=login_url)
 
 
@@ -71,16 +78,28 @@ async def login():
 )
 async def callback(code: str):
     """Handle login callback."""
-    token = await auth_service.exchange_code_for_token(code)
-    token_data = token_response(
-        access_token=token.get("access_token", ""),
-        refresh_token=token.get("refresh_token"),
-        token_type=token.get("token_type", "Bearer"),
-        expires_in=token.get("expires_in", 0),
-        refresh_expires_in=token.get("refresh_expires_in"),
-        scope=token.get("scope")
-    )
-    return api_response(data=token_data, message="Login successful")
+    logger.info(f"Callback received with code: {code[:20]}..." if len(code) > 20 else f"Callback received with code: {code}")
+    try:
+        token = await auth_service.exchange_code_for_token(code)
+        token_data = token_response(
+            access_token=token.get("access_token", ""),
+            refresh_token=token.get("refresh_token"),
+            token_type=token.get("token_type", "Bearer"),
+            expires_in=token.get("expires_in", 0),
+            refresh_expires_in=token.get("refresh_expires_in"),
+            scope=token.get("scope")
+        )
+        logger.info("Callback successful, returning token")
+        return api_response(data=token_data, message="Login successful")
+    except HTTPException as e:
+        logger.error(f"Callback failed: {e.detail}")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected callback error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Callback failed: {str(e)}"
+        )
 
 
 @router.post(

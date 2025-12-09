@@ -272,6 +272,8 @@
         // Global API Helper
         const API = {
             baseUrl: '/account/api/v1',
+            traceId: null,
+            spanId: null,
             
             getToken() {
                 return localStorage.getItem('access_token');
@@ -282,17 +284,53 @@
                 if (refreshToken) {
                     localStorage.setItem('refresh_token', refreshToken);
                 }
+                // Also set access_token as HttpOnly-style cookie for backend
+                // (Note: JS can't set HttpOnly, but we can use regular cookie for reference)
+                const expiresIn = 300; // 5 minutes (default token lifetime)
+                const date = new Date();
+                date.setTime(date.getTime() + expiresIn * 1000);
+                document.cookie = `access_token=${token}; path=/account/; expires=${date.toUTCString()}; SameSite=Strict`;
             },
             
             clearTokens() {
                 localStorage.removeItem('access_token');
                 localStorage.removeItem('refresh_token');
+                // Clear cookies
+                document.cookie = 'access_token=; path=/account/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
+            },
+            
+            setTraceContext(response) {
+                // Extract trace ID from response headers to propagate through session
+                const traceId = response.headers.get('X-Trace-Id');
+                const spanId = response.headers.get('X-Span-Id');
+                if (traceId) {
+                    this.traceId = traceId;
+                    sessionStorage.setItem('trace_id', traceId);
+                }
+                if (spanId) {
+                    this.spanId = spanId;
+                    sessionStorage.setItem('span_id', spanId);
+                }
+            },
+            
+            getTraceHeaders() {
+                // Return traceparent header for W3C Trace Context propagation
+                // Format: traceparent: version-trace_id-span_id-trace_flags
+                const traceId = this.traceId || sessionStorage.getItem('trace_id');
+                const spanId = this.spanId || sessionStorage.getItem('span_id') || '0000000000000001';
+                if (traceId) {
+                    return {
+                        'traceparent': `00-${traceId}-${spanId}-01`
+                    };
+                }
+                return {};
             },
             
             async request(endpoint, options = {}) {
                 const token = this.getToken();
                 const headers = {
                     'Content-Type': 'application/json',
+                    ...this.getTraceHeaders(),
                     ...options.headers
                 };
                 
@@ -304,6 +342,9 @@
                     ...options,
                     headers
                 });
+                
+                // Capture trace context from response for next requests
+                this.setTraceContext(response);
                 
                 if (response.status === 401) {
                     // Try to refresh token
@@ -335,22 +376,37 @@
             
             async refreshToken() {
                 const refreshToken = localStorage.getItem('refresh_token');
-                if (!refreshToken) return false;
+                if (!refreshToken) {
+                    console.warn('No refresh token available');
+                    return false;
+                }
                 
                 try {
+                    console.debug('Attempting token refresh...');
                     const response = await fetch(`${this.baseUrl}/auth/refresh`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...this.getTraceHeaders()
+                        },
                         body: JSON.stringify({ refresh_token: refreshToken })
                     });
                     
+                    // Capture trace context for next requests
+                    this.setTraceContext(response);
+                    
                     if (response.ok) {
                         const data = await response.json();
+                        console.info('Token refreshed successfully');
                         this.setToken(data.data.access_token, data.data.refresh_token);
                         return true;
+                    } else {
+                        const error = await response.json();
+                        console.error('Token refresh failed:', error.detail || error.error);
+                        return false;
                     }
                 } catch (e) {
-                    console.error('Failed to refresh token:', e);
+                    console.error('Token refresh error:', e);
                 }
                 return false;
             }
@@ -377,6 +433,7 @@
             if (token) {
                 try {
                     const data = await API.get('/auth/me');
+                    console.info('Auth check successful with trace_id:', API.traceId);
                     if (data.data) {
                         const user = data.data;
                         document.getElementById('nav-username').textContent = user.preferred_username || user.email || 'Пользователь';
