@@ -36,6 +36,7 @@ func (h *LessonHandler) RegisterRoutes(router fiber.Router) {
 
 // GetLessons - получение уроков курса
 func (h *LessonHandler) getLessons(c *fiber.Ctx) error {
+	ctx := c.UserContext()
 	courseID := c.Params("course_id")
 	
 	if !isValidUUID(courseID) {
@@ -45,7 +46,7 @@ func (h *LessonHandler) getLessons(c *fiber.Ctx) error {
 		})
 	}
 
-	lessons, err := h.lessonService.GetLessons(c.Context(), courseID)
+	lessons, err := h.lessonService.GetLessons(ctx, courseID)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
@@ -64,6 +65,7 @@ func (h *LessonHandler) getLessons(c *fiber.Ctx) error {
 
 // GetLesson - получение урока по ID
 func (h *LessonHandler) getLesson(c *fiber.Ctx) error {
+	ctx := c.UserContext()
 	courseID := c.Params("course_id")
 	lessonID := c.Params("id")
 	
@@ -74,7 +76,7 @@ func (h *LessonHandler) getLesson(c *fiber.Ctx) error {
 		})
 	}
 
-	lesson, err := h.lessonService.GetLesson(c.Context(), lessonID, courseID)
+	lesson, err := h.lessonService.GetLesson(ctx, lessonID, courseID)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
@@ -93,6 +95,7 @@ func (h *LessonHandler) getLesson(c *fiber.Ctx) error {
 
 // CreateLesson - создание урока
 func (h *LessonHandler) createLesson(c *fiber.Ctx) error {
+	ctx := c.UserContext()
 	courseID := c.Params("course_id")
 	
 	if !isValidUUID(courseID) {
@@ -138,7 +141,7 @@ func (h *LessonHandler) createLesson(c *fiber.Ctx) error {
 	}
 
 	// Создаем урок
-	lesson, err := h.lessonService.CreateLesson(c.Context(), courseID, input)
+	lesson, err := h.lessonService.CreateLesson(ctx, courseID, input)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
@@ -157,6 +160,7 @@ func (h *LessonHandler) createLesson(c *fiber.Ctx) error {
 
 // UpdateLesson - обновление урока
 func (h *LessonHandler) updateLesson(c *fiber.Ctx) error {
+	ctx := c.UserContext()
 	courseID := c.Params("course_id")
 	lessonID := c.Params("id")
 	
@@ -203,7 +207,7 @@ func (h *LessonHandler) updateLesson(c *fiber.Ctx) error {
 	}
 
 	// Обновляем урок
-	lesson, err := h.lessonService.UpdateLesson(c.Context(), lessonID, courseID, input)
+	lesson, err := h.lessonService.UpdateLesson(ctx, lessonID, courseID, input)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
@@ -222,6 +226,7 @@ func (h *LessonHandler) updateLesson(c *fiber.Ctx) error {
 
 // DeleteLesson - удаление урока
 func (h *LessonHandler) deleteLesson(c *fiber.Ctx) error {
+	ctx := c.UserContext()
 	courseID := c.Params("course_id")
 	lessonID := c.Params("id")
 	
@@ -232,7 +237,7 @@ func (h *LessonHandler) deleteLesson(c *fiber.Ctx) error {
 		})
 	}
 
-	err := h.lessonService.DeleteLesson(c.Context(), lessonID, courseID)
+	err := h.lessonService.DeleteLesson(ctx, lessonID, courseID)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{

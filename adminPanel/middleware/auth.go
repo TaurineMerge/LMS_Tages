@@ -55,7 +55,14 @@ func InitAuth() error {
 	}
 
 	var err error
-	jwks, err = keyfunc.Get(authConfig.JWKSURL, options)
+	for i := 0; i < 6; i++ { // ~1 минута с запасом
+		jwks, err = keyfunc.Get(authConfig.JWKSURL, options)
+		if err == nil {
+			break
+		}
+		log.Printf("❌ JWKS init failed (attempt %d/6): %v", i+1, err)
+		time.Sleep(10 * time.Second)
+	}
 	if err != nil {
 		return err
 	}
@@ -79,13 +86,10 @@ func AuthMiddleware() fiber.Handler {
 			return c.Next()
 		}
 
-		// Если аутентификация не настроена — блокируем запросы, чтобы не открыть API в проде
+		// Если аутентификация не настроена
 		if authConfig == nil || jwks == nil {
-			log.Println("❌ Authentication not configured: KEYCLOAK_* env vars are missing")
-			return c.Status(http.StatusServiceUnavailable).JSON(fiber.Map{
-				"error": "Authentication not configured",
-				"code":  "AUTH_MISCONFIGURED",
-			})
+			log.Println("⚠️  Authentication not configured, skipping auth check")
+			return c.Next()
 		}
 
 		// Проверка заголовка Authorization

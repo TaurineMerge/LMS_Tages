@@ -34,7 +34,8 @@ func (h *CategoryHandler) RegisterRoutes(router fiber.Router) {
 }
 
 func (h *CategoryHandler) getCategories(c *fiber.Ctx) error {
-	categories, err := h.categoryService.GetCategories(c.Context())
+	ctx := c.UserContext()
+	categories, err := h.categoryService.GetCategories(ctx)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
@@ -61,6 +62,7 @@ func (h *CategoryHandler) getCategories(c *fiber.Ctx) error {
 }
 
 func (h *CategoryHandler) getCategory(c *fiber.Ctx) error {
+	ctx := c.UserContext()
 	id := c.Params("id")
 
 	if !isValidUUID(id) {
@@ -70,7 +72,7 @@ func (h *CategoryHandler) getCategory(c *fiber.Ctx) error {
 		})
 	}
 
-	category, err := h.categoryService.GetCategory(c.Context(), id)
+	category, err := h.categoryService.GetCategory(ctx, id)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
@@ -88,6 +90,7 @@ func (h *CategoryHandler) getCategory(c *fiber.Ctx) error {
 }
 
 func (h *CategoryHandler) createCategory(c *fiber.Ctx) error {
+	ctx := c.UserContext()
 	// Валидация входных данных
 	var input models.CategoryCreate
 
@@ -113,7 +116,7 @@ func (h *CategoryHandler) createCategory(c *fiber.Ctx) error {
 	}
 
 	// Создаем категорию
-	category, err := h.categoryService.CreateCategory(c.Context(), input)
+	category, err := h.categoryService.CreateCategory(ctx, input)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
@@ -131,6 +134,7 @@ func (h *CategoryHandler) createCategory(c *fiber.Ctx) error {
 }
 
 func (h *CategoryHandler) updateCategory(c *fiber.Ctx) error {
+	ctx := c.UserContext()
 	id := c.Params("id")
 
 	if !isValidUUID(id) {
@@ -164,7 +168,7 @@ func (h *CategoryHandler) updateCategory(c *fiber.Ctx) error {
 		})
 	}
 
-	category, err := h.categoryService.UpdateCategory(c.Context(), id, input)
+	category, err := h.categoryService.UpdateCategory(ctx, id, input)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
@@ -182,6 +186,7 @@ func (h *CategoryHandler) updateCategory(c *fiber.Ctx) error {
 }
 
 func (h *CategoryHandler) deleteCategory(c *fiber.Ctx) error {
+	ctx := c.UserContext()
 	id := c.Params("id")
 
 	if !isValidUUID(id) {
@@ -191,7 +196,7 @@ func (h *CategoryHandler) deleteCategory(c *fiber.Ctx) error {
 		})
 	}
 
-	err := h.categoryService.DeleteCategory(c.Context(), id)
+	err := h.categoryService.DeleteCategory(ctx, id)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
