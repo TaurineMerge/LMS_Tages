@@ -1,0 +1,36 @@
+{
+    "$schema": "course_schema.json",
+    "type": "object",
+    "properties": {
+        "uuid": {
+            "type": "string"
+        },
+        "title": {
+            "type": "string"
+        },
+        "description": {
+            "type": "string"
+        },
+        "level": {
+            "type": "string",
+            "enum": [
+                "easy",
+                "medium",
+                "hard"
+            ]
+        },
+        "lessons": {
+            "type": "array",
+            "items": {
+                "$ref": "lesson.json"
+            }
+        }
+    },
+    "required": [
+        "id",
+        "title",
+        "description",
+        "level",
+        "lessons"
+    ]
+}

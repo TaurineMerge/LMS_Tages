@@ -42,7 +42,7 @@ services:
     restart: unless-stopped
 
   keycloak:
-    image: quay.io/keycloak/keycloak:21.1.1
+    image: quay.io/keycloak/keycloak:23.0.0
     container_name: keycloak
     environment:
       KC_DB: postgres
@@ -51,8 +51,11 @@ services:
       KC_DB_PASSWORD: keycloaks
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
-      KC_HEALTH_ENABLED: true
-      KC_METRICS_ENABLED: true
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+      KC_HTTP_PORT: 8080
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
     command:
       - start-dev
       - --http-port=8080
@@ -60,7 +63,8 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./personal-account/keycloak/student-realm.json:/opt/keycloak/data/import/student-realm.json:ro
+      - ./keycloak/student.json:/opt/keycloak/data/import/student.json:ro
+      - ./keycloak/teacher.json:/opt/keycloak/data/import/teacher.json:ro
     depends_on:
       keycloak-db:
         condition: service_healthy
@@ -107,6 +111,12 @@ services:
   admin-panel:
     build: ./adminPanel
     container_name: admin-panel
+    environment:
+      KEYCLOAK_ISSUER_URL: "http://keycloak:8080/realms/teacher"
+      KEYCLOAK_CLIENT_ID: "teacher-client"
+      KEYCLOAK_CLIENT_SECRET: "TEACHER_SECRET"
+      KEYCLOAK_APP_NAME: "LMS Admin Application"
+      WAIT_FOR_KEYCLOAK: "true"
     ports:
       - "4000:4000"
     networks:

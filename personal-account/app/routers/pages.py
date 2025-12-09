@@ -4,6 +4,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from app.config import get_settings
+from app.telemetry import traced
 
 settings = get_settings()
 templates = Jinja2Templates(directory="templates")
@@ -24,10 +25,11 @@ def get_keycloak_urls() -> dict:
 
 
 @router.get("/", response_class=HTMLResponse)
+@traced("pages.dashboard")
 async def dashboard_page(request: Request):
     """Render dashboard page."""
     return templates.TemplateResponse(
-        "dashboard.html",
+        "dashboard.hbs",
         {
             "request": request,
             "active_page": "dashboard",
@@ -37,10 +39,11 @@ async def dashboard_page(request: Request):
 
 
 @router.get("/login", response_class=HTMLResponse)
+@traced("pages.login")
 async def login_page(request: Request):
     """Render login page."""
     return templates.TemplateResponse(
-        "login.html",
+        "login.hbs",
         {
             "request": request,
             **get_keycloak_urls()
@@ -49,10 +52,11 @@ async def login_page(request: Request):
 
 
 @router.get("/profile", response_class=HTMLResponse)
+@traced("pages.profile")
 async def profile_page(request: Request):
     """Render profile page."""
     return templates.TemplateResponse(
-        "profile.html",
+        "profile.hbs",
         {
             "request": request,
             "active_page": "profile",
@@ -62,10 +66,11 @@ async def profile_page(request: Request):
 
 
 @router.get("/certificates", response_class=HTMLResponse)
+@traced("pages.certificates")
 async def certificates_page(request: Request):
     """Render certificates page."""
     return templates.TemplateResponse(
-        "certificates.html",
+        "certificates.hbs",
         {
             "request": request,
             "active_page": "certificates",
@@ -75,10 +80,11 @@ async def certificates_page(request: Request):
 
 
 @router.get("/visits", response_class=HTMLResponse)
+@traced("pages.visits")
 async def visits_page(request: Request):
     """Render visits page."""
     return templates.TemplateResponse(
-        "visits.html",
+        "visits.hbs",
         {
             "request": request,
             "active_page": "visits",
@@ -88,10 +94,11 @@ async def visits_page(request: Request):
 
 
 @router.get("/register", response_class=HTMLResponse)
+@traced("pages.register")
 async def register_page(request: Request):
     """Render registration page."""
     return templates.TemplateResponse(
-        "register.html",
+        "register.hbs",
         {
             "request": request,
             **get_keycloak_urls()
@@ -103,7 +110,7 @@ async def register_page(request: Request):
 async def callback_page(request: Request):
     """Render OAuth callback page."""
     return templates.TemplateResponse(
-        "callback.html",
+        "callback.hbs",
         {
             "request": request
         }

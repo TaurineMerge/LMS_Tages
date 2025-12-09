@@ -82,21 +82,38 @@ configure_tracing()
 oauth2_scheme = {
     "type": "oauth2",
     "flows": {
-        "authorizationCode": {
-            "authorizationUrl": f"{settings.KEYCLOAK_PUBLIC_URL}/realms/{settings.KEYCLOAK_REALM}/protocol/openid-connect/auth",
+        "password": {
             "tokenUrl": f"{settings.KEYCLOAK_PUBLIC_URL}/realms/{settings.KEYCLOAK_REALM}/protocol/openid-connect/token",
-            "scopes": {
-                "openid": "OpenID Connect scope",
-                "profile": "User profile",
-                "email": "User email"
-            }
+            "scopes": {}
         }
     }
 }
 
 app = FastAPI(
     title="Personal Account API",
-    description="API для личного кабинета системы онлайн образования",
+    description="""
+API для личного кабинета системы онлайн образования
+
+## Авторизация
+
+### Способ 1: OAuth2 Password Flow (логин/пароль)
+1. Нажмите кнопку **Authorize** 
+2. Выберите **OAuth2 (OAuth2, password)**
+3. Введите логин и пароль тестового пользователя:
+   - Username: `student` Password: `student`
+   - Username: `testuser` Password: `pass`
+
+### Способ 2: Bearer Token
+1. Получите токен через POST `/api/v1/auth/token`:
+   ```json
+   {
+     "username": "student",
+     "password": "student"
+   }
+   ```
+2. Скопируйте `access_token` из ответа
+3. Нажмите **Authorize** → **BearerAuth** → вставьте токен
+    """,
     version="1.0.0",
     root_path="/account",
     lifespan=lifespan,
@@ -105,7 +122,8 @@ app = FastAPI(
     openapi_url="/openapi.json",
     swagger_ui_init_oauth={
         "clientId": settings.KEYCLOAK_CLIENT_ID,
-        "scopes": "openid profile email"
+        "clientSecret": settings.KEYCLOAK_CLIENT_SECRET,
+        "usePkceWithAuthorizationCodeGrant": False
     }
 )
 
@@ -125,7 +143,8 @@ def custom_openapi():
         "BearerAuth": {
             "type": "http",
             "scheme": "bearer",
-            "bearerFormat": "JWT"
+            "bearerFormat": "JWT",
+            "description": "Введите JWT токен (без префикса 'Bearer')"
         }
     }
     app.openapi_schema = openapi_schema

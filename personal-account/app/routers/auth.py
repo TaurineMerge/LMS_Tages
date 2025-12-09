@@ -26,6 +26,32 @@ class logout_request(BaseModel):
     refresh_token: str
 
 
+class password_token_request(BaseModel):
+    """Password token request body."""
+    username: str
+    password: str
+
+
+@router.post(
+    "/token",
+    response_model=api_response[token_response],
+    summary="Get access token",
+    description="Get access token by username and password (OAuth2 password flow)."
+)
+async def get_token(body: password_token_request):
+    """Get access token using username and password."""
+    token = await auth_service.get_token_by_password(body.username, body.password)
+    token_data = token_response(
+        access_token=token.get("access_token", ""),
+        refresh_token=token.get("refresh_token"),
+        token_type=token.get("token_type", "Bearer"),
+        expires_in=token.get("expires_in", 0),
+        refresh_expires_in=token.get("refresh_expires_in"),
+        scope=token.get("scope")
+    )
+    return api_response(data=token_data, message="Token obtained successfully")
+
+
 @router.get(
     "/login",
     summary="Redirect to Keycloak login",

@@ -6,6 +6,7 @@ from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from app.config import get_settings
+from app.telemetry import traced
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -24,6 +25,7 @@ class auth_service:
         self._keycloak_admin = None
 
     @property
+    @traced("auth_service.keycloak_admin")
     def keycloak_admin(self) -> KeycloakAdmin:
         """Get or create KeycloakAdmin instance."""
         if self._keycloak_admin is None:
@@ -39,6 +41,7 @@ class auth_service:
             self._keycloak_admin.realm_name = settings.KEYCLOAK_REALM
         return self._keycloak_admin
 
+    @traced("auth_service.get_login_url")
     def get_login_url(self) -> str:
         """Generate Keycloak login URL."""
         url = self.keycloak_openid.auth_url(
@@ -51,6 +54,7 @@ class auth_service:
             return url.replace(settings.KEYCLOAK_SERVER_URL, settings.KEYCLOAK_PUBLIC_URL)
         return url
 
+    @traced("auth_service.get_register_url")
     def get_register_url(self) -> str:
         """Generate Keycloak registration URL."""
         # For Keycloak 21+, use kc_action=register parameter with auth URL
@@ -71,6 +75,7 @@ class auth_service:
         )
         return register_url
 
+    @traced("auth_service.register_user")
     async def register_user(
         self,
         username: str,
@@ -128,6 +133,7 @@ class auth_service:
                 detail=f"Registration failed: {str(e)}"
             )
 
+    @traced("auth_service.exchange_code_for_token")
     async def exchange_code_for_token(self, code: str) -> dict:
         """Exchange authorization code for access token."""
         try:
@@ -143,6 +149,28 @@ class auth_service:
                 detail=f"Failed to exchange code: {str(e)}"
             )
 
+    @traced("auth_service.get_token_by_password")
+    async def get_token_by_password(self, username: str, password: str) -> dict:
+        """Get access token using username and password (OAuth2 password flow)."""
+        try:
+            token = self.keycloak_openid.token(
+                grant_type="password",
+                username=username,
+                password=password
+            )
+            return token
+        except KeycloakAuthenticationError as e:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid user credentials"
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Failed to obtain token: {str(e)}"
+            )
+
+    @traced("auth_service.verify_token")
     async def verify_token(self, token: str) -> dict:
         """Verify and decode JWT token."""
         try:
@@ -156,6 +184,7 @@ class auth_service:
                 detail="Invalid authentication credentials"
             )
 
+    @traced("auth_service.refresh_token")
     async def refresh_token(self, refresh_token: str) -> dict:
         """Refresh access token using refresh token."""
         try:
@@ -167,6 +196,7 @@ class auth_service:
                 detail=f"Failed to refresh token: {str(e)}"
             )
 
+    @traced("auth_service.logout")
     async def logout(self, refresh_token: str) -> None:
         """Logout user by invalidating the refresh token."""
         try:
