@@ -45,10 +45,10 @@ public class JwtHandler {
             "http://keycloak:8080");
     
     /** Публичный URL Keycloak для проверки issuer токена */
-    private static final String KEYCLOAK_URL = System.getenv().getOrDefault("KEYCLOAK_URL", "http://localhost:8080");
+    private static final String KEYCLOAK_URL = System.getenv().getOrDefault("KEYCLOAK_EXTERNAL_URL", "http://localhost:8080");
     
     /** Название realm в Keycloak */
-    private static final String REALM = System.getenv().getOrDefault("KEYCLOAK_REALM", "student");
+    private static final String REALM = System.getenv().getOrDefault("KEYCLOAK_STUDENT_REALM", "student");
     
     /** Объект для парсинга JSON */
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
