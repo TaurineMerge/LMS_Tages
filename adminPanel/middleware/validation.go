@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
-	"strconv"
+	// "strconv"
 	"strings"
-
-	"adminPanel/models"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"adminPanel/models"
 )
 
 // ValidateStruct - валидирует структуру и возвращает ошибки
@@ -18,19 +17,19 @@ func ValidateStruct(dto interface{}) (map[string]string, error) {
 	errors := make(map[string]string)
 	val := reflect.ValueOf(dto).Elem()
 	typ := val.Type()
-
+	
 	for i := 0; i < val.NumField(); i++ {
 		field := val.Field(i)
 		structField := typ.Field(i)
-
+		
 		validateTag := structField.Tag.Get("validate")
 		if validateTag == "" {
 			continue
 		}
-
+		
 		rules := strings.Split(validateTag, ",")
 		fieldName := getJSONFieldName(structField)
-
+		
 		for _, rule := range rules {
 			if err := applyValidationRule(field, rule, fieldName); err != nil {
 				errors[fieldName] = err.Error()
@@ -38,7 +37,7 @@ func ValidateStruct(dto interface{}) (map[string]string, error) {
 			}
 		}
 	}
-
+	
 	return errors, nil
 }
 
@@ -51,7 +50,7 @@ func ValidateRequest(dto interface{}) fiber.Handler {
 			dtoType = dtoType.Elem()
 		}
 		dtoValue := reflect.New(dtoType).Interface()
-
+		
 		// Парсим тело запроса
 		if err := c.BodyParser(dtoValue); err != nil {
 			return c.Status(400).JSON(models.ErrorResponse{
@@ -59,7 +58,7 @@ func ValidateRequest(dto interface{}) fiber.Handler {
 				Code:  "BAD_REQUEST",
 			})
 		}
-
+		
 		// Валидируем DTO
 		if validationErrors, err := ValidateStruct(dtoValue); err != nil {
 			return c.Status(500).JSON(models.ErrorResponse{
@@ -73,10 +72,10 @@ func ValidateRequest(dto interface{}) fiber.Handler {
 				Errors: validationErrors,
 			})
 		}
-
+		
 		// Сохраняем валидированные данные в контекст
 		c.Locals("validatedDTO", dtoValue)
-
+		
 		return c.Next()
 	}
 }
@@ -90,7 +89,7 @@ func ValidateMiddleware(dto interface{}) fiber.Handler {
 			dtoType = dtoType.Elem()
 		}
 		dtoValue := reflect.New(dtoType).Interface()
-
+		
 		// Парсим тело запроса
 		if err := c.BodyParser(dtoValue); err != nil {
 			return c.Status(400).JSON(models.ErrorResponse{
@@ -98,7 +97,7 @@ func ValidateMiddleware(dto interface{}) fiber.Handler {
 				Code:  "BAD_REQUEST",
 			})
 		}
-
+		
 		// Валидируем DTO
 		if validationErrors := validateStruct(dtoValue); len(validationErrors) > 0 {
 			return c.Status(422).JSON(models.ValidationErrorResponse{
@@ -107,10 +106,10 @@ func ValidateMiddleware(dto interface{}) fiber.Handler {
 				Errors: validationErrors,
 			})
 		}
-
+		
 		// Сохраняем валидированные данные в контекст
 		c.Locals("validatedDTO", dtoValue)
-
+		
 		return c.Next()
 	}
 }
@@ -120,21 +119,21 @@ func validateStruct(dto interface{}) map[string]string {
 	errors := make(map[string]string)
 	val := reflect.ValueOf(dto).Elem()
 	typ := val.Type()
-
+	
 	for i := 0; i < val.NumField(); i++ {
 		field := val.Field(i)
 		structField := typ.Field(i)
-
+		
 		// Получаем тег validate
 		validateTag := structField.Tag.Get("validate")
 		if validateTag == "" {
 			continue
 		}
-
+		
 		// Парсим правила валидации
 		rules := strings.Split(validateTag, ",")
 		fieldName := getJSONFieldName(structField)
-
+		
 		for _, rule := range rules {
 			if err := applyValidationRule(field, rule, fieldName); err != nil {
 				errors[fieldName] = err.Error()
@@ -142,7 +141,7 @@ func validateStruct(dto interface{}) map[string]string {
 			}
 		}
 	}
-
+	
 	return errors
 }
 
@@ -181,7 +180,7 @@ func validateMin(field reflect.Value, fieldName string, min int) error {
 	switch field.Kind() {
 	case reflect.String:
 		if field.Len() < min {
-			return fiber.NewError(400, fieldName+" must be at least "+strconv.Itoa(min)+" characters")
+			return fiber.NewError(400, fieldName+" must be at least "+string(min)+" characters")
 		}
 	}
 	return nil
@@ -191,7 +190,7 @@ func validateMax(field reflect.Value, fieldName string, max int) error {
 	switch field.Kind() {
 	case reflect.String:
 		if field.Len() > max {
-			return fiber.NewError(400, fieldName+" must be at most "+strconv.Itoa(max)+" characters")
+			return fiber.NewError(400, fieldName+" must be at most "+string(max)+" characters")
 		}
 	}
 	return nil
@@ -241,12 +240,13 @@ func parseRuleValue(rule string) int {
 	return 0
 }
 
+
 func getJSONFieldName(field reflect.StructField) string {
 	jsonTag := field.Tag.Get("json")
 	if jsonTag == "" {
 		return field.Name
 	}
-
+	
 	// Убираем опции (например, "omitempty")
 	parts := strings.Split(jsonTag, ",")
 	return parts[0]

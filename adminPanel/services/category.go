@@ -9,12 +9,17 @@ import (
 	"adminPanel/exceptions"
 	"adminPanel/models"
 	"adminPanel/repositories"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
 // CategoryService - сервис для работы с категориями
 type CategoryService struct {
 	categoryRepo *repositories.CategoryRepository
 }
+
+var categoryTracer = otel.Tracer("admin-panel/category-service")
 
 // NewCategoryService создает сервис категорий
 func NewCategoryService(categoryRepo *repositories.CategoryRepository) *CategoryService {
@@ -25,8 +30,13 @@ func NewCategoryService(categoryRepo *repositories.CategoryRepository) *Category
 
 // GetCategories - получение всех категорий
 func (s *CategoryService) GetCategories(ctx context.Context) ([]models.Category, error) {
+	ctx, span := categoryTracer.Start(ctx, "CategoryService.GetCategories")
+	defer span.End()
+
 	data, err := s.categoryRepo.GetAll(ctx, 100, 0, "title", "ASC")
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to get categories: %v", err))
 	}
 
@@ -48,8 +58,14 @@ func (s *CategoryService) GetCategories(ctx context.Context) ([]models.Category,
 
 // GetCategory - получение категории по ID
 func (s *CategoryService) GetCategory(ctx context.Context, id string) (*models.Category, error) {
+	ctx, span := categoryTracer.Start(ctx, "CategoryService.GetCategory")
+	span.SetAttributes(attribute.String("category.id", id))
+	defer span.End()
+
 	data, err := s.categoryRepo.GetByID(ctx, id)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to get category: %v", err))
 	}
 
@@ -71,9 +87,15 @@ func (s *CategoryService) GetCategory(ctx context.Context, id string) (*models.C
 
 // CreateCategory - создание категории
 func (s *CategoryService) CreateCategory(ctx context.Context, input models.CategoryCreate) (*models.Category, error) {
+	ctx, span := categoryTracer.Start(ctx, "CategoryService.CreateCategory")
+	span.SetAttributes(attribute.String("category.title", input.Title))
+	defer span.End()
+
 	// Проверяем, существует ли категория с таким названием
 	existing, err := s.categoryRepo.GetByTitle(ctx, input.Title)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to check existing category: %v", err))
 	}
 
@@ -85,8 +107,12 @@ func (s *CategoryService) CreateCategory(ctx context.Context, input models.Categ
 	data, err := s.categoryRepo.Create(ctx, input.Title)
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate key") {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
 			return nil, exceptions.ConflictError("Category with this title already exists")
 		}
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to create category: %v", err))
 	}
 
@@ -104,9 +130,18 @@ func (s *CategoryService) CreateCategory(ctx context.Context, input models.Categ
 
 // UpdateCategory - обновление категории
 func (s *CategoryService) UpdateCategory(ctx context.Context, id string, input models.CategoryUpdate) (*models.Category, error) {
+	ctx, span := categoryTracer.Start(ctx, "CategoryService.UpdateCategory")
+	span.SetAttributes(
+		attribute.String("category.id", id),
+		attribute.String("category.title", input.Title),
+	)
+	defer span.End()
+
 	// Проверяем существование категории
 	existing, err := s.categoryRepo.GetByID(ctx, id)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to check category: %v", err))
 	}
 
@@ -118,6 +153,8 @@ func (s *CategoryService) UpdateCategory(ctx context.Context, id string, input m
 	if input.Title != fmt.Sprintf("%v", existing["title"]) {
 		categoryWithTitle, err := s.categoryRepo.GetByTitle(ctx, input.Title)
 		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
 			return nil, exceptions.InternalError(fmt.Sprintf("Failed to check title: %v", err))
 		}
 		if categoryWithTitle != nil {
@@ -128,6 +165,8 @@ func (s *CategoryService) UpdateCategory(ctx context.Context, id string, input m
 	// Обновляем категорию
 	data, err := s.categoryRepo.Update(ctx, id, input.Title)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to update category: %v", err))
 	}
 
@@ -145,9 +184,15 @@ func (s *CategoryService) UpdateCategory(ctx context.Context, id string, input m
 
 // DeleteCategory - удаление категории
 func (s *CategoryService) DeleteCategory(ctx context.Context, id string) error {
+	ctx, span := categoryTracer.Start(ctx, "CategoryService.DeleteCategory")
+	span.SetAttributes(attribute.String("category.id", id))
+	defer span.End()
+
 	// Проверяем существование категории
 	existing, err := s.categoryRepo.GetByID(ctx, id)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return exceptions.InternalError(fmt.Sprintf("Failed to check category: %v", err))
 	}
 
@@ -158,6 +203,8 @@ func (s *CategoryService) DeleteCategory(ctx context.Context, id string) error {
 	// Проверяем, нет ли связанных курсов
 	courseCount, err := s.categoryRepo.CountCoursesForCategory(ctx, id)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return exceptions.InternalError(fmt.Sprintf("Failed to check associated courses: %v", err))
 	}
 
@@ -168,6 +215,8 @@ func (s *CategoryService) DeleteCategory(ctx context.Context, id string) error {
 	// Удаляем категорию
 	deleted, err := s.categoryRepo.Delete(ctx, id)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return exceptions.InternalError(fmt.Sprintf("Failed to delete category: %v", err))
 	}
 

@@ -37,6 +37,7 @@ func (h *CourseHandler) RegisterRoutes(router fiber.Router) {
 
 // GetCourses - получение курсов с фильтрацией
 func (h *CourseHandler) getCourses(c *fiber.Ctx) error {
+	ctx := c.UserContext()
 	// Парсим параметры запроса
 	filter := models.CourseFilter{
 		Level:      c.Query("level"),
@@ -60,7 +61,7 @@ func (h *CourseHandler) getCourses(c *fiber.Ctx) error {
 	}
 
 	// Получаем курсы
-	result, err := h.courseService.GetCourses(c.Context(), filter)
+	result, err := h.courseService.GetCourses(ctx, filter)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
@@ -79,6 +80,7 @@ func (h *CourseHandler) getCourses(c *fiber.Ctx) error {
 
 // CreateCourse - создание курса
 func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
+	ctx := c.UserContext()
 	// Валидация входных данных
 	var input models.CourseCreate
 	
@@ -133,7 +135,7 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 	}
 
 	// Создаем курс
-	course, err := h.courseService.CreateCourse(c.Context(), input)
+	course, err := h.courseService.CreateCourse(ctx, input)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
@@ -152,6 +154,7 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 
 // GetCourse - получение курса по ID
 func (h *CourseHandler) getCourse(c *fiber.Ctx) error {
+	ctx := c.UserContext()
 	id := c.Params("id")
 	
 	if !isValidUUID(id) {
@@ -161,7 +164,7 @@ func (h *CourseHandler) getCourse(c *fiber.Ctx) error {
 		})
 	}
 
-	course, err := h.courseService.GetCourse(c.Context(), id)
+	course, err := h.courseService.GetCourse(ctx, id)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
@@ -180,6 +183,7 @@ func (h *CourseHandler) getCourse(c *fiber.Ctx) error {
 
 // UpdateCourse - обновление курса
 func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
+	ctx := c.UserContext()
 	id := c.Params("id")
 	
 	if !isValidUUID(id) {
@@ -235,7 +239,7 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 	}
 
 	// Обновляем курс
-	course, err := h.courseService.UpdateCourse(c.Context(), id, input)
+	course, err := h.courseService.UpdateCourse(ctx, id, input)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
@@ -254,6 +258,7 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 
 // DeleteCourse - удаление курса
 func (h *CourseHandler) deleteCourse(c *fiber.Ctx) error {
+	ctx := c.UserContext()
 	id := c.Params("id")
 	
 	if !isValidUUID(id) {
@@ -263,7 +268,7 @@ func (h *CourseHandler) deleteCourse(c *fiber.Ctx) error {
 		})
 	}
 
-	err := h.courseService.DeleteCourse(c.Context(), id)
+	err := h.courseService.DeleteCourse(ctx, id)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
