@@ -16,7 +16,7 @@ class settings:
         self.DATABASE_POOL_MAX_SIZE: int = int(os.getenv("DATABASE_POOL_MAX_SIZE", "20"))
         
         self.DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
-        self.API_PREFIX: str = "/api/v1"
+        self.API_PREFIX: str = os.getenv("API_PREFIX", "/api/v1")
 
         # Observability / OpenTelemetry
         self.OTEL_EXPORTER_OTLP_ENDPOINT: str = os.getenv(
@@ -35,6 +35,7 @@ class settings:
         self.KEYCLOAK_SERVER_URL: str = os.getenv("KEYCLOAK_SERVER_URL", "http://keycloak:8080")
         self.KEYCLOAK_PUBLIC_URL: str = os.getenv("KEYCLOAK_PUBLIC_URL", "http://localhost:8080")
         self.KEYCLOAK_REALM: str = os.getenv("KEYCLOAK_REALM", "student")
+        self.KEYCLOAK_ADMIN_REALM: str = os.getenv("KEYCLOAK_ADMIN_REALM", "teacher")
         self.KEYCLOAK_CLIENT_ID: str = os.getenv("KEYCLOAK_CLIENT_ID", "personal-account-client")
         self.KEYCLOAK_CLIENT_SECRET: str = os.getenv("KEYCLOAK_CLIENT_SECRET", "secret")
         self.KEYCLOAK_REDIRECT_URI: str = os.getenv("KEYCLOAK_REDIRECT_URI", "http://localhost/account/callback")
@@ -42,6 +43,13 @@ class settings:
         # Keycloak Admin credentials (for user registration)
         self.KEYCLOAK_ADMIN_USERNAME: str = os.getenv("KEYCLOAK_ADMIN_USERNAME", "admin")
         self.KEYCLOAK_ADMIN_PASSWORD: str = os.getenv("KEYCLOAK_ADMIN_PASSWORD", "admin")
+
+        self.KEYCLOAK_DEFAULT_SCOPE: str = os.getenv(
+            "KEYCLOAK_DEFAULT_SCOPE", "openid profile email"
+        )
+        self.KEYCLOAK_USER_EMAIL_VERIFIED_DEFAULT: bool = (
+            os.getenv("KEYCLOAK_USER_EMAIL_VERIFIED_DEFAULT", "true").lower() == "true"
+        )
 
 
     @property
