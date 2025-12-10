@@ -1,6 +1,7 @@
 """Authentication API endpoints."""
 from fastapi import APIRouter, Request, Depends, status, Body, HTTPException
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
+from typing import Optional
 from pydantic import BaseModel
 from app.telemetry import traced
 from app.services.auth import auth_service
@@ -26,7 +27,7 @@ class Refresh_Token_Request(BaseModel):
 
 class Logout_Request(BaseModel):
     """Logout request body."""
-    refresh_token: str
+    refresh_token: str = None  # Optional for cookie-based auth
 
 
 class Password_Token_Request(BaseModel):
@@ -74,15 +75,16 @@ async def login():
 
 @router.get(
     "/callback",
-    response_model=api_response[token_response],
     summary="Handle Keycloak callback",
-    description="Exchanges the authorization code for an access token."
+    description="Exchanges the authorization code for an access token and sets secure cookies."
 )
 async def callback(code: str):
-    """Handle login callback."""
+    """Handle login callback and set secure cookie with access token."""
     logger.info(f"Callback received with code: {code[:20]}..." if len(code) > 20 else f"Callback received with code: {code}")
     try:
         token = await auth_service.exchange_code_for_token(code)
+        
+        # Create response with JSON data
         token_data = token_response(
             access_token=token.get("access_token", ""),
             refresh_token=token.get("refresh_token"),
@@ -91,8 +93,36 @@ async def callback(code: str):
             refresh_expires_in=token.get("refresh_expires_in"),
             scope=token.get("scope")
         )
-        logger.info("Callback successful, returning token")
-        return api_response(data=token_data, message="Login successful")
+        
+        response_data = api_response(data=token_data, message="Login successful")
+        response = JSONResponse(content=response_data.model_dump())
+        
+        # Set secure HTTP-only cookie for access token
+        response.set_cookie(
+            key="access_token",
+            value=token.get("access_token", ""),
+            max_age=token.get("expires_in", 3600),
+            httponly=True,
+            secure=True,  # Requires HTTPS in production
+            samesite="Lax",
+            path="/"
+        )
+        
+        # Set refresh token cookie if provided
+        if token.get("refresh_token"):
+            response.set_cookie(
+                key="refresh_token",
+                value=token.get("refresh_token", ""),
+                max_age=token.get("refresh_expires_in", 86400),
+                httponly=True,
+                secure=True,  # Requires HTTPS in production
+                samesite="Lax",
+                path="/"
+            )
+        
+        logger.info("Callback successful, tokens set in secure cookies")
+        return response
+        
     except HTTPException as e:
         logger.error(f"Callback failed: {e.detail}")
         raise
@@ -128,12 +158,36 @@ async def refresh(body: Refresh_Token_Request):
     "/logout",
     response_model=api_response[message_response],
     summary="Logout user",
-    description="Invalidates the user's session by revoking the refresh token."
+    description="Logs out the user by clearing server-side session and cookies."
 )
-async def logout(body: Logout_Request):
-    """Logout user."""
-    await auth_service.logout(body.refresh_token)
-    return api_response(data=message_response(message="Logged out successfully"))
+async def logout(body: Optional[Logout_Request] = None):
+    """Logout user.
+    
+    Works with both:
+    1. Traditional: body with refresh_token for logout from other clients
+    2. Cookie-based: empty body, relies on server-side session invalidation
+    """
+    if body and body.refresh_token:
+        await auth_service.logout(body.refresh_token)
+    
+    # Create response that clears cookies
+    response = JSONResponse(
+        content=api_response(data=message_response(message="Logged out successfully")).model_dump()
+    )
+    
+    # Clear access_token cookie
+    response.delete_cookie(
+        key="access_token",
+        path="/"
+    )
+    
+    # Clear refresh_token cookie
+    response.delete_cookie(
+        key="refresh_token",
+        path="/"
+    )
+    
+    return response
 
 
 @router.get(

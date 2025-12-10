@@ -112,11 +112,8 @@
                 const data = await response.json();
                 
                 if (response.ok && data.data) {
-                    // Store tokens
-                    localStorage.setItem('access_token', data.data.access_token);
-                    if (data.data.refresh_token) {
-                        localStorage.setItem('refresh_token', data.data.refresh_token);
-                    }
+                    // Tokens are already set as HTTP-only cookies by the server
+                    // No need to store in localStorage
                     
                     // Show success
                     loadingState.style.display = 'none';
@@ -124,7 +121,7 @@
                     
                     // Redirect to dashboard
                     setTimeout(() => {
-                        window.location.href = '/account/';
+                        window.location.href = '/account/dashboard';
                     }, 1500);
                 } else {
                     throw new Error(data.detail || data.error || 'Ошибка обмена кода');

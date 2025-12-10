@@ -276,27 +276,22 @@
             spanId: null,
             
             getToken() {
-                return localStorage.getItem('access_token');
+                // Tokens are stored as HTTP-only cookies on the server
+                // JavaScript doesn't need to manage them
+                return null;
             },
             
             setToken(token, refreshToken) {
-                localStorage.setItem('access_token', token);
-                if (refreshToken) {
-                    localStorage.setItem('refresh_token', refreshToken);
-                }
-                // Also set access_token as HttpOnly-style cookie for backend
-                // (Note: JS can't set HttpOnly, but we can use regular cookie for reference)
-                const expiresIn = 300; // 5 minutes (default token lifetime)
-                const date = new Date();
-                date.setTime(date.getTime() + expiresIn * 1000);
-                document.cookie = `access_token=${token}; path=/account/; expires=${date.toUTCString()}; SameSite=Strict`;
+                // Tokens are set by the server /callback endpoint
+                // JavaScript should not manage token storage
+                console.log('Tokens are managed by the server');
             },
             
             clearTokens() {
+                // Clear localStorage if it exists (legacy)
                 localStorage.removeItem('access_token');
                 localStorage.removeItem('refresh_token');
-                // Clear cookies
-                document.cookie = 'access_token=; path=/account/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
+                // Cookies are cleared by the server on logout
             },
             
             setTraceContext(response) {
@@ -457,15 +452,16 @@
         // Logout handler
         document.getElementById('logout-btn')?.addEventListener('click', async (e) => {
             e.preventDefault();
-            const refreshToken = localStorage.getItem('refresh_token');
-            if (refreshToken) {
-                try {
-                    await API.post('/auth/logout', { refresh_token: refreshToken });
-                } catch (e) {
-                    console.error('Logout failed:', e);
-                }
+            try {
+                // Call logout endpoint - it will invalidate the cookies server-side
+                await API.post('/auth/logout', {});
+            } catch (e) {
+                console.error('Logout failed:', e);
+                // Continue logout even if API call fails
             }
+            // Clear any local storage (legacy)
             API.clearTokens();
+            // Redirect to login
             window.location.href = '/account/login';
         });
 

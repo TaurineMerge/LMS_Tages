@@ -89,7 +89,7 @@ async def root_page(request: Request):
     token = request.cookies.get("access_token")
     
     if token:
-        return RedirectResponse(url="/dashboard")  # Это правильно, т.к. root_path="/account" в main.py
+        return RedirectResponse(url="/account/dashboard")  # Full path with /account prefix
     
     return _render_template_safe(
         "landing.hbs",
