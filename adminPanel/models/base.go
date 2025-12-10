@@ -1,3 +1,4 @@
+// Package models contains data transfer and domain models.
 package models
 
 import "time"

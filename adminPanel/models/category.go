@@ -1,5 +1,6 @@
 package models
 
+// Category represents a course category.
 type Category struct {
 	BaseModel
 	Title string `json:"title"`

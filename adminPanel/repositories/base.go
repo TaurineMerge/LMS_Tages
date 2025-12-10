@@ -1,3 +1,4 @@
+// Package repositories contains database access layer implementations.
 package repositories
 
 import (

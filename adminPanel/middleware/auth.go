@@ -1,3 +1,4 @@
+// Package middleware contains HTTP middleware for the admin panel.
 package middleware
 
 import (

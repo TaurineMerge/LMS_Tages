@@ -1,3 +1,4 @@
+// Package services implements the business logic for the admin panel.
 package services
 
 import (
@@ -9,6 +10,7 @@ import (
 	"adminPanel/exceptions"
 	"adminPanel/models"
 	"adminPanel/repositories"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"

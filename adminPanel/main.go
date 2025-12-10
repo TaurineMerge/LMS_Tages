@@ -3,7 +3,6 @@ package main
 
 import (
 	"context"
-	"embed"
 	"fmt"
 	"log"
 	"os"
@@ -34,10 +33,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-//go:embed docs/swagger.json
-var swaggerJSON embed.FS
-
-func setupTracerProvider(ctx context.Context, settings *config.Settings) (*tracesdk.TracerProvider, error) {
+func setupTracerProvider(ctx context.Context) (*tracesdk.TracerProvider, error) {
 	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 	if endpoint == "" {
 		endpoint = "http://otel-collector:4317"
@@ -160,11 +156,15 @@ func main() {
 	defer database.Close()
 
 	// Init tracing
-	tp, err := setupTracerProvider(ctx, settings)
+	tp, err := setupTracerProvider(ctx)
 	if err != nil {
 		log.Printf("⚠️  Failed to initialize tracing: %v", err)
 	} else {
-		defer tp.Shutdown(ctx)
+		defer func() {
+			if shutdownErr := tp.Shutdown(ctx); shutdownErr != nil {
+				log.Printf("⚠️  Failed to shutdown tracer provider: %v", shutdownErr)
+			}
+		}()
 	}
 
 	// Создание Fiber приложения
@@ -201,7 +201,7 @@ func main() {
 		DeepLinking: true,
 		Title:       "Admin Panel API",
 		OAuth: &swagger.OAuthConfig{
-			ClientId:     settings.ClientId,
+			ClientId:     settings.ClientID,
 			ClientSecret: settings.ClientSecret,
 			AppName:      settings.AppName,
 			Scopes:       []string{"openid", "profile", "email"},

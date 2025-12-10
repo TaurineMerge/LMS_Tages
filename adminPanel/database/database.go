@@ -1,13 +1,17 @@
+// Package database provides helpers for working with the Postgres connection pool.
 package database
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"math"
 	"time"
+
+	"adminPanel/config"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"adminPanel/config"
 )
 
 // Database - обертка над пулом соединений
@@ -26,9 +30,15 @@ func InitDB(settings *config.Settings) (*Database, error) {
 		return nil, err
 	}
 
-	poolConfig.MinConns = int32(settings.DatabaseMinPoolSize)
-	poolConfig.MaxConns = int32(settings.DatabaseMaxPoolSize)
-	
+	if settings.DatabaseMinPoolSize < 0 || settings.DatabaseMinPoolSize > math.MaxInt32 {
+		return nil, fmt.Errorf("invalid DatabaseMinPoolSize: %d", settings.DatabaseMinPoolSize)
+	}
+	if settings.DatabaseMaxPoolSize < 0 || settings.DatabaseMaxPoolSize > math.MaxInt32 {
+		return nil, fmt.Errorf("invalid DatabaseMaxPoolSize: %d", settings.DatabaseMaxPoolSize)
+	}
+	poolConfig.MinConns = int32(settings.DatabaseMinPoolSize) //nolint:gosec // validated above
+	poolConfig.MaxConns = int32(settings.DatabaseMaxPoolSize) //nolint:gosec // validated above
+
 	// Настройки здоровья соединений
 	poolConfig.HealthCheckPeriod = 1 * time.Minute
 	poolConfig.MaxConnLifetime = 1 * time.Hour
@@ -126,7 +136,7 @@ func scanRowToMap(rows pgx.Rows) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
 	for i, fd := range fieldDescriptions {
 		// Преобразуем значение
-		result[string(fd.Name)] = convertValue(values[i])
+		result[fd.Name] = convertValue(values[i])
 	}
 
 	return result, nil
@@ -151,7 +161,7 @@ func scanRowsToMap(rows pgx.Rows) ([]map[string]interface{}, error) {
 
 		result := make(map[string]interface{})
 		for i, fd := range fieldDescriptions {
-			result[string(fd.Name)] = convertValue(values[i])
+			result[fd.Name] = convertValue(values[i])
 		}
 
 		results = append(results, result)

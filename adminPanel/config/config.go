@@ -1,3 +1,4 @@
+// Package config handles application configuration.
 package config
 
 import (
@@ -18,7 +19,7 @@ type Settings struct {
 	Debug                bool
 	CORSAllowOrigins     string
 	CORSAllowCredentials bool
-	ClientId             string
+	ClientID             string
 	ClientSecret         string
 	AppName              string
 }
@@ -40,7 +41,7 @@ func NewSettings() *Settings {
 		Debug:                getEnvAsBool("DEBUG", false),
 		CORSAllowOrigins:     corsOrigins,
 		CORSAllowCredentials: corsCredentials,
-		ClientId:             os.Getenv("KEYCLOAK_CLIENT_ID"),
+		ClientID:             os.Getenv("KEYCLOAK_CLIENT_ID"),
 		ClientSecret:         os.Getenv("KEYCLOAK_CLIENT_SECRET"),
 		AppName:              os.Getenv("KEYCLOAK_APP_NAME"),
 	}

@@ -1,6 +1,7 @@
+// Package exceptions contains reusable application error types.
 package exceptions
 
-// The type `AppError` represents an error with a message, status code, and error code.
+// AppError represents an error with a message, status code, and error code.
 // @property {string} Message - The `Message` property in the `AppError` struct represents the error
 // message or description associated with the error that occurred. It provides information about what
 // went wrong in a human-readable format.

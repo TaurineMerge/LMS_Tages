@@ -8,6 +8,7 @@ import (
 	"adminPanel/exceptions"
 	"adminPanel/models"
 	"adminPanel/repositories"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"

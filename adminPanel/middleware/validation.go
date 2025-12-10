@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+
 	// "strconv"
 	"strings"
 
 	"adminPanel/models"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
@@ -166,11 +168,11 @@ func applyValidationRule(field reflect.Value, rule, fieldName string) error {
 	case rule == "required":
 		return validateRequired(field, fieldName)
 	case strings.HasPrefix(rule, "min="):
-		min := parseRuleValue(rule)
-		return validateMin(field, fieldName, min)
+		minValue := parseRuleValue(rule)
+		return validateMin(field, fieldName, minValue)
 	case strings.HasPrefix(rule, "max="):
-		max := parseRuleValue(rule)
-		return validateMax(field, fieldName, max)
+		maxValue := parseRuleValue(rule)
+		return validateMax(field, fieldName, maxValue)
 	case rule == "uuid4":
 		return validateUUID(field, fieldName)
 	case strings.HasPrefix(rule, "oneof="):
@@ -191,21 +193,21 @@ func validateRequired(field reflect.Value, fieldName string) error {
 	return nil
 }
 
-func validateMin(field reflect.Value, fieldName string, min int) error {
+func validateMin(field reflect.Value, fieldName string, minValue int) error {
 	switch field.Kind() {
 	case reflect.String:
-		if field.Len() < min {
-			return fiber.NewError(400, fmt.Sprintf("%s must be at least %d characters", fieldName, min))
+		if field.Len() < minValue {
+			return fiber.NewError(400, fmt.Sprintf("%s must be at least %d characters", fieldName, minValue))
 		}
 	}
 	return nil
 }
 
-func validateMax(field reflect.Value, fieldName string, max int) error {
+func validateMax(field reflect.Value, fieldName string, maxValue int) error {
 	switch field.Kind() {
 	case reflect.String:
-		if field.Len() > max {
-			return fiber.NewError(400, fmt.Sprintf("%s must be at most %d characters", fieldName, max))
+		if field.Len() > maxValue {
+			return fiber.NewError(400, fmt.Sprintf("%s must be at most %d characters", fieldName, maxValue))
 		}
 	}
 	return nil

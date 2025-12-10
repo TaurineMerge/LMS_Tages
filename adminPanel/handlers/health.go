@@ -27,6 +27,7 @@ func (h *HealthHandler) RegisterRoutes(router fiber.Router) {
 	router.Get("/health/db", h.DBHealthCheck)
 }
 
+// HealthCheck returns application health status.
 func (h *HealthHandler) HealthCheck(c *fiber.Ctx) error {
 	return c.JSON(models.HealthResponse{
 		Status:  "healthy",
@@ -34,6 +35,7 @@ func (h *HealthHandler) HealthCheck(c *fiber.Ctx) error {
 	})
 }
 
+// DBHealthCheck verifies database connectivity status.
 func (h *HealthHandler) DBHealthCheck(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	if ctx == nil {

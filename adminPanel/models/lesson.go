@@ -1,8 +1,6 @@
 package models
 
-// Убираем неиспользуемый импорт time
-// Используйте time только если он нужен в структурах
-
+// Lesson represents a course lesson.
 type Lesson struct {
 	BaseModel
 	Title      string `json:"title"`
