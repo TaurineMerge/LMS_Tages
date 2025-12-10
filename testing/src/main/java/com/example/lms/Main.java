@@ -1,14 +1,20 @@
 package com.example.lms;
 
-import io.github.cdimascio.dotenv.Dotenv;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import io.javalin.Javalin;
+import com.example.lms.answer.api.controller.AnswerController;
+import com.example.lms.answer.api.router.AnswerRouter;
+import com.example.lms.answer.domain.service.AnswerService;
+import com.example.lms.answer.infrastructure.repositories.AnswerRepository;
+import com.example.lms.config.DatabaseConfig;
+import com.example.lms.test.api.controller.TestController;
 import com.example.lms.test.api.router.TestRouter;
 import com.example.lms.test.domain.service.TestService;
 import com.example.lms.test.infrastructure.repositories.TestRepository;
 
-import com.example.lms.config.DatabaseConfig;
-import com.example.lms.test.api.controller.TestController;
+import io.github.cdimascio.dotenv.Dotenv;
+import io.javalin.Javalin;
 
 /**
  * Главная точка входа в приложение LMS Testing Service.
@@ -26,14 +32,13 @@ import com.example.lms.test.api.controller.TestController;
  * разделения уровней: Controller → Service → Repository → DB.
  */
 public class Main {
-
+    private static final Logger logger = LoggerFactory.getLogger(TestRouter.class);
     /**
      * Главный метод запуска сервиса.
      *
      * @param args аргументы командной строки (не используются)
      */
     public static void main(String[] args) {
-
         // ---------------------------------------------------------------
         // 1. Загрузка переменных окружения из файла .env
         // ---------------------------------------------------------------
@@ -47,18 +52,20 @@ public class Main {
         // ---------------------------------------------------------------
         // 2. Настройка зависимостей (Manual Dependency Injection)
         // ---------------------------------------------------------------
-
         // Конфигурация подключения к базе
         DatabaseConfig dbConfig = new DatabaseConfig(DB_URL, DB_USER, DB_PASSWORD);
 
-        // Репозиторий с логикой работы с БД
+        // Репозитории с логикой работы с БД
         TestRepository testRepository = new TestRepository(dbConfig);
+        AnswerRepository answerRepository = new AnswerRepository(dbConfig);
 
         // Сервисный слой (бизнес-логика)
         TestService testService = new TestService(testRepository);
+        AnswerService answerService = new AnswerService(answerRepository);
 
         // Контроллер, принимающий HTTP-запросы
         TestController testController = new TestController(testService);
+        AnswerController answerController = new AnswerController(answerService);
 
         // ---------------------------------------------------------------
         // 3. Создание и запуск Javalin HTTP-сервера
@@ -67,6 +74,7 @@ public class Main {
             // Регистрация маршрутов через ApiBuilder
             config.router.apiBuilder(() -> {
                 TestRouter.register(testController);
+                AnswerRouter.register(answerController);
             });
         }).start(APP_PORT);
 

@@ -1,31 +1,31 @@
 package com.example.lms.answer.api.controller;
 
-import com.example.lms.answer.domain.model.AnswerModel;
-import com.example.lms.answer.domain.repository.AnswerRepositoryInterface;
-import com.example.lms.tracing.SimpleTracer;
-import io.javalin.http.Context;
+import java.util.List;
+import java.util.UUID;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.UUID;
+import com.example.lms.answer.api.dto.Answer;
+import com.example.lms.answer.domain.service.AnswerService;
+
+import io.javalin.http.Context;
 
 /**
  * Контроллер для управления ответами на вопросы.
  * Предоставляет REST API для операций CRUD над ответами.
  */
 public class AnswerController {
-
     private static final Logger logger = LoggerFactory.getLogger(AnswerController.class);
-    private final AnswerRepositoryInterface answerRepository;
+    private final AnswerService answerService;
 
     /**
      * Конструктор контроллера.
      *
-     * @param answerRepository репозиторий для работы с ответами
+     * @param answerService сервис для работы с ответами
      */
-    public AnswerController(AnswerRepositoryInterface answerRepository) {
-        this.answerRepository = answerRepository;
+    public AnswerController(AnswerService answerService) {
+        this.answerService = answerService;
     }
 
     /**
@@ -35,7 +35,7 @@ public class AnswerController {
      */
     public void getAllAnswers(Context ctx) {
         try {
-            List<AnswerModel> answers = answerRepository.findAll();
+            List<Answer> answers = answerService.getAllAnswers();
             logger.info("Получено {} ответов", answers.size());
             ctx.json(answers);
         } catch (Exception e) {
@@ -54,15 +54,14 @@ public class AnswerController {
             String idParam = ctx.pathParam("id");
             UUID id = UUID.fromString(idParam);
             
-            var answer = answerRepository.findById(id);
-            if (answer.isPresent()) {
-                ctx.json(answer.get());
-            } else {
-                ctx.status(404).json(new ErrorResponse("Ответ с ID " + id + " не найден"));
-            }
+            Answer answer = answerService.getAnswerById(id);
+            ctx.json(answer);
         } catch (IllegalArgumentException e) {
             logger.error("Неверный формат UUID", e);
             ctx.status(400).json(new ErrorResponse("Неверный формат идентификатора"));
+        } catch (RuntimeException e) {
+            logger.error("Ответ не найден", e);
+            ctx.status(404).json(new ErrorResponse(e.getMessage()));
         } catch (Exception e) {
             logger.error("Ошибка при получении ответа по ID", e);
             ctx.status(500).json(new ErrorResponse("Ошибка при получении ответа"));
@@ -83,7 +82,7 @@ public class AnswerController {
             }
             
             UUID questionId = UUID.fromString(questionIdParam);
-            List<AnswerModel> answers = answerRepository.findByQuestionId(questionId);
+            List<Answer> answers = answerService.getAnswersByQuestionId(questionId);
             
             logger.info("Получено {} ответов для вопроса {}", answers.size(), questionId);
             ctx.json(answers);
@@ -110,7 +109,7 @@ public class AnswerController {
             }
             
             UUID questionId = UUID.fromString(questionIdParam);
-            List<AnswerModel> answers = answerRepository.findCorrectAnswersByQuestionId(questionId);
+            List<Answer> answers = answerService.getCorrectAnswersByQuestionId(questionId);
             
             logger.info("Получено {} правильных ответов для вопроса {}", answers.size(), questionId);
             ctx.json(answers);
@@ -130,23 +129,27 @@ public class AnswerController {
      */
     public void createAnswer(Context ctx) {
         try {
-            AnswerModel answer = ctx.bodyValidator(AnswerModel.class)
+            Answer answer = ctx.bodyValidator(Answer.class)
                     .check(a -> a.getQuestionId() != null, "Идентификатор вопроса обязателен")
                     .check(a -> a.getText() != null && !a.getText().isEmpty(), "Текст ответа обязателен")
+                    .check(a -> a.getScore() != null, "Балл за ответ обязателен")
                     .get();
             
             // Проверяем, не существует ли уже ответ с таким текстом для этого вопроса
-            if (answerRepository.existsByQuestionIdAndText(answer.getQuestionId(), answer.getText())) {
+            if (answerService.existsByQuestionIdAndText(answer.getQuestionId(), answer.getText())) {
                 ctx.status(409).json(new ErrorResponse("Ответ с таким текстом уже существует для этого вопроса"));
                 return;
             }
             
-            AnswerModel savedAnswer = answerRepository.save(answer);
+            Answer savedAnswer = answerService.createAnswer(answer);
             logger.info("Создан новый ответ с ID: {}", savedAnswer.getId());
             ctx.status(201).json(savedAnswer);
         } catch (IllegalArgumentException e) {
             logger.error("Ошибка валидации при создании ответа", e);
             ctx.status(400).json(new ErrorResponse("Ошибка валидации: " + e.getMessage()));
+        } catch (RuntimeException e) {
+            logger.error("Конфликт при создании ответа", e);
+            ctx.status(409).json(new ErrorResponse(e.getMessage()));
         } catch (Exception e) {
             logger.error("Ошибка при создании ответа", e);
             ctx.status(500).json(new ErrorResponse("Ошибка при создании ответа"));
@@ -164,24 +167,28 @@ public class AnswerController {
             UUID id = UUID.fromString(idParam);
             
             // Проверяем существование ответа
-            if (!answerRepository.existsById(id)) {
+            if (!answerService.existsById(id)) {
                 ctx.status(404).json(new ErrorResponse("Ответ с ID " + id + " не найден"));
                 return;
             }
             
-            AnswerModel answer = ctx.bodyValidator(AnswerModel.class)
+            Answer answer = ctx.bodyValidator(Answer.class)
                     .check(a -> a.getQuestionId() != null, "Идентификатор вопроса обязателен")
                     .check(a -> a.getText() != null && !a.getText().isEmpty(), "Текст ответа обязателен")
+                    .check(a -> a.getScore() != null, "Балл за ответ обязателен")
                     .get();
             
             answer.setId(id); // Устанавливаем ID из пути
-            AnswerModel updatedAnswer = answerRepository.update(answer);
+            Answer updatedAnswer = answerService.updateAnswer(answer);
             
             logger.info("Обновлен ответ с ID: {}", id);
             ctx.json(updatedAnswer);
         } catch (IllegalArgumentException e) {
             logger.error("Ошибка валидации при обновлении ответа", e);
             ctx.status(400).json(new ErrorResponse("Ошибка валидации: " + e.getMessage()));
+        } catch (RuntimeException e) {
+            logger.error("Ответ не найден", e);
+            ctx.status(404).json(new ErrorResponse(e.getMessage()));
         } catch (Exception e) {
             logger.error("Ошибка при обновлении ответа", e);
             ctx.status(500).json(new ErrorResponse("Ошибка при обновлении ответа"));
@@ -198,7 +205,7 @@ public class AnswerController {
             String idParam = ctx.pathParam("id");
             UUID id = UUID.fromString(idParam);
             
-            boolean deleted = answerRepository.deleteById(id);
+            boolean deleted = answerService.deleteAnswer(id);
             if (deleted) {
                 logger.info("Удален ответ с ID: {}", id);
                 ctx.status(204);
@@ -228,7 +235,7 @@ public class AnswerController {
             }
             
             UUID questionId = UUID.fromString(questionIdParam);
-            int deletedCount = answerRepository.deleteByQuestionId(questionId);
+            int deletedCount = answerService.deleteAnswersByQuestionId(questionId);
             
             logger.info("Удалено {} ответов для вопроса {}", deletedCount, questionId);
             ctx.json(new DeleteResponse(deletedCount, "Удалено ответов: " + deletedCount));
@@ -255,7 +262,7 @@ public class AnswerController {
             }
             
             UUID questionId = UUID.fromString(questionIdParam);
-            int count = answerRepository.countByQuestionId(questionId);
+            int count = answerService.countByQuestionId(questionId);
             
             ctx.json(new CountResponse(count));
         } catch (IllegalArgumentException e) {
@@ -281,7 +288,7 @@ public class AnswerController {
             }
             
             UUID questionId = UUID.fromString(questionIdParam);
-            int count = answerRepository.countCorrectAnswersByQuestionId(questionId);
+            int count = answerService.countCorrectAnswersByQuestionId(questionId);
             
             ctx.json(new CountResponse(count));
         } catch (IllegalArgumentException e) {
@@ -290,6 +297,30 @@ public class AnswerController {
         } catch (Exception e) {
             logger.error("Ошибка при подсчете правильных ответов", e);
             ctx.status(500).json(new ErrorResponse("Ошибка при подсчете правильных ответов"));
+        }
+    }
+
+    /**
+     * Проверяет, является ли ответ правильным.
+     * 
+     * @param ctx контекст HTTP-запроса
+     */
+    public void checkIfAnswerIsCorrect(Context ctx) {
+        try {
+            String answerIdParam = ctx.pathParam("id");
+            UUID answerId = UUID.fromString(answerIdParam);
+            
+            boolean isCorrect = answerService.isAnswerCorrect(answerId);
+            ctx.json(new CorrectnessResponse(answerId, isCorrect));
+        } catch (IllegalArgumentException e) {
+            logger.error("Неверный формат UUID", e);
+            ctx.status(400).json(new ErrorResponse("Неверный формат идентификатора"));
+        } catch (RuntimeException e) {
+            logger.error("Ответ не найден", e);
+            ctx.status(404).json(new ErrorResponse(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Ошибка при проверке ответа", e);
+            ctx.status(500).json(new ErrorResponse("Ошибка при проверке ответа"));
         }
     }
 
@@ -343,6 +374,27 @@ public class AnswerController {
 
         public String getMessage() {
             return message;
+        }
+    }
+
+    /**
+     * Класс для передачи информации о правильности ответа.
+     */
+    private static class CorrectnessResponse {
+        private final UUID answerId;
+        private final boolean isCorrect;
+
+        public CorrectnessResponse(UUID answerId, boolean isCorrect) {
+            this.answerId = answerId;
+            this.isCorrect = isCorrect;
+        }
+
+        public UUID getAnswerId() {
+            return answerId;
+        }
+
+        public boolean isCorrect() {
+            return isCorrect;
         }
     }
 }

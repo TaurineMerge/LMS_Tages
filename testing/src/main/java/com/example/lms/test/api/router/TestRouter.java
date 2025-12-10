@@ -1,14 +1,15 @@
 package com.example.lms.test.api.router;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.example.lms.security.JwtHandler;
 import com.example.lms.test.api.controller.TestController;
 import com.example.lms.tracing.SimpleTracer;
 import com.example.lms.Main;
 import com.example.lms.security.JwtHandler;
 
 import static io.javalin.apibuilder.ApiBuilder.*;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Router для сущности Test.
@@ -32,9 +33,7 @@ import org.slf4j.LoggerFactory;
  * Метод {@link #register(TestController)} вызывается из Main при поднятии приложения.
  */
 public class TestRouter {
-
-    /** Логгер используется для логирования запросов по аналогии с Main-классом. */
-    private static final Logger logger = LoggerFactory.getLogger(Main.class);
+    private static final Logger logger = LoggerFactory.getLogger(TestRouter.class);
 
     /**
      * Регистрирует маршруты группы /tests и их подмаршрутов.
