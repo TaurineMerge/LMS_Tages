@@ -51,10 +51,11 @@ func (h *CourseHandler) getCourses(c *fiber.Ctx) error {
 
 	// Парсим параметры запроса
 	filter := models.CourseFilter{
-		Level:      c.Query("level"),
-		Visibility: c.Query("visibility"),
 		CategoryID: categoryID,
 	}
+	// level/visibility фильтры временно отключены (см. swagger)
+	// filter.Level = ""
+	// filter.Visibility = ""
 
 	// Парсим page и limit
 	page, _ := strconv.Atoi(c.Query("page", "1"))

@@ -350,10 +350,9 @@
     "/categories/{category_id}/courses": {
       "get": {
         "tags": [
-          "Categories",
           "Courses"
         ],
-        "summary": "Получить курсы категории с пагинацией",
+        "summary": "Получить курсы категории",
         "parameters": [
           {
             "name": "category_id",
@@ -378,28 +377,6 @@
             "minimum": 1,
             "maximum": 100,
             "description": "Количество элементов на странице"
-          },
-          {
-            "name": "level",
-            "in": "query",
-            "type": "string",
-            "enum": [
-              "hard",
-              "medium",
-              "easy"
-            ],
-            "description": "Фильтр по уровню сложности"
-          },
-          {
-            "name": "visibility",
-            "in": "query",
-            "type": "string",
-            "enum": [
-              "draft",
-              "public",
-              "private"
-            ],
-            "description": "Фильтр по видимости"
           }
         ],
         "responses": {
@@ -772,7 +749,6 @@
     "/categories/{category_id}/courses/{course_id}/lessons": {
       "get": {
         "tags": [
-          "Courses",
           "Lessons"
         ],
         "summary": "Получить уроки курса",
