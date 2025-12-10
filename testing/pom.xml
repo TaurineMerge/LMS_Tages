@@ -16,6 +16,13 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <javalin.version>6.1.6</javalin.version>
         <maven.shade.plugin.version>3.5.0</maven.shade.plugin.version>
+        <opentelemetry.version>1.31.0</opentelemetry.version>
+        <slf4j.version>2.0.9</slf4j.version>
+        <jackson.version>2.16.1</jackson.version>
+        <auth0.version>4.4.0</auth0.version>
+        <postgresql.version>42.6.0</postgresql.version>
+        <jknack.version>4.3.1</jknack.version>
+        <cdimascio.version>3.0.0</cdimascio.version>
     </properties>
 
     <dependencies>
@@ -27,32 +34,37 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>2.0.9</version>
+            <version>${slf4j.version}</version>
         </dependency>
         <dependency>
             <groupId>com.auth0</groupId>
             <artifactId>java-jwt</artifactId>
-            <version>4.4.0</version>
+            <version>${auth0.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.20.1</version>
+            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.6.0</version>
+            <version>${postgresql.version}</version>
         </dependency>
         <dependency>
             <groupId>com.github.jknack</groupId>
             <artifactId>handlebars</artifactId>
-            <version>4.3.1</version>
+            <version>${jknack.version}</version>
         </dependency>
         <dependency>
             <groupId>io.github.cdimascio</groupId>
             <artifactId>dotenv-java</artifactId>
-            <version>3.0.0</version>
+            <version>${cdimascio.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-api</artifactId>
+            <version>${opentelemetry.version}</version>
         </dependency>
     </dependencies>
 
