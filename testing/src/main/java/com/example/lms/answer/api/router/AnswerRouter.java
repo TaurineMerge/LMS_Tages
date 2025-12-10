@@ -1,13 +1,20 @@
 package com.example.lms.answer.api.router;
 
-import com.example.lms.answer.api.controller.AnswerController;
-import com.example.lms.tracing.SimpleTracer;
-import com.example.lms.Main;
-import com.example.lms.security.JwtHandler;
-import static io.javalin.apibuilder.ApiBuilder.*;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.example.lms.Main;
+import com.example.lms.answer.api.controller.AnswerController;
+import com.example.lms.security.JwtHandler;
+import com.example.lms.tracing.SimpleTracer;
+
+import static io.javalin.apibuilder.ApiBuilder.after;
+import static io.javalin.apibuilder.ApiBuilder.before;
+import static io.javalin.apibuilder.ApiBuilder.delete;
+import static io.javalin.apibuilder.ApiBuilder.get;
+import static io.javalin.apibuilder.ApiBuilder.path;
+import static io.javalin.apibuilder.ApiBuilder.post;
+import static io.javalin.apibuilder.ApiBuilder.put;
 
 /**
  * Роутер для маршрутов управления ответами.
@@ -23,8 +30,10 @@ public class AnswerRouter {
      */
     public static void register(AnswerController answerController) {
         path("/answers", () -> {
+            // Аутентификация для всех маршрутов
             before(JwtHandler.authenticate());
-
+            
+            // Логирование начала запроса
             before(ctx -> {
                 logger.info("▶️  Request started: {} {} (traceId: {})",
                         ctx.method(),
@@ -32,7 +41,7 @@ public class AnswerRouter {
                         SimpleTracer.getCurrentTraceId());
             });
 
-
+            // Базовые CRUD операции
             post(answerController::createAnswer);                   // POST /answers
             
             // Операции с конкретным ответом
@@ -40,17 +49,19 @@ public class AnswerRouter {
                 get(answerController::getAnswerById);               // GET /answers/{id}
                 put(answerController::updateAnswer);                // PUT /answers/{id}
                 delete(answerController::deleteAnswer);             // DELETE /answers/{id}
+                get("/correct", answerController::checkIfAnswerIsCorrect); // GET /answers/{id}/correct
             });
 
             // Операции с ответами по вопросам
-            path("/question", () -> {
-                get("/by-question", answerController::getAnswersByQuestionId);           // GET /answers/question/by-question?questionId={id}
-                get("/correct", answerController::getCorrectAnswersByQuestionId);        // GET /answers/question/correct?questionId={id}
-                delete("/delete-all", answerController::deleteAnswersByQuestionId);      // DELETE /answers/question/delete-all?questionId={id}
-                get("/count", answerController::countAnswersByQuestionId);               // GET /answers/question/count?questionId={id}
-                get("/count-correct", answerController::countCorrectAnswersByQuestionId); // GET /answers/question/count-correct?questionId={id}
+            path("/by-question", () -> {
+                get(answerController::getAnswersByQuestionId);           // GET /answers/by-question?questionId={id}
+                get("/correct", answerController::getCorrectAnswersByQuestionId); // GET /answers/by-question/correct?questionId={id}
+                delete(answerController::deleteAnswersByQuestionId);      // DELETE /answers/by-question?questionId={id}
+                get("/count", answerController::countAnswersByQuestionId); // GET /answers/by-question/count?questionId={id}
+                get("/count-correct", answerController::countCorrectAnswersByQuestionId); // GET /answers/by-question/count-correct?questionId={id}
             });
 
+            // Логирование завершения запроса
             after(ctx -> {
                 logger.info("✅ Request completed: {} {} -> {} (traceId: {})",
                         ctx.method(),
