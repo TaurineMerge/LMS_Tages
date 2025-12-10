@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class JwtHandler {
 
     private static final Logger log = LoggerFactory.getLogger(JwtHandler.class);
+    final Dotenv dotenv = Dotenv.load();
 
     /** Кэш публичных ключей по идентификатору ключа (kid) */
     private static final Map<String, CachedKey> publicKeys = new ConcurrentHashMap<>();
@@ -41,14 +42,13 @@ public class JwtHandler {
     private static final Object lock = new Object();
     
     /** Внутренний URL Keycloak для доступа из контейнерной сети */
-    private static final String KEYCLOAK_INTERNAL_URL = System.getenv().getOrDefault("KEYCLOAK_INTERNAL_URL",
-            "http://keycloak:8080");
+    private static final String KEYCLOAK_INTERNAL_URL = dotenv.get("KEYCLOAK_INTERNAL_URL");
     
     /** Публичный URL Keycloak для проверки issuer токена */
-    private static final String KEYCLOAK_URL = System.getenv().getOrDefault("KEYCLOAK_EXTERNAL_URL", "http://localhost:8080");
+    private static final String KEYCLOAK_URL = dotenv.get("KEYCLOAK_EXTERNAL_URL");
     
     /** Название realm в Keycloak */
-    private static final String REALM = System.getenv().getOrDefault("KEYCLOAK_STUDENT_REALM", "student");
+    private static final String REALM = dotenv.get("KEYCLOAK_STUDENT_REALM");
     
     /** Объект для парсинга JSON */
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
