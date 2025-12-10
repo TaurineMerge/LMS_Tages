@@ -1,0 +1,24 @@
+<!-- resources/templates/kira.hbs -->
+<div>
+    <h3>Данные из таблицы "Тесты"</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Текст</th>
+                <th>Минимальная оценка</th>
+                <th>Описание</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#each tests}}
+            <tr>
+                <td>{{id}}</td>
+                <td>{{title}}</td>
+                <td>{{min_point}}</td>
+                <td>{{description}}</td>
+            </tr>
+            {{/each}}
+        </tbody>
+    </table>
+</div>

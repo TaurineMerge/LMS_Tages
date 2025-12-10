@@ -6,8 +6,6 @@ import org.slf4j.LoggerFactory;
 import com.example.lms.security.JwtHandler;
 import com.example.lms.test.api.controller.TestController;
 import com.example.lms.tracing.SimpleTracer;
-import com.example.lms.Main;
-import com.example.lms.security.JwtHandler;
 
 import static io.javalin.apibuilder.ApiBuilder.*;
 
@@ -16,21 +14,22 @@ import static io.javalin.apibuilder.ApiBuilder.*;
  * <p>
  * Регистрирует REST-эндпоинты:
  * <ul>
- *     <li>GET /tests — получить список тестов (HTML)</li>
- *     <li>POST /tests — создать тест</li>
- *     <li>GET /tests/{id} — получить тест по ID</li>
- *     <li>PUT /tests/{id} — обновить тест</li>
- *     <li>DELETE /tests/{id} — удалить тест</li>
+ * <li>GET /tests — получить список тестов (HTML)</li>
+ * <li>POST /tests — создать тест</li>
+ * <li>GET /tests/{id} — получить тест по ID</li>
+ * <li>PUT /tests/{id} — обновить тест</li>
+ * <li>DELETE /tests/{id} — удалить тест</li>
  * </ul>
  *
  * Все запросы:
  * <ul>
- *     <li>проходят через JWT-аутентификацию {@link JwtHandler#authenticate()}</li>
- *     <li>логируются до и после обработки</li>
- *     <li>содержат traceId для трассировки запроса в OpenTelemetry</li>
+ * <li>проходят через JWT-аутентификацию {@link JwtHandler#authenticate()}</li>
+ * <li>логируются до и после обработки</li>
+ * <li>содержат traceId для трассировки запроса в OpenTelemetry</li>
  * </ul>
  *
- * Метод {@link #register(TestController)} вызывается из Main при поднятии приложения.
+ * Метод {@link #register(TestController)} вызывается из Main при поднятии
+ * приложения.
  */
 public class TestRouter {
     private static final Logger logger = LoggerFactory.getLogger(TestRouter.class);
@@ -39,6 +38,7 @@ public class TestRouter {
      * Регистрирует маршруты группы /tests и их подмаршрутов.
      * <p>
      * Пример структуры:
+     * 
      * <pre>
      * /tests
      *    GET     — список тестов (HTML)

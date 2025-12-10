@@ -9,7 +9,9 @@ import com.example.lms.tracing.SimpleTracer;
 
 import io.javalin.http.Context;
 
-import java.io.IOException;
+import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -17,18 +19,18 @@ import java.util.Map;
  * <p>
  * Обрабатывает HTTP-запросы к ресурсам:
  * <ul>
- *     <li>GET /tests — получение списка тестов в HTML-шаблоне</li>
- *     <li>POST /tests — создание нового теста</li>
- *     <li>GET /tests/{id} — получение теста по ID</li>
- *     <li>PUT /tests/{id} — обновление теста</li>
- *     <li>DELETE /tests/{id} — удаление теста</li>
+ * <li>GET /tests — получение списка тестов в HTML-шаблоне</li>
+ * <li>POST /tests — создание нового теста</li>
+ * <li>GET /tests/{id} — получение теста по ID</li>
+ * <li>PUT /tests/{id} — обновление теста</li>
+ * <li>DELETE /tests/{id} — удаление теста</li>
  * </ul>
  *
  * Контроллер использует:
  * <ul>
- *     <li>{@link TestService} — бизнес-логику работы с тестами</li>
- *     <li>{@link Handlebars} — генерацию HTML-шаблонов</li>
- *     <li>{@link SimpleTracer} — OpenTelemetry-трейсинг</li>
+ * <li>{@link TestService} — бизнес-логику работы с тестами</li>
+ * <li>{@link Handlebars} — генерацию HTML-шаблонов</li>
+ * <li>{@link SimpleTracer} — OpenTelemetry-трейсинг</li>
  * </ul>
  */
 public class TestController {
@@ -37,15 +39,30 @@ public class TestController {
     private final TestService testService;
 
     /** Шаблонизатор Handlebars для генерации HTML. */
-    private final Handlebars handlebars = new Handlebars();
+    private Handlebars handlebars;
 
     /**
      * Создаёт контроллер тестов.
      *
      * @param testService сервис управления тестами
      */
-    public TestController(TestService testService) {
+    public TestController(TestService testService, Handlebars handlebars) {
         this.testService = testService;
+        this.handlebars = handlebars;
+    }
+
+    // Метод для рендеринга шаблонов
+    private void renderTemplate(Context ctx, String templatePath, Map<String, Object> model) {
+        try {
+            Template template = handlebars.compile(templatePath);
+            StringWriter writer = new StringWriter();
+            template.apply(model, writer);
+            ctx.contentType("text/html; charset=utf-8"); // добавлено для правильной кодировки
+            ctx.result(writer.toString());
+        } catch (Exception e) {
+            e.printStackTrace();
+            ctx.status(500).result("Ошибка рендеринга шаблона");
+        }
     }
 
     /**
@@ -61,17 +78,12 @@ public class TestController {
      */
     public void getTests(Context ctx) {
         SimpleTracer.runWithSpan("getTests", () -> {
-            try {
-                var tests = testService.getAllTests();
+            List<Test> tests = testService.getAllTests();
+            Map<String, Object> model = new HashMap<>();
+            model.put("tests", tests);
+            model.put("title", "Список тестов");
 
-                Template template = handlebars.compile("/templates/test-list");
-                String html = template.apply(Map.of("tests", tests));
-
-                ctx.html(html);
-            } catch (IOException e) {
-                e.printStackTrace();
-                ctx.status(500).html("Internal Server Error: " + e.getMessage());
-            }
+            renderTemplate(ctx, "layouts/test-list", model);
         });
     }
 
@@ -127,6 +139,7 @@ public class TestController {
      * Обработчик DELETE /tests/{id}.
      * <p>
      * Удаляет тест по идентификатору и возвращает JSON вида:
+     * 
      * <pre>
      * {"deleted": true}
      * </pre>

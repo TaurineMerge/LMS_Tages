@@ -12,6 +12,8 @@ import com.example.lms.test.api.controller.TestController;
 import com.example.lms.test.api.router.TestRouter;
 import com.example.lms.test.domain.service.TestService;
 import com.example.lms.test.infrastructure.repositories.TestRepository;
+import com.github.jknack.handlebars.Handlebars;
+import com.github.jknack.handlebars.io.ClassPathTemplateLoader;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import io.javalin.Javalin;
@@ -21,11 +23,11 @@ import io.javalin.Javalin;
  * <p>
  * Выполняет:
  * <ul>
- *     <li>загрузку переменных окружения через Dotenv</li>
- *     <li>инициализацию конфигурации БД</li>
- *     <li>ручное внедрение зависимостей (Manual Dependency Injection)</li>
- *     <li>создание и настройку Javalin-приложения</li>
- *     <li>регистрацию HTTP-маршрутов</li>
+ * <li>загрузку переменных окружения через Dotenv</li>
+ * <li>инициализацию конфигурации БД</li>
+ * <li>ручное внедрение зависимостей (Manual Dependency Injection)</li>
+ * <li>создание и настройку Javalin-приложения</li>
+ * <li>регистрацию HTTP-маршрутов</li>
  * </ul>
  *
  * Приложение использует Javalin как лёгкий HTTP-фреймворк и следует принципам
@@ -33,6 +35,7 @@ import io.javalin.Javalin;
  */
 public class Main {
     private static final Logger logger = LoggerFactory.getLogger(TestRouter.class);
+
     /**
      * Главный метод запуска сервиса.
      *
@@ -52,6 +55,9 @@ public class Main {
         // ---------------------------------------------------------------
         // 2. Настройка зависимостей (Manual Dependency Injection)
         // ---------------------------------------------------------------
+        // Конфигурация Handlebars
+        Handlebars handlebars = configureHandlebars();
+
         // Конфигурация подключения к базе
         DatabaseConfig dbConfig = new DatabaseConfig(DB_URL, DB_USER, DB_PASSWORD);
 
@@ -64,7 +70,7 @@ public class Main {
         AnswerService answerService = new AnswerService(answerRepository);
 
         // Контроллер, принимающий HTTP-запросы
-        TestController testController = new TestController(testService);
+        TestController testController = new TestController(testService, handlebars);
         AnswerController answerController = new AnswerController(answerService);
 
         // ---------------------------------------------------------------
@@ -79,6 +85,27 @@ public class Main {
         }).start(APP_PORT);
 
         // Приложение успешно запустилось
-        System.out.printf("Testing Service started on port %d%n", APP_PORT);
+        logger.info("Testing Service started on port %d%n", APP_PORT);
+    }
+
+    private static Handlebars configureHandlebars() {
+        try {
+            // Основной загрузчик шаблонов
+            ClassPathTemplateLoader loader = new ClassPathTemplateLoader();
+            loader.setPrefix("/templates");
+            loader.setSuffix(".hbs");
+
+            Handlebars handlebars = new Handlebars(loader);
+            handlebars.setInfiniteLoops(true);
+
+            // Регистрация helpers для partials
+            handlebars.registerHelpers(new ClassPathTemplateLoader("/templates/partials", ".hbs"));
+
+            return handlebars;
+        } catch (Exception e) {
+            System.err.println("Ошибка при конфигурации Handlebars: " + e.getMessage());
+            e.printStackTrace();
+            return new Handlebars();
+        }
     }
 }
