@@ -1,4 +1,4 @@
-package com.example.lms.answer.api.domain.model;
+package com.example.lms.answer.domain.model;
 
 import java.util.Objects;
 import java.util.UUID;

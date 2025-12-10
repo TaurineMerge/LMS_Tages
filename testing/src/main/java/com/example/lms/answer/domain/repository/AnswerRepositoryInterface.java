@@ -1,6 +1,6 @@
-package com.example.lms.answer.api.domain.repository;
+package com.example.lms.answer.domain.repository;
 
-import com.example.lms.answer.api.domain.model.AnswerModel;
+import com.example.lms.answer.domain.model.AnswerModel;
 
 import java.util.List;
 import java.util.Optional;

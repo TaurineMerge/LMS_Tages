@@ -1,7 +1,7 @@
 package com.example.lms.answer.api.controller;
 
-import com.example.lms.answer.api.domain.model.AnswerModel;
-import com.example.lms.answer.api.domain.repository.AnswerRepositoryInterface;
+import com.example.lms.answer.domain.model.AnswerModel;
+import com.example.lms.answer.domain.repository.AnswerRepositoryInterface;
 import com.example.lms.tracing.SimpleTracer;
 import io.javalin.http.Context;
 import org.slf4j.Logger;

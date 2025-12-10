@@ -1,7 +1,7 @@
-package com.example.lms.answer.api.infrastructure.repositories;
+package com.example.lms.answer.infrastructure.repositories;
 
-import com.example.lms.answer.api.domain.model.AnswerModel;
-import com.example.lms.answer.api.domain.repository.AnswerRepositoryInterface;
+import com.example.lms.answer.domain.model.AnswerModel;
+import com.example.lms.answer.domain.repository.AnswerRepositoryInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
