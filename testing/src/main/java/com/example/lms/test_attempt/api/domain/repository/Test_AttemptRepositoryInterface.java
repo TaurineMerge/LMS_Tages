@@ -1,112 +1,80 @@
 package com.example.lms.test_attempt.api.domain.repository;
 
-import com.example.lms.test_attempt.api.domain.model.Test_AttemptModel;
+import com.example.lms.test_attempt.api.domain.model.TestAttemptModel;
+
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Интерфейс репозитория для работы с попытками прохождения тестов
- * Соответствует таблице test_attempt_b
+ * Репозиторий для работы с попытками прохождения тестов.
+ * Соответствует таблице TEST_ATTEMPT_B.
  */
 public interface Test_AttemptRepositoryInterface {
-    
+
     /**
-     * Сохранить новую попытку теста
-     * @param attempt модель попытки
-     * @return сохраненная модель с присвоенным ID
+     * Сохранить новую попытку.
      */
-    Test_AttemptModel save(Test_AttemptModel attempt);
-    
+    TestAttemptModel save(TestAttemptModel attempt);
+
     /**
-     * Обновить существующую попытку
-     * @param attempt модель попытки с обновленными данными
-     * @return обновленная модель
+     * Обновить существующую попытку.
      */
-    Test_AttemptModel update(Test_AttemptModel attempt);
-    
+    TestAttemptModel update(TestAttemptModel attempt);
+
     /**
-     * Найти попытку по ID
-     * @param id идентификатор попытки
-     * @return Optional с попыткой, если найдена
+     * Найти попытку по её ID.
      */
-    Optional<Test_AttemptModel> findById(UUID id);
-    
+    Optional<TestAttemptModel> findById(UUID id);
+
     /**
-     * Найти все попытки
-     * @return список всех попыток
+     * Получить все попытки.
      */
-    List<Test_AttemptModel> findAll();
-    
+    List<TestAttemptModel> findAll();
+
     /**
-     * Найти попытки по ID студента
-     * @param studentId идентификатор студента
-     * @return список попыток студента
+     * Получить все попытки студента.
      */
-    List<Test_AttemptModel> findByStudentId(UUID studentId);
-    
+    List<TestAttemptModel> findByStudentId(UUID studentId);
+
     /**
-     * Найти попытки по ID теста
-     * @param testId идентификатор теста
-     * @return список попыток для теста
+     * Получить все попытки по тесту.
      */
-    List<Test_AttemptModel> findByTestId(UUID testId);
-    
+    List<TestAttemptModel> findByTestId(UUID testId);
+
     /**
-     * Найти попытку студента для конкретного теста
-     * @param studentId идентификатор студента
-     * @param testId идентификатор теста
-     * @return список попыток (обычно 0 или 1, но может быть несколько)
+     * Получить все попытки конкретного студента по конкретному тесту.
      */
-    List<Test_AttemptModel> findByStudentAndTest(UUID studentId, UUID testId);
-    
+    List<TestAttemptModel> findByStudentAndTest(UUID studentId, UUID testId);
+
     /**
-     * Удалить попытку по ID
-     * @param id идентификатор попытки
-     * @return true если попытка была удалена
+     * Удалить попытку по ID.
      */
     boolean deleteById(UUID id);
-    
+
     /**
-     * Проверить существование попытки
-     * @param id идентификатор попытки
-     * @return true если попытка существует
+     * Проверить существование попытки по ID.
      */
     boolean existsById(UUID id);
-    
+
     /**
-     * Получить количество попыток студента для теста
-     * @param studentId идентификатор студента
-     * @param testId идентификатор теста
-     * @return количество попыток
+     * Подсчитать количество попыток студента по тесту.
      */
     int countAttemptsByStudentAndTest(UUID studentId, UUID testId);
-    
+
     /**
-     * Найти попытки по дате
-     * @param date дата попытки
-     * @return список попыток за указанную дату
+     * Найти попытки по дате прохождения.
      */
-    List<Test_AttemptModel> findByDate(LocalDate date);
-    
+    List<TestAttemptModel> findByDate(LocalDate date);
+
     /**
-     * Найти завершенные попытки (с результатами)
-     * @return список завершенных попыток
+     * Найти все завершённые попытки (где point IS NOT NULL).
      */
-    List<Test_AttemptModel> findCompletedAttempts();
-    
+    List<TestAttemptModel> findCompletedAttempts();
+
     /**
-     * Найти незавершенные попытки (без результатов)
-     * @return список незавершенных попыток
+     * Найти все незавершённые попытки (где point IS NULL).
      */
-    List<Test_AttemptModel> findIncompleteAttempts();
-    
-    /**
-     * Получить лучший результат студента по тесту
-     * @param studentId идентификатор студента
-     * @param testId идентификатор теста
-     * @return Optional с лучшей попыткой (по баллам)
-     */
-    Optional<Test_AttemptModel> findBestAttemptByStudentAndTest(UUID studentId, UUID testId);
+    List<TestAttemptModel> findIncompleteAttempts();
 }
