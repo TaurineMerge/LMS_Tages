@@ -3,6 +3,7 @@ package com.example.lms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.example.lms.config.HandlebarsConfig;
 import com.example.lms.answer.api.controller.AnswerController;
 import com.example.lms.answer.api.router.AnswerRouter;
 import com.example.lms.answer.domain.service.AnswerService;
@@ -13,7 +14,6 @@ import com.example.lms.test.api.router.TestRouter;
 import com.example.lms.test.domain.service.TestService;
 import com.example.lms.test.infrastructure.repositories.TestRepository;
 import com.github.jknack.handlebars.Handlebars;
-import com.github.jknack.handlebars.io.ClassPathTemplateLoader;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import io.javalin.Javalin;
@@ -56,7 +56,7 @@ public class Main {
         // 2. Настройка зависимостей (Manual Dependency Injection)
         // ---------------------------------------------------------------
         // Конфигурация Handlebars
-        Handlebars handlebars = configureHandlebars();
+        Handlebars handlebars = HandlebarsConfig.configureHandlebars();
 
         // Конфигурация подключения к базе
         DatabaseConfig dbConfig = new DatabaseConfig(DB_URL, DB_USER, DB_PASSWORD);
@@ -86,26 +86,5 @@ public class Main {
 
         // Приложение успешно запустилось
         logger.info("Testing Service started on port %d%n", APP_PORT);
-    }
-
-    private static Handlebars configureHandlebars() {
-        try {
-            // Основной загрузчик шаблонов
-            ClassPathTemplateLoader loader = new ClassPathTemplateLoader();
-            loader.setPrefix("/templates");
-            loader.setSuffix(".hbs");
-
-            Handlebars handlebars = new Handlebars(loader);
-            handlebars.setInfiniteLoops(true);
-
-            // Регистрация helpers для partials
-            handlebars.registerHelpers(new ClassPathTemplateLoader("/templates/partials", ".hbs"));
-
-            return handlebars;
-        } catch (Exception e) {
-            System.err.println("Ошибка при конфигурации Handlebars: " + e.getMessage());
-            e.printStackTrace();
-            return new Handlebars();
-        }
     }
 }
