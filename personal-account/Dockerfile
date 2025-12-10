@@ -1,5 +1,5 @@
 # Используем официальный Python образ
-FROM python:3.11-slim
+FROM python:3.11-slim 
 
 ENV POETRY_HOME=/opt/poetry \
     POETRY_VIRTUALENVS_IN_PROJECT=true \
@@ -16,6 +16,8 @@ RUN poetry config --list
 # Устанавливаем рабочую директорию
 WORKDIR /app
 
+ADD . /app
+
 # Копируем файлы зависимостей
 COPY pyproject.toml poetry.lock* /app/
 
@@ -25,6 +27,9 @@ RUN /opt/poetry/bin/poetry install --only main --no-interaction --no-ansi
 
 # Копируем остальные файлы *после* установки зависимостей для лучшего использования кэша
 COPY . .
+
+# Устанавливаем зависимости
+RUN poetry install --no-root --only=main --no-interaction --no-ansi
 
 # Создаем пользователя для безопасности
 RUN useradd -m -u 1000 fastapiuser && chown -R fastapiuser:fastapiuser /app
