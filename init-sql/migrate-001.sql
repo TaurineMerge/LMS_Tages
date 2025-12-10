@@ -67,6 +67,7 @@ CREATE TABLE IF NOT EXISTS knowledge_base.course_b (
 CREATE TABLE IF NOT EXISTS knowledge_base.lesson_d (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title VARCHAR(255) NOT NULL,
+    category_id UUID REFERENCES knowledge_base.category_d(id) ON DELETE CASCADE,
     course_id UUID NOT NULL REFERENCES knowledge_base.course_b(id) ON DELETE CASCADE,
     content JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -159,6 +160,7 @@ CREATE INDEX IF NOT EXISTS idx_visit_lesson ON personal_account.visit_students_f
 -- Индексы для базы знаний
 CREATE INDEX IF NOT EXISTS idx_course_category ON knowledge_base.course_b(category_id);
 CREATE INDEX IF NOT EXISTS idx_course_visibility ON knowledge_base.course_b(visibility);
+CREATE INDEX IF NOT EXISTS idx_lesson_category ON knowledge_base.lesson_d(category_id);
 CREATE INDEX IF NOT EXISTS idx_lesson_course ON knowledge_base.lesson_d(course_id);
 
 -- Индексы для тестов

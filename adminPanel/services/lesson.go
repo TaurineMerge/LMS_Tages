@@ -218,18 +218,18 @@ func (s *LessonService) CreateLesson(ctx context.Context, courseID string, input
 }
 
 // UpdateLesson - обновление урока
-func (s *LessonService) UpdateLesson(ctx context.Context, id, courseID string, input models.LessonUpdate) (*models.LessonResponse, error) {
+func (s *LessonService) UpdateLesson(ctx context.Context, id, courseID, categoryID string, input models.LessonUpdate) (*models.LessonResponse, error) {
 	ctx, span := lessonTracer.Start(ctx, "LessonService.UpdateLesson")
 	span.SetAttributes(
 		attribute.String("lesson.id", id),
 		attribute.String("course.id", courseID),
-		attribute.String("category.id", input.CategoryID),
+		attribute.String("category.id", categoryID),
 		attribute.String("lesson.title", input.Title),
 	)
 	defer span.End()
 
 	// Проверяем существование урока
-	existing, err := s.lessonRepo.GetByIDAndCourse(ctx, id, input.CategoryID, courseID)
+	existing, err := s.lessonRepo.GetByIDAndCourse(ctx, id, categoryID, courseID)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -240,10 +240,8 @@ func (s *LessonService) UpdateLesson(ctx context.Context, id, courseID string, i
 		return nil, exceptions.NotFoundError("Lesson", id)
 	}
 
-	// Проверяем категорию/курс
-	if existingCat := toString(existing["category_id"]); input.CategoryID != "" && input.CategoryID != existingCat {
-		return nil, exceptions.ValidationError("Category ID does not match lesson")
-	}
+	// Категория привязывается к курсу, поэтому используем категорию курса
+	input.CategoryID = categoryID
 
 	// Обновляем урок
 	data, err := s.lessonRepo.Update(ctx, id, courseID, input)

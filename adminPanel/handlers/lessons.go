@@ -273,7 +273,7 @@ func (h *LessonHandler) updateLesson(c *fiber.Ctx) error {
 	}
 
 	// Обновляем урок
-	lesson, err := h.lessonService.UpdateLesson(ctx, lessonID, courseID, input)
+	lesson, err := h.lessonService.UpdateLesson(ctx, lessonID, courseID, categoryID, input)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
