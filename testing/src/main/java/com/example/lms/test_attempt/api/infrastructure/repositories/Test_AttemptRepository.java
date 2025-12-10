@@ -15,7 +15,18 @@ import java.util.UUID;
 
 /**
  * Реализация репозитория попыток тестов с использованием JDBC.
- * Работает с таблицей test_attempt_b в PostgreSQL.
+ * <p>
+ * Работает с таблицей {@code test_attempt_b} в PostgreSQL и
+ * предоставляет CRUD-операции и дополнительные методы выборки.
+ * <p>
+ * Основные задачи:
+ * <ul>
+ *     <li>сохранение новой попытки теста</li>
+ *     <li>обновление существующей попытки</li>
+ *     <li>поиск по ID, студенту, тесту, дате</li>
+ *     <li>получение завершённых/незавершённых попыток</li>
+ *     <li>подсчёт количества попыток по студенту и тесту</li>
+ * </ul>
  */
 public class Test_AttemptRepository implements Test_AttemptRepositoryInterface {
 
@@ -111,10 +122,26 @@ public class Test_AttemptRepository implements Test_AttemptRepositoryInterface {
         ORDER BY date_of_attempt DESC
         """;
 
+    /**
+     * Создаёт репозиторий попыток теста с указанным {@link DataSource}.
+     *
+     * @param dataSource источник соединений с базой данных PostgreSQL
+     */
     public Test_AttemptRepository(DataSource dataSource) {
         this.dataSource = dataSource;
     }
 
+    /**
+     * Сохраняет новую попытку теста в базе данных.
+     * <p>
+     * Выполняет валидацию модели через {@link TestAttemptModel#validate()},
+     * вставляет запись в таблицу {@code test_attempt_b} и заполняет
+     * сгенерированный идентификатор в модель.
+     *
+     * @param attempt модель попытки теста для сохранения
+     * @return сохранённая модель с заполненным полем {@code id}
+     * @throws RuntimeException при ошибке базы данных или если ID не был сгенерирован
+     */
     @Override
     public TestAttemptModel save(TestAttemptModel attempt) {
         logger.info("Сохранение новой попытки теста для студента: {}", attempt.getStudentId());
@@ -159,6 +186,17 @@ public class Test_AttemptRepository implements Test_AttemptRepositoryInterface {
         }
     }
 
+    /**
+     * Обновляет существующую попытку теста в базе данных.
+     * <p>
+     * Требует, чтобы у модели был заполнен {@code id}. Если строка с таким ID
+     * не найдена, выбрасывается исключение.
+     *
+     * @param attempt модель попытки с обновлёнными данными
+     * @return обновлённая модель попытки
+     * @throws IllegalArgumentException если {@code id} отсутствует
+     * @throws RuntimeException         при ошибках базы данных или отсутствии записи
+     */
     @Override
     public TestAttemptModel update(TestAttemptModel attempt) {
         logger.info("Обновление попытки с ID: {}", attempt.getId());
@@ -205,6 +243,13 @@ public class Test_AttemptRepository implements Test_AttemptRepositoryInterface {
         }
     }
 
+    /**
+     * Ищет попытку по её идентификатору.
+     *
+     * @param id идентификатор попытки
+     * @return {@link Optional} с найденной моделью или пустой Optional, если не найдено
+     * @throws RuntimeException при ошибках базы данных
+     */
     @Override
     public Optional<TestAttemptModel> findById(UUID id) {
         logger.debug("Поиск попытки по ID: {}", id);
@@ -228,6 +273,13 @@ public class Test_AttemptRepository implements Test_AttemptRepositoryInterface {
         }
     }
 
+    /**
+     * Возвращает список всех попыток теста,
+     * отсортированных по дате попытки (по убыванию).
+     *
+     * @return список всех попыток
+     * @throws RuntimeException при ошибках базы данных
+     */
     @Override
     public List<TestAttemptModel> findAll() {
         logger.debug("Получение всех попыток");
@@ -250,6 +302,13 @@ public class Test_AttemptRepository implements Test_AttemptRepositoryInterface {
         }
     }
 
+    /**
+     * Ищет попытки по идентификатору студента.
+     *
+     * @param studentId идентификатор студента
+     * @return список попыток этого студента (может быть пустым)
+     * @throws RuntimeException при ошибках базы данных
+     */
     @Override
     public List<TestAttemptModel> findByStudentId(UUID studentId) {
         logger.debug("Поиск попыток по студенту: {}", studentId);
@@ -274,6 +333,13 @@ public class Test_AttemptRepository implements Test_AttemptRepositoryInterface {
         }
     }
 
+    /**
+     * Ищет попытки по идентификатору теста.
+     *
+     * @param testId идентификатор теста
+     * @return список попыток по данному тесту
+     * @throws RuntimeException при ошибках базы данных
+     */
     @Override
     public List<TestAttemptModel> findByTestId(UUID testId) {
         logger.debug("Поиск попыток по тесту: {}", testId);
@@ -294,10 +360,18 @@ public class Test_AttemptRepository implements Test_AttemptRepositoryInterface {
 
         } catch (SQLException e) {
             logger.error("Ошибка при поиске попыток по тесту: {}", testId, e);
-            throw new RuntimeException("Ошибка базы данных при поиске попыток по тесту", e);
+            throw new RuntimeException("Ошибка базы данных при поиске попыток", e);
         }
     }
 
+    /**
+     * Ищет попытки по студенту и тесту одновременно.
+     *
+     * @param studentId идентификатор студента
+     * @param testId    идентификатор теста
+     * @return список попыток данного студента по указанному тесту
+     * @throws RuntimeException при ошибках базы данных
+     */
     @Override
     public List<TestAttemptModel> findByStudentAndTest(UUID studentId, UUID testId) {
         logger.debug("Поиск попыток студента {} по тесту {}", studentId, testId);
@@ -323,6 +397,13 @@ public class Test_AttemptRepository implements Test_AttemptRepositoryInterface {
         }
     }
 
+    /**
+     * Удаляет попытку по её идентификатору.
+     *
+     * @param id идентификатор попытки
+     * @return {@code true}, если запись была удалена; {@code false}, если строки не было
+     * @throws RuntimeException при ошибках базы данных
+     */
     @Override
     public boolean deleteById(UUID id) {
         logger.info("Удаление попытки с ID: {}", id);
@@ -343,6 +424,13 @@ public class Test_AttemptRepository implements Test_AttemptRepositoryInterface {
         }
     }
 
+    /**
+     * Проверяет существование попытки с указанным идентификатором.
+     *
+     * @param id идентификатор попытки
+     * @return {@code true}, если попытка существует, иначе {@code false}
+     * @throws RuntimeException при ошибках базы данных
+     */
     @Override
     public boolean existsById(UUID id) {
         logger.debug("Проверка существования попытки с ID: {}", id);
@@ -363,6 +451,15 @@ public class Test_AttemptRepository implements Test_AttemptRepositoryInterface {
         }
     }
 
+    /**
+     * Подсчитывает количество попыток студента по конкретному тесту.
+     * Может использоваться для ограничения числа попыток.
+     *
+     * @param studentId идентификатор студента
+     * @param testId    идентификатор теста
+     * @return количество попыток
+     * @throws RuntimeException при ошибках базы данных
+     */
     @Override
     public int countAttemptsByStudentAndTest(UUID studentId, UUID testId) {
         logger.debug("Подсчёт попыток студента {} по тесту {}", studentId, testId);
@@ -386,6 +483,13 @@ public class Test_AttemptRepository implements Test_AttemptRepositoryInterface {
         }
     }
 
+    /**
+     * Ищет попытки по конкретной дате прохождения.
+     *
+     * @param date дата попытки
+     * @return список попыток за указанную дату
+     * @throws RuntimeException при ошибках базы данных
+     */
     @Override
     public List<TestAttemptModel> findByDate(LocalDate date) {
         logger.debug("Поиск попыток за дату: {}", date);
@@ -410,6 +514,12 @@ public class Test_AttemptRepository implements Test_AttemptRepositoryInterface {
         }
     }
 
+    /**
+     * Возвращает все завершённые попытки (где поле {@code point} не равно NULL).
+     *
+     * @return список завершённых попыток
+     * @throws RuntimeException при ошибках базы данных
+     */
     @Override
     public List<TestAttemptModel> findCompletedAttempts() {
         logger.debug("Поиск завершённых попыток");
@@ -432,6 +542,12 @@ public class Test_AttemptRepository implements Test_AttemptRepositoryInterface {
         }
     }
 
+    /**
+     * Возвращает все незавершённые попытки (где поле {@code point} равно NULL).
+     *
+     * @return список незавершённых попыток
+     * @throws RuntimeException при ошибках базы данных
+     */
     @Override
     public List<TestAttemptModel> findIncompleteAttempts() {
         logger.debug("Поиск незавершённых попыток");
@@ -455,7 +571,14 @@ public class Test_AttemptRepository implements Test_AttemptRepositoryInterface {
     }
 
     /**
-     * Преобразование строки ResultSet в объект TestAttemptModel.
+     * Преобразует одну строку {@link ResultSet} в доменную модель {@link TestAttemptModel}.
+     * <p>
+     * Ожидает, что в выборке присутствуют поля:
+     * id, student_id, test_id, date_of_attempt, point, certificate_id, attempt_version.
+     *
+     * @param rs текущая строка результата SQL-запроса
+     * @return собранная модель попытки теста
+     * @throws SQLException при ошибке доступа к данным ResultSet
      */
     private TestAttemptModel mapRowToTestAttempt(ResultSet rs) throws SQLException {
         return new TestAttemptModel(
