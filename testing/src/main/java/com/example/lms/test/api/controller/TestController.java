@@ -5,6 +5,8 @@ import com.example.lms.test.domain.service.TestService;
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.Template;
 
+import com.example.lms.tracing.SimpleTracer;
+
 import io.javalin.http.Context;
 
 import java.io.IOException;
@@ -31,7 +33,7 @@ public class TestController {
                 e.printStackTrace();
                 ctx.status(500).html("Internal Server Error: " + e.getMessage());
             }
-        }
+        });
     }
 
     // POST /tests
@@ -40,7 +42,7 @@ public class TestController {
             Test dto = ctx.bodyAsClass(Test.class);
             Test created = testService.createTest(dto);
             ctx.json(created);
-        }
+        });
     }
 
     // GET /tests/{id}
@@ -49,7 +51,7 @@ public class TestController {
             String id = ctx.pathParam("id");
             Test dto = testService.getTestById(id);
             ctx.json(dto);
-        }
+        });
     }
 
     // PUT /tests/{id}
@@ -60,7 +62,7 @@ public class TestController {
             dto.setId(Long.parseLong(id));
             Test updated = testService.updateTest(dto);
             ctx.json(updated);
-        }
+        });
     }
 
     // DELETE /tests/{id}
@@ -69,6 +71,6 @@ public class TestController {
             String id = ctx.pathParam("id");
             boolean deleted = testService.deleteTest(id);
             ctx.json(Map.of("deleted", deleted));
-        }
+        });
     }
 }

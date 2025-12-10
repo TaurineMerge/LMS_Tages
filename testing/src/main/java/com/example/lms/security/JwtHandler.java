@@ -1,5 +1,7 @@
 package com.example.lms.security;
 
+import io.github.cdimascio.dotenv.Dotenv;
+
 import io.javalin.http.Handler;
 import io.javalin.http.UnauthorizedResponse;
 import com.auth0.jwt.JWT;
@@ -33,7 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class JwtHandler {
 
     private static final Logger log = LoggerFactory.getLogger(JwtHandler.class);
-    final Dotenv dotenv = Dotenv.load();
+    private static final Dotenv dotenv = Dotenv.load();
 
     /** Кэш публичных ключей по идентификатору ключа (kid) */
     private static final Map<String, CachedKey> publicKeys = new ConcurrentHashMap<>();
