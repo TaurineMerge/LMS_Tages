@@ -54,16 +54,8 @@ def _render_template_safe(template_name: str, context: dict):
         # Log with trace/span ids
         try:
             span_ctx = span.get_span_context()
-            trace_id = (
-                format(span_ctx.trace_id, "032x")
-                if span_ctx and span_ctx.is_valid
-                else "-"
-            )
-            span_id = (
-                format(span_ctx.span_id, "016x")
-                if span_ctx and span_ctx.is_valid
-                else "-"
-            )
+            trace_id = format(span_ctx.trace_id, "032x") if span_ctx and span_ctx.is_valid else "-"
+            span_id = format(span_ctx.span_id, "016x") if span_ctx and span_ctx.is_valid else "-"
         except Exception:
             trace_id = "-"
             span_id = "-"
@@ -114,9 +106,7 @@ async def root_page(request: Request):
     if token:
         return RedirectResponse(url="/dashboard")  # Full path with /account prefix
 
-    return _render_template_safe(
-        "index.hbs", {"request": request, **get_keycloak_urls()}
-    )
+    return _render_template_safe("index.hbs", {"request": request, **get_keycloak_urls()})
 
 
 @router.get("/dashboard", response_class=HTMLResponse)  # <-- Теперь дэшборд здесь
@@ -178,9 +168,7 @@ async def visits_page(request: Request):
 @traced("pages.register")
 async def register_page(request: Request):
     """Render registration page."""
-    return _render_template_safe(
-        "register.hbs", {"request": request, **get_keycloak_urls()}
-    )
+    return _render_template_safe("register.hbs", {"request": request, **get_keycloak_urls()})
 
 
 @router.get("/callback", response_class=HTMLResponse)
