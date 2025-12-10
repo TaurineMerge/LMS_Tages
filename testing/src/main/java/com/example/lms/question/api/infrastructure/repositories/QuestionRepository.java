@@ -13,7 +13,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Репозиторий для управления вопросами тестов (QUESTION_D) с использованием JDBC.
+ * Репозиторий для управления вопросами тестов (QUESTION_D) с использованием
+ * JDBC.
  * <p>
  * Предоставляет операции сохранения, обновления, удаления и выборки
  * вопросов, а также методы для работы с порядком отображения вопросов
@@ -21,10 +22,10 @@ import java.util.UUID;
  * <p>
  * Особенности:
  * <ul>
- *     <li>все операции работают напрямую через JDBC</li>
- *     <li>выполняется логирование ключевых операций</li>
- *     <li>таблица QUESTION_D содержит поле "order", поэтому используется
- *         экранирование кавычками</li>
+ * <li>все операции работают напрямую через JDBC</li>
+ * <li>выполняется логирование ключевых операций</li>
+ * <li>таблица QUESTION_D содержит поле "order", поэтому используется
+ * экранирование кавычками</li>
  * </ul>
  */
 public class QuestionRepository implements QuestionRepositoryInterface {
@@ -36,77 +37,74 @@ public class QuestionRepository implements QuestionRepositoryInterface {
 
     // language=SQL
     private static final String INSERT_SQL = """
-        INSERT INTO question_d (test_id, text_of_question, "order")
-        VALUES (?, ?, ?)
-        RETURNING id
-        """;
+            INSERT INTO question_d (test_id, text_of_question, "order")
+            VALUES (?, ?, ?)
+            RETURNING id
+            """;
 
     // language=SQL
     private static final String UPDATE_SQL = """
-        UPDATE question_d
-        SET test_id = ?, text_of_question = ?, "order" = ?
-        WHERE id = ?
-        """;
+            UPDATE question_d
+            SET test_id = ?, text_of_question = ?, "order" = ?
+            WHERE id = ?
+            """;
 
     // language=SQL
     private static final String SELECT_BY_ID = """
-        SELECT id, test_id, text_of_question, "order"
-        FROM question_d
-        WHERE id = ?
-        """;
+            SELECT id, test_id, text_of_question, "order"
+            FROM question_d
+            WHERE id = ?
+            """;
 
     // language=SQL
     private static final String SELECT_ALL = """
-        SELECT id, test_id, text_of_question, "order"
-        FROM question_d
-        ORDER BY test_id, "order"
-        """;
+            SELECT id, test_id, text_of_question, "order"
+            FROM question_d
+            ORDER BY test_id, "order"
+            """;
 
     // language=SQL
     private static final String SELECT_BY_TEST = """
-        SELECT id, test_id, text_of_question, "order"
-        FROM question_d
-        WHERE test_id = ?
-        ORDER BY "order"
-        """;
+            SELECT id, test_id, text_of_question, "order"
+            FROM question_d
+            WHERE test_id = ?
+            ORDER BY "order"
+            """;
 
-    private static final String DELETE_BY_ID =
-            "DELETE FROM question_d WHERE id = ?";
+    private static final String DELETE_BY_ID = "DELETE FROM question_d WHERE id = ?";
 
-    private static final String DELETE_BY_TEST =
-            "DELETE FROM question_d WHERE test_id = ?";
+    private static final String DELETE_BY_TEST = "DELETE FROM question_d WHERE test_id = ?";
 
-    private static final String EXISTS_BY_ID =
-            "SELECT 1 FROM question_d WHERE id = ?";
+    private static final String EXISTS_BY_ID = "SELECT 1 FROM question_d WHERE id = ?";
 
     // language=SQL
     private static final String COUNT_BY_TEST = """
-        SELECT COUNT(*)
-        FROM question_d
-        WHERE test_id = ?
-        """;
+            SELECT COUNT(*)
+            FROM question_d
+            WHERE test_id = ?
+            """;
 
     // language=SQL
     private static final String SEARCH_BY_TEXT = """
-        SELECT id, test_id, text_of_question, "order"
-        FROM question_d
-        WHERE LOWER(text_of_question) LIKE LOWER(?)
-        ORDER BY test_id, "order"
-        """;
+            SELECT id, test_id, text_of_question, "order"
+            FROM question_d
+            WHERE LOWER(text_of_question) LIKE LOWER(?)
+            ORDER BY test_id, "order"
+            """;
 
     // language=SQL
     private static final String MAX_ORDER_BY_TEST = """
-        SELECT COALESCE(MAX("order"), -1)
-        FROM question_d
-        WHERE test_id = ?
-        """;
+            SELECT COALESCE(MAX("order"), -1)
+            FROM question_d
+            WHERE test_id = ?
+            """;
 
     // language=SQL
     private static final String SHIFT_ORDER_SQL = """
-        UPDATE question_d
-        SET "order" = "order" + ?
-        WHERE test_id = ? AND "order" >= ?
-        """;
+            UPDATE question_d
+            SET "order" = "order" + ?
+            WHERE test_id = ? AND "order" >= ?
+            """;
 
     /**
      * Создаёт репозиторий вопросов.
@@ -118,7 +116,7 @@ public class QuestionRepository implements QuestionRepositoryInterface {
     }
 
     // ------------------------------------------------------------
-    //                 CRUD + Query методы
+    // CRUD + Query методы
     // ------------------------------------------------------------
 
     /**
@@ -137,7 +135,7 @@ public class QuestionRepository implements QuestionRepositoryInterface {
         question.validate();
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(INSERT_SQL)) {
+                PreparedStatement stmt = conn.prepareStatement(INSERT_SQL)) {
 
             stmt.setObject(1, question.getTestId());
             stmt.setString(2, question.getTextOfQuestion());
@@ -177,7 +175,7 @@ public class QuestionRepository implements QuestionRepositoryInterface {
         question.validate();
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(UPDATE_SQL)) {
+                PreparedStatement stmt = conn.prepareStatement(UPDATE_SQL)) {
 
             stmt.setObject(1, question.getTestId());
             stmt.setString(2, question.getTextOfQuestion());
@@ -209,7 +207,7 @@ public class QuestionRepository implements QuestionRepositoryInterface {
         logger.debug("Поиск вопроса id={}", id);
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SELECT_BY_ID)) {
+                PreparedStatement stmt = conn.prepareStatement(SELECT_BY_ID)) {
 
             stmt.setObject(1, id);
             ResultSet rs = stmt.executeQuery();
@@ -238,8 +236,8 @@ public class QuestionRepository implements QuestionRepositoryInterface {
         List<QuestionModel> result = new ArrayList<>();
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SELECT_ALL);
-             ResultSet rs = stmt.executeQuery()) {
+                PreparedStatement stmt = conn.prepareStatement(SELECT_ALL);
+                ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
                 result.add(mapRowToQuestion(rs));
@@ -266,7 +264,7 @@ public class QuestionRepository implements QuestionRepositoryInterface {
         List<QuestionModel> result = new ArrayList<>();
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SELECT_BY_TEST)) {
+                PreparedStatement stmt = conn.prepareStatement(SELECT_BY_TEST)) {
 
             stmt.setObject(1, testId);
             ResultSet rs = stmt.executeQuery();
@@ -293,8 +291,8 @@ public class QuestionRepository implements QuestionRepositoryInterface {
     public boolean deleteById(UUID id) {
         logger.info("Удаление вопроса id={}", id);
 
-        try (Connection conn = dataSource.getgetConnection();
-             PreparedStatement stmt = conn.prepareStatement(DELETE_BY_ID)) {
+        try (Connection conn = dataSource.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(DELETE_BY_ID)) {
 
             stmt.setObject(1, id);
             int rows = stmt.executeUpdate();
@@ -317,7 +315,7 @@ public class QuestionRepository implements QuestionRepositoryInterface {
         logger.info("Удаление вопросов теста id={}", testId);
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(DELETE_BY_TEST)) {
+                PreparedStatement stmt = conn.prepareStatement(DELETE_BY_TEST)) {
 
             stmt.setObject(1, testId);
             int deleted = stmt.executeUpdate();
@@ -340,7 +338,7 @@ public class QuestionRepository implements QuestionRepositoryInterface {
         logger.debug("Проверка существования вопроса id={}", id);
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(EXISTS_BY_ID)) {
+                PreparedStatement stmt = conn.prepareStatement(EXISTS_BY_ID)) {
 
             stmt.setObject(1, id);
             ResultSet rs = stmt.executeQuery();
@@ -363,7 +361,7 @@ public class QuestionRepository implements QuestionRepositoryInterface {
         logger.debug("Подсчёт вопросов теста id={}", testId);
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(COUNT_BY_TEST)) {
+                PreparedStatement stmt = conn.prepareStatement(COUNT_BY_TEST)) {
 
             stmt.setObject(1, testId);
             ResultSet rs = stmt.executeQuery();
@@ -389,7 +387,7 @@ public class QuestionRepository implements QuestionRepositoryInterface {
         List<QuestionModel> result = new ArrayList<>();
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SEARCH_BY_TEXT)) {
+                PreparedStatement stmt = conn.prepareStatement(SEARCH_BY_TEXT)) {
 
             stmt.setString(1, "%" + text + "%");
             ResultSet rs = stmt.executeQuery();
@@ -419,7 +417,7 @@ public class QuestionRepository implements QuestionRepositoryInterface {
         logger.debug("Получение следующего порядка для теста id={}", testId);
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(MAX_ORDER_BY_TEST)) {
+                PreparedStatement stmt = conn.prepareStatement(MAX_ORDER_BY_TEST)) {
 
             stmt.setObject(1, testId);
             ResultSet rs = stmt.executeQuery();
@@ -436,7 +434,7 @@ public class QuestionRepository implements QuestionRepositoryInterface {
      * Сдвигает порядок вопросов, начиная с указанной позиции.
      * Используется при вставке нового вопроса внутрь списка.
      *
-     * @param testId   ID теста
+     * @param testId    ID теста
      * @param fromOrder начиная с какого порядка сдвигать
      * @param shiftBy   на сколько сдвигать (может быть отрицательным)
      * @return количество обновлённых записей
@@ -446,7 +444,7 @@ public class QuestionRepository implements QuestionRepositoryInterface {
         logger.info("Сдвиг порядка вопросов теста id={} с {} на {}", testId, fromOrder, shiftBy);
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SHIFT_ORDER_SQL)) {
+                PreparedStatement stmt = conn.prepareStatement(SHIFT_ORDER_SQL)) {
 
             stmt.setInt(1, shiftBy);
             stmt.setObject(2, testId);
@@ -461,7 +459,7 @@ public class QuestionRepository implements QuestionRepositoryInterface {
     }
 
     // ------------------------------------------------------------
-    //                 Mapping
+    // Mapping
     // ------------------------------------------------------------
 
     /**
@@ -476,7 +474,6 @@ public class QuestionRepository implements QuestionRepositoryInterface {
                 rs.getObject("id", UUID.class),
                 rs.getObject("test_id", UUID.class),
                 rs.getString("text_of_question"),
-                rs.getInt("order")
-        );
+                rs.getInt("order"));
     }
 }
