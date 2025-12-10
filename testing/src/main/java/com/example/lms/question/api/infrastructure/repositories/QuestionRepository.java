@@ -13,370 +13,470 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Реализация репозитория вопросов с использованием JDBC
- * Работает с таблицей QUESTION_D в PostgreSQL
+ * Репозиторий для управления вопросами тестов (QUESTION_D) с использованием JDBC.
+ * <p>
+ * Предоставляет операции сохранения, обновления, удаления и выборки
+ * вопросов, а также методы для работы с порядком отображения вопросов
+ * внутри одного теста.
+ * <p>
+ * Особенности:
+ * <ul>
+ *     <li>все операции работают напрямую через JDBC</li>
+ *     <li>выполняется логирование ключевых операций</li>
+ *     <li>таблица QUESTION_D содержит поле "order", поэтому используется
+ *         экранирование кавычками</li>
+ * </ul>
  */
 public class QuestionRepository implements QuestionRepositoryInterface {
+
     private static final Logger logger = LoggerFactory.getLogger(QuestionRepository.class);
+
+    /** Источник соединений с БД. */
     private final DataSource dataSource;
-    
-    // SQL запросы для таблицы QUESTION_D
+
+    // language=SQL
     private static final String INSERT_SQL = """
         INSERT INTO question_d (test_id, text_of_question, "order")
         VALUES (?, ?, ?)
         RETURNING id
         """;
-    
+
+    // language=SQL
     private static final String UPDATE_SQL = """
-        UPDATE question_d 
+        UPDATE question_d
         SET test_id = ?, text_of_question = ?, "order" = ?
         WHERE id = ?
         """;
-    
+
+    // language=SQL
     private static final String SELECT_BY_ID = """
         SELECT id, test_id, text_of_question, "order"
-        FROM question_d 
+        FROM question_d
         WHERE id = ?
         """;
-    
+
+    // language=SQL
     private static final String SELECT_ALL = """
         SELECT id, test_id, text_of_question, "order"
-        FROM question_d 
+        FROM question_d
         ORDER BY test_id, "order"
         """;
-    
+
+    // language=SQL
     private static final String SELECT_BY_TEST = """
         SELECT id, test_id, text_of_question, "order"
-        FROM question_d 
+        FROM question_d
         WHERE test_id = ?
         ORDER BY "order"
         """;
-    
-    private static final String DELETE_BY_ID = "DELETE FROM question_d WHERE id = ?";
-    
-    private static final String DELETE_BY_TEST = "DELETE FROM question_d WHERE test_id = ?";
-    
-    private static final String EXISTS_BY_ID = "SELECT 1 FROM question_d WHERE id = ?";
-    
+
+    private static final String DELETE_BY_ID =
+            "DELETE FROM question_d WHERE id = ?";
+
+    private static final String DELETE_BY_TEST =
+            "DELETE FROM question_d WHERE test_id = ?";
+
+    private static final String EXISTS_BY_ID =
+            "SELECT 1 FROM question_d WHERE id = ?";
+
+    // language=SQL
     private static final String COUNT_BY_TEST = """
-        SELECT COUNT(*) 
-        FROM question_d 
+        SELECT COUNT(*)
+        FROM question_d
         WHERE test_id = ?
         """;
-    
+
+    // language=SQL
     private static final String SEARCH_BY_TEXT = """
         SELECT id, test_id, text_of_question, "order"
-        FROM question_d 
+        FROM question_d
         WHERE LOWER(text_of_question) LIKE LOWER(?)
         ORDER BY test_id, "order"
         """;
-    
+
+    // language=SQL
     private static final String MAX_ORDER_BY_TEST = """
-        SELECT COALESCE(MAX("order"), -1) 
-        FROM question_d 
+        SELECT COALESCE(MAX("order"), -1)
+        FROM question_d
         WHERE test_id = ?
         """;
-    
+
+    // language=SQL
     private static final String SHIFT_ORDER_SQL = """
-        UPDATE question_d 
+        UPDATE question_d
         SET "order" = "order" + ?
         WHERE test_id = ? AND "order" >= ?
         """;
-    
+
+    /**
+     * Создаёт репозиторий вопросов.
+     *
+     * @param dataSource источник соединений PostgreSQL
+     */
     public QuestionRepository(DataSource dataSource) {
         this.dataSource = dataSource;
     }
-    
+
+    // ------------------------------------------------------------
+    //                 CRUD + Query методы
+    // ------------------------------------------------------------
+
+    /**
+     * Сохраняет новый вопрос в БД.
+     * <p>
+     * После вставки устанавливает сгенерированный {@code id} в модель.
+     *
+     * @param question модель вопроса
+     * @return сохранённую модель с заполненным ID
+     * @throws RuntimeException при ошибках SQL или отсутствии результата
+     */
     @Override
     public QuestionModel save(QuestionModel question) {
         logger.info("Сохранение нового вопроса для теста: {}", question.getTestId());
-        
+
         question.validate();
-        
+
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(INSERT_SQL)) {
-            
+
             stmt.setObject(1, question.getTestId());
             stmt.setString(2, question.getTextOfQuestion());
             stmt.setInt(3, question.getOrder());
-            
+
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
-                UUID generatedId = rs.getObject("id", UUID.class);
-                question.setId(generatedId);
-                logger.info("Вопрос сохранен с ID: {}, порядок: {}", generatedId, question.getOrder());
+                UUID id = rs.getObject("id", UUID.class);
+                question.setId(id);
+                logger.info("Вопрос сохранён: id={}, order={}", id, question.getOrder());
                 return question;
             }
-            
+
             throw new RuntimeException("Не удалось сохранить вопрос");
-            
+
         } catch (SQLException e) {
             logger.error("Ошибка при сохранении вопроса", e);
-            throw new RuntimeException("Ошибка базы данных при сохранении вопроса", e);
+            throw new RuntimeException("Ошибка базы данных", e);
         }
     }
-    
+
+    /**
+     * Обновляет существующий вопрос.
+     *
+     * @param question модель с обновлёнными данными
+     * @return обновлённую модель
+     * @throws IllegalArgumentException если вопрос не имеет ID
+     */
     @Override
     public QuestionModel update(QuestionModel question) {
-        logger.info("Обновление вопроса с ID: {}", question.getId());
-        
+        logger.info("Обновление вопроса id={}", question.getId());
+
         if (question.getId() == null) {
-            throw new IllegalArgumentException("Вопрос не имеет ID");
+            throw new IllegalArgumentException("Вопрос должен иметь ID для обновления");
         }
-        
+
         question.validate();
-        
+
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(UPDATE_SQL)) {
-            
+
             stmt.setObject(1, question.getTestId());
             stmt.setString(2, question.getTextOfQuestion());
             stmt.setInt(3, question.getOrder());
             stmt.setObject(4, question.getId());
-            
-            int updatedRows = stmt.executeUpdate();
-            if (updatedRows == 0) {
+
+            int updated = stmt.executeUpdate();
+            if (updated == 0) {
                 throw new RuntimeException("Вопрос с ID " + question.getId() + " не найден");
             }
-            
-            logger.info("Вопрос обновлен: {}", question.getId());
+
+            logger.info("Вопрос обновлён id={}", question.getId());
             return question;
-            
+
         } catch (SQLException e) {
             logger.error("Ошибка при обновлении вопроса", e);
-            throw new RuntimeException("Ошибка базы данных при обновлении вопроса", e);
+            throw new RuntimeException("Ошибка базы данных", e);
         }
     }
-    
+
+    /**
+     * Ищет вопрос по ID.
+     *
+     * @param id идентификатор вопроса
+     * @return Optional с найденным вопросом или пустой Optional
+     */
     @Override
     public Optional<QuestionModel> findById(UUID id) {
-        logger.debug("Поиск вопроса по ID: {}", id);
-        
+        logger.debug("Поиск вопроса id={}", id);
+
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(SELECT_BY_ID)) {
-            
+
             stmt.setObject(1, id);
             ResultSet rs = stmt.executeQuery();
-            
+
             if (rs.next()) {
-                QuestionModel question = mapRowToQuestion(rs);
-                return Optional.of(question);
+                return Optional.of(mapRowToQuestion(rs));
             }
-            
+
             return Optional.empty();
-            
+
         } catch (SQLException e) {
-            logger.error("Ошибка при поиске вопроса по ID: {}", id, e);
-            throw new RuntimeException("Ошибка базы данных при поиске вопроса", e);
+            logger.error("Ошибка поиска вопроса id={}", id, e);
+            throw new RuntimeException("Ошибка базы данных", e);
         }
     }
-    
+
+    /**
+     * Возвращает список всех вопросов в системе.
+     *
+     * @return список всех вопросов отсортированных по test_id и order
+     */
     @Override
     public List<QuestionModel> findAll() {
         logger.debug("Получение всех вопросов");
-        List<QuestionModel> questions = new ArrayList<>();
-        
+
+        List<QuestionModel> result = new ArrayList<>();
+
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(SELECT_ALL);
              ResultSet rs = stmt.executeQuery()) {
-            
+
             while (rs.next()) {
-                questions.add(mapRowToQuestion(rs));
+                result.add(mapRowToQuestion(rs));
             }
-            
-            logger.debug("Найдено {} вопросов", questions.size());
-            return questions;
-            
+
+            return result;
+
         } catch (SQLException e) {
             logger.error("Ошибка при получении всех вопросов", e);
-            throw new RuntimeException("Ошибка базы данных при получении вопросов", e);
+            throw new RuntimeException("Ошибка базы данных", e);
         }
     }
-    
+
+    /**
+     * Возвращает все вопросы указанного теста.
+     *
+     * @param testId ID теста
+     * @return список вопросов теста
+     */
     @Override
     public List<QuestionModel> findByTestId(UUID testId) {
-        logger.debug("Поиск вопросов по тесту: {}", testId);
-        List<QuestionModel> questions = new ArrayList<>();
-        
+        logger.debug("Поиск вопросов теста id={}", testId);
+
+        List<QuestionModel> result = new ArrayList<>();
+
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(SELECT_BY_TEST)) {
-            
+
             stmt.setObject(1, testId);
             ResultSet rs = stmt.executeQuery();
-            
+
             while (rs.next()) {
-                questions.add(mapRowToQuestion(rs));
+                result.add(mapRowToQuestion(rs));
             }
-            
-            logger.debug("Найдено {} вопросов для теста {}", questions.size(), testId);
-            return questions;
-            
+
+            return result;
+
         } catch (SQLException e) {
-            logger.error("Ошибка при поиске вопросов по тесту: {}", testId, e);
-            throw new RuntimeException("Ошибка базы данных при поиске вопросов по тесту", e);
+            logger.error("Ошибка поиска вопросов теста id={}", testId, e);
+            throw new RuntimeException("Ошибка базы данных", e);
         }
     }
-    
+
+    /**
+     * Удаляет вопрос по ID.
+     *
+     * @param id идентификатор вопроса
+     * @return true — если вопрос был удалён, false — если не найден
+     */
     @Override
     public boolean deleteById(UUID id) {
-        logger.info("Удаление вопроса с ID: {}", id);
-        
-        try (Connection conn = dataSource.getConnection();
+        logger.info("Удаление вопроса id={}", id);
+
+        try (Connection conn = dataSource.getgetConnection();
              PreparedStatement stmt = conn.prepareStatement(DELETE_BY_ID)) {
-            
+
             stmt.setObject(1, id);
-            int deletedRows = stmt.executeUpdate();
-            
-            boolean deleted = deletedRows > 0;
-            logger.info("Вопрос с ID {} удален: {}", id, deleted);
-            return deleted;
-            
+            int rows = stmt.executeUpdate();
+            return rows > 0;
+
         } catch (SQLException e) {
-            logger.error("Ошибка при удалении вопроса с ID: {}", id, e);
-            throw new RuntimeException("Ошибка базы данных при удалении вопроса", e);
+            logger.error("Ошибка удаления вопроса id={}", id, e);
+            throw new RuntimeException("Ошибка базы данных", e);
         }
     }
-    
+
+    /**
+     * Удаляет все вопросы теста.
+     *
+     * @param testId ID теста
+     * @return количество удалённых вопросов
+     */
     @Override
     public int deleteByTestId(UUID testId) {
-        logger.info("Удаление всех вопросов теста: {}", testId);
-        
+        logger.info("Удаление вопросов теста id={}", testId);
+
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(DELETE_BY_TEST)) {
-            
+
             stmt.setObject(1, testId);
-            int deletedRows = stmt.executeUpdate();
-            
-            logger.info("Удалено {} вопросов теста {}", deletedRows, testId);
-            return deletedRows;
-            
+            int deleted = stmt.executeUpdate();
+            return deleted;
+
         } catch (SQLException e) {
-            logger.error("Ошибка при удалении вопросов теста: {}", testId, e);
-            throw new RuntimeException("Ошибка базы данных при удалении вопросов теста", e);
+            logger.error("Ошибка удаления вопросов теста id={}", testId, e);
+            throw new RuntimeException("Ошибка базы данных", e);
         }
     }
-    
+
+    /**
+     * Проверяет, существует ли вопрос с указанным ID.
+     *
+     * @param id идентификатор вопроса
+     * @return true — если запись существует
+     */
     @Override
     public boolean existsById(UUID id) {
-        logger.debug("Проверка существования вопроса с ID: {}", id);
-        
+        logger.debug("Проверка существования вопроса id={}", id);
+
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(EXISTS_BY_ID)) {
-            
+
             stmt.setObject(1, id);
             ResultSet rs = stmt.executeQuery();
-            
-            boolean exists = rs.next();
-            logger.debug("Вопрос с ID {} существует: {}", id, exists);
-            return exists;
-            
+            return rs.next();
+
         } catch (SQLException e) {
-            logger.error("Ошибка при проверке существования вопроса с ID: {}", id, e);
-            throw new RuntimeException("Ошибка базы данных при проверке вопроса", e);
+            logger.error("Ошибка existsById id={}", id, e);
+            throw new RuntimeException("Ошибка базы данных", e);
         }
     }
-    
+
+    /**
+     * Подсчитывает число вопросов в тесте.
+     *
+     * @param testId ID теста
+     * @return количество вопросов
+     */
     @Override
     public int countByTestId(UUID testId) {
-        logger.debug("Подсчет вопросов теста: {}", testId);
-        
+        logger.debug("Подсчёт вопросов теста id={}", testId);
+
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(COUNT_BY_TEST)) {
-            
+
             stmt.setObject(1, testId);
             ResultSet rs = stmt.executeQuery();
-            
-            if (rs.next()) {
-                return rs.getInt(1);
-            }
-            
-            return 0;
-            
+
+            return rs.next() ? rs.getInt(1) : 0;
+
         } catch (SQLException e) {
-            logger.error("Ошибка при подсчете вопросов теста: {}", testId, e);
-            throw new RuntimeException("Ошибка базы данных при подсчете вопросов", e);
+            logger.error("Ошибка countByTestId id={}", testId, e);
+            throw new RuntimeException("Ошибка базы данных", e);
         }
     }
-    
+
+    /**
+     * Ищет вопросы, содержащие указанный текст.
+     *
+     * @param text фрагмент текста для поиска
+     * @return список совпадающих вопросов
+     */
     @Override
     public List<QuestionModel> findByTextContaining(String text) {
-        logger.debug("Поиск вопросов по тексту: {}", text);
-        List<QuestionModel> questions = new ArrayList<>();
-        
+        logger.debug("Поиск вопросов содержащих '{}'", text);
+
+        List<QuestionModel> result = new ArrayList<>();
+
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(SEARCH_BY_TEXT)) {
-            
+
             stmt.setString(1, "%" + text + "%");
             ResultSet rs = stmt.executeQuery();
-            
+
             while (rs.next()) {
-                questions.add(mapRowToQuestion(rs));
+                result.add(mapRowToQuestion(rs));
             }
-            
-            logger.debug("Найдено {} вопросов с текстом '{}'", questions.size(), text);
-            return questions;
-            
+
+            return result;
+
         } catch (SQLException e) {
-            logger.error("Ошибка при поиске вопросов по тексту: {}", text, e);
-            throw new RuntimeException("Ошибка базы данных при поиске вопросов", e);
+            logger.error("Ошибка поиска по тексту '{}'", text, e);
+            throw new RuntimeException("Ошибка базы данных", e);
         }
     }
-    
+
+    /**
+     * Возвращает следующий порядковый номер для вопроса теста.
+     * <p>
+     * Если вопросов нет — возвращает 0.
+     *
+     * @param testId ID теста
+     * @return номер следующей позиции (max(order) + 1)
+     */
     @Override
     public int getNextOrderForTest(UUID testId) {
-        logger.debug("Получение следующего порядкового номера для теста: {}", testId);
-        
+        logger.debug("Получение следующего порядка для теста id={}", testId);
+
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(MAX_ORDER_BY_TEST)) {
-            
+
             stmt.setObject(1, testId);
             ResultSet rs = stmt.executeQuery();
-            
-            if (rs.next()) {
-                int maxOrder = rs.getInt(1);
-                int nextOrder = maxOrder + 1;
-                logger.debug("Следующий порядковый номер для теста {}: {}", testId, nextOrder);
-                return nextOrder;
-            }
-            
-            return 0; // Если вопросов нет, начинаем с 0
-            
+
+            return rs.next() ? rs.getInt(1) + 1 : 0;
+
         } catch (SQLException e) {
-            logger.error("Ошибка при получении следующего порядкового номера для теста: {}", testId, e);
-            throw new RuntimeException("Ошибка базы данных при получении порядкового номера", e);
+            logger.error("Ошибка getNextOrderForTest id={}", testId, e);
+            throw new RuntimeException("Ошибка базы данных", e);
         }
     }
-    
+
+    /**
+     * Сдвигает порядок вопросов, начиная с указанной позиции.
+     * Используется при вставке нового вопроса внутрь списка.
+     *
+     * @param testId   ID теста
+     * @param fromOrder начиная с какого порядка сдвигать
+     * @param shiftBy   на сколько сдвигать (может быть отрицательным)
+     * @return количество обновлённых записей
+     */
     @Override
     public int shiftQuestionsOrder(UUID testId, int fromOrder, int shiftBy) {
-        logger.info("Сдвиг порядка вопросов теста {} с позиции {} на {}", testId, fromOrder, shiftBy);
-        
+        logger.info("Сдвиг порядка вопросов теста id={} с {} на {}", testId, fromOrder, shiftBy);
+
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(SHIFT_ORDER_SQL)) {
-            
+
             stmt.setInt(1, shiftBy);
             stmt.setObject(2, testId);
             stmt.setInt(3, fromOrder);
-            
-            int updatedRows = stmt.executeUpdate();
-            logger.info("Обновлено {} вопросов при сдвиге порядка", updatedRows);
-            return updatedRows;
-            
+
+            return stmt.executeUpdate();
+
         } catch (SQLException e) {
-            logger.error("Ошибка при сдвиге порядка вопросов", e);
-            throw new RuntimeException("Ошибка базы данных при сдвиге порядка вопросов", e);
+            logger.error("Ошибка shiftQuestionsOrder testId={}", testId, e);
+            throw new RuntimeException("Ошибка базы данных", e);
         }
     }
-    
+
+    // ------------------------------------------------------------
+    //                 Mapping
+    // ------------------------------------------------------------
+
     /**
-     * Преобразование строки ResultSet в объект QuestionModel
+     * Преобразует строку результата SQL в доменную модель QuestionModel.
+     *
+     * @param rs ResultSet, указывающий на текущую строку
+     * @return QuestionModel построенная из данных строки
+     * @throws SQLException если поля недоступны
      */
     private QuestionModel mapRowToQuestion(ResultSet rs) throws SQLException {
         return new QuestionModel(
-            rs.getObject("id", UUID.class),
-            rs.getObject("test_id", UUID.class),
-            rs.getString("text_of_question"),
-            rs.getInt("order")
+                rs.getObject("id", UUID.class),
+                rs.getObject("test_id", UUID.class),
+                rs.getString("text_of_question"),
+                rs.getInt("order")
         );
     }
 }

@@ -67,12 +67,18 @@ public class Main {
         TestController testController = new TestController(testService);
         AnswerController answerController = new AnswerController(answerService);
 
-        // Javalin
+        // ---------------------------------------------------------------
+        // 3. Создание и запуск Javalin HTTP-сервера
+        // ---------------------------------------------------------------
         Javalin app = Javalin.create(config -> {
+            // Регистрация маршрутов через ApiBuilder
             config.router.apiBuilder(() -> {
                 TestRouter.register(testController);
                 AnswerRouter.register(answerController);
             });
         }).start(APP_PORT);
+
+        // Приложение успешно запустилось
+        System.out.printf("Testing Service started on port %d%n", APP_PORT);
     }
 }

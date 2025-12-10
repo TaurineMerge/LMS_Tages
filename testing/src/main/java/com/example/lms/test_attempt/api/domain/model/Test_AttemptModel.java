@@ -5,31 +5,73 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Модель попытки прохождения теста (test_attempt_b в БД)
- * Соответствует таблице test_attempt_b
+ * Доменная модель попытки прохождения теста.
+ * <p>
+ * Соответствует таблице <b>test_attempt_b</b> в базе данных.
+ * Хранит информацию о:
+ * <ul>
+ *     <li>ID попытки</li>
+ *     <li>ID студента</li>
+ *     <li>ID теста</li>
+ *     <li>дате прохождения</li>
+ *     <li>результате (баллы)</li>
+ *     <li>выданном сертификате (если есть)</li>
+ *     <li>версии попытки (структура JSON, сохранённая в виде String)</li>
+ * </ul>
+ *
+ * Модель содержит бизнес-методы для:
+ * <ul>
+ *     <li>завершения попытки</li>
+ *     <li>прикрепления сертификата</li>
+ *     <li>проверки завершённости и успешности теста</li>
+ *     <li>валидации перед сохранением</li>
+ * </ul>
  */
 public class Test_AttemptModel {
+
     private UUID id;
-    private UUID studentId;          // student_id в БД
-    private UUID testId;             // test_id в БД
-    private LocalDate dateOfAttempt; // date_of_attempt в БД
-    private Integer point;           // может быть null если тест не завершен
-    private UUID certificateId;      // certificate_id в БД (может быть null)
-    private String attemptVersion;   // attempt_version как JSON в БД, у нас String
-    
-    // Конструктор для создания новой попытки
+    private UUID studentId;
+    private UUID testId;
+    private LocalDate dateOfAttempt;
+    private Integer point;
+    private UUID certificateId;
+    private String attemptVersion;
+
+    /**
+     * Конструктор для создания новой попытки.
+     * <p>
+     * Используется на уровне сервиса при создании новой записи.
+     * Значения:
+     * <ul>
+     *     <li>{@code dateOfAttempt} устанавливается как текущая дата</li>
+     *     <li>{@code point} и {@code certificateId} изначально равны null</li>
+     * </ul>
+     *
+     * @param studentId     идентификатор студента
+     * @param testId        идентификатор теста
+     * @param attemptVersion JSON-структура попытки в виде строки
+     */
     public Test_AttemptModel(UUID studentId, UUID testId, String attemptVersion) {
         this.studentId = Objects.requireNonNull(studentId, "Student ID cannot be null");
         this.testId = Objects.requireNonNull(testId, "Test ID cannot be null");
         this.dateOfAttempt = LocalDate.now();
         this.attemptVersion = attemptVersion;
-        // point и certificateId могут быть null изначально
     }
-    
-    // Конструктор для загрузки из БД
-    public Test_AttemptModel(UUID id, UUID studentId, UUID testId, 
-                           LocalDate dateOfAttempt, Integer point, 
-                           UUID certificateId, String attemptVersion) {
+
+    /**
+     * Конструктор для загрузки данных из БД.
+     *
+     * @param id             идентификатор попытки
+     * @param studentId      идентификатор студента
+     * @param testId         идентификатор теста
+     * @param dateOfAttempt  дата прохождения
+     * @param point          набранные баллы (null, если не завершено)
+     * @param certificateId  ID сертификата (nullable)
+     * @param attemptVersion JSON-версия попытки
+     */
+    public Test_AttemptModel(UUID id, UUID studentId, UUID testId,
+                             LocalDate dateOfAttempt, Integer point,
+                             UUID certificateId, String attemptVersion) {
         this.id = id;
         this.studentId = studentId;
         this.testId = testId;
@@ -38,13 +80,17 @@ public class Test_AttemptModel {
         this.certificateId = certificateId;
         this.attemptVersion = attemptVersion;
     }
-    
-    // Доменные методы (бизнес-логика)
-    
+
+    // ----------------------------------------------------------------------
+    //                       BUSINESS LOGIC METHODS
+    // ----------------------------------------------------------------------
+
     /**
-     * Завершить попытку теста с указанным количеством баллов
-     * @param points количество набранных баллов
-     * @throws IllegalStateException если попытка уже завершена
+     * Завершает попытку теста, устанавливая количество набранных баллов.
+     *
+     * @param points баллы за прохождение теста
+     * @throws IllegalStateException    если попытка уже завершена
+     * @throws IllegalArgumentException если points отрицательные
      */
     public void complete(int points) {
         if (this.point != null) {
@@ -55,11 +101,12 @@ public class Test_AttemptModel {
         }
         this.point = points;
     }
-    
+
     /**
-     * Привязать сертификат к попытке
-     * @param certificateId ID выданного сертификата
-     * @throws IllegalStateException если попытка не завершена
+     * Привязывает сертификат к завершённой попытке.
+     *
+     * @param certificateId идентификатор сертификата
+     * @throws IllegalStateException если попытка ещё не завершена
      */
     public void attachCertificate(UUID certificateId) {
         if (this.point == null) {
@@ -67,30 +114,36 @@ public class Test_AttemptModel {
         }
         this.certificateId = certificateId;
     }
-    
+
     /**
-     * Проверить, завершена ли попытка
+     * Проверяет, завершена ли попытка.
+     *
+     * @return true — если есть значение point, иначе false
      */
     public boolean isCompleted() {
         return point != null;
     }
-    
+
     /**
-     * Проверить, пройден ли тест (если установлен минимальный балл в тесте)
-     * @param minPoints минимальный балл для прохождения (может быть null)
-     * @return true если тест пройден
+     * Проверяет, пройден ли тест.
+     *
+     * @param minPoints минимальный балл, требуемый для прохождения теста (nullable)
+     * @return true — если тест завершён и баллов достаточно
      */
     public boolean isPassed(Integer minPoints) {
         if (point == null) {
-            return false; // Тест не завершен
+            return false;
         }
         if (minPoints == null) {
-            return true; // Если нет минимального балла, любой результат = пройден
+            return true;
         }
         return point >= minPoints;
     }
-    
-    // Геттеры
+
+    // ----------------------------------------------------------------------
+    //                              GETTERS
+    // ----------------------------------------------------------------------
+
     public UUID getId() { return id; }
     public UUID getStudentId() { return studentId; }
     public UUID getTestId() { return testId; }
@@ -98,29 +151,38 @@ public class Test_AttemptModel {
     public Integer getPoint() { return point; }
     public UUID getCertificateId() { return certificateId; }
     public String getAttemptVersion() { return attemptVersion; }
-    
-    // Сеттеры с валидацией
+
+    // ----------------------------------------------------------------------
+    //                              SETTERS
+    // ----------------------------------------------------------------------
+
     public void setId(UUID id) {
         this.id = Objects.requireNonNull(id, "ID cannot be null");
     }
-    
+
     public void setPoint(Integer point) {
         if (point != null && point < 0) {
             throw new IllegalArgumentException("Points cannot be negative");
         }
         this.point = point;
     }
-    
+
     public void setCertificateId(UUID certificateId) {
         this.certificateId = certificateId;
     }
-    
+
     public void setAttemptVersion(String attemptVersion) {
         this.attemptVersion = attemptVersion;
     }
-    
+
+    // ----------------------------------------------------------------------
+    //                              VALIDATION
+    // ----------------------------------------------------------------------
+
     /**
-     * Валидация модели перед сохранением
+     * Проверяет корректность данных модели перед сохранением.
+     *
+     * @throws IllegalArgumentException если модель содержит недопустимые значения
      */
     public void validate() {
         if (studentId == null) {
@@ -139,7 +201,11 @@ public class Test_AttemptModel {
             throw new IllegalArgumentException("Points cannot be negative");
         }
     }
-    
+
+    // ----------------------------------------------------------------------
+    //                          OVERRIDDEN METHODS
+    // ----------------------------------------------------------------------
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -147,12 +213,12 @@ public class Test_AttemptModel {
         Test_AttemptModel that = (Test_AttemptModel) o;
         return Objects.equals(id, that.id);
     }
-    
+
     @Override
     public int hashCode() {
         return Objects.hash(id);
     }
-    
+
     @Override
     public String toString() {
         return "Test_AttemptModel{" +
