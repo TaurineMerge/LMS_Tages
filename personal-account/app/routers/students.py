@@ -2,6 +2,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Query, status, Depends
+from app.telemetry import traced
 
 from app.schemas.student import student_create, student_update, student_response
 from app.schemas.common import paginated_response
@@ -17,6 +18,7 @@ router = APIRouter(prefix="/students", tags=["Students"])
     summary="Получить список студентов",
     description="Возвращает пагинированный список всех студентов"
 )
+@traced("router.students.get_students")
 async def get_students(
     page: int = Query(default=1, ge=1, description="Номер страницы"),
     limit: int = Query(default=20, ge=1, le=100, description="Количество элементов на странице"),
@@ -32,6 +34,7 @@ async def get_students(
     summary="Получить студента по ID",
     description="Возвращает данные студента по указанному ID"
 )
+@traced("router.students.get_student")
 async def get_student(
     student_id: UUID,
     current_user: TokenPayload = Depends(get_current_user)
@@ -47,6 +50,7 @@ async def get_student(
     summary="Создать нового студента",
     description="Создает нового студента в системе"
 )
+@traced("router.students.create_student")
 async def create_student(
     student: student_create,
     current_user: TokenPayload = Depends(require_roles("admin"))
@@ -61,6 +65,7 @@ async def create_student(
     summary="Обновить данные студента",
     description="Обновляет данные существующего студента"
 )
+@traced("router.students.update_student")
 async def update_student(student_id: UUID, student: student_update):
     """Update student by ID."""
     return await student_service.update_student(student_id, student)
@@ -72,6 +77,7 @@ async def update_student(student_id: UUID, student: student_update):
     summary="Удалить студента",
     description="Удаляет студента из системы"
 )
+@traced("router.students.delete_student")
 async def delete_student(student_id: UUID):
     """Delete student by ID."""
     await student_service.delete_student(student_id)

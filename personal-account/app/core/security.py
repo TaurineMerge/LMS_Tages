@@ -5,7 +5,7 @@ from typing import Optional
 from datetime import datetime
 import httpx
 
-from fastapi import HTTPException, Depends, status
+from fastapi import HTTPException, Depends, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt
 from jose.exceptions import JWTError, ExpiredSignatureError
@@ -13,12 +13,14 @@ from pydantic import BaseModel, Field
 
 from app.config import get_settings
 from app.telemetry import traced
+from app.core.jwt import JwtService
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
 # Security scheme for FastAPI
-security = HTTPBearer()
+# allow optional credential extraction so we can fallback to HttpOnly cookie
+security = HTTPBearer(auto_error=False)
 
 
 class TokenPayload(BaseModel):
@@ -29,6 +31,7 @@ class TokenPayload(BaseModel):
     preferred_username: Optional[str] = None
     exp: int = Field(..., description="Token expiration time")
     iat: Optional[int] = None
+    roles: list[str] = Field(default_factory=list)
     
     class Config:
         json_schema_extra = {
@@ -43,22 +46,15 @@ class TokenPayload(BaseModel):
         }
 
 
+# replace internal jwks/cache with shared service
+_jwt_service = JwtService(keycloak_url=settings.KEYCLOAK_SERVER_URL, realm=settings.KEYCLOAK_REALM)
+
 class JWTValidator:
     """Validate JWT tokens using Keycloak JWKS."""
-    
-    def __init__(
-        self,
-        keycloak_url: str,
-        realm: str,
-        client_id: str,
-    ):
-        self.keycloak_url = keycloak_url.rstrip("/")
-        self.realm = realm
+    def __init__(self, keycloak_url: str, realm: str, client_id: str):
         self.client_id = client_id
-        self.issuer = f"{self.keycloak_url}/realms/{self.realm}"
-        self._jwks_cache = None
-        self._cache_time = None
-    
+        self.issuer = f"{keycloak_url.rstrip('/')}/realms/{realm}"
+
     @traced("jwt_validator.validate_token", record_args=True, record_result=True)
     async def validate_token(self, token: str) -> TokenPayload:
         """
@@ -74,19 +70,19 @@ class JWTValidator:
             HTTPException: If token is invalid or expired
         """
         try:
-            # Получаем JWKS для валидации подписи
-            jwks = await self._get_jwks()
-            
-            # Валидируем токен через python-jose
-            payload = jwt.decode(
-                token,
-                jwks,
-                algorithms=["RS256"],
-                audience="account",
-                issuer=self.issuer,
-                options={"verify_exp": True}
-            )
-            
+            payload = await _jwt_service.decode(token, audience="account", issuer=self.issuer)
+            # extract roles as before
+            roles = []
+            if isinstance(payload, dict):
+                realm_access = payload.get("realm_access")
+                if isinstance(realm_access, dict):
+                    roles = realm_access.get("roles", []) or []
+                # fallback: some setups may put roles directly
+                if not roles:
+                    roles = payload.get("roles", []) or []
+
+                # ensure serializable list
+                payload["roles"] = list(roles)
             # Преобразуем в типизированный объект
             token_payload = TokenPayload(**payload)
             
@@ -115,48 +111,6 @@ class JWTValidator:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Token validation error"
             )
-    
-    @traced("jwt_validator.get_jwks", record_args=True, record_result=True)
-    async def _get_jwks(self) -> dict:
-        """
-        Fetch and cache JWKS from Keycloak.
-        
-        JWKS (JSON Web Key Set) содержит публичные ключи
-        для верификации JWT подписей.
-        """
-        import time
-        
-        # Проверяем кэш (1 час = 3600 секунд)
-        if self._jwks_cache and self._cache_time:
-            if time.time() - self._cache_time < 3600:
-                logger.debug("Using cached JWKS")
-                return self._jwks_cache
-        
-        try:
-            jwks_url = (
-                f"{self.keycloak_url}/realms/{self.realm}"
-                "/protocol/openid-connect/certs"
-            )
-            
-            logger.debug(f"Fetching JWKS from {jwks_url}")
-            
-            async with httpx.AsyncClient(timeout=10) as client:
-                response = await client.get(jwks_url)
-                response.raise_for_status()
-                
-                self._jwks_cache = response.json()
-                self._cache_time = time.time()
-                
-                logger.debug(f"JWKS fetched successfully, {len(self._jwks_cache.get('keys', []))} keys available")
-                
-                return self._jwks_cache
-                
-        except httpx.HTTPError as e:
-            logger.error(f"Failed to fetch JWKS from {jwks_url}: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Could not verify token"
-            )
 
 
 # Создаём singleton validator
@@ -169,7 +123,8 @@ _jwt_validator = JWTValidator(
 
 @traced("security.get_current_user", record_result=False)
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ) -> TokenPayload:
     """
     Get current authenticated user from JWT token.
@@ -182,18 +137,31 @@ async def get_current_user(
         return {"user": current_user}
     ```
     """
-    if not credentials:
+    token = None
+
+    # Prefer Authorization header if present
+    if credentials and credentials.credentials:
+        token = credentials.credentials
+
+    # Fallback to HttpOnly cookie set by the callback endpoint
+    if not token:
+        cookie_token = request.cookies.get("access_token")
+        if cookie_token:
+            token = cookie_token
+
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"}
         )
-    
-    return await _jwt_validator.validate_token(credentials.credentials)
+
+    return await _jwt_validator.validate_token(token)
 
 
 @traced("security.get_current_user_optional", record_result=False)
 async def get_current_user_optional(
+    request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ) -> Optional[TokenPayload]:
     """
@@ -201,13 +169,21 @@ async def get_current_user_optional(
     
     Используется для опциональной аутентификации.
     """
-    if not credentials:
+    token = None
+
+    if credentials and credentials.credentials:
+        token = credentials.credentials
+
+    if not token:
+        token = request.cookies.get("access_token")
+
+    if not token:
         return None
-    
+
     try:
-        return await _jwt_validator.validate_token(credentials.credentials)
+        return await _jwt_validator.validate_token(token)
     except HTTPException:
-        # Если токен невалидный, просто возвращаем None
+        # If token invalid, return None
         return None
 
 
@@ -227,13 +203,22 @@ def require_roles(*roles: str):
     async def check_roles(
         current_user: TokenPayload = Depends(get_current_user)
     ) -> None:
-        # В этом примере просто проверяем что пользователь аутентифицирован
-        # Можно расширить для проверки realm roles или client roles
+        # Ensure the user is authenticated
         if not current_user:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Insufficient permissions"
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Not authenticated"
             )
+
+        # Check that at least one of the required roles is present in token
+        if roles:
+            user_roles = set(getattr(current_user, "roles", []) or [])
+            required = set(roles)
+            if user_roles.isdisjoint(required):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Insufficient permissions"
+                )
     
     return check_roles
 

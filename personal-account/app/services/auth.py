@@ -53,7 +53,7 @@ class AuthService:
                 detail="Invalid refresh token"
             )
 
-    @traced("auth.logout")
+    @traced("auth.logout", record_args=True, record_result=True)
     async def logout(self, refresh_token: str) -> None:
         """Logout user."""
         try:

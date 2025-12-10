@@ -2,6 +2,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Query, status, Depends
+from app.telemetry import traced
 
 from app.schemas.certificate import certificate_create, certificate_response
 from app.services.certificate import certificate_service
@@ -16,6 +17,7 @@ router = APIRouter(prefix="/certificates", tags=["Certificates"])
     summary="Получить список сертификатов",
     description="Возвращает список сертификатов с опциональной фильтрацией по студенту и курсу"
 )
+@traced("router.certificates.get_certificates")
 async def get_certificates(
     student_id: UUID | None = Query(default=None, description="Фильтр по студенту"),
     course_id: UUID | None = Query(default=None, description="Фильтр по курсу"),
@@ -31,6 +33,7 @@ async def get_certificates(
     summary="Получить сертификат по ID",
     description="Возвращает данные сертификата по указанному ID"
 )
+@traced("router.certificates.get_certificate")
 async def get_certificate(
     certificate_id: UUID,
     current_user: TokenPayload = Depends(get_current_user)
@@ -46,6 +49,7 @@ async def get_certificate(
     summary="Создать новый сертификат",
     description="Создает новый сертификат для студента"
 )
+@traced("router.certificates.create_certificate")
 async def create_certificate(
     certificate: certificate_create,
     current_user: TokenPayload = Depends(require_roles("admin"))
@@ -60,6 +64,7 @@ async def create_certificate(
     summary="Удалить сертификат",
     description="Удаляет сертификат из системы"
 )
+@traced("router.certificates.delete_certificate")
 async def delete_certificate(certificate_id: UUID):
     """Delete certificate by ID."""
     await certificate_service.delete_certificate(certificate_id)

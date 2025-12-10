@@ -2,6 +2,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Query, status, Depends
+from app.telemetry import traced
 
 from app.schemas.visit import visit_create, visit_response
 from app.services.visit import visit_service
@@ -16,6 +17,7 @@ router = APIRouter(prefix="/visits", tags=["Visits"])
     summary="Получить список посещений уроков",
     description="Возвращает список посещений с опциональной фильтрацией по студенту и уроку"
 )
+@traced("router.visits.get_visits", record_args=True, record_result=True)
 async def get_visits(
     student_id: UUID | None = Query(default=None, description="Фильтр по студенту"),
     lesson_id: UUID | None = Query(default=None, description="Фильтр по уроку"),
@@ -31,6 +33,7 @@ async def get_visits(
     summary="Получить посещение по ID",
     description="Возвращает данные посещения по указанному ID"
 )
+@traced("router.visits.get_visit", record_args=True, record_result=True)
 async def get_visit(
     visit_id: UUID,
     current_user: TokenPayload = Depends(get_current_user)
@@ -46,6 +49,7 @@ async def get_visit(
     summary="Зарегистрировать посещение урока",
     description="Регистрирует посещение урока студентом"
 )
+@traced("router.visits.create_visit", record_args=True, record_result=True)
 async def create_visit(
     visit: visit_create,
     current_user: TokenPayload = Depends(require_roles("admin", "teacher"))
@@ -60,6 +64,7 @@ async def create_visit(
     summary="Удалить запись о посещении",
     description="Удаляет запись о посещении урока"
 )
+@traced("router.visits.delete_visit", record_args=True, record_result=True)
 async def delete_visit(visit_id: UUID):
     """Delete visit by ID."""
     await visit_service.delete_visit(visit_id)

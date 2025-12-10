@@ -42,6 +42,7 @@ class Password_Token_Request(BaseModel):
     summary="Get access token",
     description="Get access token by username and password (OAuth2 password flow)."
 )
+@traced("router.auth.token")
 async def get_token(body: Password_Token_Request):
     """Get access token using username and password."""
     token = await auth_service.get_token_by_password(body.username, body.password)
@@ -54,6 +55,9 @@ async def get_token(body: Password_Token_Request):
         scope=token.get("scope")
     )
     return api_response(data=token_data, message="Token obtained successfully")
+
+
+
 
 
 @router.get(
@@ -78,12 +82,13 @@ async def login():
     summary="Handle Keycloak callback",
     description="Exchanges the authorization code for an access token and sets secure cookies."
 )
+@traced("router.auth.callback")
 async def callback(code: str):
     """Handle login callback and set secure cookie with access token."""
     logger.info(f"Callback received with code: {code[:20]}..." if len(code) > 20 else f"Callback received with code: {code}")
     try:
         token = await auth_service.exchange_code_for_token(code)
-        
+
         # Create response with JSON data
         token_data = token_response(
             access_token=token.get("access_token", ""),
@@ -93,10 +98,10 @@ async def callback(code: str):
             refresh_expires_in=token.get("refresh_expires_in"),
             scope=token.get("scope")
         )
-        
+
         response_data = api_response(data=token_data, message="Login successful")
         response = JSONResponse(content=response_data.model_dump())
-        
+
         # Set secure HTTP-only cookie for access token
         response.set_cookie(
             key="access_token",
@@ -107,7 +112,7 @@ async def callback(code: str):
             samesite="Lax",
             path="/"
         )
-        
+
         # Set refresh token cookie if provided
         if token.get("refresh_token"):
             response.set_cookie(
@@ -119,10 +124,10 @@ async def callback(code: str):
                 samesite="Lax",
                 path="/"
             )
-        
+
         logger.info("Callback successful, tokens set in secure cookies")
         return response
-        
+
     except HTTPException as e:
         logger.error(f"Callback failed: {e.detail}")
         raise
@@ -140,6 +145,7 @@ async def callback(code: str):
     summary="Refresh access token",
     description="Exchanges a refresh token for a new access token."
 )
+@traced("router.auth.refresh")
 async def refresh(body: Refresh_Token_Request):
     """Refresh access token."""
     token = await auth_service.refresh_token(body.refresh_token)
@@ -154,12 +160,16 @@ async def refresh(body: Refresh_Token_Request):
     return api_response(data=token_data, message="Token refreshed successfully")
 
 
+
+
+
 @router.post(
     "/logout",
     response_model=api_response[message_response],
     summary="Logout user",
     description="Logs out the user by clearing server-side session and cookies."
 )
+@traced("router.auth.logout")
 async def logout(body: Optional[Logout_Request] = None):
     """Logout user.
     
@@ -190,12 +200,16 @@ async def logout(body: Optional[Logout_Request] = None):
     return response
 
 
+
+
+
 @router.get(
     "/me",
     response_model=api_response[user_info_response],
     summary="Get current user info",
     description="Returns information about the currently authenticated user."
 )
+@traced("router.auth.me")
 async def get_me(user: TokenPayload = Depends(get_current_user)):
     """Get current user profile."""
     user_data = user_info_response(
@@ -210,15 +224,22 @@ async def get_me(user: TokenPayload = Depends(get_current_user)):
     return api_response(data=user_data)
 
 
+
+
+
 @router.get(
     "/register",
     summary="Redirect to Keycloak registration",
     description="Redirects the user to the Keycloak registration page."
 )
+@traced("router.auth.register_redirect")
 async def register_redirect():
     """Redirect to Keycloak registration page."""
     register_url = auth_service.get_register_url()
     return RedirectResponse(url=register_url)
+
+
+
 
 
 @router.post(
@@ -228,6 +249,7 @@ async def register_redirect():
     summary="Register new user",
     description="Creates a new user account in Keycloak. Available for both students and teachers."
 )
+@traced("router.auth.register")
 async def register(body: register_request):
     """Register a new user via API."""
     result = await auth_service.register_user(
@@ -244,5 +266,8 @@ async def register(body: register_request):
         email=result["email"]
     )
     return api_response(data=response_data, message="User registered successfully")
+
+
+
 
 
