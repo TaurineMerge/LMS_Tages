@@ -1,5 +1,8 @@
 package com.example.lms;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.example.lms.answer.api.controller.AnswerController;
 import com.example.lms.answer.api.router.AnswerRouter;
 import com.example.lms.answer.domain.service.AnswerService;
@@ -13,8 +16,32 @@ import com.example.lms.test.infrastructure.repositories.TestRepository;
 import io.github.cdimascio.dotenv.Dotenv;
 import io.javalin.Javalin;
 
+/**
+ * Главная точка входа в приложение LMS Testing Service.
+ * <p>
+ * Выполняет:
+ * <ul>
+ *     <li>загрузку переменных окружения через Dotenv</li>
+ *     <li>инициализацию конфигурации БД</li>
+ *     <li>ручное внедрение зависимостей (Manual Dependency Injection)</li>
+ *     <li>создание и настройку Javalin-приложения</li>
+ *     <li>регистрацию HTTP-маршрутов</li>
+ * </ul>
+ *
+ * Приложение использует Javalin как лёгкий HTTP-фреймворк и следует принципам
+ * разделения уровней: Controller → Service → Repository → DB.
+ */
 public class Main {
+    private static final Logger logger = LoggerFactory.getLogger(TestRouter.class);
+    /**
+     * Главный метод запуска сервиса.
+     *
+     * @param args аргументы командной строки (не используются)
+     */
     public static void main(String[] args) {
+        // ---------------------------------------------------------------
+        // 1. Загрузка переменных окружения из файла .env
+        // ---------------------------------------------------------------
         Dotenv dotenv = Dotenv.load();
 
         final Integer APP_PORT = Integer.parseInt(dotenv.get("APP_PORT"));
@@ -22,15 +49,22 @@ public class Main {
         final String DB_USER = dotenv.get("DB_USER");
         final String DB_PASSWORD = dotenv.get("DB_PASSWORD");
 
-        // Manual Dependency Injection
+        // ---------------------------------------------------------------
+        // 2. Настройка зависимостей (Manual Dependency Injection)
+        // ---------------------------------------------------------------
+        // Конфигурация подключения к базе
         DatabaseConfig dbConfig = new DatabaseConfig(DB_URL, DB_USER, DB_PASSWORD);
-        
-        TestRepository testRepository = new TestRepository(dbConfig);
-        TestService testService = new TestService(testRepository);
-        TestController testController = new TestController(testService);
 
+        // Репозитории с логикой работы с БД
+        TestRepository testRepository = new TestRepository(dbConfig);
         AnswerRepository answerRepository = new AnswerRepository(dbConfig);
+
+        // Сервисный слой (бизнес-логика)
+        TestService testService = new TestService(testRepository);
         AnswerService answerService = new AnswerService(answerRepository);
+
+        // Контроллер, принимающий HTTP-запросы
+        TestController testController = new TestController(testService);
         AnswerController answerController = new AnswerController(answerService);
 
         // Javalin
