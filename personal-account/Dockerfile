@@ -1,24 +1,12 @@
 # Используем официальный Python образ
 FROM python:3.11-slim 
 
-ENV POETRY_HOME="/opt/poetry" \
+ENV POETRY_HOME=/opt/poetry \
     POETRY_VIRTUALENVS_IN_PROJECT=true \
-    POETRY_NO_INTERACTION=1
-# ENV  PYTHONFAULTHANDLER=1 \
-#     PYTHONUNBUFFERED=1 \
-#     PYTHONHASHSEED=random \
-#     PIP_NO_CACHE_DIR=off \
-#     PIP_DISABLE_PIP_VERSION_CHECK=on \
-#     PIP_DEFAULT_TIMEOUT=100 \
-#     # Poetry's configuration:
-#     POETRY_NO_INTERACTION=1 \
-#     POETRY_VIRTUALENVS_CREATE=false \
-#     POETRY_CACHE_DIR='/var/cache/pypoetry' \
-#     POETRY_HOME='/.local/bin/poetry' \
-#     POETRY_VERSION=2.2.1 
+    POETRY_NO_INTERACTION=1 \
+    PATH="/opt/poetry/bin:$PATH"
 
-ENV PATH="$POETRY_HOME/bin:$VENV_PATH/bin:$PATH"
-
+# Устанавливаем Poetry
 RUN apt-get update && apt-get install --no-install-recommends -y curl \
     && curl -sSL https://install.python-poetry.org | python
 

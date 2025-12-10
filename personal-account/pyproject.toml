@@ -3,10 +3,12 @@ name = "personal-account"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "polina",email = "polina.rakovich23@gmail.com"}
+    {name = "savva", email = "starkovsavva52@gmail.com"},
+    {name = "emilia",email = "tikhonovaemiliya@gmail.com"},
+    {name = "polina",email = "polina.rakovich23@gmail.com"},
 ]
 readme = "README.md"
-requires-python = "^3.11"
+requires-python = ">=3.11,<4.0"
 dependencies = [
     "fastapi (==0.104.1)",
     "uvicorn[standard] (==0.24.0)",
