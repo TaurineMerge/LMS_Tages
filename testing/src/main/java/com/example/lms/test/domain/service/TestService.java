@@ -17,8 +17,8 @@ public class TestService {
     // DTO -> Model
     private TestModel toModel(Test dto) {
         return new TestModel(
-                dto.getId() != null ? UUID.fromString(dto.getId().toString()) : null, // если у тебя UUID
-                null, // например, courseId можно отдельно задавать
+                dto.getId() != null ? UUID.fromString(dto.getId().toString()) : null,
+                null, // временно
                 dto.getTitle(),
                 dto.getMin_point(),
                 dto.getDescription());
@@ -33,7 +33,6 @@ public class TestService {
                 model.getDescription());
     }
 
-    // Примеры методов
     public List<Test> getAllTests() {
         return repository.findAll().stream()
                 .map(this::toDto)

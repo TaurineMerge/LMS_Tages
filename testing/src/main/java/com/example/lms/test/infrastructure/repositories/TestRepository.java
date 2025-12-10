@@ -7,14 +7,29 @@ import com.example.lms.test.domain.repository.TestRepositoryInterface;
 import java.sql.*;
 import java.util.*;
 
+/**
+ * Репозиторий для работы с тестами в базе данных.
+ * Реализует интерфейс TestRepositoryInterface для операций CRUD и поиска тестов.
+ */
 public class TestRepository implements TestRepositoryInterface {
 
     private final DatabaseConfig dbConfig;
 
+    /**
+     * Конструктор репозитория.
+     *
+     * @param dbConfig конфигурация базы данных, содержащая параметры подключения
+     */
     public TestRepository(DatabaseConfig dbConfig) {
         this.dbConfig = dbConfig;
     }
 
+    /**
+     * Устанавливает соединение с базой данных.
+     *
+     * @return активное соединение с базой данных
+     * @throws SQLException если произошла ошибка при установке соединения
+     */
     private Connection getConnection() throws SQLException {
         return DriverManager.getConnection(
                 dbConfig.getUrl(),
@@ -22,6 +37,13 @@ public class TestRepository implements TestRepositoryInterface {
                 dbConfig.getPassword());
     }
 
+    /**
+     * Сохраняет новый тест в базе данных.
+     *
+     * @param test объект TestModel для сохранения
+     * @return сохраненный объект TestModel с присвоенным идентификатором
+     * @throws RuntimeException если не удалось сохранить тест или произошла SQL-ошибка
+     */
     @Override
     public TestModel save(TestModel test) {
         String sql = "INSERT INTO tests.test_d (course_id, title, min_point, description) VALUES (?, ?, ?, ?) RETURNING id";
@@ -48,6 +70,14 @@ public class TestRepository implements TestRepositoryInterface {
         }
     }
 
+    /**
+     * Обновляет существующий тест в базе данных.
+     *
+     * @param test объект TestModel с обновленными данными
+     * @return обновленный объект TestModel
+     * @throws IllegalArgumentException если тест не имеет идентификатора
+     * @throws RuntimeException если тест не найден или произошла SQL-ошибка
+     */
     @Override
     public TestModel update(TestModel test) {
         if (test.getId() == null)
@@ -77,6 +107,13 @@ public class TestRepository implements TestRepositoryInterface {
         }
     }
 
+    /**
+     * Находит тест по его идентификатору.
+     *
+     * @param id уникальный идентификатор теста
+     * @return Optional с найденным тестом или пустой Optional, если тест не найден
+     * @throws RuntimeException если произошла SQL-ошибка
+     */
     @Override
     public Optional<TestModel> findById(UUID id) {
         String sql = "SELECT id, course_id, title, min_point, description FROM tests.test_d WHERE id = ?";
@@ -96,6 +133,12 @@ public class TestRepository implements TestRepositoryInterface {
         }
     }
 
+    /**
+     * Получает все тесты из базы данных.
+     *
+     * @return список всех тестов, отсортированных по названию
+     * @throws RuntimeException если произошла SQL-ошибка
+     */
     @Override
     public List<TestModel> findAll() {
         String sql = "SELECT id, course_id, title, min_point, description FROM tests.test_d ORDER BY title";
@@ -116,6 +159,13 @@ public class TestRepository implements TestRepositoryInterface {
         }
     }
 
+    /**
+     * Удаляет тест по его идентификатору.
+     *
+     * @param id уникальный идентификатор теста для удаления
+     * @return true если тест был удален, false если тест не найден
+     * @throws RuntimeException если произошла SQL-ошибка
+     */
     @Override
     public boolean deleteById(UUID id) {
         String sql = "DELETE FROM tests.test_d WHERE id = ?";
@@ -131,6 +181,13 @@ public class TestRepository implements TestRepositoryInterface {
         }
     }
 
+    /**
+     * Проверяет существование теста по идентификатору.
+     *
+     * @param id уникальный идентификатор теста
+     * @return true если тест существует, false если нет
+     * @throws RuntimeException если произошла SQL-ошибка
+     */
     @Override
     public boolean existsById(UUID id) {
         String sql = "SELECT 1 FROM tests.test_d WHERE id = ?";
@@ -146,6 +203,13 @@ public class TestRepository implements TestRepositoryInterface {
         }
     }
 
+    /**
+     * Ищет тесты по частичному совпадению названия (без учета регистра).
+     *
+     * @param title часть названия для поиска
+     * @return список тестов, содержащих указанную строку в названии
+     * @throws RuntimeException если произошла SQL-ошибка
+     */
     @Override
     public List<TestModel> findByTitleContaining(String title) {
         String sql = "SELECT id, course_id, title, min_point, description FROM tests.test_d " +
@@ -169,6 +233,13 @@ public class TestRepository implements TestRepositoryInterface {
         }
     }
 
+    /**
+     * Подсчитывает количество тестов для указанного курса.
+     *
+     * @param courseId уникальный идентификатор курса
+     * @return количество тестов в указанном курсе
+     * @throws RuntimeException если произошла SQL-ошибка
+     */
     @Override
     public int countByCourseId(UUID courseId) {
         String sql = "SELECT COUNT(*) FROM tests.test_d WHERE course_id = ?";
@@ -188,7 +259,13 @@ public class TestRepository implements TestRepositoryInterface {
         }
     }
 
-    // --- Вспомогательный метод для маппинга ResultSet в TestModel ---
+    /**
+     * Преобразует строку ResultSet в объект TestModel.
+     *
+     * @param rs ResultSet, содержащий данные теста
+     * @return объект TestModel, созданный из данных ResultSet
+     * @throws SQLException если произошла ошибка при чтении данных из ResultSet
+     */
     private TestModel mapRowToTest(ResultSet rs) throws SQLException {
         return new TestModel(
                 rs.getObject("id", UUID.class),
@@ -198,6 +275,13 @@ public class TestRepository implements TestRepositoryInterface {
                 rs.getString("description"));
     }
 
+    /**
+     * Находит все тесты для указанного курса.
+     *
+     * @param courseId уникальный идентификатор курса
+     * @return список тестов, принадлежащих указанному курсу
+     * @throws UnsupportedOperationException метод еще не реализован
+     */
     @Override
     public List<TestModel> findByCourseId(UUID courseId) {
         // TODO Auto-generated method stub
