@@ -51,9 +51,8 @@ services:
       KC_DB_PASSWORD: keycloaks
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
-      KC_HEALTH_ENABLED: "true"
-      KC_METRICS_ENABLED: "true"
-      KC_HTTP_PORT: 8080
+      KC_HEALTH_ENABLED: true
+      KC_METRICS_ENABLED: true
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
     command:
@@ -117,6 +116,9 @@ services:
       KEYCLOAK_CLIENT_SECRET: "TEACHER_SECRET"
       KEYCLOAK_APP_NAME: "LMS Admin Application"
       WAIT_FOR_KEYCLOAK: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_SERVICE_NAME: "admin-panel"
     ports:
       - "4000:4000"
     networks:

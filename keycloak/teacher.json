@@ -30,15 +30,18 @@
       "consentRequired": false,
       "standardFlowEnabled": true,
       "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": true,
-      "serviceAccountsEnabled": false,
-      "publicClient": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
       "frontchannelLogout": true,
       "protocol": "openid-connect",
       "attributes": {
-        "display.on.consent.screen": "false"
+        "display.on.consent.screen": "true"
       },
+      "authorizationServicesEnabled": true,
       "fullScopeAllowed": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "TEACHER_SECRET",
       "protocolMappers": [
         {
           "name": "realm-roles",
@@ -113,8 +116,24 @@
           "temporary": false
         }
       ]
+    },
+    {
+      "username": "teacher",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "teacher",
+      "lastName": "main",
+      "email": "teacher@example.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "teacher",
+          "temporary": false
+        }
+      ]
     }
   ],
+  
   "browserSecurityHeaders": {
     "contentSecurityPolicyReportOnly": "",
     "xContentTypeOptions": "nosniff",
