@@ -1,3 +1,5 @@
+// Package config provides flexible configuration management for the application.
+// It uses an options-based pattern to load settings from environment variables.
 package config
 
 import (
@@ -8,12 +10,18 @@ import (
 
 // Config stores all configuration of the application.
 type Config struct {
-	DatabaseURL          string
-	CORSAllowedOrigins   string
-	CORSAllowedMethods   string
-	CORSAllowedHeaders   string
+	// DatabaseURL is the connection string for the PostgreSQL database.
+	DatabaseURL string
+	// CORSAllowedOrigins is a comma-separated list of origins that are allowed to make cross-origin requests.
+	CORSAllowedOrigins string
+	// CORSAllowedMethods is a comma-separated list of methods that are allowed for cross-origin requests.
+	CORSAllowedMethods string
+	// CORSAllowedHeaders is a comma-separated list of headers that are allowed for cross-origin requests.
+	CORSAllowedHeaders string
+	// CORSAllowCredentials indicates whether credentials can be shared in cross-origin requests.
 	CORSAllowCredentials bool
-	Port                 string // New: Application port, defaults to 3000
+	// Port is the network port on which the application server will listen.
+	Port string
 }
 
 // Option defines a function that configures a Config object.
@@ -99,7 +107,8 @@ func WithCORSFromEnv() Option {
 	}
 }
 
-// WithPortFromEnv configures the application port from environment variables.
+// WithPortFromEnv configures the application port from the APP_PORT environment variable.
+// It defaults to "3000" if the variable is not set.
 func WithPortFromEnv() Option {
 	return func(cfg *Config) error {
 		portStr := getOptionalEnv("APP_PORT", "3000") // Get port as string, default empty
@@ -112,7 +121,6 @@ func WithPortFromEnv() Option {
 		return nil
 	}
 }
-
 
 // getRequiredEnv retrieves a required environment variable.
 func getRequiredEnv(key string) (string, error) {

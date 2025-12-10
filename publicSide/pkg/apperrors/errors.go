@@ -1,8 +1,12 @@
+// Package apperrors provides custom error types and factories for the application.
+// This allows for consistent, structured error responses in the API layer.
 package apperrors
 
 import "fmt"
 
 // AppError is our custom error type for the application.
+// It includes an HTTP status code, an application-specific error code,
+// and a user-facing message.
 type AppError struct {
 	HTTPStatus int    // HTTP Status code to return
 	Code       string // Application-specific error code
@@ -16,6 +20,7 @@ func (e *AppError) Error() string {
 
 // Factory functions for creating specific application errors.
 
+// NewNotFound creates a new 404 Not Found error.
 func NewNotFound(resource string) error {
 	return &AppError{
 		HTTPStatus: 404,
@@ -24,6 +29,7 @@ func NewNotFound(resource string) error {
 	}
 }
 
+// NewInvalidUUID creates a new 400 Bad Request error for invalid UUIDs.
 func NewInvalidUUID(resource string) error {
 	return &AppError{
 		HTTPStatus: 400,
@@ -32,6 +38,7 @@ func NewInvalidUUID(resource string) error {
 	}
 }
 
+// NewInvalidRequest creates a new 400 Bad Request error for general invalid requests.
 func NewInvalidRequest(message string) error {
 	if message == "" {
 		message = "Invalid request parameters"
@@ -43,6 +50,8 @@ func NewInvalidRequest(message string) error {
 	}
 }
 
+// NewInternal creates a new 500 Internal Server Error.
+// This should be used for unexpected errors that cannot be handled.
 func NewInternal() error {
 	return &AppError{
 		HTTPStatus: 500,

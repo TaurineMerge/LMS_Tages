@@ -1,3 +1,5 @@
+// Package main is the entry point for the publicSide service.
+// It initializes the configuration, database, router, and starts the HTTP server.
 package main
 
 import (
@@ -70,12 +72,11 @@ func main() {
 
 	lessonHandler := handler.NewLessonHandler(lessonService)
 
-
 	categoryRouter := apiV1.Group("/categories")
 	courseRouter := categoryRouter.Group(apiconst.PathCategory + "/courses")
-	
+
 	lessonHandler.RegisterRoutes(courseRouter)
-	
+
 	slog.Info("Starting server", "address", cfg.Port)
 	if err := app.Listen(fmt.Sprintf(":%s", cfg.Port)); err != nil {
 		slog.Error("Server failed to start", "error", err)

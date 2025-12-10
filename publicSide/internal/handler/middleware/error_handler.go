@@ -1,3 +1,5 @@
+// Package middleware provides HTTP middleware functions for the Fiber application.
+// This includes interceptors for logging, authentication, error handling, etc.
 package middleware
 
 import (
@@ -10,6 +12,8 @@ import (
 )
 
 // GlobalErrorHandler is a centralized error handler for the application.
+// It catches errors returned from handlers, logs them, and formats them
+// into a consistent JSON error response.
 func GlobalErrorHandler(c *fiber.Ctx, err error) error {
 	var appErr *apperrors.AppError
 	if errors.As(err, &appErr) {

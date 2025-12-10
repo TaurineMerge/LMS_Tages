@@ -1,3 +1,5 @@
+// Package service contains the business logic of the application.
+// It orchestrates data from repositories and prepares it for the handler layer.
 package service
 
 import (
@@ -11,8 +13,11 @@ import (
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apperrors"
 )
 
+// LessonService defines the interface for lesson-related business logic.
 type LessonService interface {
+	// GetAllByCourseID retrieves a paginated list of lessons for a specific course.
 	GetAllByCourseID(ctx context.Context, categoryID, courseID string, page, limit int) ([]response.LessonDTO, response.Pagination, error)
+	// GetByID retrieves a single detailed lesson by its ID.
 	GetByID(ctx context.Context, categoryID, courseID, lessonID string) (response.LessonDTODetailed, error)
 }
 
@@ -20,6 +25,7 @@ type lessonService struct {
 	repo repository.LessonRepository
 }
 
+// NewLessonService creates a new instance of a lesson service.
 func NewLessonService(repo repository.LessonRepository) LessonService {
 	return &lessonService{repo: repo}
 }

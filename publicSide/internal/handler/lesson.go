@@ -1,3 +1,5 @@
+// Package handler contains the HTTP handlers for the application.
+// It is responsible for parsing requests, calling services, and formatting responses.
 package handler
 
 import (
@@ -10,14 +12,17 @@ import (
 	"github.com/google/uuid"
 )
 
+// LessonHandler handles HTTP requests related to lessons.
 type LessonHandler struct {
 	service service.LessonService
 }
 
+// NewLessonHandler creates a new instance of a lesson handler.
 func NewLessonHandler(s service.LessonService) *LessonHandler {
 	return &LessonHandler{service: s}
 }
 
+// RegisterRoutes registers the routes for lesson-related endpoints.
 func (h *LessonHandler) RegisterRoutes(router fiber.Router) fiber.Router {
 	lessonRouter := router.Group(apiconst.PathCategory + "/lessons")
 
@@ -27,6 +32,7 @@ func (h *LessonHandler) RegisterRoutes(router fiber.Router) fiber.Router {
 	return lessonRouter
 }
 
+// GetLessonsByCourseID handles the request to get a paginated list of lessons for a course.
 func (h *LessonHandler) GetLessonsByCourseID(c *fiber.Ctx) error {
 	categoryID := c.Params(apiconst.ParamCategoryID)
 	if _, err := uuid.Parse(categoryID); err != nil {
@@ -56,6 +62,7 @@ func (h *LessonHandler) GetLessonsByCourseID(c *fiber.Ctx) error {
 	})
 }
 
+// GetLessonByID handles the request to get a single lesson by its ID.
 func (h *LessonHandler) GetLessonByID(c *fiber.Ctx) error {
 	categoryID := c.Params(apiconst.ParamCategoryID)
 	if _, err := uuid.Parse(categoryID); err != nil {

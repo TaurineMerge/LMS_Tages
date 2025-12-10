@@ -10,8 +10,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// LessonRepository defines the interface for database operations on lessons.
 type LessonRepository interface {
+	// GetAllByCourseID retrieves a paginated list of lessons for a specific course and category.
 	GetAllByCourseID(ctx context.Context, categoryID, courseID string, page, limit int) ([]domain.Lesson, int, error)
+	// GetByID retrieves a single lesson by its ID, scoped to a course and category.
 	GetByID(ctx context.Context, categoryID, courseID, lessonID string) (domain.Lesson, error)
 }
 
@@ -19,6 +22,7 @@ type lessonRepository struct {
 	db *pgxpool.Pool
 }
 
+// NewLessonRepository creates a new instance of a lesson repository.
 func NewLessonRepository(db *pgxpool.Pool) LessonRepository {
 	return &lessonRepository{db: db}
 }
@@ -63,7 +67,7 @@ func (r *lessonRepository) GetAllByCourseID(ctx context.Context, categoryID, cou
 			&lesson.ID,
 			&lesson.Title,
 			&lesson.CourseID,
-			&lesson.Content, 
+			&lesson.Content,
 			&lesson.CreatedAt,
 			&lesson.UpdatedAt,
 		)

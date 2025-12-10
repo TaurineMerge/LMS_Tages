@@ -1,3 +1,4 @@
+// Package database provides utilities for creating and managing database connections.
 package database
 
 import (
@@ -8,7 +9,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// NewConnection creates a new database connection pool.
+// NewConnection creates a new database connection pool using the provided configuration.
+// It pings the database to verify the connection before returning the pool.
 func NewConnection(cfg *config.Config) (*pgxpool.Pool, error) {
 	pool, err := pgxpool.New(context.Background(), cfg.DatabaseURL)
 	if err != nil {

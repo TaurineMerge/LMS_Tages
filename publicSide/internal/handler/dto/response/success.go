@@ -1,3 +1,4 @@
+// Package response contains Data Transfer Objects (DTOs) for outgoing server responses.
 package response
 
 const (
