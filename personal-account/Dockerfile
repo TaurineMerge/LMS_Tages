@@ -1,5 +1,5 @@
 # Используем официальный Python образ
-FROM python:3.11-slim 
+FROM python:3.11-slim
 
 ENV POETRY_HOME=/opt/poetry \
     POETRY_VIRTUALENVS_IN_PROJECT=true \
@@ -16,13 +16,8 @@ RUN poetry config --list
 # Устанавливаем рабочую директорию
 WORKDIR /app
 
-ADD . /app
-
-# Копируем файл зависимостей
+# Копируем файлы зависимостей
 COPY pyproject.toml poetry.lock* /app/
-
-# Копируем остальные файлы
-COPY . .
 
 # Устанавливаем зависимости
 # RUN ${POETRY_HOME}/bin/poetry install --only=main --no-interaction --no-ansi
@@ -38,5 +33,5 @@ USER fastapiuser
 # Открываем порт
 EXPOSE 8000
 
-# Запускаем серверß
-CMD ["/root/.poetry/bin/poetry", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Запускаем сервер через poetry run
+CMD ["/opt/poetry/bin/poetry", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
