@@ -1,0 +1,104 @@
+{{! file name: pages/course.hbs - только уроки }}
+<div class="py-5">
+    <!-- Минимальный заголовок и навигация -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0">{{Course.Title}}</h2>
+            <p class="text-muted mb-0">{{Course.Description}}</p>
+        </div>
+        
+        <div class="d-flex gap-2">
+            <a href="/courses" class="btn btn-outline-secondary">
+                ← Все курсы
+            </a>
+            <a href="/" class="btn btn-outline-primary">
+                ⌂ Главная
+            </a>
+        </div>
+    </div>
+
+    <!-- Список уроков -->
+    <div class="card shadow">
+        <div class="card-body p-0">
+            {{#if Lessons}}
+            <div class="list-group list-group-flush">
+                {{#each Lessons}}
+                <div class="list-group-item py-3 border-bottom">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <div class="lesson-number me-3">
+                                <span class="badge bg-primary rounded-circle d-flex align-items-center justify-content-center" 
+                                      style="width: 36px; height: 36px;">
+                                    {{this.ID}}
+                                </span>
+                            </div>
+                            <div>
+                                <h5 class="mb-1">{{this.Title}}</h5>
+                                <small class="text-muted">
+                                    <i class="bi bi-clock"></i> {{this.Duration}}
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-primary">
+                            <i class="bi bi-play-circle me-1"></i> Смотреть
+                        </button>
+                    </div>
+                </div>
+                {{/each}}
+            </div>
+            {{else}}
+            <!-- Если уроков нет -->
+            <div class="text-center py-5">
+                <div class="mb-3">
+                    <i class="bi bi-journal-text text-muted" style="font-size: 3rem;"></i>
+                </div>
+                <h5 class="text-muted">Уроки пока не добавлены</h5>
+                <p class="text-muted">Вернитесь позже</p>
+            </div>
+            {{/if}}
+        </div>
+    </div>
+
+    <!-- Простая статистика -->
+    <div class="mt-4 text-center">
+        <div class="d-inline-flex gap-4">
+            <div class="px-3 py-2 border rounded">
+                <div class="text-primary fw-bold">{{Course.Lessons}}</div>
+                <small class="text-muted">Уроков</small>
+            </div>
+            <div class="px-3 py-2 border rounded">
+                <div class="text-success fw-bold">{{Course.Duration}}</div>
+                <small class="text-muted">Длительность</small>
+            </div>
+            <div class="px-3 py-2 border rounded">
+                <div class="text-info fw-bold">{{Course.Students}}</div>
+                <small class="text-muted">Студентов</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Нижняя навигация -->
+    <div class="mt-4 text-center">
+        <div class="btn-group">
+            <a href="/" class="btn btn-outline-secondary">
+                <i class="bi bi-house"></i> На главную
+            </a>
+            <a href="/courses" class="btn btn-outline-secondary">
+                <i class="bi bi-list-ul"></i> Все курсы
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .lesson-number {
+        min-width: 36px;
+    }
+    .list-group-item:hover {
+        background-color: #f8f9fa;
+    }
+    .border {
+        border-color: #dee2e6 !important;
+    }
+</style>

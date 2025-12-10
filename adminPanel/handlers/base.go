@@ -19,11 +19,11 @@ func getBaseURL(c *fiber.Ctx) string {
 	if c.Get("X-Forwarded-Proto") == "https" {
 		protocol = "https"
 	}
-	
+
 	host := c.Get("Host")
 	if forwardedHost := c.Get("X-Forwarded-Host"); forwardedHost != "" {
 		host = forwardedHost
 	}
-	
+
 	return protocol + "://" + host
 }

@@ -1,10 +1,10 @@
 package services
 
 import (
-	"time"
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"adminPanel/exceptions"
 	"adminPanel/models"
@@ -23,27 +23,32 @@ func NewCategoryService(categoryRepo *repositories.CategoryRepository) *Category
 	}
 }
 
-// GetCategories - получение всех категорий
-func (s *CategoryService) GetCategories(ctx context.Context) ([]models.Category, error) {
-	data, err := s.categoryRepo.GetAll(ctx, 100, 0, "title", "ASC")
+// GetCategories - получение категорий с пагинацией
+func (s *CategoryService) GetCategories(ctx context.Context, page, limit int) ([]models.Category, int, error) {
+	offset := (page - 1) * limit
+
+	data, err := s.categoryRepo.GetAllWithPagination(ctx, limit, offset)
 	if err != nil {
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to get categories: %v", err))
+		return nil, 0, exceptions.InternalError(fmt.Sprintf("Failed to get categories: %v", err))
+	}
+
+	total, err := s.categoryRepo.CountAll(ctx)
+	if err != nil {
+		return nil, 0, exceptions.InternalError(fmt.Sprintf("Failed to count categories: %v", err))
 	}
 
 	categories := make([]models.Category, 0, len(data))
 	for _, item := range data {
 		category := models.Category{
-			BaseModel: models.BaseModel{
-				ID:        fmt.Sprintf("%v", item["id"]),
-				CreatedAt: parseTime(item["created_at"]),
-				UpdatedAt: parseTime(item["updated_at"]),
-			},
-			Title: fmt.Sprintf("%v", item["title"]),
+			ID:        parseString(item["id"]),
+			Title:     parseString(item["title"]),
+			CreatedAt: parseTime(item["created_at"]),
+			UpdatedAt: parseTime(item["updated_at"]),
 		}
 		categories = append(categories, category)
 	}
 
-	return categories, nil
+	return categories, total, nil
 }
 
 // GetCategory - получение категории по ID
@@ -58,12 +63,10 @@ func (s *CategoryService) GetCategory(ctx context.Context, id string) (*models.C
 	}
 
 	category := &models.Category{
-		BaseModel: models.BaseModel{
-			ID:        fmt.Sprintf("%v", data["id"]),
-			CreatedAt: parseTime(data["created_at"]),
-			UpdatedAt: parseTime(data["updated_at"]),
-		},
-		Title: fmt.Sprintf("%v", data["title"]),
+		ID:        parseString(data["id"]),
+		Title:     parseString(data["title"]),
+		CreatedAt: parseTime(data["created_at"]),
+		UpdatedAt: parseTime(data["updated_at"]),
 	}
 
 	return category, nil
@@ -84,19 +87,18 @@ func (s *CategoryService) CreateCategory(ctx context.Context, input models.Categ
 	// Создаем категорию
 	data, err := s.categoryRepo.Create(ctx, input.Title)
 	if err != nil {
-		if strings.Contains(err.Error(), "duplicate key") {
+		if strings.Contains(strings.ToLower(err.Error()), "duplicate") ||
+			strings.Contains(strings.ToLower(err.Error()), "unique") {
 			return nil, exceptions.ConflictError("Category with this title already exists")
 		}
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to create category: %v", err))
 	}
 
 	category := &models.Category{
-		BaseModel: models.BaseModel{
-			ID:        fmt.Sprintf("%v", data["id"]),
-			CreatedAt: parseTime(data["created_at"]),
-			UpdatedAt: parseTime(data["updated_at"]),
-		},
-		Title: fmt.Sprintf("%v", data["title"]),
+		ID:        parseString(data["id"]),
+		Title:     parseString(data["title"]),
+		CreatedAt: parseTime(data["created_at"]),
+		UpdatedAt: parseTime(data["updated_at"]),
 	}
 
 	return category, nil
@@ -114,30 +116,34 @@ func (s *CategoryService) UpdateCategory(ctx context.Context, id string, input m
 		return nil, exceptions.NotFoundError("Category", id)
 	}
 
-	// Проверяем, не занято ли новое название
-	if input.Title != fmt.Sprintf("%v", existing["title"]) {
-		categoryWithTitle, err := s.categoryRepo.GetByTitle(ctx, input.Title)
+	// Если title не предоставлен, используем существующий
+	newTitle := input.Title
+	if newTitle == "" {
+		newTitle = parseString(existing["title"])
+	}
+
+	// Проверяем, не занято ли новое название другой категорией
+	if newTitle != parseString(existing["title"]) {
+		categoryWithTitle, err := s.categoryRepo.GetByTitle(ctx, newTitle)
 		if err != nil {
 			return nil, exceptions.InternalError(fmt.Sprintf("Failed to check title: %v", err))
 		}
-		if categoryWithTitle != nil {
-			return nil, exceptions.ConflictError(fmt.Sprintf("Category with title '%s' already exists", input.Title))
+		if categoryWithTitle != nil && parseString(categoryWithTitle["id"]) != id {
+			return nil, exceptions.ConflictError(fmt.Sprintf("Category with title '%s' already exists", newTitle))
 		}
 	}
 
 	// Обновляем категорию
-	data, err := s.categoryRepo.Update(ctx, id, input.Title)
+	data, err := s.categoryRepo.Update(ctx, id, newTitle)
 	if err != nil {
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to update category: %v", err))
 	}
 
 	category := &models.Category{
-		BaseModel: models.BaseModel{
-			ID:        fmt.Sprintf("%v", data["id"]),
-			CreatedAt: parseTime(data["created_at"]),
-			UpdatedAt: parseTime(data["updated_at"]),
-		},
-		Title: fmt.Sprintf("%v", data["title"]),
+		ID:        parseString(data["id"]),
+		Title:     parseString(data["title"]),
+		CreatedAt: parseTime(data["created_at"]),
+		UpdatedAt: parseTime(data["updated_at"]),
 	}
 
 	return category, nil
@@ -162,7 +168,7 @@ func (s *CategoryService) DeleteCategory(ctx context.Context, id string) error {
 	}
 
 	if courseCount > 0 {
-		return exceptions.ConflictError("Cannot delete category with associated courses")
+		return exceptions.ConflictError("Category has related courses")
 	}
 
 	// Удаляем категорию
@@ -180,13 +186,30 @@ func (s *CategoryService) DeleteCategory(ctx context.Context, id string) error {
 
 // Вспомогательная функция для парсинга времени
 func parseTime(value interface{}) time.Time {
-	if str, ok := value.(string); ok {
-		if t, err := time.Parse(time.RFC3339, str); err == nil {
+	if value == nil {
+		return time.Time{}
+	}
+
+	switch v := value.(type) {
+	case time.Time:
+		return v
+	case string:
+		if t, err := time.Parse(time.RFC3339, v); err == nil {
 			return t
 		}
+		if t, err := time.Parse("2006-01-02 15:04:05", v); err == nil {
+			return t
+		}
+		return time.Time{}
+	default:
+		return time.Time{}
 	}
-	if t, ok := value.(time.Time); ok {
-		return t
+}
+
+// Вспомогательная функция для парсинга строк
+func parseString(value interface{}) string {
+	if value == nil {
+		return ""
 	}
-	return time.Time{}
+	return fmt.Sprintf("%v", value)
 }

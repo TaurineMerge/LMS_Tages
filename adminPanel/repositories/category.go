@@ -24,7 +24,7 @@ func (r *CategoryRepository) Create(ctx context.Context, title string) (map[stri
 		INSERT INTO knowledge_base.category_d 
 		(id, title, created_at, updated_at)
 		VALUES (gen_random_uuid(), $1, NOW(), NOW())
-		RETURNING *
+		RETURNING id, title, created_at, updated_at
 	`
 	return r.db.ExecuteReturning(ctx, query, title)
 }
@@ -35,7 +35,7 @@ func (r *CategoryRepository) Update(ctx context.Context, id, title string) (map[
 		UPDATE knowledge_base.category_d 
 		SET title = $1, updated_at = NOW()
 		WHERE id = $2
-		RETURNING *
+		RETURNING id, title, created_at, updated_at
 	`
 	return r.db.ExecuteReturning(ctx, query, title, id)
 }
@@ -51,7 +51,7 @@ func (r *CategoryRepository) CountCoursesForCategory(ctx context.Context, catego
 	if err != nil {
 		return 0, err
 	}
-	
+
 	if count, ok := result["count"].(int64); ok {
 		return int(count), nil
 	}
@@ -60,20 +60,35 @@ func (r *CategoryRepository) CountCoursesForCategory(ctx context.Context, catego
 
 // GetByTitle - получение категории по названию
 func (r *CategoryRepository) GetByTitle(ctx context.Context, title string) (map[string]interface{}, error) {
-	query := "SELECT * FROM knowledge_base.category_d WHERE title = $1"
+	query := `
+		SELECT id, title, created_at, updated_at 
+		FROM knowledge_base.category_d 
+		WHERE title = $1
+	`
 	return r.db.FetchOne(ctx, query, title)
 }
 
-// GetAllWithCourses - получение всех категорий с количеством курсов
-func (r *CategoryRepository) GetAllWithCourses(ctx context.Context) ([]map[string]interface{}, error) {
+// GetAllWithPagination - получение категорий с пагинацией
+func (r *CategoryRepository) GetAllWithPagination(ctx context.Context, limit, offset int) ([]map[string]interface{}, error) {
 	query := `
-		SELECT 
-			c.*,
-			COUNT(cb.id) as course_count
-		FROM knowledge_base.category_d c
-		LEFT JOIN knowledge_base.course_b cb ON c.id = cb.category_id
-		GROUP BY c.id
-		ORDER BY c.title
+		SELECT id, title, created_at, updated_at 
+		FROM knowledge_base.category_d 
+		ORDER BY title ASC
+		LIMIT $1 OFFSET $2
 	`
-	return r.db.FetchAll(ctx, query)
+	return r.db.FetchAll(ctx, query, limit, offset)
+}
+
+// CountAll - общее количество категорий
+func (r *CategoryRepository) CountAll(ctx context.Context) (int, error) {
+	query := `SELECT COUNT(*) as count FROM knowledge_base.category_d`
+	result, err := r.db.FetchOne(ctx, query)
+	if err != nil {
+		return 0, err
+	}
+
+	if count, ok := result["count"].(int64); ok {
+		return int(count), nil
+	}
+	return 0, nil
 }

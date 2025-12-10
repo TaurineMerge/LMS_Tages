@@ -1,0 +1,56 @@
+<div class="py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1>📚 Все курсы</h1>
+            <p class="text-muted">Выберите курс для изучения</p>
+        </div>
+        <div>
+            <a href="http://localhost:4000" target="_blank" class="btn btn-warning btn-sm">
+                ⚙️ Управление курсами (Админка)
+            </a>
+        </div>
+    </div>
+    
+    {{#if Courses}}
+    <div class="row">
+        {{#each Courses}}
+        <div class="col-md-4 mb-4">
+            <div class="course-card">
+                <h3>{{this.Title}}</h3>
+                <p>{{this.Description}}</p>
+                <div class="mb-3">
+                    <span class="badge bg-primary">{{this.Category}}</span>
+                    <span class="badge bg-success ms-2">Рейтинг: {{this.Rating}}</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <small><i class="bi bi-people"></i> {{this.Students}} студентов</small>
+                    <small><i class="bi bi-clock"></i> {{this.Duration}}</small>
+                </div>
+                <a href="/courses/{{this.ID}}" class="btn btn-primary mt-3 w-100">Подробнее</a>
+            </div>
+        </div>
+        {{/each}}
+    </div>
+    {{else}}
+    <div class="alert alert-info text-center py-5">
+        <p>Курсы не найдены</p>
+        <a href="http://localhost:4000" target="_blank" class="btn btn-warning">
+            Добавить курсы через админку
+        </a>
+    </div>
+    {{/if}}
+    
+    <!-- Ссылки на другие сервисы -->
+    <div class="mt-5 pt-4 border-top">
+        <h5>Другие сервисы Tages LMS:</h5>
+        <div class="d-flex gap-2 mt-3">
+            <a href="/" class="btn btn-outline-secondary">На главную</a>
+            <a href="http://localhost:4000" target="_blank" class="btn btn-outline-warning">
+                Админ-панель (порт 4000)
+            </a>
+            <a href="http://localhost:4000/admin/swagger/" target="_blank" class="btn btn-outline-info">
+                Swagger API
+            </a>
+        </div>
+    </div>
+</div>

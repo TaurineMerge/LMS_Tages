@@ -1,0 +1,102 @@
+<!-- Герой-секция -->
+<div class="hero-section">
+    <div class="container">
+        <div class="text-center">
+            <h1 class="display-4 mb-4">Добро пожаловать в Tages LMS!</h1>
+            <p class="lead mb-5">Платформа для онлайн-обучения с курсами по программированию</p>
+            
+            <!-- Основные кнопки с прямыми ссылками -->
+            <div class="row justify-content-center">
+                <div class="col-md-4 mb-3">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">👨‍🎓 Для студентов</h5>
+                            <p>Просмотр курсов и уроков</p>
+                            <a href="/courses" class="btn btn-primary w-100">Смотреть курсы</a>
+                            <small class="text-muted d-block mt-2">Порт: 3000</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">⚙️ Для администраторов</h5>
+                            <p>Управление контентом системы</p>
+                            <a href="http://localhost:4000" target="_blank" class="btn btn-warning w-100">
+                                Админ-панель
+                            </a>
+                            <small class="text-muted d-block mt-2">Порт: 4000</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">🔧 Для разработчиков</h5>
+                            <p>API документация и тестирование</p>
+                            <a href="http://localhost:4000/admin/swagger/" target="_blank" class="btn btn-info w-100">
+                                Swagger UI
+                            </a>
+                            <small class="text-muted d-block mt-2">Swagger на админке</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Информация о сервисах -->
+            <div class="mt-5">
+                <h4>Доступные сервисы:</h4>
+                <div class="list-group mt-3">
+                    <div class="list-group-item">
+                        <strong>🌐 Публичный интерфейс:</strong> 
+                        <a href="http://localhost:3000">http://localhost:3000</a>
+                        <small class="text-muted d-block">Курсы, уроки, просмотр контента</small>
+                    </div>
+                    <div class="list-group-item">
+                        <strong>🔐 Админ-панель:</strong> 
+                        <a href="http://localhost:4000" target="_blank">http://localhost:4000</a>
+                        <small class="text-muted d-block">Управление курсами, уроками, пользователями</small>
+                    </div>
+                    <div class="list-group-item">
+                        <strong>📖 API Documentation:</strong> 
+                        <a href="http://localhost:4000/admin/swagger/" target="_blank">http://localhost:4000/admin/swagger/</a>
+                        <small class="text-muted d-block">Swagger UI с OpenAPI спецификацией</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Блок с портами -->
+            <div class="row mt-5">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h5>🌐 Публичная часть</h5>
+                            <h2 class="text-primary">3000</h2>
+                            <code>http://localhost:3000</code>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h5>🔐 Админ-панель</h5>
+                            <h2 class="text-warning">4000</h2>
+                            <code>http://localhost:4000</code>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h5>📖 Swagger API</h5>
+                            <h2 class="text-info">4000/swagger</h2>
+                            <code>http://localhost:4000/admin/swagger/</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

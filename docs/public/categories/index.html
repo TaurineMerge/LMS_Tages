@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Categories | LMS Documentation</title>
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <script>
+        
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose',
+            flowchart: { 
+                useMaxWidth: true,
+                htmlLabels: true 
+            },
+            sequence: {
+                diagramMarginX: 50,
+                diagramMarginY: 10,
+                actorMargin: 50
+            }
+        });
+        
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            const mermaidCodes = document.querySelectorAll('code.language-mermaid');
+            
+            mermaidCodes.forEach(code => {
+                const pre = code.parentElement;
+                const div = document.createElement('div');
+                div.className = 'mermaid';
+                div.textContent = code.textContent;
+                pre.parentNode.replaceChild(div, pre);
+            });
+            
+            
+            const mermaidDivs = document.querySelectorAll('div.mermaid');
+            if (mermaidDivs.length > 0) {
+                
+                mermaid.init(undefined, mermaidDivs);
+            }
+        });
+    </script>
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        
+         
+        .mermaid {
+            background: white;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow-x: auto;
+            text-align: center;
+            border: 1px solid #e1e4e8;
+        }
+        
+         
+        pre code.language-mermaid {
+            display: none;
+        }
+        
+         
+        nav {
+            background: #f6f8fa;
+            padding: 15px 20px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            border: 1px solid #e1e4e8;
+        }
+        
+        nav a {
+            margin-right: 20px;
+            color: #0366d6;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        nav a:hover {
+            text-decoration: underline;
+        }
+        
+        h1 {
+            color: #24292e;
+            border-bottom: 2px solid #eaecef;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            color: #444;
+            margin-top: 40px;
+        }
+        
+         
+        pre:not(:has(code.language-mermaid)) {
+            background: #f6f8fa;
+            padding: 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+            border: 1px solid #e1e4e8;
+        }
+        
+        code:not([class*="language-"]) {
+            background: #f6f8fa;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">🏠 Главная</a>
+        <a href="/c4/">🏗️ C4</a>
+        <a href="/er/">📊 ER</a>
+        <a href="/sequence/">🔄 Sequence</a>
+        <a href="/flowchart/">📈 Flowchart</a>
+        <a href="/glossary/">📖 Глоссарий</a>
+    </nav>
+    
+    <main>
+        
+<h1>Categories</h1>
+
+
+    </main>
+    
+    <footer style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #eaecef; color: #6a737d; text-align: center;">
+        <p>LMS Documentation • Обновлено: 09.12.2025</p>
+        <p style="font-size: 0.9em;">Диаграммы созданы с помощью <a href="https://mermaid.js.org/" target="_blank">Mermaid.js</a></p>
+    </footer>
+</body>
+</html>

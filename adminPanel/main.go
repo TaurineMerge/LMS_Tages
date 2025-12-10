@@ -1,4 +1,3 @@
-// main.go
 package main
 
 import (
@@ -6,6 +5,7 @@ import (
 	"io/fs"
 	"log"
 	"strings"
+	"time"
 
 	"adminPanel/config"
 	"adminPanel/database"
@@ -28,7 +28,6 @@ func main() {
 	// Инициализация конфигурации
 	settings := config.NewSettings()
 
-	log.Printf("⚠️  Failed to initialize auth: %v", settings)
 	// Инициализация базы данных
 	db, err := database.InitDB(settings)
 	if err != nil {
@@ -57,6 +56,56 @@ func main() {
 	// Общий обработчик ошибок
 	app.Use(middleware.ErrorHandlerMiddleware())
 
+	// Маршрут для главной страницы админ-панели
+	app.Get("/admin", func(c *fiber.Ctx) error {
+		html := `
+		<!DOCTYPE html>
+		<html lang="ru">
+		<head>
+			<meta charset="UTF-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1.0">
+			<title>Админ-панель LMS TAGES</title>
+			<style>
+				body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+				.container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
+				h1 { color: #333; }
+				.nav { background: #2c3e50; padding: 15px; border-radius: 5px; margin: 20px 0; }
+				.nav a { color: white; text-decoration: none; margin-right: 20px; }
+			</style>
+		</head>
+		<body>
+			<div class="container">
+				<h1>Админ-панель LMS TAGES</h1>
+				<p>Система успешно запущена!</p>
+				
+				<div class="nav">
+					<a href="/admin/swagger/">📚 Swagger UI</a>
+					<a href="/health">🏥 Health Check</a>
+					<a href="http://localhost:3000" target="_blank">🌐 Публичный сайт</a>
+				</div>
+				
+				<div style="margin-top: 30px;">
+					<h3>Доступные сервисы:</h3>
+					<ul>
+						<li>Публичный сайт: <a href="http://localhost:3000" target="_blank">http://localhost:3000</a></li>
+						<li>Админ-панель: <a href="/admin">http://localhost:4000/admin</a></li>
+						<li>Swagger API: <a href="/admin/swagger/">http://localhost:4000/admin/swagger/</a></li>
+						<li>Health Check: <a href="/health">http://localhost:4000/health</a></li>
+					</ul>
+				</div>
+				
+				<p style="margin-top: 30px; color: #666;">
+					Время сервера: ` + time.Now().Format("15:04:05 02.01.2006") + `
+				</p>
+			</div>
+		</body>
+		</html>
+		`
+
+		c.Set("Content-Type", "text/html; charset=utf-8")
+		return c.SendString(html)
+	})
+
 	// Публичные маршруты (без префикса /admin)
 	healthHandler := handlers.NewHealthHandler(db)
 	app.Get("/health", healthHandler.HealthCheck)
@@ -68,7 +117,6 @@ func main() {
 	adminGroup.Use(middleware.AuthMiddleware())
 
 	// Swagger под префиксом /admin
-	// Сначала маршрут для doc.json (должен быть до swagger UI)
 	adminGroup.Get("/swagger/doc.json", func(c *fiber.Ctx) error {
 		data, err := fs.ReadFile(swaggerJSON, "docs/swagger.json")
 		if err != nil {
@@ -77,14 +125,12 @@ func main() {
 				"error": "Failed to read API documentation",
 			})
 		}
-
 		c.Set("Content-Type", "application/json")
 		return c.Send(data)
 	})
 
-	// Затем Swagger UI
 	adminGroup.Get("/swagger/*", swagger.New(swagger.Config{
-		URL:         "/admin/swagger/doc.json", // Путь должен быть полный
+		URL:         "/admin/swagger/doc.json",
 		DeepLinking: true,
 		Title:       "Admin Panel API",
 		OAuth: &swagger.OAuthConfig{
@@ -121,23 +167,17 @@ func main() {
 	courseHandler.RegisterRoutes(api)
 	lessonHandler.RegisterRoutes(api)
 
-	// Favicon заглушка
-	app.Get("/favicon.ico", func(c *fiber.Ctx) error {
-		return c.SendStatus(204) // No Content
-	})
-
 	// Запуск сервера
 	log.Printf("🚀 Server starting on %s", settings.APIAddress)
+	log.Printf("📊 Admin Panel: http://localhost%s/admin", settings.APIAddress)
 	log.Printf("📚 Swagger UI: http://localhost%s/admin/swagger/", settings.APIAddress)
-	log.Printf("📖 Swagger JSON: http://localhost%s/admin/swagger/doc.json", settings.APIAddress)
-	log.Printf("🏥 Health check: http://localhost%s/health", settings.APIAddress)
+
 	// Инициализация аутентификации
 	if err := middleware.InitAuth(); err != nil {
-		log.Printf("⚠️  Failed to initialize auth123: %v", err)
-		return
+		log.Printf("⚠️  Failed to initialize auth: %v", err)
 	}
+
 	if err := app.Listen(settings.APIAddress); err != nil {
 		log.Fatalf("❌ Failed to start server: %v", err)
 	}
-
 }

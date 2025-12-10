@@ -4,11 +4,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
 	"adminPanel/exceptions"
 	"adminPanel/middleware"
 	"adminPanel/models"
 	"adminPanel/services"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 // CourseHandler - обработчик для курсов
@@ -26,7 +27,7 @@ func NewCourseHandler(courseService *services.CourseService) *CourseHandler {
 // RegisterRoutes регистрирует маршруты
 func (h *CourseHandler) RegisterRoutes(router fiber.Router) {
 	courses := router.Group("/courses")
-	
+
 	courses.Get("/", h.getCourses)
 	courses.Post("/", h.createCourse)
 	courses.Get("/:id", h.getCourse)
@@ -47,7 +48,7 @@ func (h *CourseHandler) getCourses(c *fiber.Ctx) error {
 	// Парсим page и limit
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	limit, _ := strconv.Atoi(c.Query("limit", "20"))
-	
+
 	filter.Page = page
 	filter.Limit = limit
 
@@ -81,14 +82,14 @@ func (h *CourseHandler) getCourses(c *fiber.Ctx) error {
 func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 	// Валидация входных данных
 	var input models.CourseCreate
-	
+
 	if err := c.BodyParser(&input); err != nil {
 		return c.Status(400).JSON(models.ErrorResponse{
 			Error: "Invalid request body",
 			Code:  "BAD_REQUEST",
 		})
 	}
-	
+
 	// Валидация через middleware
 	if validationErrors, err := middleware.ValidateStruct(&input); err != nil {
 		return c.Status(500).JSON(models.ErrorResponse{
@@ -153,7 +154,7 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 // GetCourse - получение курса по ID
 func (h *CourseHandler) getCourse(c *fiber.Ctx) error {
 	id := c.Params("id")
-	
+
 	if !isValidUUID(id) {
 		return c.Status(400).JSON(models.ErrorResponse{
 			Error: "Invalid course ID format",
@@ -181,7 +182,7 @@ func (h *CourseHandler) getCourse(c *fiber.Ctx) error {
 // UpdateCourse - обновление курса
 func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 	id := c.Params("id")
-	
+
 	if !isValidUUID(id) {
 		return c.Status(400).JSON(models.ErrorResponse{
 			Error: "Invalid course ID format",
@@ -191,14 +192,14 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 
 	// Валидация входных данных
 	var input models.CourseUpdate
-	
+
 	if err := c.BodyParser(&input); err != nil {
 		return c.Status(400).JSON(models.ErrorResponse{
 			Error: "Invalid request body",
 			Code:  "BAD_REQUEST",
 		})
 	}
-	
+
 	// Валидация через middleware
 	if validationErrors, err := middleware.ValidateStruct(&input); err != nil {
 		return c.Status(500).JSON(models.ErrorResponse{
@@ -255,7 +256,7 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 // DeleteCourse - удаление курса
 func (h *CourseHandler) deleteCourse(c *fiber.Ctx) error {
 	id := c.Params("id")
-	
+
 	if !isValidUUID(id) {
 		return c.Status(400).JSON(models.ErrorResponse{
 			Error: "Invalid course ID format",
@@ -283,7 +284,7 @@ func (h *CourseHandler) deleteCourse(c *fiber.Ctx) error {
 // GetCourseLessons - получение уроков курса
 func (h *CourseHandler) getCourseLessons(c *fiber.Ctx) error {
 	id := c.Params("id")
-	
+
 	if !isValidUUID(id) {
 		return c.Status(400).JSON(models.ErrorResponse{
 			Error: "Invalid course ID format",

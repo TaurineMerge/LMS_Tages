@@ -1,0 +1,46 @@
+baseURL = "/"
+languageCode = "ru-ru"
+title = "LMS Documentation"
+theme = ""
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true  # Важно! Разрешает HTML и скрипты
+  
+  [markup.highlight]
+    style = "github"
+    lineNos = true
+
+[params]
+  description = "Документация системы LMS с диаграммами Mermaid"
+
+[[menu.main]]
+  identifier = "c4"
+  name = "C4 Диаграммы"
+  url = "/c4/"
+  weight = 10
+
+[[menu.main]]
+  identifier = "er"
+  name = "ER Диаграммы"
+  url = "/er/"
+  weight = 20
+
+[[menu.main]]
+  identifier = "sequence"
+  name = "Sequence Диаграммы"
+  url = "/sequence/"
+  weight = 30
+
+[[menu.main]]
+  identifier = "flowchart"
+  name = "Flowchart"
+  url = "/flowchart/"
+  weight = 40
+
+[[menu.main]]
+  identifier = "glossary"
+  name = "Глоссарий"
+  url = "/glossary/"
+  weight = 50

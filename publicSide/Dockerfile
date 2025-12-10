@@ -1,35 +1,40 @@
-# Этап сборки
-FROM golang:1.25-alpine AS builder
+# Build stage
+FROM golang:1.25.4-alpine AS builder
 
-# Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Копируем go.mod и go.sum
-COPY go.mod ./
-COPY go.sum ./
+# Копируем файлы модуля
+COPY go.mod go.sum ./
 
-# Загружаем зависимости
-RUN go mod download
+# Явно скачиваем зависимости
+RUN go get github.com/gofiber/fiber/v2@v2.52.0 && \
+    go get github.com/gofiber/template/handlebars/v2@v2.1.7
 
 # Копируем исходный код
 COPY . .
 
+# Синхронизируем зависимости и генерируем go.sum
+RUN go mod tidy
+
+# Скачиваем зависимости
+RUN go mod download
+
 # Собираем приложение
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
-# Финальный этап
+# Runtime stage
 FROM alpine:latest
-
-# Устанавливаем ca-certificates для HTTPS запросов
-RUN apk --no-cache add ca-certificates
+RUN apk --no-cache add ca-certificates tzdata
 
 WORKDIR /root/
 
-# Копируем бинарник из этапа сборки
+# Копируем бинарник
 COPY --from=builder /app/main .
 
-# Открываем порт 3000
+# Копируем ВСЕ файлы (включая шаблоны в правильной структуре)
+COPY --from=builder /app/layouts ./layouts
+COPY --from=builder /app/pages ./pages
+
 EXPOSE 3000
 
-# Запускаем приложение
 CMD ["./main"]
