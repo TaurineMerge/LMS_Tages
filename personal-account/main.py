@@ -8,55 +8,52 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.openapi.utils import get_openapi
 from opentelemetry import trace
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.instrumentation.logging import LoggingInstrumentor
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 from app.config import get_settings
 from app.database import init_db_pool, close_db_pool
 from app.exceptions import app_exception
 from app.routers import students, certificates, visits, health, auth, pages
+from app.telemetry_config import (
+    configure_telemetry,
+    instrument_logging,
+    instrument_fastapi,
+    instrument_httpx,
+    shutdown_telemetry,
+)
 
-# Configure logging
+
+# Custom formatter that handles missing trace context
+class TraceContextFormatter(logging.Formatter):
+    """Formatter that safely handles missing OTEL trace context."""
+    
+    def format(self, record):
+        # Add trace_id and span_id if not present (for logs outside trace context)
+        if not hasattr(record, 'otelTraceID'):
+            record.otelTraceID = '0' * 32
+        if not hasattr(record, 'otelSpanID'):
+            record.otelSpanID = '0' * 16
+        
+        # Use the shorter names for compatibility
+        record.trace_id = getattr(record, 'otelTraceID', '0' * 32)
+        record.span_id = getattr(record, 'otelSpanID', '0' * 16)
+        
+        return super().format(record)
+
+
+# Configure logging with custom formatter
+handler = logging.StreamHandler()
+handler.setFormatter(TraceContextFormatter(
+    fmt="%(asctime)s - %(name)s - %(levelname)s - [trace_id=%(trace_id)s span_id=%(span_id)s] - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+))
+
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    handlers=[handler]
 )
 logger = logging.getLogger(__name__)
 
-
-_TRACING_CONFIGURED = False
-_LOGGING_INSTRUMENTED = False
-
-
-def configure_tracing() -> None:
-    """Configure OpenTelemetry tracing once per process."""
-    global _TRACING_CONFIGURED, _LOGGING_INSTRUMENTED
-    if _TRACING_CONFIGURED:
-        return
-
-    try:
-        resource = Resource.create({"service.name": settings.OTEL_SERVICE_NAME})
-        provider = TracerProvider(resource=resource)
-        exporter = OTLPSpanExporter(
-            endpoint=settings.OTEL_EXPORTER_OTLP_ENDPOINT,
-            insecure=settings.OTEL_EXPORTER_OTLP_INSECURE,
-        )
-        provider.add_span_processor(BatchSpanProcessor(exporter))
-        trace.set_tracer_provider(provider)
-        if not _LOGGING_INSTRUMENTED:
-            LoggingInstrumentor().instrument(set_logging_format=False)
-            _LOGGING_INSTRUMENTED = True
-        _TRACING_CONFIGURED = True
-        logger.info(
-            "OpenTelemetry tracing configured for %s",
-            settings.OTEL_SERVICE_NAME,
-        )
-    except Exception as exc:  # pragma: no cover - observability optional
-        logger.warning("Failed to configure OpenTelemetry tracing: %s", exc)
+settings = get_settings()
 
 
 @asynccontextmanager
@@ -64,6 +61,17 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     # Startup
     logger.info("Starting up Personal Account API...")
+    
+    # Initialize telemetry first
+    try:
+        configure_telemetry()
+        instrument_logging()
+        instrument_httpx()
+        logger.info("Telemetry initialized successfully")
+    except Exception as exc:
+        logger.error("Failed to initialize telemetry: %s", exc, exc_info=True)
+    
+    # Initialize database
     await init_db_pool()
     logger.info("Database pool initialized")
     
@@ -73,10 +81,9 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down Personal Account API...")
     await close_db_pool()
     logger.info("Database pool closed")
-
-
-settings = get_settings()
-configure_tracing()
+    
+    # Shutdown telemetry (flush pending spans)
+    shutdown_telemetry()
 
 # OAuth2 security scheme for Swagger
 oauth2_scheme = {
@@ -98,25 +105,20 @@ API для личного кабинета системы онлайн обра�
 
 ### Способ 1: OAuth2 Password Flow (логин/пароль)
 1. Нажмите кнопку **Authorize** 
-2. Выберите **OAuth2 (OAuth2, password)**
-3. Введите логин и пароль тестового пользователя:
+2. Введите client_id: `student-client`
+3. Введите логин и пароль:
    - Username: `student` Password: `student`
-   - Username: `testuser` Password: `pass`
 
-### Способ 2: Bearer Token
-1. Получите токен через POST `/api/v1/auth/token`:
-   ```json
-   {
-     "username": "student",
-     "password": "student"
-   }
-   ```
+### Способ 2: Bearer Token  
+1. Получите токен через POST `/api/v1/auth/token`
 2. Скопируйте `access_token` из ответа
 3. Нажмите **Authorize** → **BearerAuth** → вставьте токен
+
+**Токены действительны 5 минут**
     """,
     version="1.0.0",
-    root_path="/account",
     lifespan=lifespan,
+    root_path="/account",  # Базовый путь приложения за nginx
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
@@ -139,14 +141,19 @@ def custom_openapi():
         routes=app.routes,
     )
     openapi_schema["components"]["securitySchemes"] = {
-        "OAuth2": oauth2_scheme,
+        "OAuth2PasswordBearer": oauth2_scheme,
         "BearerAuth": {
             "type": "http",
             "scheme": "bearer",
             "bearerFormat": "JWT",
-            "description": "Введите JWT токен (без префикса 'Bearer')"
+            "description": "Введите JWT access_token (без префикса 'Bearer')"
         }
     }
+    # Global security - endpoints can override
+    openapi_schema["security"] = [
+        {"OAuth2PasswordBearer": []},
+        {"BearerAuth": []}
+    ]
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
@@ -178,6 +185,14 @@ async def add_trace_headers(request: Request, call_next):
 @app.exception_handler(app_exception)
 async def app_exception_handler(request: Request, exc: app_exception):
     """Handle custom application exceptions."""
+    # Record exception in span
+    span = trace.get_current_span()
+    if span and span.is_recording():
+        span.record_exception(exc)
+        span.set_attribute("error", True)
+        span.set_attribute("error.type", "app_exception")
+        span.set_attribute("error.status_code", exc.status_code)
+    
     return JSONResponse(
         status_code=exc.status_code,
         content={"error": exc.message}
@@ -187,6 +202,13 @@ async def app_exception_handler(request: Request, exc: app_exception):
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
     """Handle unexpected exceptions."""
+    # Record exception in span
+    span = trace.get_current_span()
+    if span and span.is_recording():
+        span.record_exception(exc)
+        span.set_attribute("error", True)
+        span.set_attribute("error.type", "unexpected_exception")
+    
     logger.exception(f"Unexpected error: {exc}")
     return JSONResponse(
         status_code=500,
@@ -205,7 +227,5 @@ app.include_router(visits.router, prefix=settings.API_PREFIX)
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-FastAPIInstrumentor.instrument_app(app, tracer_provider=trace.get_tracer_provider())
-
-
-# Root endpoint removed - pages router handles /
+# Instrument FastAPI with telemetry
+instrument_fastapi(app)

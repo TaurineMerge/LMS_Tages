@@ -1,11 +1,12 @@
 """Student API endpoints."""
 from uuid import UUID
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Query, status, Depends
 
 from app.schemas.student import student_create, student_update, student_response
 from app.schemas.common import paginated_response
 from app.services.student import student_service
+from app.core.security import get_current_user, TokenPayload, require_roles
 
 router = APIRouter(prefix="/students", tags=["Students"])
 
@@ -18,7 +19,8 @@ router = APIRouter(prefix="/students", tags=["Students"])
 )
 async def get_students(
     page: int = Query(default=1, ge=1, description="Номер страницы"),
-    limit: int = Query(default=20, ge=1, le=100, description="Количество элементов на странице")
+    limit: int = Query(default=20, ge=1, le=100, description="Количество элементов на странице"),
+    current_user: TokenPayload = Depends(get_current_user)
 ):
     """Get paginated list of students."""
     return await student_service.get_students(page, limit)
@@ -30,7 +32,10 @@ async def get_students(
     summary="Получить студента по ID",
     description="Возвращает данные студента по указанному ID"
 )
-async def get_student(student_id: UUID):
+async def get_student(
+    student_id: UUID,
+    current_user: TokenPayload = Depends(get_current_user)
+):
     """Get student by ID."""
     return await student_service.get_student(student_id)
 
@@ -42,7 +47,10 @@ async def get_student(student_id: UUID):
     summary="Создать нового студента",
     description="Создает нового студента в системе"
 )
-async def create_student(student: student_create):
+async def create_student(
+    student: student_create,
+    current_user: TokenPayload = Depends(require_roles("admin"))
+):
     """Create a new student."""
     return await student_service.create_student(student)
 

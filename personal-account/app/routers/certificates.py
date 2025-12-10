@@ -1,10 +1,11 @@
 """Certificate API endpoints."""
 from uuid import UUID
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Query, status, Depends
 
 from app.schemas.certificate import certificate_create, certificate_response
 from app.services.certificate import certificate_service
+from app.core.security import get_current_user, TokenPayload, require_roles
 
 router = APIRouter(prefix="/certificates", tags=["Certificates"])
 
@@ -17,7 +18,8 @@ router = APIRouter(prefix="/certificates", tags=["Certificates"])
 )
 async def get_certificates(
     student_id: UUID | None = Query(default=None, description="Фильтр по студенту"),
-    course_id: UUID | None = Query(default=None, description="Фильтр по курсу")
+    course_id: UUID | None = Query(default=None, description="Фильтр по курсу"),
+    current_user: TokenPayload = Depends(get_current_user)
 ):
     """Get list of certificates with optional filters."""
     return await certificate_service.get_certificates(student_id, course_id)
@@ -29,7 +31,10 @@ async def get_certificates(
     summary="Получить сертификат по ID",
     description="Возвращает данные сертификата по указанному ID"
 )
-async def get_certificate(certificate_id: UUID):
+async def get_certificate(
+    certificate_id: UUID,
+    current_user: TokenPayload = Depends(get_current_user)
+):
     """Get certificate by ID."""
     return await certificate_service.get_certificate(certificate_id)
 
@@ -41,7 +46,10 @@ async def get_certificate(certificate_id: UUID):
     summary="Создать новый сертификат",
     description="Создает новый сертификат для студента"
 )
-async def create_certificate(certificate: certificate_create):
+async def create_certificate(
+    certificate: certificate_create,
+    current_user: TokenPayload = Depends(require_roles("admin"))
+):
     """Create a new certificate."""
     return await certificate_service.create_certificate(certificate)
 

@@ -2,8 +2,9 @@
 from fastapi import APIRouter, Request, Depends, status, Body, HTTPException
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
-
-from app.services.auth import auth_service, get_current_user
+from app.telemetry import traced
+from app.services.auth import auth_service
+from app.core.security import get_current_user, TokenPayload
 from app.schemas.common import (
     api_response, 
     token_response, 
@@ -18,17 +19,17 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class refresh_token_request(BaseModel):
+class Refresh_Token_Request(BaseModel):
     """Refresh token request body."""
     refresh_token: str
 
 
-class logout_request(BaseModel):
+class Logout_Request(BaseModel):
     """Logout request body."""
     refresh_token: str
 
 
-class password_token_request(BaseModel):
+class Password_Token_Request(BaseModel):
     """Password token request body."""
     username: str
     password: str
@@ -40,7 +41,7 @@ class password_token_request(BaseModel):
     summary="Get access token",
     description="Get access token by username and password (OAuth2 password flow)."
 )
-async def get_token(body: password_token_request):
+async def get_token(body: Password_Token_Request):
     """Get access token using username and password."""
     token = await auth_service.get_token_by_password(body.username, body.password)
     token_data = token_response(
@@ -59,6 +60,7 @@ async def get_token(body: password_token_request):
     summary="Redirect to Keycloak login",
     description="Redirects the user to the Keycloak login page for the Student realm."
 )
+@traced("router.auth.login", record_result=True)
 async def login():
     """Initiate login flow."""
     login_url = auth_service.get_login_url()
@@ -108,7 +110,7 @@ async def callback(code: str):
     summary="Refresh access token",
     description="Exchanges a refresh token for a new access token."
 )
-async def refresh(body: refresh_token_request):
+async def refresh(body: Refresh_Token_Request):
     """Refresh access token."""
     token = await auth_service.refresh_token(body.refresh_token)
     token_data = token_response(
@@ -128,7 +130,7 @@ async def refresh(body: refresh_token_request):
     summary="Logout user",
     description="Invalidates the user's session by revoking the refresh token."
 )
-async def logout(body: logout_request):
+async def logout(body: Logout_Request):
     """Logout user."""
     await auth_service.logout(body.refresh_token)
     return api_response(data=message_response(message="Logged out successfully"))
@@ -140,16 +142,16 @@ async def logout(body: logout_request):
     summary="Get current user info",
     description="Returns information about the currently authenticated user."
 )
-async def get_me(user: dict = Depends(get_current_user)):
+async def get_me(user: TokenPayload = Depends(get_current_user)):
     """Get current user profile."""
     user_data = user_info_response(
-        sub=user.get("sub", ""),
-        email=user.get("email"),
-        preferred_username=user.get("preferred_username"),
-        name=user.get("name"),
-        given_name=user.get("given_name"),
-        family_name=user.get("family_name"),
-        email_verified=user.get("email_verified")
+        sub=user.sub,
+        email=user.email,
+        preferred_username=user.preferred_username,
+        name=user.name,
+        given_name=user.given_name,
+        family_name=user.family_name,
+        email_verified=user.email_verified
     )
     return api_response(data=user_data)
 

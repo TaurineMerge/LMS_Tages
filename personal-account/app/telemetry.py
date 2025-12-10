@@ -167,6 +167,14 @@ def _attach_result(span: trace.Span, result: Any) -> None:
             span.set_attribute("result.count", len(result))
         except TypeError:
             pass
+    # Add event for result visibility in traces
+    span.add_event(
+        "function.completed",
+        attributes={
+            "result.type": type(result).__name__,
+            "result.preview": _safe_serialize(result, max_len=256),
+        }
+    )
 
 
 def _attach_exception(span: trace.Span, exc: Exception) -> None:

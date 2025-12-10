@@ -403,10 +403,17 @@
                     } else {
                         const error = await response.json();
                         console.error('Token refresh failed:', error.detail || error.error);
+                        
+                        // Clear tokens on refresh failure - they are no longer valid
+                        // This forces user to login again
+                        console.warn('Clearing invalid tokens, user needs to re-authenticate');
+                        this.clearToken();
                         return false;
                     }
                 } catch (e) {
                     console.error('Token refresh error:', e);
+                    // On network error, also clear tokens to prevent infinite retry loops
+                    this.clearToken();
                 }
                 return false;
             }

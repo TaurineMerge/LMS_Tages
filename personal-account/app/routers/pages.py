@@ -1,6 +1,6 @@
 """Frontend pages router with Jinja2 templates."""
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse  # <--- Добавили RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.config import get_settings
@@ -78,9 +78,38 @@ def get_keycloak_urls() -> dict:
 
 
 @router.get("/", response_class=HTMLResponse)
+@traced("pages.root")
+async def root_page(request: Request):
+    """
+    Главная страница (Root).
+    Логика:
+    1. Если у пользователя есть кука 'access_token' -> редирект в /dashboard
+    2. Иначе -> показываем Лендинг
+    """
+    token = request.cookies.get("access_token")
+    
+    if token:
+        return RedirectResponse(url="/dashboard")  # Это правильно, т.к. root_path="/account" в main.py
+    
+    return _render_template_safe(
+        "landing.hbs",
+        {
+            "request": request,
+            **get_keycloak_urls()
+        }
+    )
+
+
+@router.get("/dashboard", response_class=HTMLResponse) # <-- Теперь дэшборд здесь
 @traced("pages.dashboard")
 async def dashboard_page(request: Request):
-    """Render dashboard page."""
+    """Render dashboard page (Protected Area)."""
+    
+    # (Опционально) Можно добавить проверку: если нет куки, редирект на /
+    # token = request.cookies.get("access_token")
+    # if not token:
+    #     return RedirectResponse(url="/")
+
     return _render_template_safe(
         "dashboard.hbs",
         {

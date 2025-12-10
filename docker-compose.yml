@@ -56,6 +56,10 @@ services:
       KC_HTTP_PORT: 8080
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
+      # Разрешаем Keycloak принимать запросы с разных URL (localhost и keycloak)
+      KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
+      # Явно указываем публичный URL для frontend issuer
+      KC_HOSTNAME_URL: "http://localhost:8080"
     command:
       - start-dev
       - --http-port=8080

@@ -97,6 +97,27 @@ const API = {
                 this.setToken(data.data.access_token, data.data.refresh_token);
                 return true;
             }
+            
+            // Handle refresh failure - check if session expired
+            try {
+                const errorData = await response.json();
+                const errorCategory = errorData?.error?.category || errorData?.detail?.category;
+                
+                if (errorCategory === 'session_expired' || response.status === 401) {
+                    // Clear stale tokens
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('refresh_token');
+                    console.warn('Session expired, tokens cleared');
+                    
+                    // Redirect to login if on protected page
+                    if (!window.location.pathname.includes('/login') && 
+                        !window.location.pathname.includes('/register')) {
+                        window.location.href = '/account/login';
+                    }
+                }
+            } catch (parseError) {
+                console.error('Could not parse refresh error response');
+            }
         } catch (e) {
             console.error('Failed to refresh token:', e);
         }

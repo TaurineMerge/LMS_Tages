@@ -1,10 +1,11 @@
 """Visit API endpoints."""
 from uuid import UUID
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Query, status, Depends
 
 from app.schemas.visit import visit_create, visit_response
 from app.services.visit import visit_service
+from app.core.security import get_current_user, TokenPayload, require_roles
 
 router = APIRouter(prefix="/visits", tags=["Visits"])
 
@@ -17,7 +18,8 @@ router = APIRouter(prefix="/visits", tags=["Visits"])
 )
 async def get_visits(
     student_id: UUID | None = Query(default=None, description="Фильтр по студенту"),
-    lesson_id: UUID | None = Query(default=None, description="Фильтр по уроку")
+    lesson_id: UUID | None = Query(default=None, description="Фильтр по уроку"),
+    current_user: TokenPayload = Depends(get_current_user)
 ):
     """Get list of visits with optional filters."""
     return await visit_service.get_visits(student_id, lesson_id)
@@ -29,7 +31,10 @@ async def get_visits(
     summary="Получить посещение по ID",
     description="Возвращает данные посещения по указанному ID"
 )
-async def get_visit(visit_id: UUID):
+async def get_visit(
+    visit_id: UUID,
+    current_user: TokenPayload = Depends(get_current_user)
+):
     """Get visit by ID."""
     return await visit_service.get_visit(visit_id)
 
@@ -41,7 +46,10 @@ async def get_visit(visit_id: UUID):
     summary="Зарегистрировать посещение урока",
     description="Регистрирует посещение урока студентом"
 )
-async def create_visit(visit: visit_create):
+async def create_visit(
+    visit: visit_create,
+    current_user: TokenPayload = Depends(require_roles("admin", "teacher"))
+):
     """Create a new visit record."""
     return await visit_service.create_visit(visit)
 
