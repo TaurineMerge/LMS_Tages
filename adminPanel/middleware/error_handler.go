@@ -4,9 +4,9 @@ import (
 	"log"
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
 	"adminPanel/exceptions"
 	"adminPanel/models"
+	"github.com/gofiber/fiber/v2"
 )
 
 // ErrorHandlerMiddleware - централизованная обработка ошибок
@@ -14,60 +14,78 @@ func ErrorHandlerMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// Выполняем следующий middleware/handler
 		err := c.Next()
-		
+
 		// Если есть ошибка - обрабатываем её
 		if err != nil {
 			log.Printf("Error occurred: %v", err)
-			
+
 			// Определяем тип ошибки
 			switch e := err.(type) {
 			case *exceptions.AppError:
 				// Наша кастомная ошибка
 				return c.Status(e.StatusCode).JSON(models.ErrorResponse{
-					Error: e.Message,
-					Code:  e.Code,
+					Status: "error",
+					Error: models.ErrorDetails{
+						Code:    e.Code,
+						Message: e.Message,
+					},
 				})
-				
+
 			case *fiber.Error:
 				// Ошибка Fiber (404, 500 и т.д.)
 				return c.Status(e.Code).JSON(models.ErrorResponse{
-					Error: e.Message,
-					Code:  getErrorCode(e.Code),
+					Status: "error",
+					Error: models.ErrorDetails{
+						Code:    getErrorCode(e.Code),
+						Message: e.Message,
+					},
 				})
-				
+
 			default:
 				// Неизвестная ошибка
 				// Проверяем на common database errors
 				errMsg := strings.ToLower(err.Error())
-				
+
 				switch {
 				case strings.Contains(errMsg, "no rows in result set"):
 					return c.Status(404).JSON(models.ErrorResponse{
-						Error: "Resource not found",
-						Code:  "NOT_FOUND",
+						Status: "error",
+						Error: models.ErrorDetails{
+							Code:    "NOT_FOUND",
+							Message: "Resource not found",
+						},
 					})
-					
+
 				case strings.Contains(errMsg, "duplicate key"):
 					return c.Status(409).JSON(models.ErrorResponse{
-						Error: "Resource already exists",
-						Code:  "CONFLICT",
+						Status: "error",
+						Error: models.ErrorDetails{
+							Code:    "ALREADY_EXISTS",
+							Message: "Resource already exists",
+						},
 					})
-					
+
 				case strings.Contains(errMsg, "violates foreign key constraint"):
 					return c.Status(400).JSON(models.ErrorResponse{
-						Error: "Invalid reference",
-						Code:  "BAD_REQUEST",
+						Status: "error",
+						Error: models.ErrorDetails{
+							Code:    "INVALID_REFERENCE",
+							Message: "Invalid reference",
+						},
 					})
-					
+
 				default:
 					return c.Status(500).JSON(models.ErrorResponse{
-						Error: "Internal server error",
-						Code:  "INTERNAL_ERROR",
+						Status: "error",
+						Error: models.ErrorDetails{
+							Code:    "SERVER_ERROR",
+							Message: "Internal server error",
+						},
 					})
 				}
 			}
 		}
-		
+
 		return nil
 	}
 }
@@ -84,11 +102,11 @@ func getErrorCode(statusCode int) string {
 	case 404:
 		return "NOT_FOUND"
 	case 409:
-		return "CONFLICT"
+		return "ALREADY_EXISTS"
 	case 422:
 		return "VALIDATION_ERROR"
 	case 500:
-		return "INTERNAL_ERROR"
+		return "SERVER_ERROR"
 	default:
 		return "UNKNOWN_ERROR"
 	}

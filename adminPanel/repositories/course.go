@@ -29,7 +29,7 @@ func (r *CourseRepository) Create(ctx context.Context, course models.CourseCreat
 		VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, NOW(), NOW())
 		RETURNING *
 	`
-	
+
 	return r.db.ExecuteReturning(ctx, query,
 		course.Title,
 		course.Description,
@@ -52,7 +52,7 @@ func (r *CourseRepository) Update(ctx context.Context, id string, course models.
 		WHERE id = $6
 		RETURNING *
 	`
-	
+
 	return r.db.ExecuteReturning(ctx, query,
 		course.Title,
 		course.Description,
@@ -69,57 +69,57 @@ func (r *CourseRepository) GetFiltered(ctx context.Context, filter models.Course
 	var conditions []string
 	var params []interface{}
 	paramCounter := 1
-	
+
 	if filter.Level != "" {
 		conditions = append(conditions, fmt.Sprintf("level = $%d", paramCounter))
 		params = append(params, filter.Level)
 		paramCounter++
 	}
-	
+
 	if filter.Visibility != "" {
 		conditions = append(conditions, fmt.Sprintf("visibility = $%d", paramCounter))
 		params = append(params, filter.Visibility)
 		paramCounter++
 	}
-	
+
 	if filter.CategoryID != "" {
 		conditions = append(conditions, fmt.Sprintf("category_id = $%d", paramCounter))
 		params = append(params, filter.CategoryID)
 		paramCounter++
 	}
-	
+
 	// Запрос для подсчета общего количества
 	countQuery := "SELECT COUNT(*) as count FROM knowledge_base.course_b"
 	if len(conditions) > 0 {
 		countQuery += " WHERE " + strings.Join(conditions, " AND ")
 	}
-	
+
 	countResult, err := r.db.FetchOne(ctx, countQuery, params...)
 	if err != nil {
 		return nil, 0, err
 	}
-	
+
 	total := 0
 	if count, ok := countResult["count"].(int64); ok {
 		total = int(count)
 	}
-	
+
 	// Запрос для получения данных с пагинацией
 	query := "SELECT * FROM knowledge_base.course_b"
 	if len(conditions) > 0 {
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
-	
+
 	query += " ORDER BY created_at DESC"
 	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", paramCounter, paramCounter+1)
-	
+
 	params = append(params, filter.Limit, (filter.Page-1)*filter.Limit)
-	
+
 	data, err := r.db.FetchAll(ctx, query, params...)
 	if err != nil {
 		return nil, 0, err
 	}
-	
+
 	return data, total, nil
 }
 
@@ -130,7 +130,7 @@ func (r *CourseRepository) GetByCategory(ctx context.Context, categoryID string)
 		WHERE category_id = $1
 		ORDER BY created_at DESC
 	`
-	
+
 	return r.db.FetchAll(ctx, query, categoryID)
 }
 

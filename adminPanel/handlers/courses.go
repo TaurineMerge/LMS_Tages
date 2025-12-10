@@ -4,11 +4,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
 	"adminPanel/exceptions"
 	"adminPanel/middleware"
 	"adminPanel/models"
 	"adminPanel/services"
+	"github.com/gofiber/fiber/v2"
 )
 
 // CourseHandler - обработчик для курсов
@@ -23,55 +23,65 @@ func NewCourseHandler(courseService *services.CourseService) *CourseHandler {
 	}
 }
 
-// RegisterRoutes регистрирует маршруты
+// RegisterRoutes регистрирует маршруты вида /categories/:category_id/courses
 func (h *CourseHandler) RegisterRoutes(router fiber.Router) {
-	courses := router.Group("/courses")
-	
+	courses := router.Group("/categories/:category_id/courses")
+
 	courses.Get("/", h.getCourses)
 	courses.Post("/", h.createCourse)
-	courses.Get("/:id", h.getCourse)
-	courses.Put("/:id", h.updateCourse)
-	courses.Delete("/:id", h.deleteCourse)
-	courses.Get("/:id/lessons", h.getCourseLessons)
+	courses.Get("/:course_id", h.getCourse)
+	courses.Put("/:course_id", h.updateCourse)
+	courses.Delete("/:course_id", h.deleteCourse)
 }
 
 // GetCourses - получение курсов с фильтрацией
 func (h *CourseHandler) getCourses(c *fiber.Ctx) error {
 	ctx := c.UserContext()
+	categoryID := c.Params("category_id")
+
+	if !isValidUUID(categoryID) {
+		return c.Status(400).JSON(models.ErrorResponse{
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "INVALID_UUID",
+				Message: "Invalid category ID format",
+			},
+		})
+	}
+
 	// Парсим параметры запроса
 	filter := models.CourseFilter{
 		Level:      c.Query("level"),
 		Visibility: c.Query("visibility"),
-		CategoryID: c.Query("category_id"),
+		CategoryID: categoryID,
 	}
 
 	// Парсим page и limit
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	limit, _ := strconv.Atoi(c.Query("limit", "20"))
-	
+
 	filter.Page = page
 	filter.Limit = limit
 
 	// Валидация
-	if filter.CategoryID != "" && !isValidUUID(filter.CategoryID) {
-		return c.Status(400).JSON(models.ErrorResponse{
-			Error: "Invalid category ID format",
-			Code:  "BAD_REQUEST",
-		})
-	}
-
 	// Получаем курсы
 	result, err := h.courseService.GetCourses(ctx, filter)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
-				Error: appErr.Message,
-				Code:  appErr.Code,
+				Status: "error",
+				Error: models.ErrorDetails{
+					Code:    appErr.Code,
+					Message: appErr.Message,
+				},
 			})
 		}
 		return c.Status(500).JSON(models.ErrorResponse{
-			Error: "Internal server error",
-			Code:  "INTERNAL_ERROR",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "SERVER_ERROR",
+				Message: "Internal server error",
+			},
 		})
 	}
 
@@ -81,57 +91,73 @@ func (h *CourseHandler) getCourses(c *fiber.Ctx) error {
 // CreateCourse - создание курса
 func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	// Валидация входных данных
-	var input models.CourseCreate
-	
-	if err := c.BodyParser(&input); err != nil {
+	categoryID := c.Params("category_id")
+
+	if !isValidUUID(categoryID) {
 		return c.Status(400).JSON(models.ErrorResponse{
-			Error: "Invalid request body",
-			Code:  "BAD_REQUEST",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "INVALID_UUID",
+				Message: "Invalid category ID format",
+			},
 		})
 	}
-	
+
+	// Валидация входных данных
+	var input models.CourseCreate
+
+	if err := c.BodyParser(&input); err != nil {
+		return c.Status(400).JSON(models.ErrorResponse{
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "VALIDATION_ERROR",
+				Message: "Invalid request body",
+			},
+		})
+	}
+
+	// Привязываем категорию из пути
+	input.CategoryID = categoryID
+
 	// Валидация через middleware
 	if validationErrors, err := middleware.ValidateStruct(&input); err != nil {
 		return c.Status(500).JSON(models.ErrorResponse{
-			Error: "Validation error",
-			Code:  "INTERNAL_ERROR",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "SERVER_ERROR",
+				Message: "Validation error",
+			},
 		})
 	} else if len(validationErrors) > 0 {
 		return c.Status(422).JSON(models.ValidationErrorResponse{
-			Error:  "Validation failed",
-			Code:   "VALIDATION_ERROR",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "VALIDATION_ERROR",
+				Message: "Validation failed",
+			},
 			Errors: validationErrors,
 		})
 	}
 
 	// Проверка дополнительных условий
 	if input.Level != "" && !isValidLevel(input.Level) {
-		return c.Status(400).JSON(models.ValidationErrorResponse{
-			Error: "Validation failed",
-			Code:  "VALIDATION_ERROR",
-			Errors: map[string]string{
-				"level": "Level must be one of: hard, medium, easy",
+		return c.Status(400).JSON(models.ErrorResponse{
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "VALIDATION_ERROR",
+				Message: "Level must be one of: hard, medium, easy",
 			},
 		})
 	}
 
 	if input.Visibility != "" && !isValidVisibility(input.Visibility) {
-		return c.Status(400).JSON(models.ValidationErrorResponse{
-			Error: "Validation failed",
-			Code:  "VALIDATION_ERROR",
-			Errors: map[string]string{
-				"visibility": "Visibility must be one of: draft, public, private",
+		return c.Status(400).JSON(models.ErrorResponse{
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "VALIDATION_ERROR",
+				Message: "Visibility must be one of: draft, public, private",
 			},
 		})
-	}
-
-	// Устанавливаем значения по умолчанию
-	if input.Level == "" {
-		input.Level = "medium"
-	}
-	if input.Visibility == "" {
-		input.Visibility = "draft"
 	}
 
 	// Создаем курс
@@ -139,13 +165,19 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
-				Error: appErr.Message,
-				Code:  appErr.Code,
+				Status: "error",
+				Error: models.ErrorDetails{
+					Code:    appErr.Code,
+					Message: appErr.Message,
+				},
 			})
 		}
 		return c.Status(500).JSON(models.ErrorResponse{
-			Error: "Internal server error",
-			Code:  "INTERNAL_ERROR",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "SERVER_ERROR",
+				Message: "Internal server error",
+			},
 		})
 	}
 
@@ -155,26 +187,36 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 // GetCourse - получение курса по ID
 func (h *CourseHandler) getCourse(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	id := c.Params("id")
-	
-	if !isValidUUID(id) {
+	categoryID := c.Params("category_id")
+	id := c.Params("course_id")
+
+	if !isValidUUID(id) || !isValidUUID(categoryID) {
 		return c.Status(400).JSON(models.ErrorResponse{
-			Error: "Invalid course ID format",
-			Code:  "BAD_REQUEST",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "INVALID_UUID",
+				Message: "Invalid ID format",
+			},
 		})
 	}
 
-	course, err := h.courseService.GetCourse(ctx, id)
+	course, err := h.courseService.GetCourse(ctx, categoryID, id)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
-				Error: appErr.Message,
-				Code:  appErr.Code,
+				Status: "error",
+				Error: models.ErrorDetails{
+					Code:    appErr.Code,
+					Message: appErr.Message,
+				},
 			})
 		}
 		return c.Status(500).JSON(models.ErrorResponse{
-			Error: "Internal server error",
-			Code:  "INTERNAL_ERROR",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "SERVER_ERROR",
+				Message: "Internal server error",
+			},
 		})
 	}
 
@@ -184,72 +226,96 @@ func (h *CourseHandler) getCourse(c *fiber.Ctx) error {
 // UpdateCourse - обновление курса
 func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	id := c.Params("id")
-	
-	if !isValidUUID(id) {
+	categoryID := c.Params("category_id")
+	id := c.Params("course_id")
+
+	if !isValidUUID(id) || !isValidUUID(categoryID) {
 		return c.Status(400).JSON(models.ErrorResponse{
-			Error: "Invalid course ID format",
-			Code:  "BAD_REQUEST",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "INVALID_UUID",
+				Message: "Invalid ID format",
+			},
 		})
 	}
 
 	// Валидация входных данных
 	var input models.CourseUpdate
-	
+
 	if err := c.BodyParser(&input); err != nil {
 		return c.Status(400).JSON(models.ErrorResponse{
-			Error: "Invalid request body",
-			Code:  "BAD_REQUEST",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "VALIDATION_ERROR",
+				Message: "Invalid request body",
+			},
 		})
 	}
-	
+
+	// Привязываем категорию из пути
+	if input.CategoryID == "" {
+		input.CategoryID = categoryID
+	}
+
 	// Валидация через middleware
 	if validationErrors, err := middleware.ValidateStruct(&input); err != nil {
 		return c.Status(500).JSON(models.ErrorResponse{
-			Error: "Validation error",
-			Code:  "INTERNAL_ERROR",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "SERVER_ERROR",
+				Message: "Validation error",
+			},
 		})
 	} else if len(validationErrors) > 0 {
 		return c.Status(422).JSON(models.ValidationErrorResponse{
-			Error:  "Validation failed",
-			Code:   "VALIDATION_ERROR",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "VALIDATION_ERROR",
+				Message: "Validation failed",
+			},
 			Errors: validationErrors,
 		})
 	}
 
 	// Проверка дополнительных условий
 	if input.Level != "" && !isValidLevel(input.Level) {
-		return c.Status(400).JSON(models.ValidationErrorResponse{
-			Error: "Validation failed",
-			Code:  "VALIDATION_ERROR",
-			Errors: map[string]string{
-				"level": "Level must be one of: hard, medium, easy",
+		return c.Status(400).JSON(models.ErrorResponse{
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "VALIDATION_ERROR",
+				Message: "Level must be one of: hard, medium, easy",
 			},
 		})
 	}
 
 	if input.Visibility != "" && !isValidVisibility(input.Visibility) {
-		return c.Status(400).JSON(models.ValidationErrorResponse{
-			Error: "Validation failed",
-			Code:  "VALIDATION_ERROR",
-			Errors: map[string]string{
-				"visibility": "Visibility must be one of: draft, public, private",
+		return c.Status(400).JSON(models.ErrorResponse{
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "VALIDATION_ERROR",
+				Message: "Visibility must be one of: draft, public, private",
 			},
 		})
 	}
 
 	// Обновляем курс
-	course, err := h.courseService.UpdateCourse(ctx, id, input)
+	course, err := h.courseService.UpdateCourse(ctx, categoryID, id, input)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
-				Error: appErr.Message,
-				Code:  appErr.Code,
+				Status: "error",
+				Error: models.ErrorDetails{
+					Code:    appErr.Code,
+					Message: appErr.Message,
+				},
 			})
 		}
 		return c.Status(500).JSON(models.ErrorResponse{
-			Error: "Internal server error",
-			Code:  "INTERNAL_ERROR",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "SERVER_ERROR",
+				Message: "Internal server error",
+			},
 		})
 	}
 
@@ -259,48 +325,40 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 // DeleteCourse - удаление курса
 func (h *CourseHandler) deleteCourse(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	id := c.Params("id")
-	
-	if !isValidUUID(id) {
+	categoryID := c.Params("category_id")
+	id := c.Params("course_id")
+
+	if !isValidUUID(id) || !isValidUUID(categoryID) {
 		return c.Status(400).JSON(models.ErrorResponse{
-			Error: "Invalid course ID format",
-			Code:  "BAD_REQUEST",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "INVALID_UUID",
+				Message: "Invalid ID format",
+			},
 		})
 	}
 
-	err := h.courseService.DeleteCourse(ctx, id)
+	err := h.courseService.DeleteCourse(ctx, categoryID, id)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
-				Error: appErr.Message,
-				Code:  appErr.Code,
+				Status: "error",
+				Error: models.ErrorDetails{
+					Code:    appErr.Code,
+					Message: appErr.Message,
+				},
 			})
 		}
 		return c.Status(500).JSON(models.ErrorResponse{
-			Error: "Internal server error",
-			Code:  "INTERNAL_ERROR",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "SERVER_ERROR",
+				Message: "Internal server error",
+			},
 		})
 	}
 
 	return c.SendStatus(204)
-}
-
-// GetCourseLessons - получение уроков курса
-func (h *CourseHandler) getCourseLessons(c *fiber.Ctx) error {
-	id := c.Params("id")
-	
-	if !isValidUUID(id) {
-		return c.Status(400).JSON(models.ErrorResponse{
-			Error: "Invalid course ID format",
-			Code:  "BAD_REQUEST",
-		})
-	}
-
-	// Реализация будет в LessonHandler
-	return c.Status(501).JSON(models.ErrorResponse{
-		Error: "Use /api/v1/courses/:id/lessons endpoint",
-		Code:  "NOT_IMPLEMENTED",
-	})
 }
 
 // Вспомогательные функции валидации

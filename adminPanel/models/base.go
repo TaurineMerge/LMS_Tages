@@ -1,8 +1,6 @@
 package models
 
-import (
-	"time"  // Оставляем здесь, если BaseModel использует time
-)
+import "time"
 
 // BaseModel - базовая модель с общими полями
 type BaseModel struct {
@@ -11,10 +9,10 @@ type BaseModel struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// PaginatedResponse - пагинированный ответ
-type PaginatedResponse[T any] struct {
-	Data  []T `json:"data"`
+// Pagination matches swagger Pagination object.
+type Pagination struct {
 	Total int `json:"total"`
 	Page  int `json:"page"`
 	Limit int `json:"limit"`
+	Pages int `json:"pages"`
 }

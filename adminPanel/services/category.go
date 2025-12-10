@@ -1,10 +1,10 @@
 package services
 
 import (
-	"time"
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"adminPanel/exceptions"
 	"adminPanel/models"
@@ -44,11 +44,11 @@ func (s *CategoryService) GetCategories(ctx context.Context) ([]models.Category,
 	for _, item := range data {
 		category := models.Category{
 			BaseModel: models.BaseModel{
-				ID:        fmt.Sprintf("%v", item["id"]),
+				ID:        toString(item["id"]),
 				CreatedAt: parseTime(item["created_at"]),
 				UpdatedAt: parseTime(item["updated_at"]),
 			},
-			Title: fmt.Sprintf("%v", item["title"]),
+			Title: toString(item["title"]),
 		}
 		categories = append(categories, category)
 	}
@@ -75,11 +75,11 @@ func (s *CategoryService) GetCategory(ctx context.Context, id string) (*models.C
 
 	category := &models.Category{
 		BaseModel: models.BaseModel{
-			ID:        fmt.Sprintf("%v", data["id"]),
+			ID:        toString(data["id"]),
 			CreatedAt: parseTime(data["created_at"]),
 			UpdatedAt: parseTime(data["updated_at"]),
 		},
-		Title: fmt.Sprintf("%v", data["title"]),
+		Title: toString(data["title"]),
 	}
 
 	return category, nil
@@ -118,11 +118,11 @@ func (s *CategoryService) CreateCategory(ctx context.Context, input models.Categ
 
 	category := &models.Category{
 		BaseModel: models.BaseModel{
-			ID:        fmt.Sprintf("%v", data["id"]),
+			ID:        toString(data["id"]),
 			CreatedAt: parseTime(data["created_at"]),
 			UpdatedAt: parseTime(data["updated_at"]),
 		},
-		Title: fmt.Sprintf("%v", data["title"]),
+		Title: toString(data["title"]),
 	}
 
 	return category, nil
@@ -172,11 +172,11 @@ func (s *CategoryService) UpdateCategory(ctx context.Context, id string, input m
 
 	category := &models.Category{
 		BaseModel: models.BaseModel{
-			ID:        fmt.Sprintf("%v", data["id"]),
+			ID:        toString(data["id"]),
 			CreatedAt: parseTime(data["created_at"]),
 			UpdatedAt: parseTime(data["updated_at"]),
 		},
-		Title: fmt.Sprintf("%v", data["title"]),
+		Title: toString(data["title"]),
 	}
 
 	return category, nil

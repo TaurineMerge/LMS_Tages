@@ -7,13 +7,25 @@ type HealthResponse struct {
 	Version  string `json:"version"`
 }
 
-// ErrorResponse - стандартный ответ с ошибкой
-type ErrorResponse struct {
-	Error string `json:"error"`
-	Code  string `json:"code"`
+// ErrorDetails соответствует swagger error object.
+type ErrorDetails struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
 }
 
-// MessageResponse - простой ответ с сообщением
+// ErrorResponse соответствует swagger error envelope.
+type ErrorResponse struct {
+	Status string       `json:"status"`
+	Error  ErrorDetails `json:"error"`
+}
+
+// StatusOnly - простой успех со статусом
+type StatusOnly struct {
+	Status string `json:"status"`
+}
+
+// MessageResponse - вспомогательный ответ с текстом
 type MessageResponse struct {
+	Status  string `json:"status"`
 	Message string `json:"message"`
 }

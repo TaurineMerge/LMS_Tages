@@ -51,7 +51,7 @@ func (r *CategoryRepository) CountCoursesForCategory(ctx context.Context, catego
 	if err != nil {
 		return 0, err
 	}
-	
+
 	if count, ok := result["count"].(int64); ok {
 		return int(count), nil
 	}

@@ -3,11 +3,12 @@ package handlers
 import (
 	// "strings"
 
-	"github.com/gofiber/fiber/v2"
 	"adminPanel/exceptions"
 	"adminPanel/middleware"
 	"adminPanel/models"
 	"adminPanel/services"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 // LessonHandler - обработчик для уроков
@@ -24,118 +25,159 @@ func NewLessonHandler(lessonService *services.LessonService) *LessonHandler {
 
 // RegisterRoutes регистрирует маршруты
 func (h *LessonHandler) RegisterRoutes(router fiber.Router) {
-	// Уроки курса
-	courses := router.Group("/courses/:course_id")
-	
-	courses.Get("/lessons", h.getLessons)
-	courses.Post("/lessons", h.createLesson)
-	courses.Get("/lessons/:id", h.getLesson)
-	courses.Put("/lessons/:id", h.updateLesson)
-	courses.Delete("/lessons/:id", h.deleteLesson)
+	lessons := router.Group("/categories/:category_id/courses/:course_id")
+
+	lessons.Get("/lessons", h.getLessons)
+	lessons.Post("/lessons", h.createLesson)
+	lessons.Get("/lessons/:lesson_id", h.getLesson)
+	lessons.Put("/lessons/:lesson_id", h.updateLesson)
+	lessons.Delete("/lessons/:lesson_id", h.deleteLesson)
 }
 
 // GetLessons - получение уроков курса
 func (h *LessonHandler) getLessons(c *fiber.Ctx) error {
 	ctx := c.UserContext()
+	categoryID := c.Params("category_id")
 	courseID := c.Params("course_id")
-	
-	if !isValidUUID(courseID) {
+
+	if !isValidUUID(courseID) || !isValidUUID(categoryID) {
 		return c.Status(400).JSON(models.ErrorResponse{
-			Error: "Invalid course ID format",
-			Code:  "BAD_REQUEST",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "INVALID_UUID",
+				Message: "Invalid course or category ID format",
+			},
 		})
 	}
 
-	lessons, err := h.lessonService.GetLessons(ctx, courseID)
+	lessons, pagination, err := h.lessonService.GetLessons(ctx, categoryID, courseID, c.Query("page"), c.Query("limit"))
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
-				Error: appErr.Message,
-				Code:  appErr.Code,
+				Status: "error",
+				Error: models.ErrorDetails{
+					Code:    appErr.Code,
+					Message: appErr.Message,
+				},
 			})
 		}
 		return c.Status(500).JSON(models.ErrorResponse{
-			Error: "Internal server error",
-			Code:  "INTERNAL_ERROR",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "SERVER_ERROR",
+				Message: "Internal server error",
+			},
 		})
 	}
 
-	return c.JSON(lessons)
+	response := models.LessonListResponse{
+		Status: "success",
+	}
+	response.Data.Items = lessons
+	response.Data.Pagination = pagination
+
+	return c.JSON(response)
 }
 
 // GetLesson - получение урока по ID
 func (h *LessonHandler) getLesson(c *fiber.Ctx) error {
 	ctx := c.UserContext()
+	categoryID := c.Params("category_id")
 	courseID := c.Params("course_id")
-	lessonID := c.Params("id")
-	
-	if !isValidUUID(courseID) || !isValidUUID(lessonID) {
+	lessonID := c.Params("lesson_id")
+
+	if !isValidUUID(courseID) || !isValidUUID(lessonID) || !isValidUUID(categoryID) {
 		return c.Status(400).JSON(models.ErrorResponse{
-			Error: "Invalid ID format",
-			Code:  "BAD_REQUEST",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "INVALID_UUID",
+				Message: "Invalid ID format",
+			},
 		})
 	}
 
-	lesson, err := h.lessonService.GetLesson(ctx, lessonID, courseID)
+	lesson, err := h.lessonService.GetLesson(ctx, lessonID, courseID, categoryID)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
-				Error: appErr.Message,
-				Code:  appErr.Code,
+				Status: "error",
+				Error: models.ErrorDetails{
+					Code:    appErr.Code,
+					Message: appErr.Message,
+				},
 			})
 		}
 		return c.Status(500).JSON(models.ErrorResponse{
-			Error: "Internal server error",
-			Code:  "INTERNAL_ERROR",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "SERVER_ERROR",
+				Message: "Internal server error",
+			},
 		})
 	}
 
+	lesson.Status = "success"
 	return c.JSON(lesson)
 }
 
 // CreateLesson - создание урока
 func (h *LessonHandler) createLesson(c *fiber.Ctx) error {
 	ctx := c.UserContext()
+	categoryID := c.Params("category_id")
 	courseID := c.Params("course_id")
-	
-	if !isValidUUID(courseID) {
+
+	if !isValidUUID(courseID) || !isValidUUID(categoryID) {
 		return c.Status(400).JSON(models.ErrorResponse{
-			Error: "Invalid course ID format",
-			Code:  "BAD_REQUEST",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "INVALID_UUID",
+				Message: "Invalid course or category ID format",
+			},
 		})
 	}
 
 	// Валидация входных данных
 	var input models.LessonCreate
-	
+
 	if err := c.BodyParser(&input); err != nil {
 		return c.Status(400).JSON(models.ErrorResponse{
-			Error: "Invalid request body",
-			Code:  "BAD_REQUEST",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "VALIDATION_ERROR",
+				Message: "Invalid request body",
+			},
 		})
 	}
-	
+
+	input.CategoryID = categoryID
+
 	// Валидация через middleware
 	if validationErrors, err := middleware.ValidateStruct(&input); err != nil {
 		return c.Status(500).JSON(models.ErrorResponse{
-			Error: "Validation error",
-			Code:  "INTERNAL_ERROR",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "SERVER_ERROR",
+				Message: "Validation error",
+			},
 		})
 	} else if len(validationErrors) > 0 {
 		return c.Status(422).JSON(models.ValidationErrorResponse{
-			Error:  "Validation failed",
-			Code:   "VALIDATION_ERROR",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "VALIDATION_ERROR",
+				Message: "Validation failed",
+			},
 			Errors: validationErrors,
 		})
 	}
 
 	// Дополнительная валидация
 	if len(input.Title) > 255 {
-		return c.Status(400).JSON(models.ValidationErrorResponse{
-			Error: "Validation failed",
-			Code:  "VALIDATION_ERROR",
-			Errors: map[string]string{
-				"title": "Title must be less than 255 characters",
+		return c.Status(400).JSON(models.ErrorResponse{
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "VALIDATION_ERROR",
+				Message: "Title must be less than 255 characters",
 			},
 		})
 	}
@@ -145,63 +187,87 @@ func (h *LessonHandler) createLesson(c *fiber.Ctx) error {
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
-				Error: appErr.Message,
-				Code:  appErr.Code,
+				Status: "error",
+				Error: models.ErrorDetails{
+					Code:    appErr.Code,
+					Message: appErr.Message,
+				},
 			})
 		}
 		return c.Status(500).JSON(models.ErrorResponse{
-			Error: "Internal server error",
-			Code:  "INTERNAL_ERROR",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "SERVER_ERROR",
+				Message: "Internal server error",
+			},
 		})
 	}
 
+	lesson.Status = "success"
 	return c.Status(201).JSON(lesson)
 }
 
 // UpdateLesson - обновление урока
 func (h *LessonHandler) updateLesson(c *fiber.Ctx) error {
 	ctx := c.UserContext()
+	categoryID := c.Params("category_id")
 	courseID := c.Params("course_id")
-	lessonID := c.Params("id")
-	
-	if !isValidUUID(courseID) || !isValidUUID(lessonID) {
+	lessonID := c.Params("lesson_id")
+
+	if !isValidUUID(courseID) || !isValidUUID(lessonID) || !isValidUUID(categoryID) {
 		return c.Status(400).JSON(models.ErrorResponse{
-			Error: "Invalid ID format",
-			Code:  "BAD_REQUEST",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "INVALID_UUID",
+				Message: "Invalid ID format",
+			},
 		})
 	}
 
 	// Валидация входных данных
 	var input models.LessonUpdate
-	
+
 	if err := c.BodyParser(&input); err != nil {
 		return c.Status(400).JSON(models.ErrorResponse{
-			Error: "Invalid request body",
-			Code:  "BAD_REQUEST",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "VALIDATION_ERROR",
+				Message: "Invalid request body",
+			},
 		})
 	}
-	
+
+	if input.CategoryID == "" {
+		input.CategoryID = categoryID
+	}
+
 	// Валидация через middleware
 	if validationErrors, err := middleware.ValidateStruct(&input); err != nil {
 		return c.Status(500).JSON(models.ErrorResponse{
-			Error: "Validation error",
-			Code:  "INTERNAL_ERROR",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "SERVER_ERROR",
+				Message: "Validation error",
+			},
 		})
 	} else if len(validationErrors) > 0 {
 		return c.Status(422).JSON(models.ValidationErrorResponse{
-			Error:  "Validation failed",
-			Code:   "VALIDATION_ERROR",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "VALIDATION_ERROR",
+				Message: "Validation failed",
+			},
 			Errors: validationErrors,
 		})
 	}
 
 	// Дополнительная валидация
 	if input.Title != "" && len(input.Title) > 255 {
-		return c.Status(400).JSON(models.ValidationErrorResponse{
-			Error: "Validation failed",
-			Code:  "VALIDATION_ERROR",
-			Errors: map[string]string{
-				"title": "Title must be less than 255 characters",
+		return c.Status(400).JSON(models.ErrorResponse{
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "VALIDATION_ERROR",
+				Message: "Title must be less than 255 characters",
 			},
 		})
 	}
@@ -211,43 +277,60 @@ func (h *LessonHandler) updateLesson(c *fiber.Ctx) error {
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
-				Error: appErr.Message,
-				Code:  appErr.Code,
+				Status: "error",
+				Error: models.ErrorDetails{
+					Code:    appErr.Code,
+					Message: appErr.Message,
+				},
 			})
 		}
 		return c.Status(500).JSON(models.ErrorResponse{
-			Error: "Internal server error",
-			Code:  "INTERNAL_ERROR",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "SERVER_ERROR",
+				Message: "Internal server error",
+			},
 		})
 	}
 
+	lesson.Status = "success"
 	return c.JSON(lesson)
 }
 
 // DeleteLesson - удаление урока
 func (h *LessonHandler) deleteLesson(c *fiber.Ctx) error {
 	ctx := c.UserContext()
+	categoryID := c.Params("category_id")
 	courseID := c.Params("course_id")
-	lessonID := c.Params("id")
-	
-	if !isValidUUID(courseID) || !isValidUUID(lessonID) {
+	lessonID := c.Params("lesson_id")
+
+	if !isValidUUID(courseID) || !isValidUUID(lessonID) || !isValidUUID(categoryID) {
 		return c.Status(400).JSON(models.ErrorResponse{
-			Error: "Invalid ID format",
-			Code:  "BAD_REQUEST",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "INVALID_UUID",
+				Message: "Invalid ID format",
+			},
 		})
 	}
 
-	err := h.lessonService.DeleteLesson(ctx, lessonID, courseID)
+	err := h.lessonService.DeleteLesson(ctx, lessonID, courseID, categoryID)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
-				Error: appErr.Message,
-				Code:  appErr.Code,
+				Status: "error",
+				Error: models.ErrorDetails{
+					Code:    appErr.Code,
+					Message: appErr.Message,
+				},
 			})
 		}
 		return c.Status(500).JSON(models.ErrorResponse{
-			Error: "Internal server error",
-			Code:  "INTERNAL_ERROR",
+			Status: "error",
+			Error: models.ErrorDetails{
+				Code:    "SERVER_ERROR",
+				Message: "Internal server error",
+			},
 		})
 	}
 
