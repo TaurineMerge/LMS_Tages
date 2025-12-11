@@ -92,7 +92,7 @@ def get_keycloak_urls() -> dict:
     }
 
 
-@router.get("/", response_class=HTMLResponse)
+@router.get("/account", response_class=HTMLResponse)
 @traced("pages.root")
 async def root_page(request: Request):
     """
@@ -123,15 +123,6 @@ async def dashboard_page(request: Request):
         "dashboard.hbs",
         {"request": request, "active_page": "dashboard", **get_keycloak_urls()},
     )
-
-
-# @router.get("/login", response_class=HTMLResponse)
-# @traced("pages.login")
-# async def login_page(request: Request):
-#     """Render login page."""
-#     return _render_template_safe(
-#         "login.hbs", {"request": request, **get_keycloak_urls()}
-#     )
 
 
 @router.get("/profile", response_class=HTMLResponse)
