@@ -86,25 +86,15 @@ func WithDBFromEnv() Option {
 	}
 }
 
-// WithCORSFromEnv configures CORS settings from environment variables.
+// WithCORSFromEnv configures CORS settings from environment variables, with sensible defaults.
 func WithCORSFromEnv() Option {
 	return func(cfg *Config) error {
+		cfg.CORSAllowedOrigins = getOptionalEnv("CORS_ALLOWED_ORIGINS", "*")
+		cfg.CORSAllowedMethods = getOptionalEnv("CORS_ALLOWED_METHODS", "GET")
+		cfg.CORSAllowedHeaders = getOptionalEnv("CORS_ALLOWED_HEADERS", "Origin,Content-Type,Accept,Authorization")
+
 		var err error
-
-		stringEnvs := map[string]*string{
-			"CORS_ALLOWED_ORIGINS": &cfg.CORSAllowedOrigins,
-			"CORS_ALLOWED_METHODS": &cfg.CORSAllowedMethods,
-			"CORS_ALLOWED_HEADERS": &cfg.CORSAllowedHeaders,
-		}
-
-		for key, target := range stringEnvs {
-			*target, err = getRequiredEnv(key)
-			if err != nil {
-				return err
-			}
-		}
-
-		cfg.CORSAllowCredentials, err = getRequiredEnvAsBool("CORS_ALLOW_CREDENTIALS")
+		cfg.CORSAllowCredentials, err = getOptionalEnvAsBool("CORS_ALLOW_CREDENTIALS", false)
 		if err != nil {
 			return err
 		}
@@ -172,6 +162,16 @@ func getRequiredEnvAsBool(key string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	value, err := strconv.ParseBool(valueStr)
+	if err != nil {
+		return false, fmt.Errorf("failed to parse environment variable '%s' as boolean: %w", key, err)
+	}
+	return value, nil
+}
+
+// getOptionalEnvAsBool retrieves an optional environment variable as a boolean, with a default.
+func getOptionalEnvAsBool(key string, defaultValue bool) (bool, error) {
+	valueStr := getOptionalEnv(key, strconv.FormatBool(defaultValue))
 	value, err := strconv.ParseBool(valueStr)
 	if err != nil {
 		return false, fmt.Errorf("failed to parse environment variable '%s' as boolean: %w", key, err)

@@ -39,10 +39,10 @@
 | `DB_SSLMODE`                  | Режим SSL для подключения к БД.                                                     | Нет                   | `disable`             |
 | `APP_PORT`                    | Порт, на котором будет запущен веб-сервер.                                          | Нет                   | `3000`                |
 | `LOG_LEVEL`                   | Уровень логирования (`DEBUG`, `INFO`, `WARN`, `ERROR`).                               | Нет                   | `INFO`                |
-| `CORS_ALLOWED_ORIGINS`        | Разрешенные источники для CORS (через запятую).                                     | Да                    | -                     |
-| `CORS_ALLOWED_METHODS`        | Разрешенные методы для CORS (через запятую).                                        | Да                    | -                     |
-| `CORS_ALLOWED_HEADERS`        | Разрешенные заголовки для CORS (через запятую).                                     | Да                    | -                     |
-| `CORS_ALLOW_CREDENTIALS`      | Разрешает передачу credentials в CORS.                                              | Да                    | -                     |
+| `CORS_ALLOWED_ORIGINS`        | Разрешенные источники для CORS (через запятую).                                     | Нет                   | `*`                   |
+| `CORS_ALLOWED_METHODS`        | Разрешенные методы для CORS (через запятую).                                        | Нет                   | `GET` |
+| `CORS_ALLOWED_HEADERS`        | Разрешенные заголовки для CORS (через запятую).                                     | Нет                   | `Origin,Content-Type,Accept,Authorization` |
+| `CORS_ALLOW_CREDENTIALS`      | Разрешает передачу credentials в CORS.                                              | Нет                   | `false`                |
 | `OTEL_SERVICE_NAME`           | Имя сервиса, которое будет отображаться в Jaeger.                                   | Нет                   | `publicSide`          |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Адрес OTel-коллектора для отправки трассировок (например, `localhost:4317`).        | Да                    | -                     |
 
@@ -73,21 +73,26 @@ OTEL_SERVICE_NAME=publicSide-local
 OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317
 ```
 
-### Запуск через Docker
+### Запуск через Docker Compose
 
-1.  **Соберите Docker-образ:**
+Это предпочтительный способ запуска приложения вместе с зависимостями (база данных, Jaeger/OTel Collector).
+
+1.  **Запустите все сервисы** (включая `publicSide`):
     ```bash
-    # Убедитесь, что вы находитесь в директории publicSide
-    docker build -t publicside-server .
+    # Убедитесь, что вы находитесь в корневой директории проекта (LMS_Tages)
+    docker compose up --build -d public-side
+    ```
+    *Эта команда соберет образ `publicSide` (если он изменился) и запустит его в фоновом режиме.*
+
+2.  **Просмотр логов:**
+    ```bash
+    docker compose logs -f public-side
     ```
 
-2.  **Запустите контейнер:**
-    Для запуска с использованием переменных из вашего `.env` файла, используйте флаг `--env-file`.
-
+4.  **Остановка сервисов:**
     ```bash
-    docker run --env-file ./.env -p 3000:3000 --network="lms_tages_app-network" publicside-server
+    docker compose down
     ```
-    *Примечание: `--network` может понадобиться для связи с контейнерами БД и Jaeger из `docker-compose`.*
 
 ### Локальный запуск (без Docker)
 
