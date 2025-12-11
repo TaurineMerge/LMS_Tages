@@ -7,6 +7,8 @@ import (
 	"adminPanel/models"
 
 	"github.com/gofiber/fiber/v2"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // HealthHandler - обработчик для health check
@@ -29,6 +31,15 @@ func (h *HealthHandler) RegisterRoutes(router fiber.Router) {
 
 // HealthCheck returns application health status.
 func (h *HealthHandler) HealthCheck(c *fiber.Ctx) error {
+	ctx := c.UserContext()
+	// Логируем вызов метода
+	span := trace.SpanFromContext(ctx)
+	span.AddEvent("handler.HealthCheck.start",
+		trace.WithAttributes(
+			attribute.String("http.method", c.Method()),
+			attribute.String("http.path", c.Path()),
+		))
+
 	return c.JSON(models.HealthResponse{
 		Status:  "healthy",
 		Version: "1.0.0",
@@ -38,6 +49,14 @@ func (h *HealthHandler) HealthCheck(c *fiber.Ctx) error {
 // DBHealthCheck verifies database connectivity status.
 func (h *HealthHandler) DBHealthCheck(c *fiber.Ctx) error {
 	ctx := c.UserContext()
+	// Логируем вызов метода
+	span := trace.SpanFromContext(ctx)
+	span.AddEvent("handler.DBHealthCheck.start",
+		trace.WithAttributes(
+			attribute.String("http.method", c.Method()),
+			attribute.String("http.path", c.Path()),
+		))
+
 	if ctx == nil {
 		ctx = context.Background()
 	}

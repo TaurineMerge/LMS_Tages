@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"adminPanel/config"
 	"adminPanel/database"
@@ -68,6 +69,7 @@ func setupTracerProvider(ctx context.Context) (*tracesdk.TracerProvider, error) 
 // Простая OTEL middleware для Fiber
 func tracingMiddleware(tracer trace.Tracer) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		startTime := time.Now()
 		carrier := propagation.HeaderCarrier{}
 		for k, v := range c.GetReqHeaders() {
 			if len(v) > 0 {
@@ -90,6 +92,7 @@ func tracingMiddleware(tracer trace.Tracer) fiber.Handler {
 			semconv.HTTPStatusCodeKey.Int(status),
 			semconv.NetHostNameKey.String(c.Hostname()),
 			semconv.HTTPUserAgentKey.String(c.Get("User-Agent")),
+			attribute.String("http.request.start_time", startTime.Format(time.RFC3339)),
 		}
 		if ip := c.IP(); ip != "" {
 			attrs = append(attrs, attribute.String("net.peer.ip", ip))
@@ -119,6 +122,10 @@ func tracingMiddleware(tracer trace.Tracer) fiber.Handler {
 
 		err := c.Next()
 
+		// Логируем время выполнения
+		duration := time.Since(startTime)
+		span.SetAttributes(attribute.Float64("http.request.duration_ms", float64(duration.Milliseconds())))
+
 		// Логируем тело ответа
 		responseBody := c.Response().Body()
 		if len(responseBody) > 0 {
@@ -133,6 +140,12 @@ func tracingMiddleware(tracer trace.Tracer) fiber.Handler {
 		c.Response().Header.VisitAll(func(key, value []byte) {
 			span.AddEvent("http.response.header."+string(key), trace.WithAttributes(attribute.String("value", string(value))))
 		})
+
+		// Логируем дополнительную информацию об ответе
+		span.SetAttributes(
+			attribute.Int("http.response.size", len(responseBody)),
+			attribute.String("http.response.time", time.Now().Format(time.RFC3339)),
+		)
 
 		if err != nil {
 			span.RecordError(err)
@@ -153,8 +166,8 @@ func tracingMiddleware(tracer trace.Tracer) fiber.Handler {
 
 		// Логируем ошибки
 		if err != nil || status >= 500 {
-			log.Printf("trace=%s span=%s method=%s path=%s status=%d err=%v",
-				sc.TraceID().String(), sc.SpanID().String(), c.Method(), c.Path(), status, err)
+			log.Printf("trace=%s span=%s method=%s path=%s status=%d err=%v duration=%s",
+				sc.TraceID().String(), sc.SpanID().String(), c.Method(), c.Path(), status, err, duration)
 		}
 
 		if err != nil {

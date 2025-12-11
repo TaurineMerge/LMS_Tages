@@ -10,6 +10,8 @@ import (
 	"adminPanel/services"
 
 	"github.com/gofiber/fiber/v2"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // CourseHandler - обработчик для курсов
@@ -38,6 +40,16 @@ func (h *CourseHandler) RegisterRoutes(router fiber.Router) {
 // GetCourses - получение курсов с фильтрацией
 func (h *CourseHandler) getCourses(c *fiber.Ctx) error {
 	ctx := c.UserContext()
+	// Логируем вызов метода
+	span := trace.SpanFromContext(ctx)
+	span.AddEvent("handler.getCourses.start",
+		trace.WithAttributes(
+			attribute.String("http.method", c.Method()),
+			attribute.String("http.path", c.Path()),
+			attribute.String("category.id", c.Params("category_id")),
+			attribute.String("http.query", c.Context().QueryArgs().String()),
+		))
+
 	categoryID := c.Params("category_id")
 
 	if !isValidUUID(categoryID) {
@@ -87,12 +99,28 @@ func (h *CourseHandler) getCourses(c *fiber.Ctx) error {
 		})
 	}
 
+	// Логируем успешное завершение
+	span.AddEvent("handler.getCourses.end",
+		trace.WithAttributes(
+			attribute.Int("response.count", len(result.Data.Items)),
+			attribute.String("response.status", "success"),
+		))
+
 	return c.JSON(result)
 }
 
 // CreateCourse - создание курса
 func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 	ctx := c.UserContext()
+	// Логируем вызов метода
+	span := trace.SpanFromContext(ctx)
+	span.AddEvent("handler.createCourse.start",
+		trace.WithAttributes(
+			attribute.String("http.method", c.Method()),
+			attribute.String("http.path", c.Path()),
+			attribute.String("category.id", c.Params("category_id")),
+		))
+
 	categoryID := c.Params("category_id")
 
 	if !isValidUUID(categoryID) {
@@ -107,6 +135,19 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 
 	// Валидация входных данных
 	var input models.CourseCreate
+
+	// Логируем тело запроса
+	if len(c.Body()) > 0 {
+		body := c.Body()
+		const maxLoggedBody = 2048
+		if len(body) > maxLoggedBody {
+			body = body[:maxLoggedBody]
+		}
+		span.AddEvent("handler.createCourse.request_body",
+			trace.WithAttributes(
+				attribute.String("request.body", string(body)),
+			))
+	}
 
 	if err := c.BodyParser(&input); err != nil {
 		return c.Status(400).JSON(models.ErrorResponse{
@@ -183,12 +224,30 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 		})
 	}
 
+	// Логируем успешное завершение
+	span.AddEvent("handler.createCourse.end",
+		trace.WithAttributes(
+			attribute.String("course.id", course.Data.ID),
+			attribute.String("course.title", course.Data.Title),
+			attribute.String("response.status", "success"),
+		))
+
 	return c.Status(201).JSON(course)
 }
 
 // GetCourse - получение курса по ID
 func (h *CourseHandler) getCourse(c *fiber.Ctx) error {
 	ctx := c.UserContext()
+	// Логируем вызов метода
+	span := trace.SpanFromContext(ctx)
+	span.AddEvent("handler.getCourse.start",
+		trace.WithAttributes(
+			attribute.String("http.method", c.Method()),
+			attribute.String("http.path", c.Path()),
+			attribute.String("category.id", c.Params("category_id")),
+			attribute.String("course.id", c.Params("course_id")),
+		))
+
 	categoryID := c.Params("category_id")
 	id := c.Params("course_id")
 
@@ -222,12 +281,30 @@ func (h *CourseHandler) getCourse(c *fiber.Ctx) error {
 		})
 	}
 
+	// Логируем успешное завершение
+	span.AddEvent("handler.getCourse.end",
+		trace.WithAttributes(
+			attribute.String("course.id", course.Data.ID),
+			attribute.String("course.title", course.Data.Title),
+			attribute.String("response.status", "success"),
+		))
+
 	return c.JSON(course)
 }
 
 // UpdateCourse - обновление курса
 func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 	ctx := c.UserContext()
+	// Логируем вызов метода
+	span := trace.SpanFromContext(ctx)
+	span.AddEvent("handler.updateCourse.start",
+		trace.WithAttributes(
+			attribute.String("http.method", c.Method()),
+			attribute.String("http.path", c.Path()),
+			attribute.String("category.id", c.Params("category_id")),
+			attribute.String("course.id", c.Params("course_id")),
+		))
+
 	categoryID := c.Params("category_id")
 	id := c.Params("course_id")
 
@@ -243,6 +320,19 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 
 	// Валидация входных данных
 	var input models.CourseUpdate
+
+	// Логируем тело запроса
+	if len(c.Body()) > 0 {
+		body := c.Body()
+		const maxLoggedBody = 2048
+		if len(body) > maxLoggedBody {
+			body = body[:maxLoggedBody]
+		}
+		span.AddEvent("handler.updateCourse.request_body",
+			trace.WithAttributes(
+				attribute.String("request.body", string(body)),
+			))
+	}
 
 	if err := c.BodyParser(&input); err != nil {
 		return c.Status(400).JSON(models.ErrorResponse{
@@ -321,12 +411,30 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 		})
 	}
 
+	// Логируем успешное завершение
+	span.AddEvent("handler.updateCourse.end",
+		trace.WithAttributes(
+			attribute.String("course.id", course.Data.ID),
+			attribute.String("course.title", course.Data.Title),
+			attribute.String("response.status", "success"),
+		))
+
 	return c.JSON(course)
 }
 
 // DeleteCourse - удаление курса
 func (h *CourseHandler) deleteCourse(c *fiber.Ctx) error {
 	ctx := c.UserContext()
+	// Логируем вызов метода
+	span := trace.SpanFromContext(ctx)
+	span.AddEvent("handler.deleteCourse.start",
+		trace.WithAttributes(
+			attribute.String("http.method", c.Method()),
+			attribute.String("http.path", c.Path()),
+			attribute.String("category.id", c.Params("category_id")),
+			attribute.String("course.id", c.Params("course_id")),
+		))
+
 	categoryID := c.Params("category_id")
 	id := c.Params("course_id")
 
@@ -359,6 +467,13 @@ func (h *CourseHandler) deleteCourse(c *fiber.Ctx) error {
 			},
 		})
 	}
+
+	// Логируем успешное завершение
+	span.AddEvent("handler.deleteCourse.end",
+		trace.WithAttributes(
+			attribute.String("course.id", id),
+			attribute.String("response.status", "success"),
+		))
 
 	return c.SendStatus(204)
 }
