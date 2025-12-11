@@ -3,9 +3,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/config"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler"
@@ -14,6 +16,8 @@ import (
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/service"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apiconst"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/database"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/tracing"
+	"github.com/gofiber/contrib/otelfiber/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/swagger"
@@ -21,23 +25,52 @@ import (
 )
 
 func main() {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	slog.SetDefault(logger)
-
+	// Load .env file first to get all env variables including log level
 	if err := godotenv.Load(); err != nil {
 		slog.Warn("Error loading .env file, using environment variables", "error", err)
 	}
 
+	// Initialize config with all options
 	cfg, err := config.New(
 		config.WithDBFromEnv(),
 		config.WithCORSFromEnv(),
 		config.WithPortFromEnv(),
+		config.WithTracingFromEnv(),
+		config.WithLogLevelFromEnv(),
 	)
-
 	if err != nil {
+		// Use a temporary logger for this initial error, as the main one is not yet set up
 		slog.Error("Failed to initialize config", "error", err)
 		os.Exit(1)
 	}
+
+	// Initialize logger with the configured level
+	var level slog.Level
+	switch strings.ToUpper(cfg.LogLevel) {
+	case "DEBUG":
+		level = slog.LevelDebug
+	case "WARN":
+		level = slog.LevelWarn
+	case "ERROR":
+		level = slog.LevelError
+	default:
+		level = slog.LevelInfo
+	}
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
+	slog.SetDefault(logger)
+
+
+	// Initialize Tracer
+	tp, err := tracing.InitTracer(cfg)
+	if err != nil {
+		slog.Error("Failed to initialize tracer", "error", err)
+		os.Exit(1)
+	}
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			slog.Error("Error shutting down tracer provider", "error", err)
+		}
+	}()
 
 	dbPool, err := database.NewConnection(cfg)
 	if err != nil {
@@ -57,6 +90,9 @@ func main() {
 		AllowHeaders:     cfg.CORSAllowedHeaders,
 		AllowCredentials: cfg.CORSAllowCredentials,
 	}))
+
+	app.Use(otelfiber.Middleware())
+	app.Use(middleware.RequestResponseLogger())
 
 	app.Static("/doc", "./doc/swagger")
 

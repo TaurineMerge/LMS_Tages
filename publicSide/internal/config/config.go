@@ -22,6 +22,12 @@ type Config struct {
 	CORSAllowCredentials bool
 	// Port is the network port on which the application server will listen.
 	Port string
+	// OTELServiceName is the name of the service for OpenTelemetry.
+	OTELServiceName string
+	// OTELCollectorEndpoint is the endpoint of the OpenTelemetry collector.
+	OTELCollectorEndpoint string
+	// LogLevel is the level for application logging (e.g., DEBUG, INFO, WARN, ERROR).
+	LogLevel string
 }
 
 // Option defines a function that configures a Config object.
@@ -118,6 +124,27 @@ func WithPortFromEnv() Option {
 			return fmt.Errorf("failed to parse APP_PORT environment variable as integer: %w", err)
 		}
 		cfg.Port = portStr
+		return nil
+	}
+}
+
+// WithTracingFromEnv configures OpenTelemetry settings from environment variables.
+func WithTracingFromEnv() Option {
+	return func(cfg *Config) error {
+		cfg.OTELServiceName = getOptionalEnv("OTEL_SERVICE_NAME", "publicSide")
+		var err error
+		cfg.OTELCollectorEndpoint, err = getRequiredEnv("OTEL_EXPORTER_OTLP_ENDPOINT")
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+}
+
+// WithLogLevelFromEnv configures the logging level from the LOG_LEVEL environment variable.
+func WithLogLevelFromEnv() Option {
+	return func(cfg *Config) error {
+		cfg.LogLevel = getOptionalEnv("LOG_LEVEL", "INFO")
 		return nil
 	}
 }

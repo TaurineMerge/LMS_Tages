@@ -1,3 +1,5 @@
+// Package repository provides the data persistence layer for the application.
+// It abstracts the database interactions for domain models.
 package repository
 
 import (
@@ -44,7 +46,7 @@ func (r *lessonRepository) GetAllByCourseID(ctx context.Context, categoryID, cou
 	var total int
 	countQuery := fmt.Sprintf(`SELECT COUNT(l.*) FROM %s l
 		JOIN %s c ON l.course_id = c.id
-		WHERE c.category_id = $1 AND l.course_id = $2`, lessonsTable, courseTable)
+		WHERE c.category_id = $1 AND l.course_id = $2 AND c.visibility = 'public'`, lessonsTable, courseTable)
 	err := r.db.QueryRow(ctx, countQuery, categoryID, courseID).Scan(&total)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to count lessons by course: %w", err)
@@ -52,7 +54,8 @@ func (r *lessonRepository) GetAllByCourseID(ctx context.Context, categoryID, cou
 
 	query := fmt.Sprintf(`SELECT l.id, l.title, l.course_id, l.content, l.created_at, l.updated_at FROM %s l
 		JOIN %s c ON l.course_id = c.id
-		WHERE c.category_id = $1 AND l.course_id = $2 ORDER BY l.created_at ASC LIMIT $3 OFFSET $4`, lessonsTable, courseTable)
+		WHERE c.category_id = $1 AND l.course_id = $2 AND c.visibility = 'public'
+		ORDER BY l.created_at ASC LIMIT $3 OFFSET $4`, lessonsTable, courseTable)
 	offset := (page - 1) * limit
 	rows, err := r.db.Query(ctx, query, categoryID, courseID, limit, offset)
 	if err != nil {

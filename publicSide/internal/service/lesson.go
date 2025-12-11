@@ -11,6 +11,8 @@ import (
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/dto/response"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/repository"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apperrors"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // LessonService defines the interface for lesson-related business logic.
@@ -52,6 +54,10 @@ func toLessonDTODetailed(lesson domain.Lesson) response.LessonDTODetailed {
 }
 
 func (s *lessonService) GetAllByCourseID(ctx context.Context, categoryID, courseID string, page, limit int) ([]response.LessonDTO, response.Pagination, error) {
+	ctx, span := otel.Tracer("lessonService").Start(ctx, "GetAllByCourseID")
+	span.SetAttributes(attribute.String("course.id", courseID), attribute.String("category.id", categoryID))
+	defer span.End()
+
 	if page <= 0 {
 		page = 1
 	}
@@ -83,6 +89,10 @@ func (s *lessonService) GetAllByCourseID(ctx context.Context, categoryID, course
 }
 
 func (s *lessonService) GetByID(ctx context.Context, categoryID, courseID, lessonID string) (response.LessonDTODetailed, error) {
+	ctx, span := otel.Tracer("lessonService").Start(ctx, "GetByID")
+	span.SetAttributes(attribute.String("lesson.id", lessonID), attribute.String("course.id", courseID), attribute.String("category.id", categoryID))
+	defer span.End()
+
 	lesson, err := s.repo.GetByID(ctx, categoryID, courseID, lessonID)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {

@@ -6,13 +6,25 @@ import (
 	"fmt"
 
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/config"
+	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// NewConnection creates a new database connection pool using the provided configuration.
-// It pings the database to verify the connection before returning the pool.
+// NewConnection creates a new, instrumented database connection pool.
+// It injects an OpenTelemetry tracer into the pgxpool config to automatically
+// trace all SQL queries.
 func NewConnection(cfg *config.Config) (*pgxpool.Pool, error) {
-	pool, err := pgxpool.New(context.Background(), cfg.DatabaseURL)
+	// Parse the config from the database URL
+	poolConfig, err := pgxpool.ParseConfig(cfg.DatabaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse database URL: %w", err)
+	}
+
+	// Set the tracer on the pool config
+	poolConfig.ConnConfig.Tracer = otelpgx.NewTracer()
+
+	// Create a new pool with the instrumented config
+	pool, err := pgxpool.NewWithConfig(context.Background(), poolConfig)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create connection pool: %w", err)
 	}

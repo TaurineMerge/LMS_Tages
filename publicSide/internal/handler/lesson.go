@@ -24,7 +24,7 @@ func NewLessonHandler(s service.LessonService) *LessonHandler {
 
 // RegisterRoutes registers the routes for lesson-related endpoints.
 func (h *LessonHandler) RegisterRoutes(router fiber.Router) fiber.Router {
-	lessonRouter := router.Group(apiconst.PathCategory + "/lessons")
+	lessonRouter := router.Group(apiconst.PathCourse + "/lessons")
 
 	lessonRouter.Get("/", h.GetLessonsByCourseID)
 	lessonRouter.Get(apiconst.PathLesson, h.GetLessonByID)
@@ -48,7 +48,7 @@ func (h *LessonHandler) GetLessonsByCourseID(c *fiber.Ctx) error {
 		return apperrors.NewInvalidRequest("Wrong query parameters")
 	}
 
-	lessons, pagination, err := h.service.GetAllByCourseID(c.Context(), categoryID, courseID, query.Page, query.Limit)
+	lessons, pagination, err := h.service.GetAllByCourseID(c.UserContext(), categoryID, courseID, query.Page, query.Limit)
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func (h *LessonHandler) GetLessonByID(c *fiber.Ctx) error {
 		return apperrors.NewInvalidUUID(apiconst.ParamLessonID)
 	}
 
-	lesson, err := h.service.GetByID(c.Context(), categoryID, courseID, lessonID)
+	lesson, err := h.service.GetByID(c.UserContext(), categoryID, courseID, lessonID)
 	if err != nil {
 		return err
 	}

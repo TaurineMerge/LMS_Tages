@@ -17,7 +17,7 @@ import (
 func GlobalErrorHandler(c *fiber.Ctx, err error) error {
 	var appErr *apperrors.AppError
 	if errors.As(err, &appErr) {
-		// This is a custom application error
+		slog.Info("Handler error", "error", err)
 		return c.Status(appErr.HTTPStatus).JSON(response.ErrorResponse{
 			Status: response.StatusError,
 			Error: response.ErrorDetail{
