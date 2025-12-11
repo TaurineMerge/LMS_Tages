@@ -1,68 +1,137 @@
 # publicSide
 
-Публичная часть LMS Tages, построенная на Go Fiber.
+Публичный часть для образовательной платформы LMS Tages. Предоставляет доступ к категория, курсам и урокам. Построен на Go с использованием веб-фреймворка Fiber.
 
-## Требования
+## Технологии
 
-- Docker
+-   **Go** (1.25+)
+-   **Fiber v2** - Веб-фреймворк
+-   **PostgreSQL** - База данных
+-   **Docker** - Контейнеризация
+-   **OpenTelemetry** - Сбор трассировок
+-   **Jaeger** - Система для визуализации трассировок
+-   **slog** - Структурированное логирование
 
-## Как запустить Docker с сервером
+## Запуск и разработка
+
+### Требования
+
+-   Go 1.25 или выше
+-   Docker и Docker Compose
+-   Настроенный и запущенный `docker-compose.yml` из корня проекта, который предоставляет базу данных и Jaeger/OTel-коллектор.
+
+### Конфигурация
+
+Приложение настраивается через переменные окружения. Их можно задать напрямую в системе или определить в файле `.env` в директории `publicSide`.
+
+**Приоритет:** Переменные, установленные в операционной системе, **переопределяют** значения из `.env` файла.
+
+#### Переменные окружения
+
+| Переменная                    | Описание                                                                            | Обязательная          | Значение по умолчанию |
+| ----------------------------- | ----------------------------------------------------------------------------------- | --------------------- | --------------------- |
+| `DATABASE_URL`                | Полная строка подключения к PostgreSQL.                                             | Да (или группа `DB_*`) | -                     |
+| `DB_HOST`                     | Хост базы данных.                                                                   | Да (если нет `DB_URL`)  | -                     |
+| `DB_PORT`                     | Порт базы данных.                                                                   | Да (если нет `DB_URL`)  | -                     |
+| `DB_USER`                     | Имя пользователя для подключения к БД.                                              | Да (если нет `DB_URL`)  | -                     |
+| `DB_PASSWORD`                 | Пароль для подключения к БД.                                                        | Да (если нет `DB_URL`)  | -                     |
+| `DB_NAME`                     | Имя базы данных.                                                                    | Да (если нет `DB_URL`)  | -                     |
+| `DB_SSLMODE`                  | Режим SSL для подключения к БД.                                                     | Нет                   | `disable`             |
+| `APP_PORT`                    | Порт, на котором будет запущен веб-сервер.                                          | Нет                   | `3000`                |
+| `LOG_LEVEL`                   | Уровень логирования (`DEBUG`, `INFO`, `WARN`, `ERROR`).                               | Нет                   | `INFO`                |
+| `CORS_ALLOWED_ORIGINS`        | Разрешенные источники для CORS (через запятую).                                     | Да                    | -                     |
+| `CORS_ALLOWED_METHODS`        | Разрешенные методы для CORS (через запятую).                                        | Да                    | -                     |
+| `CORS_ALLOWED_HEADERS`        | Разрешенные заголовки для CORS (через запятую).                                     | Да                    | -                     |
+| `CORS_ALLOW_CREDENTIALS`      | Разрешает передачу credentials в CORS.                                              | Да                    | -                     |
+| `OTEL_SERVICE_NAME`           | Имя сервиса, которое будет отображаться в Jaeger.                                   | Нет                   | `publicSide`          |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Адрес OTel-коллектора для отправки трассировок (например, `localhost:4317`).        | Да                    | -                     |
+
+#### Пример `.env` файла
+
+Создайте файл `publicSide/.env` по этому шаблону:
+
+```env
+# Database
+DB_USER=appuser
+DB_PASSWORD=password
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=appdb
+
+# Application
+APP_PORT=3000
+LOG_LEVEL=DEBUG
+
+# CORS
+CORS_ALLOWED_ORIGINS="http://localhost:3000,http://localhost:9090"
+CORS_ALLOWED_METHODS="GET,POST,PUT,DELETE,OPTIONS"
+CORS_ALLOWED_HEADERS="Origin, Content-Type, Accept, Authorization"
+CORS_ALLOW_CREDENTIALS=true
+
+# OpenTelemetry
+OTEL_SERVICE_NAME=publicSide-local
+OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317
+```
 
 ### Запуск через Docker
 
-1. **Соберите Docker образ:**
-```bash
-docker build -t publicside-server .
-```
+1.  **Соберите Docker-образ:**
+    ```bash
+    # Убедитесь, что вы находитесь в директории publicSide
+    docker build -t publicside-server .
+    ```
 
-2. **Запустите контейнер:**
-```bash
-docker run -p 3000:3000 publicside-server
-```
+2.  **Запустите контейнер:**
+    Для запуска с использованием переменных из вашего `.env` файла, используйте флаг `--env-file`.
 
-3. **Откройте браузер:**
-```
-http://localhost:3000
-```
+    ```bash
+    docker run --env-file ./.env -p 3000:3000 --network="lms_tages_app-network" publicside-server
+    ```
+    *Примечание: `--network` может понадобиться для связи с контейнерами БД и Jaeger из `docker-compose`.*
 
-### Использование другого порта
+### Локальный запуск (без Docker)
 
-Если порт 3000 занят, можно использовать другой:
-```bash
-docker run -p 8080:3000 publicside-server
-```
-Тогда приложение будет доступно на `http://localhost:8080`
+1.  **Установите зависимости:**
+    ```bash
+    # Убедитесь, что вы находитесь в директории publicSide
+    go mod tidy
+    ```
 
-## Разработка без Docker
+2.  **Создайте и настройте файл `.env`** (см. секцию "Конфигурация").
 
-1. **Установите зависимости:**
-```bash
-go mod tidy
-```
+3.  **Запустите сервер:**
+    ```bash
+    go run ./cmd/main.go
+    ```
 
-2. **Запустите сервер:**
-```bash
-go run main.go
-```
+4.  Приложение будет доступно по адресу, указанному в `APP_PORT` (по умолчанию `http://localhost:3000`).
 
-3. **Приложение будет доступно на:**
-```
-http://localhost:3000
-```
+## API
+
+Документация по API доступна в формате Swagger. После запуска сервера перейдите по адресу:
+[http://localhost:3000/api/v1/swagger/index.html](http://localhost:3000/api/v1/swagger/index.html)
+
+## Линтинг и качество кода
+
+Проект использует `golangci-lint` для статического анализа и поддержания качества кода. Подробные инструкции по установке и использованию находятся в файле [doc/linter.md](./doc/linter.md).
 
 ## Структура проекта
 
 ```
 publicSide/
-├── main.go
+├── cmd/main.go         # Точка входа в приложение
+├── internal/           # Внутренняя логика, не предназначенная для импорта другими проектами
+│   ├── config/
+│   ├── handler/
+│   ├── repository/
+│   └── service/
+├── pkg/                # Независимые пакеты
+│   ├── apiconst/
+│   ├── apperrors/
+│   ├── database/
+│   └── tracing/
+├── doc/                # Документация (Swagger, Linter)
+├── .env                # Файл с переменными окружения (не должен быть в git)
 ├── go.mod
-├── go.sum
-├── Dockerfile
-└── README.md
+└── Dockerfile
 ```
-
-## Технологии
-
-- [Go](https://golang.org/) - язык программирования
-- [Fiber v3](https://gofiber.io/) - веб-фреймворк
-- [Docker](https://www.docker.com/) - контейнеризация
