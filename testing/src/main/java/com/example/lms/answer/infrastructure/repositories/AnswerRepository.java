@@ -44,12 +44,6 @@ public class AnswerRepository implements AnswerRepositoryInterface {
         WHERE id = ?
         """;
 
-    private static final String SELECT_ALL = """
-        SELECT id, question_id, text, score
-        FROM tests.answer_d
-        ORDER BY question_id, text
-        """;
-
     private static final String SELECT_BY_QUESTION = """
         SELECT id, question_id, text, score
         FROM tests.answer_d
@@ -214,34 +208,6 @@ public class AnswerRepository implements AnswerRepositoryInterface {
         } catch (SQLException e) {
             logger.error("Ошибка при поиске ответа по ID: {}", id, e);
             throw new RuntimeException("Ошибка базы данных при поиске ответа", e);
-        }
-    }
-
-    /**
-     * Получает все ответы из базы данных.
-     *
-     * @return список всех ответов, отсортированных по порядку отображения и тексту ответа
-     * @throws RuntimeException если произошла SQL-ошибка
-     */
-    @Override
-    public List<AnswerModel> findAll() {
-        logger.debug("Получение всех ответов");
-        List<AnswerModel> answers = new ArrayList<>();
-
-        try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SELECT_ALL);
-             ResultSet rs = stmt.executeQuery()) {
-
-            while (rs.next()) {
-                answers.add(mapRowToAnswer(rs));
-            }
-
-            logger.debug("Найдено {} ответов", answers.size());
-            return answers;
-
-        } catch (SQLException e) {
-            logger.error("Ошибка при получении всех ответов", e);
-            throw new RuntimeException("Ошибка базы данных при получении ответов", e);
         }
     }
 
