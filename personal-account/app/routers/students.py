@@ -1,13 +1,14 @@
 """Student API endpoints."""
+
 from uuid import UUID
 
-from fastapi import APIRouter, Query, status, Depends
-from app.telemetry import traced
+from fastapi import APIRouter, Depends, Query, status
 
-from app.schemas.student import student_create, student_update, student_response
+from app.core.security import TokenPayload, get_current_user, require_roles
 from app.schemas.common import paginated_response
+from app.schemas.student import student_create, student_response, student_update
 from app.services.student import student_service
-from app.core.security import get_current_user, TokenPayload, require_roles
+from app.telemetry import traced
 
 router = APIRouter(prefix="/students", tags=["Students"])
 
@@ -16,13 +17,13 @@ router = APIRouter(prefix="/students", tags=["Students"])
     "",
     response_model=paginated_response[student_response],
     summary="Получить список студентов",
-    description="Возвращает пагинированный список всех студентов"
+    description="Возвращает пагинированный список всех студентов",
 )
 @traced("router.students.get_students")
 async def get_students(
     page: int = Query(default=1, ge=1, description="Номер страницы"),
     limit: int = Query(default=20, ge=1, le=100, description="Количество элементов на странице"),
-    current_user: TokenPayload = Depends(get_current_user)
+    current_user: TokenPayload = Depends(get_current_user),
 ):
     """Get paginated list of students."""
     return await student_service.get_students(page, limit)
@@ -32,13 +33,10 @@ async def get_students(
     "/{student_id}",
     response_model=student_response,
     summary="Получить студента по ID",
-    description="Возвращает данные студента по указанному ID"
+    description="Возвращает данные студента по указанному ID",
 )
 @traced("router.students.get_student")
-async def get_student(
-    student_id: UUID,
-    current_user: TokenPayload = Depends(get_current_user)
-):
+async def get_student(student_id: UUID, current_user: TokenPayload = Depends(get_current_user)):
     """Get student by ID."""
     return await student_service.get_student(student_id)
 
@@ -48,13 +46,10 @@ async def get_student(
     response_model=student_response,
     status_code=status.HTTP_201_CREATED,
     summary="Создать нового студента",
-    description="Создает нового студента в системе"
+    description="Создает нового студента в системе",
 )
 @traced("router.students.create_student")
-async def create_student(
-    student: student_create,
-    current_user: TokenPayload = Depends(require_roles("admin"))
-):
+async def create_student(student: student_create, current_user: TokenPayload = Depends(require_roles("admin"))):
     """Create a new student."""
     return await student_service.create_student(student)
 
@@ -63,7 +58,7 @@ async def create_student(
     "/{student_id}",
     response_model=student_response,
     summary="Обновить данные студента",
-    description="Обновляет данные существующего студента"
+    description="Обновляет данные существующего студента",
 )
 @traced("router.students.update_student")
 async def update_student(student_id: UUID, student: student_update):
@@ -75,7 +70,7 @@ async def update_student(student_id: UUID, student: student_update):
     "/{student_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Удалить студента",
-    description="Удаляет студента из системы"
+    description="Удаляет студента из системы",
 )
 @traced("router.students.delete_student")
 async def delete_student(student_id: UUID):

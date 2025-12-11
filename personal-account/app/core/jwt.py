@@ -1,11 +1,12 @@
 """JWT helper: decode/validate (JWKS) and optional encode for internal tokens."""
-from typing import Optional, Dict, Any, List
-import time
+
 import logging
+import time
+from typing import Any, Dict, List, Optional
 
 import httpx
 from jose import jwt
-from jose.exceptions import JWTError, ExpiredSignatureError
+from jose.exceptions import ExpiredSignatureError, JWTError
 
 logger = logging.getLogger(__name__)
 
@@ -38,15 +39,12 @@ class JwtService:
         jwks = await self._fetch_jwks()
         # jose accepts jwks directly as key (works like before)
         return jwt.decode(
-            token,
-            jwks,
-            algorithms=["RS256"],
-            audience=audience,
-            issuer=issuer,
-            options={"verify_exp": True}
+            token, jwks, algorithms=["RS256"], audience=audience, issuer=issuer, options={"verify_exp": True}
         )
 
-    def encode(self, payload: Dict[str, Any], private_key_pem: str, algorithm: str = "RS256", expires_in: Optional[int] = None) -> str:
+    def encode(
+        self, payload: Dict[str, Any], private_key_pem: str, algorithm: str = "RS256", expires_in: Optional[int] = None
+    ) -> str:
         """
         Encode internal token (only if you control signing key). Use this only for internal tokens,
         not to fake Keycloak tokens. private_key_pem must be stored securely.

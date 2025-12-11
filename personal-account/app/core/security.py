@@ -1,19 +1,19 @@
 """JWT security and token validation."""
 
 import logging
-from typing import Optional
 from datetime import datetime
-import httpx
+from typing import Optional
 
-from fastapi import HTTPException, Depends, status, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import httpx
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import jwt
-from jose.exceptions import JWTError, ExpiredSignatureError
+from jose.exceptions import ExpiredSignatureError, JWTError
 from pydantic import BaseModel, Field
 
 from app.config import get_settings
-from app.telemetry import traced
 from app.core.jwt import JwtService
+from app.telemetry import traced
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -25,6 +25,7 @@ security = HTTPBearer(auto_error=False)
 
 class TokenPayload(BaseModel):
     """JWT token payload from Keycloak."""
+
     sub: str = Field(..., description="User ID (subject)")
     email: Optional[str] = None
     name: Optional[str] = None
@@ -32,7 +33,7 @@ class TokenPayload(BaseModel):
     exp: int = Field(..., description="Token expiration time")
     iat: Optional[int] = None
     roles: list[str] = Field(default_factory=list)
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -41,7 +42,7 @@ class TokenPayload(BaseModel):
                 "name": "User Name",
                 "preferred_username": "username",
                 "exp": 1765284914,
-                "iat": 1765284614
+                "iat": 1765284614,
             }
         }
 
@@ -49,8 +50,10 @@ class TokenPayload(BaseModel):
 # replace internal jwks/cache with shared service
 _jwt_service = JwtService(keycloak_url=settings.KEYCLOAK_SERVER_URL, realm=settings.KEYCLOAK_REALM)
 
+
 class JWTValidator:
     """Validate JWT tokens using Keycloak JWKS."""
+
     def __init__(self, keycloak_url: str, realm: str, client_id: str):
         self.client_id = client_id
         self.issuer = f"{keycloak_url.rstrip('/')}/realms/{realm}"
@@ -59,13 +62,13 @@ class JWTValidator:
     async def validate_token(self, token: str) -> TokenPayload:
         """
         Validate JWT token and extract payload.
-        
+
         Args:
             token: JWT token string
-            
+
         Returns:
             TokenPayload with user data
-            
+
         Raises:
             HTTPException: If token is invalid or expired
         """
@@ -85,32 +88,25 @@ class JWTValidator:
                 payload["roles"] = list(roles)
             # Преобразуем в типизированный объект
             token_payload = TokenPayload(**payload)
-            
-            logger.info(
-                f"Token validated successfully for user {token_payload.sub}"
-            )
+
+            logger.info(f"Token validated successfully for user {token_payload.sub}")
             return token_payload
-            
+
         except ExpiredSignatureError:
             logger.warning("JWT token has expired")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token has expired",
-                headers={"WWW-Authenticate": "Bearer"}
+                headers={"WWW-Authenticate": "Bearer"},
             )
         except JWTError as e:
             logger.warning(f"JWT validation failed: {e}")
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token",
-                headers={"WWW-Authenticate": "Bearer"}
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token", headers={"WWW-Authenticate": "Bearer"}
             )
         except Exception as e:
             logger.error(f"Unexpected error during token validation: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Token validation error"
-            )
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Token validation error")
 
 
 # Создаём singleton validator
@@ -128,9 +124,9 @@ async def get_current_user(
 ) -> TokenPayload:
     """
     Get current authenticated user from JWT token.
-    
+
     Этот dependency используется в защищённых роутах:
-    
+
     ```python
     @router.get("/me")
     async def get_me(current_user: TokenPayload = Depends(get_current_user)):
@@ -151,9 +147,7 @@ async def get_current_user(
 
     if not token:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
-            headers={"WWW-Authenticate": "Bearer"}
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated", headers={"WWW-Authenticate": "Bearer"}
         )
 
     return await _jwt_validator.validate_token(token)
@@ -166,7 +160,7 @@ async def get_current_user_optional(
 ) -> Optional[TokenPayload]:
     """
     Get current user if authenticated, otherwise return None.
-    
+
     Используется для опциональной аутентификации.
     """
     token = None
@@ -190,7 +184,7 @@ async def get_current_user_optional(
 def require_roles(*roles: str):
     """
     Create a dependency that requires specific roles.
-    
+
     ```python
     @router.get("/admin")
     async def admin_only(
@@ -200,26 +194,19 @@ def require_roles(*roles: str):
         return {"message": "Admin only"}
     ```
     """
-    async def check_roles(
-        current_user: TokenPayload = Depends(get_current_user)
-    ) -> None:
+
+    async def check_roles(current_user: TokenPayload = Depends(get_current_user)) -> None:
         # Ensure the user is authenticated
         if not current_user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authenticated"
-            )
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
 
         # Check that at least one of the required roles is present in token
         if roles:
             user_roles = set(getattr(current_user, "roles", []) or [])
             required = set(roles)
             if user_roles.isdisjoint(required):
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Insufficient permissions"
-                )
-    
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+
     return check_roles
 
 

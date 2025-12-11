@@ -1,4 +1,5 @@
 """Student repository."""
+
 import json
 from typing import Any
 from uuid import UUID
@@ -11,7 +12,7 @@ from app.telemetry import traced
 
 class student_repository(base_repository):
     """Repository for student operations."""
-    
+
     def __init__(self):
         super().__init__(
             "student_s",
@@ -20,12 +21,12 @@ class student_repository(base_repository):
         )
 
     _mutable_fields = {"name", "surname", "birth_date", "avatar", "contacts", "email", "phone"}
-    
+
     @traced()
     async def create(self, data: dict[str, Any]) -> dict[str, Any] | None:
         """Create a new student."""
         contacts_json = json.dumps(data.get("contacts") or {})
-        
+
         params = {
             "name": data["name"],
             "surname": data["surname"],
@@ -36,20 +37,20 @@ class student_repository(base_repository):
             "phone": data.get("phone"),
         }
         return await execute_returning(q.STUDENT_INSERT, params)
-    
+
     @traced()
     async def update(self, student_id: UUID, data: dict[str, Any]) -> dict[str, Any] | None:
         """Update student by ID."""
         # Filter out None values to only update provided fields
         update_data = {k: v for k, v in data.items() if v is not None}
-        
+
         if not update_data:
             return await self.get_by_id(student_id)
-        
+
         # Build dynamic UPDATE query
         set_clauses: list[str] = []
         params = {"id": student_id}
-        
+
         for key, value in update_data.items():
             if key not in self._mutable_fields:
                 continue
@@ -59,37 +60,33 @@ class student_repository(base_repository):
             else:
                 params[key] = value
                 set_clauses.append(f"{key} = :{key}")
-        
+
         if not set_clauses:
             return await self.get_by_id(student_id)
 
         set_clauses.append("updated_at = CURRENT_TIMESTAMP")
         query = q.STUDENT_UPDATE_TEMPLATE.format(set_clause=", ".join(set_clauses))
         return await execute_returning(query, params)
-    
+
     @traced()
     async def get_by_email(self, email: str) -> dict[str, Any] | None:
         """Get student by email."""
         return await fetch_one(q.STUDENT_BY_EMAIL, {"email": email})
-    
+
     @traced()
-    async def get_paginated(
-        self,
-        page: int = 1,
-        limit: int = 20
-    ) -> tuple[list[dict[str, Any]], int]:
+    async def get_paginated(self, page: int = 1, limit: int = 20) -> tuple[list[dict[str, Any]], int]:
         """Get paginated list of students."""
         offset = (page - 1) * limit
-        
+
         # Get total count
         count_result = await fetch_one(q.STUDENT_COUNT, {})
         total = count_result["count"] if count_result else 0
-        
+
         # Get paginated data
         students = await fetch_all(q.STUDENT_PAGINATED, {"limit": limit, "offset": offset})
-        
+
         return students, total
-    
+
     @traced()
     async def email_exists(self, email: str, exclude_id: UUID | None = None) -> bool:
         """Check if email already exists."""

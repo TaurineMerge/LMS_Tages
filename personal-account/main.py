@@ -1,23 +1,24 @@
 """Personal Account API - Education Platform."""
+
 import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.openapi.utils import get_openapi
+from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from opentelemetry import trace
 
 from app.config import get_settings
-from app.database import init_db_pool, close_db_pool
+from app.database import close_db_pool, init_db_pool
 from app.exceptions import app_exception
-from app.routers import students, certificates, visits, health, auth, pages
+from app.routers import auth, certificates, health, pages, students, visits
 from app.telemetry_config import (
     configure_telemetry,
-    instrument_logging,
     instrument_fastapi,
     instrument_httpx,
+    instrument_logging,
     shutdown_telemetry,
 )
 
@@ -25,32 +26,31 @@ from app.telemetry_config import (
 # Custom formatter that handles missing trace context
 class TraceContextFormatter(logging.Formatter):
     """Formatter that safely handles missing OTEL trace context."""
-    
+
     def format(self, record):
         # Add trace_id and span_id if not present (for logs outside trace context)
-        if not hasattr(record, 'otelTraceID'):
-            record.otelTraceID = '0' * 32
-        if not hasattr(record, 'otelSpanID'):
-            record.otelSpanID = '0' * 16
-        
+        if not hasattr(record, "otelTraceID"):
+            record.otelTraceID = "0" * 32
+        if not hasattr(record, "otelSpanID"):
+            record.otelSpanID = "0" * 16
+
         # Use the shorter names for compatibility
-        record.trace_id = getattr(record, 'otelTraceID', '0' * 32)
-        record.span_id = getattr(record, 'otelSpanID', '0' * 16)
-        
+        record.trace_id = getattr(record, "otelTraceID", "0" * 32)
+        record.span_id = getattr(record, "otelSpanID", "0" * 16)
+
         return super().format(record)
 
 
 # Configure logging with custom formatter
 handler = logging.StreamHandler()
-handler.setFormatter(TraceContextFormatter(
-    fmt="%(asctime)s - %(name)s - %(levelname)s - [trace_id=%(trace_id)s span_id=%(span_id)s] - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
-))
-
-logging.basicConfig(
-    level=logging.INFO,
-    handlers=[handler]
+handler.setFormatter(
+    TraceContextFormatter(
+        fmt="%(asctime)s - %(name)s - %(levelname)s - [trace_id=%(trace_id)s span_id=%(span_id)s] - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
 )
+
+logging.basicConfig(level=logging.INFO, handlers=[handler])
 logger = logging.getLogger(__name__)
 
 settings = get_settings()
@@ -61,7 +61,7 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     # Startup
     logger.info("Starting up Personal Account API...")
-    
+
     # Initialize telemetry first
     try:
         configure_telemetry()
@@ -70,20 +70,21 @@ async def lifespan(app: FastAPI):
         logger.info("Telemetry initialized successfully")
     except Exception as exc:
         logger.error("Failed to initialize telemetry: %s", exc, exc_info=True)
-    
+
     # Initialize database
     await init_db_pool()
     logger.info("Database pool initialized")
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down Personal Account API...")
     await close_db_pool()
     logger.info("Database pool closed")
-    
+
     # Shutdown telemetry (flush pending spans)
     shutdown_telemetry()
+
 
 # OAuth2 security scheme for Swagger
 oauth2_scheme = {
@@ -91,9 +92,9 @@ oauth2_scheme = {
     "flows": {
         "password": {
             "tokenUrl": f"{settings.KEYCLOAK_PUBLIC_URL}/realms/{settings.KEYCLOAK_REALM}/protocol/openid-connect/token",
-            "scopes": {}
+            "scopes": {},
         }
-    }
+    },
 }
 
 app = FastAPI(
@@ -125,9 +126,10 @@ API для личного кабинета системы онлайн обра�
     swagger_ui_init_oauth={
         "clientId": settings.KEYCLOAK_CLIENT_ID,
         "clientSecret": settings.KEYCLOAK_CLIENT_SECRET,
-        "usePkceWithAuthorizationCodeGrant": False
-    }
+        "usePkceWithAuthorizationCodeGrant": False,
+    },
 )
+
 
 # Add security scheme to OpenAPI
 def custom_openapi():
@@ -146,16 +148,14 @@ def custom_openapi():
             "type": "http",
             "scheme": "bearer",
             "bearerFormat": "JWT",
-            "description": "Введите JWT access_token (без префикса 'Bearer')"
-        }
+            "description": "Введите JWT access_token (без префикса 'Bearer')",
+        },
     }
     # Global security - endpoints can override
-    openapi_schema["security"] = [
-        {"OAuth2PasswordBearer": []},
-        {"BearerAuth": []}
-    ]
+    openapi_schema["security"] = [{"OAuth2PasswordBearer": []}, {"BearerAuth": []}]
     app.openapi_schema = openapi_schema
     return app.openapi_schema
+
 
 app.openapi = custom_openapi
 
@@ -192,11 +192,8 @@ async def app_exception_handler(request: Request, exc: app_exception):
         span.set_attribute("error", True)
         span.set_attribute("error.type", "app_exception")
         span.set_attribute("error.status_code", exc.status_code)
-    
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"error": exc.message}
-    )
+
+    return JSONResponse(status_code=exc.status_code, content={"error": exc.message})
 
 
 @app.exception_handler(Exception)
@@ -208,12 +205,9 @@ async def general_exception_handler(request: Request, exc: Exception):
         span.record_exception(exc)
         span.set_attribute("error", True)
         span.set_attribute("error.type", "unexpected_exception")
-    
+
     logger.exception(f"Unexpected error: {exc}")
-    return JSONResponse(
-        status_code=500,
-        content={"error": "Internal server error"}
-    )
+    return JSONResponse(status_code=500, content={"error": "Internal server error"})
 
 
 # Include routers
