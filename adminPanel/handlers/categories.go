@@ -11,19 +11,43 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// CategoryHandler - обработчик для категорий
+// CategoryHandler - HTTP обработчик для операций с категориями
+//
+// Обработчик предоставляет REST API для управления категориями курсов:
+//   - GET /categories - получение списка категорий
+//   - POST /categories - создание новой категории
+//   - GET /categories/:id - получение категории по ID
+//   - PUT /categories/:id - обновление категории
+//   - DELETE /categories/:id - удаление категории
+//
+// Особенности:
+//   - Валидация входных данных
+//   - Интеграция с OpenTelemetry для трассировки
+//   - Стандартизированный формат ответов
+//   - Централизованная обработка ошибок
 type CategoryHandler struct {
 	categoryService *services.CategoryService
 }
 
-// NewCategoryHandler создает обработчик категорий
+// NewCategoryHandler создает новый HTTP обработчик для категорий
+//
+// Параметры:
+//   - categoryService: сервис для работы с категориями
+//
+// Возвращает:
+//   - *CategoryHandler: указатель на новый обработчик
 func NewCategoryHandler(categoryService *services.CategoryService) *CategoryHandler {
 	return &CategoryHandler{
 		categoryService: categoryService,
 	}
 }
 
-// RegisterRoutes регистрирует маршруты
+// RegisterRoutes регистрирует маршруты для категорий
+//
+// Регистрирует все необходимые маршруты в указанном роутере.
+//
+// Параметры:
+//   - router: роутер Fiber для регистрации маршрутов
 func (h *CategoryHandler) RegisterRoutes(router fiber.Router) {
 	categories := router.Group("/categories")
 
@@ -34,6 +58,15 @@ func (h *CategoryHandler) RegisterRoutes(router fiber.Router) {
 	categories.Delete("/:category_id", h.deleteCategory)
 }
 
+// getCategories обрабатывает GET /categories
+//
+// Возвращает список всех категорий с пагинацией.
+//
+// Параметры:
+//   - c: контекст Fiber
+//
+// Возвращает:
+//   - error: ошибка выполнения (если есть)
 func (h *CategoryHandler) getCategories(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	// Логируем вызов метода с контекстом трассировки
@@ -86,6 +119,15 @@ func (h *CategoryHandler) getCategories(c *fiber.Ctx) error {
 	return c.JSON(response)
 }
 
+// getCategory обрабатывает GET /categories/:id
+//
+// Возвращает категорию по уникальному идентификатору.
+//
+// Параметры:
+//   - c: контекст Fiber
+//
+// Возвращает:
+//   - error: ошибка выполнения (если есть)
 func (h *CategoryHandler) getCategory(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	// Логируем вызов метода
@@ -143,6 +185,15 @@ func (h *CategoryHandler) getCategory(c *fiber.Ctx) error {
 	})
 }
 
+// createCategory обрабатывает POST /categories
+//
+// Создает новую категорию с валидацией данных.
+//
+// Параметры:
+//   - c: контекст Fiber
+//
+// Возвращает:
+//   - error: ошибка выполнения (если есть)
 func (h *CategoryHandler) createCategory(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	// Логируем вызов метода
@@ -234,6 +285,15 @@ func (h *CategoryHandler) createCategory(c *fiber.Ctx) error {
 	})
 }
 
+// updateCategory обрабатывает PUT /categories/:id
+//
+// Обновляет существующую категорию с валидацией данных.
+//
+// Параметры:
+//   - c: контекст Fiber
+//
+// Возвращает:
+//   - error: ошибка выполнения (если есть)
 func (h *CategoryHandler) updateCategory(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	// Логируем вызов метода
@@ -337,6 +397,16 @@ func (h *CategoryHandler) updateCategory(c *fiber.Ctx) error {
 	})
 }
 
+// deleteCategory обрабатывает DELETE /categories/:id
+//
+// Удаляет категорию по уникальному идентификатору.
+// Перед удалением проверяет наличие связанных курсов.
+//
+// Параметры:
+//   - c: контекст Fiber
+//
+// Возвращает:
+//   - error: ошибка выполнения (если есть)
 func (h *CategoryHandler) deleteCategory(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	// Логируем вызов метода

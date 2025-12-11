@@ -1,11 +1,11 @@
+// Package middleware содержит middleware-функции для обработки HTTP-запросов.
+// Этот пакет предоставляет функции для работы с прокси, валидации, аутентификации и обработки ошибок.
 package middleware
 
 import (
 	"fmt"
 	"reflect"
 	"regexp"
-
-	// "strconv"
 	"strings"
 
 	"adminPanel/models"
@@ -14,7 +14,14 @@ import (
 	"github.com/google/uuid"
 )
 
-// ValidateStruct - валидирует структуру и возвращает ошибки
+// ValidateStruct валидирует структуру DTO и возвращает ошибки валидации.
+//
+// Параметры:
+//   - dto: интерфейс валидируемой структуры (должен быть указателем на структуру)
+//
+// Возвращает:
+//   - map[string]string: карта ошибок валидации, где ключ - имя поля, значение - сообщение об ошибке
+//   - error: ошибка, если произошла ошибка при валидации
 func ValidateStruct(dto interface{}) (map[string]string, error) {
 	errors := make(map[string]string)
 	val := reflect.ValueOf(dto).Elem()
@@ -24,11 +31,13 @@ func ValidateStruct(dto interface{}) (map[string]string, error) {
 		field := val.Field(i)
 		structField := typ.Field(i)
 
+		// Получаем тег validate
 		validateTag := structField.Tag.Get("validate")
 		if validateTag == "" {
 			continue
 		}
 
+		// Парсим правила валидации
 		rules := strings.Split(validateTag, ",")
 		fieldName := getJSONFieldName(structField)
 
@@ -43,7 +52,14 @@ func ValidateStruct(dto interface{}) (map[string]string, error) {
 	return errors, nil
 }
 
-// ValidateRequest - middleware для валидации запроса
+// ValidateRequest middleware для валидации запроса.
+// Парсит тело запроса в DTO и проверяет его на соответствие правилам валидации.
+//
+// Параметры:
+//   - dto: тип DTO для валидации (обычно используется как ValidateRequest(CreateCategoryDTO{}))
+//
+// Возвращает:
+//   - fiber.Handler: middleware-функцию для использования в Fiber приложении
 func ValidateRequest(dto interface{}) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// Создаем экземпляр DTO
@@ -91,7 +107,14 @@ func ValidateRequest(dto interface{}) fiber.Handler {
 	}
 }
 
-// ValidateMiddleware - middleware для валидации DTO
+// ValidateMiddleware middleware для валидации DTO.
+// Аналогичен ValidateRequest, но с более простой реализацией.
+//
+// Параметры:
+//   - dto: тип DTO для валидации
+//
+// Возвращает:
+//   - fiber.Handler: middleware-функцию для использования в Fiber приложении
 func ValidateMiddleware(dto interface{}) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// Создаем экземпляр DTO
@@ -131,7 +154,13 @@ func ValidateMiddleware(dto interface{}) fiber.Handler {
 	}
 }
 
-// validateStruct выполняет валидацию структуры
+// validateStruct выполняет валидацию структуры.
+//
+// Параметры:
+//   - dto: интерфейс валидируемой структуры
+//
+// Возвращает:
+//   - map[string]string: карта ошибок валидации
 func validateStruct(dto interface{}) map[string]string {
 	errors := make(map[string]string)
 	val := reflect.ValueOf(dto).Elem()
@@ -162,7 +191,15 @@ func validateStruct(dto interface{}) map[string]string {
 	return errors
 }
 
-// applyValidationRule применяет правило валидации
+// applyValidationRule применяет правило валидации к полю.
+//
+// Параметры:
+//   - field: значение поля для валидации
+//   - rule: правило валидации
+//   - fieldName: имя поля (для сообщений об ошибках)
+//
+// Возвращает:
+//   - error: ошибка валидации или nil, если валидация прошла успешно
 func applyValidationRule(field reflect.Value, rule, fieldName string) error {
 	switch {
 	case rule == "required":
@@ -185,7 +222,14 @@ func applyValidationRule(field reflect.Value, rule, fieldName string) error {
 	}
 }
 
-// Вспомогательные функции валидации
+// validateRequired проверяет, что поле обязательно для заполнения.
+//
+// Параметры:
+//   - field: значение поля
+//   - fieldName: имя поля для сообщения об ошибке
+//
+// Возвращает:
+//   - error: ошибка, если поле не заполнено
 func validateRequired(field reflect.Value, fieldName string) error {
 	if field.IsZero() {
 		return fiber.NewError(400, fieldName+" is required")
@@ -193,6 +237,15 @@ func validateRequired(field reflect.Value, fieldName string) error {
 	return nil
 }
 
+// validateMin проверяет минимальную длину строки.
+//
+// Параметры:
+//   - field: значение поля
+//   - fieldName: имя поля для сообщения об ошибке
+//   - minValue: минимально допустимое значение
+//
+// Возвращает:
+//   - error: ошибка, если значение меньше минимального
 func validateMin(field reflect.Value, fieldName string, minValue int) error {
 	switch field.Kind() {
 	case reflect.String:
@@ -203,6 +256,15 @@ func validateMin(field reflect.Value, fieldName string, minValue int) error {
 	return nil
 }
 
+// validateMax проверяет максимальную длину строки.
+//
+// Параметры:
+//   - field: значение поля
+//   - fieldName: имя поля для сообщения об ошибке
+//   - maxValue: максимально допустимое значение
+//
+// Возвращает:
+//   - error: ошибка, если значение больше максимального
 func validateMax(field reflect.Value, fieldName string, maxValue int) error {
 	switch field.Kind() {
 	case reflect.String:
@@ -213,6 +275,14 @@ func validateMax(field reflect.Value, fieldName string, maxValue int) error {
 	return nil
 }
 
+// validateUUID проверяет, что значение является валидным UUID.
+//
+// Параметры:
+//   - field: значение поля
+//   - fieldName: имя поля для сообщения об ошибке
+//
+// Возвращает:
+//   - error: ошибка, если значение не является валидным UUID
 func validateUUID(field reflect.Value, fieldName string) error {
 	if !field.IsZero() {
 		if _, err := uuid.Parse(field.String()); err != nil {
@@ -222,6 +292,15 @@ func validateUUID(field reflect.Value, fieldName string) error {
 	return nil
 }
 
+// validateOneOf проверяет, что значение поля соответствует одному из допустимых вариантов.
+//
+// Параметры:
+//   - field: значение поля
+//   - fieldName: имя поля для сообщения об ошибке
+//   - options: список допустимых значений
+//
+// Возвращает:
+//   - error: ошибка, если значение не соответствует ни одному из вариантов
 func validateOneOf(field reflect.Value, fieldName string, options []string) error {
 	if !field.IsZero() {
 		value := field.String()
@@ -235,6 +314,14 @@ func validateOneOf(field reflect.Value, fieldName string, options []string) erro
 	return nil
 }
 
+// validateEmail проверяет, что значение является валидным email-адресом.
+//
+// Параметры:
+//   - field: значение поля
+//   - fieldName: имя поля для сообщения об ошибке
+//
+// Возвращает:
+//   - error: ошибка, если значение не является валидным email
 func validateEmail(field reflect.Value, fieldName string) error {
 	if !field.IsZero() {
 		emailRegex := `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
@@ -246,6 +333,13 @@ func validateEmail(field reflect.Value, fieldName string) error {
 	return nil
 }
 
+// parseRuleValue извлекает числовое значение из правила валидации.
+//
+// Параметры:
+//   - rule: правило валидации в формате "min=5" или "max=10"
+//
+// Возвращает:
+//   - int: извлеченное числовое значение или 0, если извлечение не удалось
 func parseRuleValue(rule string) int {
 	parts := strings.Split(rule, "=")
 	if len(parts) == 2 {
@@ -257,6 +351,13 @@ func parseRuleValue(rule string) int {
 	return 0
 }
 
+// getJSONFieldName извлекает имя поля из тега json структуры.
+//
+// Параметры:
+//   - field: информация о поле структуры
+//
+// Возвращает:
+//   - string: имя поля для использования в JSON (без опций вроде "omitempty")
 func getJSONFieldName(field reflect.StructField) string {
 	jsonTag := field.Tag.Get("json")
 	if jsonTag == "" {

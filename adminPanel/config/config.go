@@ -1,4 +1,14 @@
-// Package config handles application configuration.
+// Пакет config отвечает за конфигурацию приложения
+//
+// Пакет предоставляет структуру Settings для хранения конфигурационных
+// параметров и функции для их получения из переменных окружения.
+//
+// Поддерживаемые параметры:
+//   - База данных: URL, размеры пулов
+//   - Keycloak: URL, аудитория, JWKS
+//   - API: адрес, режим отладки
+//   - CORS: разрешенные origins, credentials
+//   - OpenTelemetry: endpoint, протокол
 package config
 
 import (
@@ -7,7 +17,23 @@ import (
 	"strings"
 )
 
-// Settings - конфигурация
+// Settings - структура конфигурации приложения
+//
+// Содержит все необходимые параметры для работы Admin Panel:
+//
+// DatabaseURL - URL подключения к PostgreSQL
+// DatabaseMinPoolSize - минимальный размер пула соединений
+// DatabaseMaxPoolSize - максимальный размер пула соединений
+// KeycloakIssuerURL - URL Keycloak для валидации токенов
+// KeycloakAudience - аудитория для JWT-токенов
+// KeycloakJWKSURL - URL для получения JWKS ключей
+// APIAddress - адрес для запуска HTTP-сервера
+// Debug - флаг режима отладки
+// CORSAllowOrigins - разрешенные origins для CORS
+// CORSAllowCredentials - разрешать ли credentials в CORS
+// ClientID - ID клиента для OAuth
+// ClientSecret - секрет клиента для OAuth
+// AppName - название приложения для OAuth
 type Settings struct {
 	DatabaseURL          string
 	DatabaseMinPoolSize  int
@@ -24,9 +50,14 @@ type Settings struct {
 	AppName              string
 }
 
-// NewSettings создает конфигурацию
+// NewSettings создает и возвращает новую конфигурацию
+//
+// Функция читает параметры из переменных окружения, используя
+// значения по умолчанию для неопределенных переменных.
+//
+// Возвращает:
+//   - *Settings: указатель на структуру конфигурации
 func NewSettings() *Settings {
-	// Получаем CORS настройки
 	corsOrigins := getEnv("CORS_ALLOW_ORIGINS", "http://localhost,http://localhost:4000,http://localhost:8080")
 	corsCredentials := getEnvAsBool("CORS_ALLOW_CREDENTIALS", true)
 
@@ -47,7 +78,13 @@ func NewSettings() *Settings {
 	}
 }
 
-// GetCORSOrigins возвращает origins как слайс
+// GetCORSOrigins возвращает список разрешенных origins для CORS
+//
+// Преобразует строку origins в слайс, разделяя по запятым
+// и удаляя пробелы. Поддерживает wildcard "*".
+//
+// Возвращает:
+//   - []string: слайс с origins
 func (s *Settings) GetCORSOrigins() []string {
 	if s.CORSAllowOrigins == "*" {
 		return []string{"*"}
@@ -61,6 +98,14 @@ func (s *Settings) GetCORSOrigins() []string {
 }
 
 // Вспомогательные функции
+// getEnv возвращает значение переменной окружения или значение по умолчанию
+//
+// Параметры:
+//   - key: имя переменной окружения
+//   - defaultValue: значение по умолчанию
+//
+// Возвращает:
+//   - string: значение переменной окружения или defaultValue
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
@@ -68,6 +113,14 @@ func getEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
+// getEnvAsInt возвращает значение переменной окружения как int или значение по умолчанию
+//
+// Параметры:
+//   - key: имя переменной окружения
+//   - defaultValue: значение по умолчанию
+//
+// Возвращает:
+//   - int: значение переменной окружения или defaultValue
 func getEnvAsInt(key string, defaultValue int) int {
 	if value := os.Getenv(key); value != "" {
 		if intValue, err := strconv.Atoi(value); err == nil {
@@ -77,6 +130,14 @@ func getEnvAsInt(key string, defaultValue int) int {
 	return defaultValue
 }
 
+// getEnvAsBool возвращает значение переменной окружения как bool или значение по умолчанию
+//
+// Параметры:
+//   - key: имя переменной окружения
+//   - defaultValue: значение по умолчанию
+//
+// Возвращает:
+//   - bool: значение переменной окружения или defaultValue
 func getEnvAsBool(key string, defaultValue bool) bool {
 	if value := os.Getenv(key); value != "" {
 		if boolValue, err := strconv.ParseBool(value); err == nil {

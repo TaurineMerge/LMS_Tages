@@ -1,4 +1,18 @@
-// Package database provides helpers for working with the Postgres connection pool.
+// Пакет database предоставляет функции для работы с PostgreSQL
+//
+// Пакет реализует:
+//   - Инициализацию пула соединений
+//   - Выполнение SQL-запросов
+//   - Преобразование результатов в map
+//   - Управление жизненным циклом соединений
+//
+// Основные функции:
+//   - InitDB: инициализация пула соединений
+//   - Close: закрытие пула
+//   - FetchOne: выполнение запроса с одним результатом
+//   - FetchAll: выполнение запроса с несколькими результатами
+//   - Execute: выполнение запроса без результата
+//   - ExecuteReturning: выполнение запроса с возвратом результата
 package database
 
 import (
@@ -14,7 +28,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Database - обертка над пулом соединений
+// Database - обертка над пулом соединений PostgreSQL
+//
+// Структура предоставляет удобный интерфейс для выполнения
+// SQL-запросов и управления соединениями.
 type Database struct {
 	Pool *pgxpool.Pool
 }
@@ -23,7 +40,17 @@ var (
 	dbInstance *Database
 )
 
-// InitDB инициализирует пул соединений (аналог init_db_pool)
+// InitDB инициализирует пул соединений с PostgreSQL
+//
+// Функция создает и настраивает пул соединений на основе
+// конфигурационных параметров.
+//
+// Параметры:
+//   - settings: конфигурация приложения
+//
+// Возвращает:
+//   - *Database: указатель на экземпляр базы данных
+//   - error: ошибка инициализации (если есть)
 func InitDB(settings *config.Settings) (*Database, error) {
 	poolConfig, err := pgxpool.ParseConfig(settings.DatabaseURL)
 	if err != nil {
@@ -60,7 +87,10 @@ func InitDB(settings *config.Settings) (*Database, error) {
 	return dbInstance, nil
 }
 
-// Close закрывает пул соединений (аналог close_db_pool)
+// Close закрывает пул соединений с базой данных
+//
+// Функция освобождает все ресурсы, связанные с пулом соединений.
+// Должна вызываться при завершении работы приложения.
 func Close() {
 	if dbInstance != nil && dbInstance.Pool != nil {
 		dbInstance.Pool.Close()
@@ -68,12 +98,27 @@ func Close() {
 	}
 }
 
-// GetDB возвращает инстанс базы данных
+// GetDB возвращает текущий экземпляр базы данных
+//
+// Возвращает:
+//   - *Database: указатель на экземпляр базы данных
 func GetDB() *Database {
 	return dbInstance
 }
 
-// FetchOne - аналог fetch_one из Python
+// FetchOne выполняет SQL-запрос и возвращает одну строку результата
+//
+// Функция аналогична fetch_one из Python. Возвращает первую
+// строку результата или nil, если строк нет.
+//
+// Параметры:
+//   - ctx: контекст выполнения
+//   - query: SQL-запрос
+//   - args: аргументы для запроса
+//
+// Возвращает:
+//   - map[string]interface{}: строка результата или nil
+//   - error: ошибка выполнения (если есть)
 func (db *Database) FetchOne(ctx context.Context, query string, args ...interface{}) (map[string]interface{}, error) {
 	rows, err := db.Pool.Query(ctx, query, args...)
 	if err != nil {
@@ -84,7 +129,19 @@ func (db *Database) FetchOne(ctx context.Context, query string, args ...interfac
 	return scanRowToMap(rows)
 }
 
-// FetchAll - аналог fetch_all из Python
+// FetchAll выполняет SQL-запрос и возвращает все строки результата
+//
+// Функция аналогична fetch_all из Python. Возвращает все
+// строки результата в виде слайса map.
+//
+// Параметры:
+//   - ctx: контекст выполнения
+//   - query: SQL-запрос
+//   - args: аргументы для запроса
+//
+// Возвращает:
+//   - []map[string]interface{}: слайс строк результата
+//   - error: ошибка выполнения (если есть)
 func (db *Database) FetchAll(ctx context.Context, query string, args ...interface{}) ([]map[string]interface{}, error) {
 	rows, err := db.Pool.Query(ctx, query, args...)
 	if err != nil {
@@ -95,7 +152,19 @@ func (db *Database) FetchAll(ctx context.Context, query string, args ...interfac
 	return scanRowsToMap(rows)
 }
 
-// Execute - аналог execute из Python
+// Execute выполняет SQL-запрос без возврата результата
+//
+// Функция аналогична execute из Python. Используется для
+// INSERT, UPDATE, DELETE и других запросов, не возвращающих данные.
+//
+// Параметры:
+//   - ctx: контекст выполнения
+//   - query: SQL-запрос
+//   - args: аргументы для запроса
+//
+// Возвращает:
+//   - int64: количество затронутых строк
+//   - error: ошибка выполнения (если есть)
 func (db *Database) Execute(ctx context.Context, query string, args ...interface{}) (int64, error) {
 	result, err := db.Pool.Exec(ctx, query, args...)
 	if err != nil {
@@ -104,7 +173,19 @@ func (db *Database) Execute(ctx context.Context, query string, args ...interface
 	return result.RowsAffected(), nil
 }
 
-// ExecuteReturning - аналог execute_returning из Python
+// ExecuteReturning выполняет SQL-запрос с возвратом результата
+//
+// Функция аналогична execute_returning из Python. Используется
+// для запросов, которые возвращают данные (например, INSERT ... RETURNING).
+//
+// Параметры:
+//   - ctx: контекст выполнения
+//   - query: SQL-запрос
+//   - args: аргументы для запроса
+//
+// Возвращает:
+//   - map[string]interface{}: строка результата
+//   - error: ошибка выполнения (если есть)
 func (db *Database) ExecuteReturning(ctx context.Context, query string, args ...interface{}) (map[string]interface{}, error) {
 	rows, err := db.Pool.Query(ctx, query, args...)
 	if err != nil {
@@ -115,7 +196,17 @@ func (db *Database) ExecuteReturning(ctx context.Context, query string, args ...
 	return scanRowToMap(rows)
 }
 
-// Вспомогательная функция для сканирования строки в map
+// scanRowToMap сканирует одну строку результата в map
+//
+// Функция преобразует строку результата запроса в map,
+// где ключи - это имена столбцов, а значения - данные.
+//
+// Параметры:
+//   - rows: результат выполнения запроса
+//
+// Возвращает:
+//   - map[string]interface{}: строка результата
+//   - error: ошибка сканирования (если есть)
 func scanRowToMap(rows pgx.Rows) (map[string]interface{}, error) {
 	if !rows.Next() {
 		return nil, nil
@@ -142,7 +233,16 @@ func scanRowToMap(rows pgx.Rows) (map[string]interface{}, error) {
 	return result, nil
 }
 
-// Вспомогательная функция для сканирования всех строк
+// scanRowsToMap сканирует все строки результата в слайс map
+//
+// Функция преобразует все строки результата запроса в слайс map.
+//
+// Параметры:
+//   - rows: результат выполнения запроса
+//
+// Возвращает:
+//   - []map[string]interface{}: слайс строк результата
+//   - error: ошибка сканирования (если есть)
 func scanRowsToMap(rows pgx.Rows) ([]map[string]interface{}, error) {
 	var results []map[string]interface{}
 
@@ -170,7 +270,16 @@ func scanRowsToMap(rows pgx.Rows) ([]map[string]interface{}, error) {
 	return results, nil
 }
 
-// Преобразование значений PostgreSQL в Go типы
+// convertValue преобразует значения PostgreSQL в Go типы
+//
+// Функция обрабатывает специфические типы данных PostgreSQL,
+// такие как UUID, и преобразует их в соответствующие Go типы.
+//
+// Параметры:
+//   - value: значение из PostgreSQL
+//
+// Возвращает:
+//   - interface{}: преобразованное значение
 func convertValue(value interface{}) interface{} {
 	switch v := value.(type) {
 	case []byte:

@@ -1,4 +1,24 @@
-// main.go
+// Пакет main - точка входа для Admin Panel API
+//
+// Admin Panel - это веб-сервис для управления учебным контентом,
+// предоставляющий REST API для работы с категориями, курсами и уроками.
+//
+// Сервис включает в себя:
+//   - Аутентификацию через JWT-токены
+//   - OpenTelemetry для трассировки запросов
+//   - Swagger UI для документации API
+//   - Middleware для CORS, логирования и обработки ошибок
+//
+// Пример использования:
+//
+//	# Запуск сервера
+//	go run main.go
+//
+//	# Доступ к Swagger UI
+//	http://localhost:4000/swagger/
+//
+//	# Health check
+//	http://localhost:4000/health
 package main
 
 import (
@@ -34,6 +54,17 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+// setupTracerProvider инициализирует провайдер трассировки OpenTelemetry
+//
+// Функция настраивает экспорт трасс в OTLP-коллектор и возвращает
+// TracerProvider для использования в приложении.
+//
+// Параметры:
+//   - ctx: контекст выполнения
+//
+// Возвращает:
+//   - TracerProvider: провайдер для создания трасс
+//   - error: ошибка инициализации (если есть)
 func setupTracerProvider(ctx context.Context) (*tracesdk.TracerProvider, error) {
 	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 	if endpoint == "" {
@@ -66,7 +97,19 @@ func setupTracerProvider(ctx context.Context) (*tracesdk.TracerProvider, error) 
 	return tp, nil
 }
 
-// Простая OTEL middleware для Fiber
+// tracingMiddleware создает middleware для трассировки HTTP-запросов
+//
+// Middleware добавляет в каждый запрос трассу с детальной информацией:
+//   - Метод и путь запроса
+//   - Заголовки и тело запроса/ответа
+//   - Время выполнения
+//   - Коды ответов и ошибки
+//
+// Параметры:
+//   - tracer: Tracer для создания спанов
+//
+// Возвращает:
+//   - fiber.Handler: middleware для использования в Fiber
 func tracingMiddleware(tracer trace.Tracer) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		startTime := time.Now()
@@ -177,24 +220,35 @@ func tracingMiddleware(tracer trace.Tracer) fiber.Handler {
 	}
 }
 
+// main - точка входа приложения Admin Panel
+//
+// Функция выполняет:
+//   - Инициализацию конфигурации
+//   - Настройку аутентификации
+//   - Подключение к базе данных
+//   - Настройку трассировки
+//   - Создание и настройку Fiber приложения
+//   - Регистрацию маршрутов
+//   - Запуск HTTP-сервера
+//
+// Используемые компоненты:
+//   - Fiber: веб-фреймворк
+//   - PostgreSQL: база данных
+//   - Keycloak: аутентификация
+//   - OpenTelemetry: трассировка
 func main() {
 	ctx := context.Background()
-	// Инициализация конфигурации
 	settings := config.NewSettings()
-
-	// Инициализация аутентификации
 	if err := middleware.InitAuth(); err != nil {
 		log.Fatalf("⚠️  Failed to initialize auth: %v", err)
 	}
 
-	// Инициализация базы данных
 	db, err := database.InitDB(settings)
 	if err != nil {
 		log.Fatalf("❌ Failed to initialize database: %v", err)
 	}
 	defer database.Close()
 
-	// Init tracing
 	tp, err := setupTracerProvider(ctx)
 	if err != nil {
 		log.Printf("⚠️  Failed to initialize tracing: %v", err)
@@ -206,13 +260,11 @@ func main() {
 		}()
 	}
 
-	// Создание Fiber приложения
 	app := fiber.New(fiber.Config{
 		AppName:               "Admin Panel API",
 		DisableStartupMessage: false,
 	})
 
-	// Глобальные middleware
 	app.Use(recover.New())
 	app.Use(logger.New())
 	app.Use(tracingMiddleware(otel.Tracer("admin-panel")))
@@ -224,7 +276,6 @@ func main() {
 		ExposeHeaders:    "Content-Length",
 	}))
 
-	// Общий обработчик ошибок
 	app.Use(middleware.ErrorHandlerMiddleware())
 
 	// Публичные маршруты (без префикса /admin)

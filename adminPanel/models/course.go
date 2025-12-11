@@ -1,6 +1,9 @@
 package models
 
-// Course represents a learning course.
+// Course - модель учебного курса
+//
+// Представляет учебный курс, который может содержать уроки.
+// Курс принадлежит определенной категории и имеет уровень сложности.
 type Course struct {
 	BaseModel
 	Title       string `json:"title"`
@@ -10,7 +13,10 @@ type Course struct {
 	Visibility  string `json:"visibility"`
 }
 
-// CourseCreate - DTO для создания курса
+// CourseCreate - DTO для создания нового курса
+//
+// Используется в запросах на создание курса.
+// Содержит валидацию полей.
 type CourseCreate struct {
 	Title       string `json:"title" validate:"required,min=1,max=255"`
 	Description string `json:"description"`
@@ -20,6 +26,9 @@ type CourseCreate struct {
 }
 
 // CourseUpdate - DTO для обновления курса
+//
+// Используется в запросах на обновление курса.
+// Все поля опциональны (omitempty).
 type CourseUpdate struct {
 	Title       string `json:"title" validate:"omitempty,min=1,max=255"`
 	Description string `json:"description"`
@@ -28,13 +37,17 @@ type CourseUpdate struct {
 	Visibility  string `json:"visibility" validate:"omitempty,oneof=draft public private"`
 }
 
-// CourseResponse - ответ с курсом
+// CourseResponse - ответ API с одним курсом
+//
+// Используется для возврата данных об одном курсе.
 type CourseResponse struct {
 	Status string `json:"status"`
 	Data   Course `json:"data"`
 }
 
-// PaginatedCoursesResponse - пагинированный ответ с курсами
+// PaginatedCoursesResponse - пагинированный ответ со списком курсов
+//
+// Используется для возврата списка курсов с информацией о пагинации.
 type PaginatedCoursesResponse struct {
 	Status string `json:"status"`
 	Data   struct {
@@ -43,7 +56,10 @@ type PaginatedCoursesResponse struct {
 	} `json:"data"`
 }
 
-// CourseFilter - фильтр для курсов
+// CourseFilter - фильтр для поиска курсов
+//
+// Используется для фильтрации курсов по различным критериям:
+// уровень сложности, видимость, категория, пагинация.
 type CourseFilter struct {
 	Level      string `query:"level"`
 	Visibility string `query:"visibility"`

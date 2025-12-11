@@ -13,19 +13,44 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// LessonHandler - обработчик для уроков
+// LessonHandler - HTTP обработчик для операций с уроками
+//
+// Обработчик предоставляет REST API для управления уроками:
+//   - GET /categories/:category_id/courses/:course_id/lessons - получение уроков курса
+//   - POST /categories/:category_id/courses/:course_id/lessons - создание урока
+//   - GET /categories/:category_id/courses/:course_id/lessons/:id - получение урока
+//   - PUT /categories/:category_id/courses/:course_id/lessons/:id - обновление урока
+//   - DELETE /categories/:category_id/courses/:course_id/lessons/:id - удаление урока
+//
+// Особенности:
+//   - Валидация входных данных
+//   - Интеграция с OpenTelemetry для трассировки
+//   - Стандартизированный формат ответов
+//   - Поддержка контента урока в формате JSON
 type LessonHandler struct {
 	lessonService *services.LessonService
 }
 
-// NewLessonHandler создает обработчик уроков
+// NewLessonHandler создает новый HTTP обработчик для уроков
+//
+// Параметры:
+//   - lessonService: сервис для работы с уроками
+//
+// Возвращает:
+//   - *LessonHandler: указатель на новый обработчик
 func NewLessonHandler(lessonService *services.LessonService) *LessonHandler {
 	return &LessonHandler{
 		lessonService: lessonService,
 	}
 }
 
-// RegisterRoutes регистрирует маршруты
+// RegisterRoutes регистрирует маршруты для уроков
+//
+// Регистрирует все необходимые маршруты в указанном роутере.
+// Все маршруты включают в себя category_id и course_id в пути.
+//
+// Параметры:
+//   - router: роутер Fiber для регистрации маршрутов
 func (h *LessonHandler) RegisterRoutes(router fiber.Router) {
 	lessons := router.Group("/categories/:category_id/courses/:course_id")
 
@@ -36,7 +61,15 @@ func (h *LessonHandler) RegisterRoutes(router fiber.Router) {
 	lessons.Delete("/lessons/:lesson_id", h.deleteLesson)
 }
 
-// GetLessons - получение уроков курса
+// getLessons обрабатывает GET /categories/:category_id/courses/:course_id/lessons
+//
+// Возвращает список уроков курса с пагинацией.
+//
+// Параметры:
+//   - c: контекст Fiber
+//
+// Возвращает:
+//   - error: ошибка выполнения (если есть)
 func (h *LessonHandler) getLessons(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	// Логируем вызов метода
@@ -99,7 +132,15 @@ func (h *LessonHandler) getLessons(c *fiber.Ctx) error {
 	return c.JSON(response)
 }
 
-// GetLesson - получение урока по ID
+// getLesson обрабатывает GET /categories/:category_id/courses/:course_id/lessons/:id
+//
+// Возвращает урок по уникальному идентификатору с его содержимым.
+//
+// Параметры:
+//   - c: контекст Fiber
+//
+// Возвращает:
+//   - error: ошибка выполнения (если есть)
 func (h *LessonHandler) getLesson(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	// Логируем вызов метода
@@ -159,7 +200,15 @@ func (h *LessonHandler) getLesson(c *fiber.Ctx) error {
 	return c.JSON(lesson)
 }
 
-// CreateLesson - создание урока
+// createLesson обрабатывает POST /categories/:category_id/courses/:course_id/lessons
+//
+// Создает новый урок в указанном курсе с валидацией данных.
+//
+// Параметры:
+//   - c: контекст Fiber
+//
+// Возвращает:
+//   - error: ошибка выполнения (если есть)
 func (h *LessonHandler) createLesson(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	// Логируем вызов метода
@@ -277,7 +326,15 @@ func (h *LessonHandler) createLesson(c *fiber.Ctx) error {
 	return c.Status(201).JSON(lesson)
 }
 
-// UpdateLesson - обновление урока
+// updateLesson обрабатывает PUT /categories/:category_id/courses/:course_id/lessons/:id
+//
+// Обновляет существующий урок с валидацией данных.
+//
+// Параметры:
+//   - c: контекст Fiber
+//
+// Возвращает:
+//   - error: ошибка выполнения (если есть)
 func (h *LessonHandler) updateLesson(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	// Логируем вызов метода
@@ -399,7 +456,15 @@ func (h *LessonHandler) updateLesson(c *fiber.Ctx) error {
 	return c.JSON(lesson)
 }
 
-// DeleteLesson - удаление урока
+// deleteLesson обрабатывает DELETE /categories/:category_id/courses/:course_id/lessons/:id
+//
+// Удаляет урок по уникальному идентификатору.
+//
+// Параметры:
+//   - c: контекст Fiber
+//
+// Возвращает:
+//   - error: ошибка выполнения (если есть)
 func (h *LessonHandler) deleteLesson(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	// Логируем вызов метода

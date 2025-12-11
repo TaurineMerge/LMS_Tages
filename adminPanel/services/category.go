@@ -1,4 +1,15 @@
-// Package services implements the business logic for the admin panel.
+// Пакет services реализует бизнес-логику для admin panel
+//
+// Пакет содержит сервисы для работы с сущностями:
+//   - CategoryService: работа с категориями
+//   - CourseService: работа с курсами
+//   - LessonService: работа с уроками
+//
+// Каждый сервис отвечает за:
+//   - Валидацию данных
+//   - Бизнес-логику операций
+//   - Интеграцию с репозиториями
+//   - Трассировку операций
 package services
 
 import (
@@ -16,21 +27,48 @@ import (
 	"go.opentelemetry.io/otel/codes"
 )
 
-// CategoryService - сервис для работы с категориями
+// CategoryService - сервис для работы с категориями курсов
+//
+// Сервис предоставляет методы для управления категориями:
+//   - Получение списка категорий
+//   - Получение категории по ID
+//   - Создание новой категории
+//   - Обновление категории
+//   - Удаление категории
+//
+// Особенности:
+//   - Проверка уникальности названий
+//   - Контроль связанных курсов при удалении
+//   - Интеграция с OpenTelemetry для трассировки
 type CategoryService struct {
 	categoryRepo *repositories.CategoryRepository
 }
 
 var categoryTracer = otel.Tracer("admin-panel/category-service")
 
-// NewCategoryService создает сервис категорий
+// NewCategoryService создает новый сервис для работы с категориями
+//
+// Параметры:
+//   - categoryRepo: репозиторий для работы с категориями
+//
+// Возвращает:
+//   - *CategoryService: указатель на новый сервис
 func NewCategoryService(categoryRepo *repositories.CategoryRepository) *CategoryService {
 	return &CategoryService{
 		categoryRepo: categoryRepo,
 	}
 }
 
-// GetCategories - получение всех категорий
+// GetCategories получает список всех категорий
+//
+// Метод возвращает все доступные категории, отсортированные по названию.
+//
+// Параметры:
+//   - ctx: контекст выполнения
+//
+// Возвращает:
+//   - []models.Category: список категорий
+//   - error: ошибка выполнения (если есть)
 func (s *CategoryService) GetCategories(ctx context.Context) ([]models.Category, error) {
 	ctx, span := categoryTracer.Start(ctx, "CategoryService.GetCategories")
 	defer span.End()
@@ -58,7 +96,15 @@ func (s *CategoryService) GetCategories(ctx context.Context) ([]models.Category,
 	return categories, nil
 }
 
-// GetCategory - получение категории по ID
+// GetCategory получает категорию по уникальному идентификатору
+//
+// Параметры:
+//   - ctx: контекст выполнения
+//   - id: уникальный идентификатор категории
+//
+// Возвращает:
+//   - *models.Category: указатель на категорию
+//   - error: ошибка выполнения (если есть)
 func (s *CategoryService) GetCategory(ctx context.Context, id string) (*models.Category, error) {
 	ctx, span := categoryTracer.Start(ctx, "CategoryService.GetCategory")
 	span.SetAttributes(attribute.String("category.id", id))
@@ -87,7 +133,17 @@ func (s *CategoryService) GetCategory(ctx context.Context, id string) (*models.C
 	return category, nil
 }
 
-// CreateCategory - создание категории
+// CreateCategory создает новую категорию
+//
+// Перед созданием проверяет уникальность названия категории.
+//
+// Параметры:
+//   - ctx: контекст выполнения
+//   - input: данные для создания категории
+//
+// Возвращает:
+//   - *models.Category: созданная категория
+//   - error: ошибка выполнения (если есть)
 func (s *CategoryService) CreateCategory(ctx context.Context, input models.CategoryCreate) (*models.Category, error) {
 	ctx, span := categoryTracer.Start(ctx, "CategoryService.CreateCategory")
 	span.SetAttributes(attribute.String("category.title", input.Title))
@@ -130,7 +186,18 @@ func (s *CategoryService) CreateCategory(ctx context.Context, input models.Categ
 	return category, nil
 }
 
-// UpdateCategory - обновление категории
+// UpdateCategory обновляет существующую категорию
+//
+// Проверяет существование категории и уникальность нового названия.
+//
+// Параметры:
+//   - ctx: контекст выполнения
+//   - id: уникальный идентификатор категории
+//   - input: данные для обновления категории
+//
+// Возвращает:
+//   - *models.Category: обновленная категория
+//   - error: ошибка выполнения (если есть)
 func (s *CategoryService) UpdateCategory(ctx context.Context, id string, input models.CategoryUpdate) (*models.Category, error) {
 	ctx, span := categoryTracer.Start(ctx, "CategoryService.UpdateCategory")
 	span.SetAttributes(
@@ -184,7 +251,17 @@ func (s *CategoryService) UpdateCategory(ctx context.Context, id string, input m
 	return category, nil
 }
 
-// DeleteCategory - удаление категории
+// DeleteCategory удаляет категорию по уникальному идентификатору
+//
+// Перед удалением проверяет наличие связанных курсов.
+// Категория с курсами не может быть удалена.
+//
+// Параметры:
+//   - ctx: контекст выполнения
+//   - id: уникальный идентификатор категории
+//
+// Возвращает:
+//   - error: ошибка выполнения (если есть)
 func (s *CategoryService) DeleteCategory(ctx context.Context, id string) error {
 	ctx, span := categoryTracer.Start(ctx, "CategoryService.DeleteCategory")
 	span.SetAttributes(attribute.String("category.id", id))
@@ -229,7 +306,15 @@ func (s *CategoryService) DeleteCategory(ctx context.Context, id string) error {
 	return nil
 }
 
-// Вспомогательная функция для парсинга времени
+// parseTime преобразует интерфейс в time.Time
+//
+// Вспомогательная функция для парсинга времени из различных форматов.
+//
+// Параметры:
+//   - value: значение для преобразования
+//
+// Возвращает:
+//   - time.Time: преобразованное время
 func parseTime(value interface{}) time.Time {
 	if str, ok := value.(string); ok {
 		if t, err := time.Parse(time.RFC3339, str); err == nil {

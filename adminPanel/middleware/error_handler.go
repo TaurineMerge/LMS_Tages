@@ -10,7 +10,19 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// ErrorHandlerMiddleware - централизованная обработка ошибок
+// ErrorHandlerMiddleware - middleware для централизованной обработки ошибок
+//
+// Middleware перехватывает все ошибки, возникающие в ходе выполнения
+// запроса, и возвращает их в стандартизированном формате.
+//
+// Обрабатываемые типы ошибок:
+//   - AppError: кастомные ошибки приложения
+//   - fiber.Error: ошибки фреймворка Fiber
+//   - Database errors: ошибки базы данных (404, 409, 400)
+//   - Unknown errors: неизвестные ошибки (500)
+//
+// Возвращает:
+//   - fiber.Handler: middleware для использования в Fiber
 func ErrorHandlerMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// Выполняем следующий middleware/handler
@@ -91,7 +103,16 @@ func ErrorHandlerMiddleware() fiber.Handler {
 	}
 }
 
-// getErrorCode преобразует HTTP код в строковый код ошибки
+// getErrorCode преобразует HTTP статус-код в строковый код ошибки
+//
+// Функция возвращает соответствующий строковый код ошибки
+// для стандартных HTTP статусов.
+//
+// Параметры:
+//   - statusCode: HTTP статус-код
+//
+// Возвращает:
+//   - string: строковый код ошибки
 func getErrorCode(statusCode int) string {
 	switch statusCode {
 	case 400:

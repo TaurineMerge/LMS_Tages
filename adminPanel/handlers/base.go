@@ -1,11 +1,32 @@
-// Package handlers contains HTTP route handlers.
+// Пакет handlers содержит HTTP обработчики маршрутов
+//
+// Пакет предоставляет:
+//   - CategoryHandler: обработчики для категорий
+//   - CourseHandler: обработчики для курсов
+//   - LessonHandler: обработчики для уроков
+//   - HealthHandler: обработчики для health check
+//
+// Каждый обработчик:
+//   - Валидирует входные данные
+//   - Вызывает соответствующий сервис
+//   - Формирует ответ в стандартизированном формате
+//   - Интегрируется с OpenTelemetry для трассировки
 package handlers
 
 import (
 	"github.com/google/uuid"
 )
 
-// isValidUUID проверяет валидность UUID
+// isValidUUID проверяет валидность UUID строки
+//
+// Функция используется для валидации параметров маршрутов,
+// содержащих идентификаторы сущностей.
+//
+// Параметры:
+//   - u: строка для проверки
+//
+// Возвращает:
+//   - bool: true, если строка является валидным UUID
 func isValidUUID(u string) bool {
 	_, err := uuid.Parse(u)
 	return err == nil

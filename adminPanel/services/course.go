@@ -15,6 +15,20 @@ import (
 )
 
 // CourseService - сервис для работы с курсами
+//
+// Сервис предоставляет методы для управления курсами:
+//   - Получение курсов с фильтрацией и пагинацией
+//   - Получение курса по ID
+//   - Создание нового курса
+//   - Обновление курса
+//   - Удаление курса
+//   - Получение курсов категории
+//
+// Особенности:
+//   - Проверка существования категорий
+//   - Фильтрация по уровню сложности и видимости
+//   - Интеграция с OpenTelemetry для трассировки
+//   - Валидация данных
 type CourseService struct {
 	courseRepo   *repositories.CourseRepository
 	categoryRepo *repositories.CategoryRepository
@@ -22,7 +36,14 @@ type CourseService struct {
 
 var courseTracer = otel.Tracer("admin-panel/course-service")
 
-// NewCourseService создает сервис курсов
+// NewCourseService создает новый сервис для работы с курсами
+//
+// Параметры:
+//   - courseRepo: репозиторий для работы с курсами
+//   - categoryRepo: репозиторий для работы с категориями
+//
+// Возвращает:
+//   - *CourseService: указатель на новый сервис
 func NewCourseService(
 	courseRepo *repositories.CourseRepository,
 	categoryRepo *repositories.CategoryRepository,
@@ -33,7 +54,18 @@ func NewCourseService(
 	}
 }
 
-// GetCourses - получение курсов с фильтрацией
+// GetCourses получает курсы с фильтрацией и пагинацией
+//
+// Метод возвращает курсы указанной категории с возможностью
+// фильтрации по уровню сложности и видимости.
+//
+// Параметры:
+//   - ctx: контекст выполнения
+//   - filter: фильтр для поиска курсов
+//
+// Возвращает:
+//   - *models.PaginatedCoursesResponse: ответ с курсами и пагинацией
+//   - error: ошибка выполнения (если есть)
 func (s *CourseService) GetCourses(ctx context.Context, filter models.CourseFilter) (*models.PaginatedCoursesResponse, error) {
 	ctx, span := courseTracer.Start(ctx, "CourseService.GetCourses")
 	span.SetAttributes(
@@ -110,7 +142,18 @@ func (s *CourseService) GetCourses(ctx context.Context, filter models.CourseFilt
 	}, nil
 }
 
-// GetCourse - получение курса по ID
+// GetCourse получает курс по уникальному идентификатору
+//
+// Проверяет принадлежность курса указанной категории.
+//
+// Параметры:
+//   - ctx: контекст выполнения
+//   - categoryID: уникальный идентификатор категории
+//   - id: уникальный идентификатор курса
+//
+// Возвращает:
+//   - *models.CourseResponse: ответ с курсом
+//   - error: ошибка выполнения (если есть)
 func (s *CourseService) GetCourse(ctx context.Context, categoryID, id string) (*models.CourseResponse, error) {
 	ctx, span := courseTracer.Start(ctx, "CourseService.GetCourse")
 	span.SetAttributes(attribute.String("course.id", id))
@@ -150,7 +193,17 @@ func (s *CourseService) GetCourse(ctx context.Context, categoryID, id string) (*
 	return course, nil
 }
 
-// CreateCourse - создание курса
+// CreateCourse создает новый курс в указанной категории
+//
+// Устанавливает значения по умолчанию для уровня и видимости.
+//
+// Параметры:
+//   - ctx: контекст выполнения
+//   - input: данные для создания курса
+//
+// Возвращает:
+//   - *models.CourseResponse: ответ с созданным курсом
+//   - error: ошибка выполнения (если есть)
 func (s *CourseService) CreateCourse(ctx context.Context, input models.CourseCreate) (*models.CourseResponse, error) {
 	ctx, span := courseTracer.Start(ctx, "CourseService.CreateCourse")
 	span.SetAttributes(
@@ -208,7 +261,19 @@ func (s *CourseService) CreateCourse(ctx context.Context, input models.CourseCre
 	return course, nil
 }
 
-// UpdateCourse - обновление курса
+// UpdateCourse обновляет существующий курс
+//
+// Проверяет принадлежность курса указанной категории.
+//
+// Параметры:
+//   - ctx: контекст выполнения
+//   - categoryID: уникальный идентификатор категории
+//   - id: уникальный идентификатор курса
+//   - input: данные для обновления курса
+//
+// Возвращает:
+//   - *models.CourseResponse: ответ с обновленным курсом
+//   - error: ошибка выполнения (если есть)
 func (s *CourseService) UpdateCourse(ctx context.Context, categoryID, id string, input models.CourseUpdate) (*models.CourseResponse, error) {
 	ctx, span := courseTracer.Start(ctx, "CourseService.UpdateCourse")
 	span.SetAttributes(
@@ -262,7 +327,17 @@ func (s *CourseService) UpdateCourse(ctx context.Context, categoryID, id string,
 	return course, nil
 }
 
-// DeleteCourse - удаление курса
+// DeleteCourse удаляет курс по уникальному идентификатору
+//
+// Проверяет принадлежность курса указанной категории.
+//
+// Параметры:
+//   - ctx: контекст выполнения
+//   - categoryID: уникальный идентификатор категории
+//   - id: уникальный идентификатор курса
+//
+// Возвращает:
+//   - error: ошибка выполнения (если есть)
 func (s *CourseService) DeleteCourse(ctx context.Context, categoryID, id string) error {
 	ctx, span := courseTracer.Start(ctx, "CourseService.DeleteCourse")
 	span.SetAttributes(attribute.String("course.id", id))
@@ -297,7 +372,15 @@ func (s *CourseService) DeleteCourse(ctx context.Context, categoryID, id string)
 	return nil
 }
 
-// GetCategoryCourses - получение курсов категории
+// GetCategoryCourses получает все курсы указанной категории
+//
+// Параметры:
+//   - ctx: контекст выполнения
+//   - categoryID: уникальный идентификатор категории
+//
+// Возвращает:
+//   - []models.Course: список курсов категории
+//   - error: ошибка выполнения (если есть)
 func (s *CourseService) GetCategoryCourses(ctx context.Context, categoryID string) ([]models.Course, error) {
 	ctx, span := courseTracer.Start(ctx, "CourseService.GetCategoryCourses")
 	span.SetAttributes(attribute.String("category.id", categoryID))
