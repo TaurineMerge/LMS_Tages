@@ -44,14 +44,6 @@ public class AnswerRouter {
             // Базовые CRUD операции
             post(answerController::createAnswer);                   // POST /answers
             
-            // Операции с конкретным ответом
-            path("/{id}", () -> {
-                get(answerController::getAnswerById);               // GET /answers/{id}
-                put(answerController::updateAnswer);                // PUT /answers/{id}
-                delete(answerController::deleteAnswer);             // DELETE /answers/{id}
-                get("/correct", answerController::checkIfAnswerIsCorrect); // GET /answers/{id}/correct
-            });
-
             // Операции с ответами по вопросам
             path("/by-question", () -> {
                 get(answerController::getAnswersByQuestionId);           // GET /answers/by-question?questionId={id}
@@ -59,6 +51,14 @@ public class AnswerRouter {
                 delete(answerController::deleteAnswersByQuestionId);      // DELETE /answers/by-question?questionId={id}
                 get("/count", answerController::countAnswersByQuestionId); // GET /answers/by-question/count?questionId={id}
                 get("/count-correct", answerController::countCorrectAnswersByQuestionId); // GET /answers/by-question/count-correct?questionId={id}
+            });
+
+            // Операции с конкретным ответом
+            path("/{id}", () -> {
+                get(answerController::getAnswerById);               // GET /answers/{id}
+                put(answerController::updateAnswer);                // PUT /answers/{id}
+                delete(answerController::deleteAnswer);             // DELETE /answers/{id}
+                get("/correct", answerController::checkIfAnswerIsCorrect); // GET /answers/{id}/correct
             });
 
             // Логирование завершения запроса
