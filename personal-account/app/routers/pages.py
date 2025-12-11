@@ -93,11 +93,11 @@ def get_keycloak_urls() -> dict:
     }
 
 
-@router.get("/account", response_class=HTMLResponse)
+@router.get("/", response_class=HTMLResponse)
 @traced("pages.root")
 async def root_page(request: Request):
     """
-    Главная страница (Root).
+    Главная страница - доступна как /account и /account/.
     Логика:
     1. Если у пользователя есть кука 'access_token' -> редирект в /dashboard
     2. Иначе -> показываем Лендинг

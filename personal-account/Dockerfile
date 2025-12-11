@@ -1,42 +1,39 @@
-# Используем официальный Python образ
-FROM python:3.11-slim 
+# Stage 1: Build dependencies layer (cached unless pyproject.toml/poetry.lock change)
+FROM python:3.11-slim AS builder
 
-ENV POETRY_HOME=/opt/poetry \
-    POETRY_VIRTUALENVS_IN_PROJECT=true \
-    POETRY_NO_INTERACTION=1 \
-    PATH="/opt/poetry/bin:$PATH"
-
-# Устанавливаем Poetry
-RUN apt-get update && apt-get install --no-install-recommends -y curl \
-    && curl -sSL https://install.python-poetry.org | python
-
-# Проверяем установку Poetry и обновляем
-RUN ${POETRY_HOME}/bin/poetry --version && ${POETRY_HOME}/bin/poetry self update
-RUN poetry config --list
-# Устанавливаем рабочую директорию
 WORKDIR /app
 
-ADD . /app
+# Install Poetry once and cache this layer
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y curl \
+    && curl -sSL https://install.python-poetry.org | python3 - \
+    && rm -rf /var/lib/apt/lists/*
 
-# Копируем файлы зависимостей
+ENV PATH="/root/.local/bin:$PATH"
+
+# Copy only dependency files first (for layer caching)
 COPY pyproject.toml poetry.lock* /app/
 
-# Устанавливаем зависимости
-# RUN ${POETRY_HOME}/bin/poetry install --only=main --no-interaction --no-ansi
-RUN /opt/poetry/bin/poetry install --only main --no-interaction --no-ansi
+# Install dependencies in system Python (skip virtualenv for Docker)
+RUN poetry config virtualenvs.create false \
+    && poetry install --no-root --only main --no-interaction --no-ansi
 
-# Копируем остальные файлы *после* установки зависимостей для лучшего использования кэша
-COPY . .
+# Copy application code (won't invalidate dependency layer)
+COPY . /app
 
-# Устанавливаем зависимости
-RUN poetry install --no-root --only=main --no-interaction --no-ansi
+# Stage 2: Runtime image (minimal)
+FROM python:3.11-slim
 
-# Создаем пользователя для безопасности
+WORKDIR /app
+
+# Copy installed packages and app code
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+COPY --from=builder /app /app
+
 RUN useradd -m -u 1000 fastapiuser && chown -R fastapiuser:fastapiuser /app
 USER fastapiuser
 
-# Открываем порт
 EXPOSE 8000
 
-# Запускаем сервер через poetry run
-CMD ["/opt/poetry/bin/poetry", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
