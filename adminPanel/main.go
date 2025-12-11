@@ -80,8 +80,7 @@ func tracingMiddleware(tracer trace.Tracer) fiber.Handler {
 		defer span.End()
 		c.SetUserContext(ctx)
 
-		err := c.Next()
-
+		// Логируем все атрибуты запроса
 		route := c.Route()
 		status := c.Response().StatusCode()
 		attrs := []attribute.KeyValue{
@@ -98,15 +97,42 @@ func tracingMiddleware(tracer trace.Tracer) fiber.Handler {
 		if q := c.Context().QueryArgs().String(); q != "" {
 			attrs = append(attrs, attribute.String("http.query", q))
 		}
+
+		// Логируем все заголовки запроса
+		for k, v := range c.GetReqHeaders() {
+			if len(v) > 0 {
+				attrs = append(attrs, attribute.String("http.request.header."+k, v[0]))
+			}
+		}
+
+		// Логируем тело запроса
 		if len(c.Body()) > 0 {
 			body := c.Body()
 			const maxLoggedBody = 2048
 			if len(body) > maxLoggedBody {
 				body = body[:maxLoggedBody]
 			}
-			span.AddEvent("http.request.body", trace.WithAttributes(attribute.String("body", string(body))))
+			attrs = append(attrs, attribute.String("http.request.body", string(body)))
 		}
+
 		span.SetAttributes(attrs...)
+
+		err := c.Next()
+
+		// Логируем тело ответа
+		responseBody := c.Response().Body()
+		if len(responseBody) > 0 {
+			const maxLoggedResponseBody = 2048
+			if len(responseBody) > maxLoggedResponseBody {
+				responseBody = responseBody[:maxLoggedResponseBody]
+			}
+			span.AddEvent("http.response.body", trace.WithAttributes(attribute.String("body", string(responseBody))))
+		}
+
+		// Логируем все заголовки ответа
+		c.Response().Header.VisitAll(func(key, value []byte) {
+			span.AddEvent("http.response.header."+string(key), trace.WithAttributes(attribute.String("value", string(value))))
+		})
 
 		if err != nil {
 			span.RecordError(err)
