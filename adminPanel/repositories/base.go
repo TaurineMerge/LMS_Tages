@@ -25,9 +25,9 @@ import (
 // BaseRepository - базовый репозиторий для всех сущностей.
 // Предоставляет общие методы для работы с базой данных.
 type BaseRepository struct {
-	db        *database.Database // Соединение с базой данных
-	tableName string             // Имя таблицы
-	schema    string             // Имя схемы (если используется)
+	db        *database.Database
+	tableName string
+	schema    string
 }
 
 // NewBaseRepository создает новый базовый репозиторий.

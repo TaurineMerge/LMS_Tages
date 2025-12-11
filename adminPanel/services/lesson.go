@@ -76,7 +76,6 @@ func (s *LessonService) GetLessons(ctx context.Context, categoryID, courseID, pa
 	)
 	defer span.End()
 
-	// Проверяем существование курса и его принадлежность категории
 	courseData, err := s.courseRepo.GetByID(ctx, courseID)
 	if err != nil {
 		span.RecordError(err)
@@ -87,7 +86,6 @@ func (s *LessonService) GetLessons(ctx context.Context, categoryID, courseID, pa
 		return nil, models.Pagination{}, exceptions.NotFoundError("Course", courseID)
 	}
 
-	// Параметры пагинации
 	page := parsePositiveInt(pageStr, 1)
 	limit := parsePositiveInt(limitStr, 20)
 	if limit > 100 {
@@ -95,7 +93,6 @@ func (s *LessonService) GetLessons(ctx context.Context, categoryID, courseID, pa
 	}
 	offset := (page - 1) * limit
 
-	// Подсчитываем количество
 	total, err := s.lessonRepo.CountByCourse(ctx, categoryID, courseID)
 	if err != nil {
 		span.RecordError(err)
@@ -163,7 +160,6 @@ func (s *LessonService) GetLesson(ctx context.Context, id, courseID, categoryID 
 	)
 	defer span.End()
 
-	// Проверяем существование курса и его принадлежность категории
 	courseData, err := s.courseRepo.GetByID(ctx, courseID)
 	if err != nil {
 		span.RecordError(err)
@@ -174,7 +170,6 @@ func (s *LessonService) GetLesson(ctx context.Context, id, courseID, categoryID 
 		return nil, exceptions.NotFoundError("Course", courseID)
 	}
 
-	// Получаем урок
 	data, err := s.lessonRepo.GetByIDAndCourse(ctx, id, categoryID, courseID)
 	if err != nil {
 		span.RecordError(err)
@@ -186,7 +181,6 @@ func (s *LessonService) GetLesson(ctx context.Context, id, courseID, categoryID 
 		return nil, exceptions.NotFoundError("Lesson", id)
 	}
 
-	// Парсим контент
 	parsedData, _ := s.lessonRepo.ParseContent(data)
 
 	lesson := &models.LessonResponse{
@@ -230,7 +224,6 @@ func (s *LessonService) CreateLesson(ctx context.Context, courseID string, input
 	)
 	defer span.End()
 
-	// Проверяем существование курса и принадлежность категории
 	courseData, err := s.courseRepo.GetByID(ctx, courseID)
 	if err != nil {
 		span.RecordError(err)
@@ -247,7 +240,6 @@ func (s *LessonService) CreateLesson(ctx context.Context, courseID string, input
 		return nil, exceptions.ValidationError("Category ID does not match course")
 	}
 
-	// Создаем урок
 	data, err := s.lessonRepo.Create(ctx, courseID, input.CategoryID, input)
 	if err != nil {
 		span.RecordError(err)
@@ -255,7 +247,6 @@ func (s *LessonService) CreateLesson(ctx context.Context, courseID string, input
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to create lesson: %v", err))
 	}
 
-	// Парсим контент
 	parsedData, _ := s.lessonRepo.ParseContent(data)
 
 	lesson := &models.LessonResponse{
@@ -302,7 +293,6 @@ func (s *LessonService) UpdateLesson(ctx context.Context, id, courseID, category
 	)
 	defer span.End()
 
-	// Проверяем существование урока
 	existing, err := s.lessonRepo.GetByIDAndCourse(ctx, id, categoryID, courseID)
 	if err != nil {
 		span.RecordError(err)
@@ -314,10 +304,8 @@ func (s *LessonService) UpdateLesson(ctx context.Context, id, courseID, category
 		return nil, exceptions.NotFoundError("Lesson", id)
 	}
 
-	// Категория привязывается к курсу, поэтому используем категорию курса
 	input.CategoryID = categoryID
 
-	// Обновляем урок
 	data, err := s.lessonRepo.Update(ctx, id, courseID, input)
 	if err != nil {
 		span.RecordError(err)
@@ -325,7 +313,6 @@ func (s *LessonService) UpdateLesson(ctx context.Context, id, courseID, category
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to update lesson: %v", err))
 	}
 
-	// Парсим контент
 	parsedData, _ := s.lessonRepo.ParseContent(data)
 
 	lesson := &models.LessonResponse{
@@ -368,7 +355,6 @@ func (s *LessonService) DeleteLesson(ctx context.Context, id, courseID, category
 	)
 	defer span.End()
 
-	// Проверяем существование урока
 	existing, err := s.lessonRepo.GetByIDAndCourse(ctx, id, categoryID, courseID)
 	if err != nil {
 		span.RecordError(err)
@@ -380,7 +366,6 @@ func (s *LessonService) DeleteLesson(ctx context.Context, id, courseID, category
 		return exceptions.NotFoundError("Lesson", id)
 	}
 
-	// Удаляем урок
 	deleted, err := s.lessonRepo.Delete(ctx, id)
 	if err != nil {
 		span.RecordError(err)

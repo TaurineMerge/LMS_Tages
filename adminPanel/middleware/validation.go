@@ -31,13 +31,11 @@ func ValidateStruct(dto interface{}) (map[string]string, error) {
 		field := val.Field(i)
 		structField := typ.Field(i)
 
-		// Получаем тег validate
 		validateTag := structField.Tag.Get("validate")
 		if validateTag == "" {
 			continue
 		}
 
-		// Парсим правила валидации
 		rules := strings.Split(validateTag, ",")
 		fieldName := getJSONFieldName(structField)
 
@@ -62,14 +60,12 @@ func ValidateStruct(dto interface{}) (map[string]string, error) {
 //   - fiber.Handler: middleware-функцию для использования в Fiber приложении
 func ValidateRequest(dto interface{}) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// Создаем экземпляр DTO
 		dtoType := reflect.TypeOf(dto)
 		if dtoType.Kind() == reflect.Ptr {
 			dtoType = dtoType.Elem()
 		}
 		dtoValue := reflect.New(dtoType).Interface()
 
-		// Парсим тело запроса
 		if err := c.BodyParser(dtoValue); err != nil {
 			return c.Status(400).JSON(models.ErrorResponse{
 				Status: "error",
@@ -80,7 +76,6 @@ func ValidateRequest(dto interface{}) fiber.Handler {
 			})
 		}
 
-		// Валидируем DTO
 		if validationErrors, err := ValidateStruct(dtoValue); err != nil {
 			return c.Status(500).JSON(models.ErrorResponse{
 				Status: "error",
@@ -100,7 +95,6 @@ func ValidateRequest(dto interface{}) fiber.Handler {
 			})
 		}
 
-		// Сохраняем валидированные данные в контекст
 		c.Locals("validatedDTO", dtoValue)
 
 		return c.Next()
@@ -117,14 +111,12 @@ func ValidateRequest(dto interface{}) fiber.Handler {
 //   - fiber.Handler: middleware-функцию для использования в Fiber приложении
 func ValidateMiddleware(dto interface{}) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// Создаем экземпляр DTO
 		dtoType := reflect.TypeOf(dto)
 		if dtoType.Kind() == reflect.Ptr {
 			dtoType = dtoType.Elem()
 		}
 		dtoValue := reflect.New(dtoType).Interface()
 
-		// Парсим тело запроса
 		if err := c.BodyParser(dtoValue); err != nil {
 			return c.Status(400).JSON(models.ErrorResponse{
 				Status: "error",
@@ -135,7 +127,6 @@ func ValidateMiddleware(dto interface{}) fiber.Handler {
 			})
 		}
 
-		// Валидируем DTO
 		if validationErrors := validateStruct(dtoValue); len(validationErrors) > 0 {
 			return c.Status(422).JSON(models.ValidationErrorResponse{
 				Status: "error",
@@ -147,7 +138,6 @@ func ValidateMiddleware(dto interface{}) fiber.Handler {
 			})
 		}
 
-		// Сохраняем валидированные данные в контекст
 		c.Locals("validatedDTO", dtoValue)
 
 		return c.Next()
@@ -170,13 +160,11 @@ func validateStruct(dto interface{}) map[string]string {
 		field := val.Field(i)
 		structField := typ.Field(i)
 
-		// Получаем тег validate
 		validateTag := structField.Tag.Get("validate")
 		if validateTag == "" {
 			continue
 		}
 
-		// Парсим правила валидации
 		rules := strings.Split(validateTag, ",")
 		fieldName := getJSONFieldName(structField)
 
@@ -364,7 +352,6 @@ func getJSONFieldName(field reflect.StructField) string {
 		return field.Name
 	}
 
-	// Убираем опции (например, "omitempty")
 	parts := strings.Split(jsonTag, ",")
 	return parts[0]
 }

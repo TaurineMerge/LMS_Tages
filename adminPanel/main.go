@@ -125,7 +125,6 @@ func tracingMiddleware(tracer trace.Tracer) fiber.Handler {
 		defer span.End()
 		c.SetUserContext(ctx)
 
-		// Логируем все атрибуты запроса
 		route := c.Route()
 		status := c.Response().StatusCode()
 		attrs := []attribute.KeyValue{
@@ -144,14 +143,12 @@ func tracingMiddleware(tracer trace.Tracer) fiber.Handler {
 			attrs = append(attrs, attribute.String("http.query", q))
 		}
 
-		// Логируем все заголовки запроса
 		for k, v := range c.GetReqHeaders() {
 			if len(v) > 0 {
 				attrs = append(attrs, attribute.String("http.request.header."+k, v[0]))
 			}
 		}
 
-		// Логируем тело запроса
 		if len(c.Body()) > 0 {
 			body := c.Body()
 			const maxLoggedBody = 2048
@@ -165,11 +162,9 @@ func tracingMiddleware(tracer trace.Tracer) fiber.Handler {
 
 		err := c.Next()
 
-		// Логируем время выполнения
 		duration := time.Since(startTime)
 		span.SetAttributes(attribute.Float64("http.request.duration_ms", float64(duration.Milliseconds())))
 
-		// Логируем тело ответа
 		responseBody := c.Response().Body()
 		if len(responseBody) > 0 {
 			const maxLoggedResponseBody = 2048
@@ -179,12 +174,10 @@ func tracingMiddleware(tracer trace.Tracer) fiber.Handler {
 			span.AddEvent("http.response.body", trace.WithAttributes(attribute.String("body", string(responseBody))))
 		}
 
-		// Логируем все заголовки ответа
 		c.Response().Header.VisitAll(func(key, value []byte) {
 			span.AddEvent("http.response.header."+string(key), trace.WithAttributes(attribute.String("value", string(value))))
 		})
 
-		// Логируем дополнительную информацию об ответе
 		span.SetAttributes(
 			attribute.Int("http.response.size", len(responseBody)),
 			attribute.String("http.response.time", time.Now().Format(time.RFC3339)),
@@ -198,7 +191,6 @@ func tracingMiddleware(tracer trace.Tracer) fiber.Handler {
 			span.SetStatus(codes.Error, http.StatusText(status))
 		}
 
-		// Проставляем trace-id/span-id в ответ
 		sc := span.SpanContext()
 		if sc.HasTraceID() {
 			c.Set("Trace-Id", sc.TraceID().String())
@@ -207,7 +199,6 @@ func tracingMiddleware(tracer trace.Tracer) fiber.Handler {
 			c.Set("Span-Id", sc.SpanID().String())
 		}
 
-		// Логируем ошибки
 		if err != nil || status >= 500 {
 			log.Printf("trace=%s span=%s method=%s path=%s status=%d err=%v duration=%s",
 				sc.TraceID().String(), sc.SpanID().String(), c.Method(), c.Path(), status, err, duration)
@@ -278,14 +269,12 @@ func main() {
 
 	app.Use(middleware.ErrorHandlerMiddleware())
 
-	// Публичные маршруты (без префикса /admin)
 	healthHandler := handlers.NewHealthHandler(db)
 	app.Get("/health", healthHandler.HealthCheck)
 	app.Get("/health/db", healthHandler.DBHealthCheck)
 
 	app.Static("/doc", "./docs")
 
-	// Затем Swagger UI
 	app.Get("/swagger/*", swagger.New(swagger.Config{
 		URL:         "/doc/swagger.json",
 		DeepLinking: true,
@@ -298,31 +287,25 @@ func main() {
 		},
 	}))
 
-	// API маршруты с префиксом /admin/api/v1
 	api := app.Group("/api/v1")
 	api.Use(middleware.AuthMiddleware())
 
-	// Инициализация репозиториев
 	categoryRepo := repositories.NewCategoryRepository(db)
 	courseRepo := repositories.NewCourseRepository(db)
 	lessonRepo := repositories.NewLessonRepository(db)
 
-	// Инициализация сервисов
 	categoryService := services.NewCategoryService(categoryRepo)
 	courseService := services.NewCourseService(courseRepo, categoryRepo)
 	lessonService := services.NewLessonService(lessonRepo, courseRepo)
 
-	// Инициализация обработчиков
 	categoryHandler := handlers.NewCategoryHandler(categoryService)
 	courseHandler := handlers.NewCourseHandler(courseService)
 	lessonHandler := handlers.NewLessonHandler(lessonService)
 
-	// Регистрация маршрутов
 	categoryHandler.RegisterRoutes(api)
 	courseHandler.RegisterRoutes(api)
 	lessonHandler.RegisterRoutes(api)
 
-	// Запуск сервера
 	log.Printf("🚀 Server starting on %s", settings.APIAddress)
 	log.Printf("📚 Swagger UI: http://localhost%s/swagger/", settings.APIAddress)
 	log.Printf("📖 Swagger JSON: http://localhost%s/swagger/doc.json", settings.APIAddress)

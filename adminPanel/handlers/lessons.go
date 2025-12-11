@@ -72,7 +72,6 @@ func (h *LessonHandler) RegisterRoutes(router fiber.Router) {
 //   - error: ошибка выполнения (если есть)
 func (h *LessonHandler) getLessons(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	// Логируем вызов метода
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent("handler.getLessons.start",
 		trace.WithAttributes(
@@ -122,7 +121,6 @@ func (h *LessonHandler) getLessons(c *fiber.Ctx) error {
 	response.Data.Items = lessons
 	response.Data.Pagination = pagination
 
-	// Логируем успешное завершение
 	span.AddEvent("handler.getLessons.end",
 		trace.WithAttributes(
 			attribute.Int("response.count", len(response.Data.Items)),
@@ -143,7 +141,6 @@ func (h *LessonHandler) getLessons(c *fiber.Ctx) error {
 //   - error: ошибка выполнения (если есть)
 func (h *LessonHandler) getLesson(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	// Логируем вызов метода
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent("handler.getLesson.start",
 		trace.WithAttributes(
@@ -187,8 +184,6 @@ func (h *LessonHandler) getLesson(c *fiber.Ctx) error {
 			},
 		})
 	}
-
-	// Логируем успешное завершение
 	span.AddEvent("handler.getLesson.end",
 		trace.WithAttributes(
 			attribute.String("lesson.id", lesson.Data.ID),
@@ -211,7 +206,6 @@ func (h *LessonHandler) getLesson(c *fiber.Ctx) error {
 //   - error: ошибка выполнения (если есть)
 func (h *LessonHandler) createLesson(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	// Логируем вызов метода
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent("handler.createLesson.start",
 		trace.WithAttributes(
@@ -234,10 +228,8 @@ func (h *LessonHandler) createLesson(c *fiber.Ctx) error {
 		})
 	}
 
-	// Валидация входных данных
 	var input models.LessonCreate
 
-	// Логируем тело запроса
 	if len(c.Body()) > 0 {
 		body := c.Body()
 		const maxLoggedBody = 2048
@@ -262,7 +254,6 @@ func (h *LessonHandler) createLesson(c *fiber.Ctx) error {
 
 	input.CategoryID = categoryID
 
-	// Валидация через middleware
 	if validationErrors, err := middleware.ValidateStruct(&input); err != nil {
 		return c.Status(500).JSON(models.ErrorResponse{
 			Status: "error",
@@ -282,7 +273,6 @@ func (h *LessonHandler) createLesson(c *fiber.Ctx) error {
 		})
 	}
 
-	// Дополнительная валидация
 	if len(input.Title) > 255 {
 		return c.Status(400).JSON(models.ErrorResponse{
 			Status: "error",
@@ -293,7 +283,6 @@ func (h *LessonHandler) createLesson(c *fiber.Ctx) error {
 		})
 	}
 
-	// Создаем урок
 	lesson, err := h.lessonService.CreateLesson(ctx, courseID, input)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
@@ -314,7 +303,6 @@ func (h *LessonHandler) createLesson(c *fiber.Ctx) error {
 		})
 	}
 
-	// Логируем успешное завершение
 	span.AddEvent("handler.createLesson.end",
 		trace.WithAttributes(
 			attribute.String("lesson.id", lesson.Data.ID),
@@ -362,10 +350,8 @@ func (h *LessonHandler) updateLesson(c *fiber.Ctx) error {
 		})
 	}
 
-	// Валидация входных данных
 	var input models.LessonUpdate
 
-	// Логируем тело запроса
 	if len(c.Body()) > 0 {
 		body := c.Body()
 		const maxLoggedBody = 2048
@@ -412,7 +398,6 @@ func (h *LessonHandler) updateLesson(c *fiber.Ctx) error {
 		})
 	}
 
-	// Дополнительная валидация
 	if input.Title != "" && len(input.Title) > 255 {
 		return c.Status(400).JSON(models.ErrorResponse{
 			Status: "error",
@@ -423,7 +408,6 @@ func (h *LessonHandler) updateLesson(c *fiber.Ctx) error {
 		})
 	}
 
-	// Обновляем урок
 	lesson, err := h.lessonService.UpdateLesson(ctx, lessonID, courseID, categoryID, input)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
@@ -444,7 +428,6 @@ func (h *LessonHandler) updateLesson(c *fiber.Ctx) error {
 		})
 	}
 
-	// Логируем успешное завершение
 	span.AddEvent("handler.updateLesson.end",
 		trace.WithAttributes(
 			attribute.String("lesson.id", lesson.Data.ID),
@@ -467,7 +450,6 @@ func (h *LessonHandler) updateLesson(c *fiber.Ctx) error {
 //   - error: ошибка выполнения (если есть)
 func (h *LessonHandler) deleteLesson(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	// Логируем вызов метода
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent("handler.deleteLesson.start",
 		trace.WithAttributes(
@@ -512,7 +494,6 @@ func (h *LessonHandler) deleteLesson(c *fiber.Ctx) error {
 		})
 	}
 
-	// Логируем успешное завершение
 	span.AddEvent("handler.deleteLesson.end",
 		trace.WithAttributes(
 			attribute.String("lesson.id", lessonID),

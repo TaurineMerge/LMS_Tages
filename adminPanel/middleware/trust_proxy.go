@@ -19,17 +19,14 @@ import (
 //   - fiber.Handler: middleware-функцию для использования в Fiber приложении
 func TrustProxyMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// Устанавливаем заголовок X-Forwarded-For, если он пришел от прокси
 		if forwardedFor := c.Get("X-Forwarded-For"); forwardedFor != "" {
 			c.Set("X-Forwarded-For", forwardedFor)
 		}
 
-		// Устанавливаем заголовок X-Real-IP, если он пришел от прокси
 		if realIP := c.Get("X-Real-IP"); realIP != "" {
 			c.Set("X-Real-IP", realIP)
 		}
 
-		// Передаем управление следующему middleware
 		return c.Next()
 	}
 }

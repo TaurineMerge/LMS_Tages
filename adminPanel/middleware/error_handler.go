@@ -32,10 +32,8 @@ func ErrorHandlerMiddleware() fiber.Handler {
 		if err != nil {
 			log.Printf("Error occurred: %v", err)
 
-			// Определяем тип ошибки
 			switch e := err.(type) {
 			case *exceptions.AppError:
-				// Наша кастомная ошибка
 				return c.Status(e.StatusCode).JSON(models.ErrorResponse{
 					Status: "error",
 					Error: models.ErrorDetails{
@@ -45,7 +43,6 @@ func ErrorHandlerMiddleware() fiber.Handler {
 				})
 
 			case *fiber.Error:
-				// Ошибка Fiber (404, 500 и т.д.)
 				return c.Status(e.Code).JSON(models.ErrorResponse{
 					Status: "error",
 					Error: models.ErrorDetails{
@@ -55,8 +52,6 @@ func ErrorHandlerMiddleware() fiber.Handler {
 				})
 
 			default:
-				// Неизвестная ошибка
-				// Проверяем на common database errors
 				errMsg := strings.ToLower(err.Error())
 
 				switch {

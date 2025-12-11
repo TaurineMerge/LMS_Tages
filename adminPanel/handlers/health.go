@@ -16,7 +16,7 @@ import (
 // HealthHandler - обработчик для health check запросов.
 // Предоставляет информацию о состоянии приложения и базы данных.
 type HealthHandler struct {
-	db *database.Database // Соединение с базой данных для проверки ее состояния
+	db *database.Database
 }
 
 // NewHealthHandler создает новый обработчик health check.
@@ -37,9 +37,7 @@ func NewHealthHandler(db *database.Database) *HealthHandler {
 // Параметры:
 //   - router: маршрутизатор Fiber для регистрации маршрутов
 func (h *HealthHandler) RegisterRoutes(router fiber.Router) {
-	// Регистрируем маршрут для общего health check
 	router.Get("/health", h.HealthCheck)
-	// Регистрируем маршрут для проверки состояния базы данных
 	router.Get("/health/db", h.DBHealthCheck)
 }
 
@@ -53,7 +51,6 @@ func (h *HealthHandler) RegisterRoutes(router fiber.Router) {
 //   - HTTP статус 200 OK
 func (h *HealthHandler) HealthCheck(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	// Логируем вызов метода в OpenTelemetry
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent("handler.HealthCheck.start",
 		trace.WithAttributes(
@@ -61,7 +58,6 @@ func (h *HealthHandler) HealthCheck(c *fiber.Ctx) error {
 			attribute.String("http.path", c.Path()),
 		))
 
-	// Возвращаем JSON с информацией о состоянии приложения
 	return c.JSON(models.HealthResponse{
 		Status:  "healthy",
 		Version: "1.0.0",
@@ -79,7 +75,6 @@ func (h *HealthHandler) HealthCheck(c *fiber.Ctx) error {
 //   - HTTP статус 503 Service Unavailable, если база данных недоступна
 func (h *HealthHandler) DBHealthCheck(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	// Логируем вызов метода в OpenTelemetry
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent("handler.DBHealthCheck.start",
 		trace.WithAttributes(
@@ -87,15 +82,11 @@ func (h *HealthHandler) DBHealthCheck(c *fiber.Ctx) error {
 			attribute.String("http.path", c.Path()),
 		))
 
-	// Убеждаемся, что контекст не nil
 	if ctx == nil {
 		ctx = context.Background()
 	}
-
-	// Проверяем подключение к базе данных
 	err := h.db.Pool.Ping(ctx)
 
-	// Если есть ошибка подключения, возвращаем статус "unhealthy"
 	if err != nil {
 		return c.Status(503).JSON(models.HealthResponse{
 			Status:   "unhealthy",
@@ -104,7 +95,6 @@ func (h *HealthHandler) DBHealthCheck(c *fiber.Ctx) error {
 		})
 	}
 
-	// Если подключение успешно, возвращаем статус "healthy"
 	return c.JSON(models.HealthResponse{
 		Status:   "healthy",
 		Database: "connected",

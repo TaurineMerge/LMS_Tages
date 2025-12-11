@@ -149,7 +149,6 @@ func (s *CategoryService) CreateCategory(ctx context.Context, input models.Categ
 	span.SetAttributes(attribute.String("category.title", input.Title))
 	defer span.End()
 
-	// Проверяем, существует ли категория с таким названием
 	existing, err := s.categoryRepo.GetByTitle(ctx, input.Title)
 	if err != nil {
 		span.RecordError(err)
@@ -161,7 +160,6 @@ func (s *CategoryService) CreateCategory(ctx context.Context, input models.Categ
 		return nil, exceptions.ConflictError(fmt.Sprintf("Category with title '%s' already exists", input.Title))
 	}
 
-	// Создаем категорию
 	data, err := s.categoryRepo.Create(ctx, input.Title)
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate key") {
@@ -206,7 +204,6 @@ func (s *CategoryService) UpdateCategory(ctx context.Context, id string, input m
 	)
 	defer span.End()
 
-	// Проверяем существование категории
 	existing, err := s.categoryRepo.GetByID(ctx, id)
 	if err != nil {
 		span.RecordError(err)
@@ -218,7 +215,6 @@ func (s *CategoryService) UpdateCategory(ctx context.Context, id string, input m
 		return nil, exceptions.NotFoundError("Category", id)
 	}
 
-	// Проверяем, не занято ли новое название
 	if input.Title != fmt.Sprintf("%v", existing["title"]) {
 		categoryWithTitle, err := s.categoryRepo.GetByTitle(ctx, input.Title)
 		if err != nil {
@@ -231,7 +227,6 @@ func (s *CategoryService) UpdateCategory(ctx context.Context, id string, input m
 		}
 	}
 
-	// Обновляем категорию
 	data, err := s.categoryRepo.Update(ctx, id, input.Title)
 	if err != nil {
 		span.RecordError(err)
@@ -267,7 +262,6 @@ func (s *CategoryService) DeleteCategory(ctx context.Context, id string) error {
 	span.SetAttributes(attribute.String("category.id", id))
 	defer span.End()
 
-	// Проверяем существование категории
 	existing, err := s.categoryRepo.GetByID(ctx, id)
 	if err != nil {
 		span.RecordError(err)
@@ -279,7 +273,6 @@ func (s *CategoryService) DeleteCategory(ctx context.Context, id string) error {
 		return exceptions.NotFoundError("Category", id)
 	}
 
-	// Проверяем, нет ли связанных курсов
 	courseCount, err := s.categoryRepo.CountCoursesForCategory(ctx, id)
 	if err != nil {
 		span.RecordError(err)
@@ -291,7 +284,6 @@ func (s *CategoryService) DeleteCategory(ctx context.Context, id string) error {
 		return exceptions.ConflictError("Cannot delete category with associated courses")
 	}
 
-	// Удаляем категорию
 	deleted, err := s.categoryRepo.Delete(ctx, id)
 	if err != nil {
 		span.RecordError(err)

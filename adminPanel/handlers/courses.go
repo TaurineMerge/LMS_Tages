@@ -75,7 +75,6 @@ func (h *CourseHandler) RegisterRoutes(router fiber.Router) {
 //   - error: ошибка выполнения (если есть)
 func (h *CourseHandler) getCourses(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	// Логируем вызов метода
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent("handler.getCourses.start",
 		trace.WithAttributes(
@@ -96,24 +95,15 @@ func (h *CourseHandler) getCourses(c *fiber.Ctx) error {
 			},
 		})
 	}
-
-	// Парсим параметры запроса
 	filter := models.CourseFilter{
 		CategoryID: categoryID,
 	}
-	// level/visibility фильтры временно отключены (см. swagger)
-	// filter.Level = ""
-	// filter.Visibility = ""
-
-	// Парсим page и limit
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	limit, _ := strconv.Atoi(c.Query("limit", "20"))
 
 	filter.Page = page
 	filter.Limit = limit
 
-	// Валидация
-	// Получаем курсы
 	result, err := h.courseService.GetCourses(ctx, filter)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
@@ -134,7 +124,6 @@ func (h *CourseHandler) getCourses(c *fiber.Ctx) error {
 		})
 	}
 
-	// Логируем успешное завершение
 	span.AddEvent("handler.getCourses.end",
 		trace.WithAttributes(
 			attribute.Int("response.count", len(result.Data.Items)),
@@ -155,7 +144,6 @@ func (h *CourseHandler) getCourses(c *fiber.Ctx) error {
 //   - error: ошибка выполнения (если есть)
 func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	// Логируем вызов метода
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent("handler.createCourse.start",
 		trace.WithAttributes(
@@ -176,10 +164,8 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 		})
 	}
 
-	// Валидация входных данных
 	var input models.CourseCreate
 
-	// Логируем тело запроса
 	if len(c.Body()) > 0 {
 		body := c.Body()
 		const maxLoggedBody = 2048
@@ -202,10 +188,8 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 		})
 	}
 
-	// Привязываем категорию из пути
 	input.CategoryID = categoryID
 
-	// Валидация через middleware
 	if validationErrors, err := middleware.ValidateStruct(&input); err != nil {
 		return c.Status(500).JSON(models.ErrorResponse{
 			Status: "error",
@@ -225,7 +209,6 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 		})
 	}
 
-	// Проверка дополнительных условий
 	if input.Level != "" && !isValidLevel(input.Level) {
 		return c.Status(400).JSON(models.ErrorResponse{
 			Status: "error",
@@ -246,7 +229,6 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 		})
 	}
 
-	// Создаем курс
 	course, err := h.courseService.CreateCourse(ctx, input)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
@@ -267,7 +249,6 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 		})
 	}
 
-	// Логируем успешное завершение
 	span.AddEvent("handler.createCourse.end",
 		trace.WithAttributes(
 			attribute.String("course.id", course.Data.ID),
@@ -289,7 +270,6 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 //   - error: ошибка выполнения (если есть)
 func (h *CourseHandler) getCourse(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	// Логируем вызов метода
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent("handler.getCourse.start",
 		trace.WithAttributes(
@@ -332,7 +312,6 @@ func (h *CourseHandler) getCourse(c *fiber.Ctx) error {
 		})
 	}
 
-	// Логируем успешное завершение
 	span.AddEvent("handler.getCourse.end",
 		trace.WithAttributes(
 			attribute.String("course.id", course.Data.ID),
@@ -354,7 +333,6 @@ func (h *CourseHandler) getCourse(c *fiber.Ctx) error {
 //   - error: ошибка выполнения (если есть)
 func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	// Логируем вызов метода
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent("handler.updateCourse.start",
 		trace.WithAttributes(
@@ -376,11 +354,8 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 			},
 		})
 	}
-
-	// Валидация входных данных
 	var input models.CourseUpdate
 
-	// Логируем тело запроса
 	if len(c.Body()) > 0 {
 		body := c.Body()
 		const maxLoggedBody = 2048
@@ -428,7 +403,6 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 		})
 	}
 
-	// Проверка дополнительных условий
 	if input.Level != "" && !isValidLevel(input.Level) {
 		return c.Status(400).JSON(models.ErrorResponse{
 			Status: "error",
@@ -449,7 +423,6 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 		})
 	}
 
-	// Обновляем курс
 	course, err := h.courseService.UpdateCourse(ctx, categoryID, id, input)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
@@ -470,7 +443,6 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 		})
 	}
 
-	// Логируем успешное завершение
 	span.AddEvent("handler.updateCourse.end",
 		trace.WithAttributes(
 			attribute.String("course.id", course.Data.ID),
@@ -492,7 +464,6 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 //   - error: ошибка выполнения (если есть)
 func (h *CourseHandler) deleteCourse(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	// Логируем вызов метода
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent("handler.deleteCourse.start",
 		trace.WithAttributes(
@@ -535,7 +506,6 @@ func (h *CourseHandler) deleteCourse(c *fiber.Ctx) error {
 		})
 	}
 
-	// Логируем успешное завершение
 	span.AddEvent("handler.deleteCourse.end",
 		trace.WithAttributes(
 			attribute.String("course.id", id),

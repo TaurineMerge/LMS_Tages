@@ -63,10 +63,9 @@ func InitDB(settings *config.Settings) (*Database, error) {
 	if settings.DatabaseMaxPoolSize < 0 || settings.DatabaseMaxPoolSize > math.MaxInt32 {
 		return nil, fmt.Errorf("invalid DatabaseMaxPoolSize: %d", settings.DatabaseMaxPoolSize)
 	}
-	poolConfig.MinConns = int32(settings.DatabaseMinPoolSize) //nolint:gosec // validated above
-	poolConfig.MaxConns = int32(settings.DatabaseMaxPoolSize) //nolint:gosec // validated above
+	poolConfig.MinConns = int32(settings.DatabaseMinPoolSize)
+	poolConfig.MaxConns = int32(settings.DatabaseMaxPoolSize)
 
-	// Настройки здоровья соединений
 	poolConfig.HealthCheckPeriod = 1 * time.Minute
 	poolConfig.MaxConnLifetime = 1 * time.Hour
 	poolConfig.MaxConnIdleTime = 30 * time.Minute
@@ -77,7 +76,6 @@ func InitDB(settings *config.Settings) (*Database, error) {
 		return nil, err
 	}
 
-	// Проверяем подключение
 	if err := pool.Ping(ctx); err != nil {
 		return nil, err
 	}

@@ -69,7 +69,6 @@ func (h *CategoryHandler) RegisterRoutes(router fiber.Router) {
 //   - error: ошибка выполнения (если есть)
 func (h *CategoryHandler) getCategories(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	// Логируем вызов метода с контекстом трассировки
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent("handler.getCategories.start",
 		trace.WithAttributes(
@@ -109,7 +108,6 @@ func (h *CategoryHandler) getCategories(c *fiber.Ctx) error {
 		Pages: 1,
 	}
 
-	// Логируем успешное завершение
 	span.AddEvent("handler.getCategories.end",
 		trace.WithAttributes(
 			attribute.Int("response.count", len(categories)),
@@ -130,7 +128,6 @@ func (h *CategoryHandler) getCategories(c *fiber.Ctx) error {
 //   - error: ошибка выполнения (если есть)
 func (h *CategoryHandler) getCategory(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	// Логируем вызов метода
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent("handler.getCategory.start",
 		trace.WithAttributes(
@@ -171,7 +168,6 @@ func (h *CategoryHandler) getCategory(c *fiber.Ctx) error {
 		})
 	}
 
-	// Логируем успешное завершение
 	span.AddEvent("handler.getCategory.end",
 		trace.WithAttributes(
 			attribute.String("category.id", category.ID),
@@ -196,7 +192,6 @@ func (h *CategoryHandler) getCategory(c *fiber.Ctx) error {
 //   - error: ошибка выполнения (если есть)
 func (h *CategoryHandler) createCategory(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	// Логируем вызов метода
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent("handler.createCategory.start",
 		trace.WithAttributes(
@@ -204,10 +199,8 @@ func (h *CategoryHandler) createCategory(c *fiber.Ctx) error {
 			attribute.String("http.path", c.Path()),
 		))
 
-	// Валидация входных данных
 	var input models.CategoryCreate
 
-	// Логируем тело запроса
 	if len(c.Body()) > 0 {
 		body := c.Body()
 		const maxLoggedBody = 2048
@@ -230,7 +223,6 @@ func (h *CategoryHandler) createCategory(c *fiber.Ctx) error {
 		})
 	}
 
-	// Валидация через функцию
 	if validationErrors, err := middleware.ValidateStruct(&input); err != nil {
 		return c.Status(500).JSON(models.ErrorResponse{
 			Status: "error",
@@ -250,7 +242,6 @@ func (h *CategoryHandler) createCategory(c *fiber.Ctx) error {
 		})
 	}
 
-	// Создаем категорию
 	category, err := h.categoryService.CreateCategory(ctx, input)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
@@ -271,7 +262,6 @@ func (h *CategoryHandler) createCategory(c *fiber.Ctx) error {
 		})
 	}
 
-	// Логируем успешное завершение
 	span.AddEvent("handler.createCategory.end",
 		trace.WithAttributes(
 			attribute.String("category.id", category.ID),
@@ -317,10 +307,8 @@ func (h *CategoryHandler) updateCategory(c *fiber.Ctx) error {
 		})
 	}
 
-	// Валидация входных данных
 	var input models.CategoryUpdate
 
-	// Логируем тело запроса
 	if len(c.Body()) > 0 {
 		body := c.Body()
 		const maxLoggedBody = 2048
@@ -343,7 +331,6 @@ func (h *CategoryHandler) updateCategory(c *fiber.Ctx) error {
 		})
 	}
 
-	// Валидация через функцию
 	if validationErrors, err := middleware.ValidateStruct(&input); err != nil {
 		return c.Status(500).JSON(models.ErrorResponse{
 			Status: "error",
@@ -383,7 +370,6 @@ func (h *CategoryHandler) updateCategory(c *fiber.Ctx) error {
 		})
 	}
 
-	// Логируем успешное завершение
 	span.AddEvent("handler.updateCategory.end",
 		trace.WithAttributes(
 			attribute.String("category.id", category.ID),
@@ -409,7 +395,6 @@ func (h *CategoryHandler) updateCategory(c *fiber.Ctx) error {
 //   - error: ошибка выполнения (если есть)
 func (h *CategoryHandler) deleteCategory(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	// Логируем вызов метода
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent("handler.deleteCategory.start",
 		trace.WithAttributes(
@@ -450,7 +435,6 @@ func (h *CategoryHandler) deleteCategory(c *fiber.Ctx) error {
 		})
 	}
 
-	// Логируем успешное завершение
 	span.AddEvent("handler.deleteCategory.end",
 		trace.WithAttributes(
 			attribute.String("category.id", id),

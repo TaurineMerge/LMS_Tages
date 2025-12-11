@@ -26,7 +26,6 @@ import (
 func toString(v interface{}) string {
 	switch val := v.(type) {
 	case []byte:
-		// Если []byte имеет длину 16 байт, пытаемся преобразовать в UUID
 		if len(val) == 16 {
 			if u, err := uuid.FromBytes(val); err == nil {
 				return u.String()
@@ -34,17 +33,13 @@ func toString(v interface{}) string {
 		}
 		return string(val)
 	case [16]byte:
-		// Для [16]byte также пытаемся преобразовать в UUID
 		if u, err := uuid.FromBytes(val[:]); err == nil {
 			return u.String()
 		}
 	case uuid.UUID:
-		// Для uuid.UUID возвращаем строковое представление
 		return val.String()
 	case string:
-		// Для string возвращаем значение как есть
 		return val
 	}
-	// Для остальных типов используем fmt.Sprintf
 	return fmt.Sprintf("%v", v)
 }

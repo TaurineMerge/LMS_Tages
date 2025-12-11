@@ -89,7 +89,6 @@ func (s *Settings) GetCORSOrigins() []string {
 	if s.CORSAllowOrigins == "*" {
 		return []string{"*"}
 	}
-	// Разделяем по запятой и убираем пробелы
 	origins := strings.Split(s.CORSAllowOrigins, ",")
 	for i := range origins {
 		origins[i] = strings.TrimSpace(origins[i])

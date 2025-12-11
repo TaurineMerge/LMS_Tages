@@ -77,7 +77,6 @@ func (s *CourseService) GetCourses(ctx context.Context, filter models.CourseFilt
 	)
 	defer span.End()
 
-	// Устанавливаем значения по умолчанию
 	if filter.Page == 0 {
 		filter.Page = 1
 	}
@@ -85,7 +84,6 @@ func (s *CourseService) GetCourses(ctx context.Context, filter models.CourseFilt
 		filter.Limit = 20
 	}
 
-	// Проверяем категорию
 	categoryExists, err := s.categoryRepo.Exists(ctx, filter.CategoryID)
 	if err != nil {
 		span.RecordError(err)
@@ -214,7 +212,6 @@ func (s *CourseService) CreateCourse(ctx context.Context, input models.CourseCre
 	)
 	defer span.End()
 
-	// Проверяем существование категории
 	categoryExists, err := s.courseRepo.ExistsByCategory(ctx, input.CategoryID)
 	if err != nil {
 		span.RecordError(err)
@@ -226,7 +223,6 @@ func (s *CourseService) CreateCourse(ctx context.Context, input models.CourseCre
 		return nil, exceptions.NotFoundError("Category", input.CategoryID)
 	}
 
-	// Устанавливаем значения по умолчанию
 	if strings.TrimSpace(input.Level) == "" {
 		input.Level = "medium"
 	}
@@ -234,7 +230,6 @@ func (s *CourseService) CreateCourse(ctx context.Context, input models.CourseCre
 		input.Visibility = "draft"
 	}
 
-	// Создаем курс
 	data, err := s.courseRepo.Create(ctx, input)
 	if err != nil {
 		span.RecordError(err)
@@ -285,7 +280,6 @@ func (s *CourseService) UpdateCourse(ctx context.Context, categoryID, id string,
 	)
 	defer span.End()
 
-	// Проверяем существование курса
 	existing, err := s.courseRepo.GetByID(ctx, id)
 	if err != nil {
 		span.RecordError(err)
@@ -297,10 +291,8 @@ func (s *CourseService) UpdateCourse(ctx context.Context, categoryID, id string,
 		return nil, exceptions.NotFoundError("Course", id)
 	}
 
-	// Категорию не меняем для соответствия пути
 	input.CategoryID = categoryID
 
-	// Обновляем курс
 	data, err := s.courseRepo.Update(ctx, id, input)
 	if err != nil {
 		span.RecordError(err)
@@ -343,7 +335,6 @@ func (s *CourseService) DeleteCourse(ctx context.Context, categoryID, id string)
 	span.SetAttributes(attribute.String("course.id", id))
 	defer span.End()
 
-	// Проверяем существование курса
 	existing, err := s.courseRepo.GetByID(ctx, id)
 	if err != nil {
 		span.RecordError(err)
@@ -355,9 +346,6 @@ func (s *CourseService) DeleteCourse(ctx context.Context, categoryID, id string)
 		return exceptions.NotFoundError("Course", id)
 	}
 
-	// TODO: Проверяем наличие связанных уроков
-
-	// Удаляем курс
 	deleted, err := s.courseRepo.Delete(ctx, id)
 	if err != nil {
 		span.RecordError(err)
@@ -386,7 +374,6 @@ func (s *CourseService) GetCategoryCourses(ctx context.Context, categoryID strin
 	span.SetAttributes(attribute.String("category.id", categoryID))
 	defer span.End()
 
-	// Проверяем существование категории
 	categoryExists, err := s.courseRepo.ExistsByCategory(ctx, categoryID)
 	if err != nil {
 		span.RecordError(err)
@@ -398,7 +385,6 @@ func (s *CourseService) GetCategoryCourses(ctx context.Context, categoryID strin
 		return nil, exceptions.NotFoundError("Category", categoryID)
 	}
 
-	// Получаем курсы
 	data, err := s.courseRepo.GetByCategory(ctx, categoryID)
 	if err != nil {
 		span.RecordError(err)

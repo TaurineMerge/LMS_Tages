@@ -79,7 +79,7 @@ func InitAuth() error {
 	}
 
 	var err error
-	for i := 0; i < 6; i++ { // ~1 минута с запасом
+	for i := 0; i < 6; i++ {
 		jwks, err = keyfunc.Get(authConfig.JWKSURL, options)
 		if err == nil {
 			break
@@ -116,7 +116,6 @@ func AuthMiddleware() fiber.Handler {
 		// Публичные эндпоинты
 		path := c.Path()
 
-		// Разрешаем доступ без авторизации к этим маршрутам
 		if strings.HasPrefix(path, "/admin/swagger") ||
 			strings.HasPrefix(path, "/health") ||
 			path == "/favicon.ico" ||
@@ -124,13 +123,11 @@ func AuthMiddleware() fiber.Handler {
 			return c.Next()
 		}
 
-		// Если аутентификация не настроена
 		if authConfig == nil || jwks == nil {
 			log.Println("⚠️  Authentication not configured, skipping auth check")
 			return c.Next()
 		}
 
-		// Проверка заголовка Authorization
 		authHeader := c.Get("Authorization")
 		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
 			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
@@ -147,7 +144,6 @@ func AuthMiddleware() fiber.Handler {
 			})
 		}
 
-		// Парсинг и валидация токена
 		claims := jwt.MapClaims{}
 		token, err := jwt.ParseWithClaims(tokenString, claims, jwks.Keyfunc)
 
@@ -159,23 +155,19 @@ func AuthMiddleware() fiber.Handler {
 			})
 		}
 
-		// Проверка issuer (можно закомментировать для разработки)
 		iss, ok := claims["iss"].(string)
 		if ok && authConfig.IssuerURL != "" && iss != authConfig.IssuerURL {
 			log.Printf("⚠️  Token issuer mismatch. Expected: %s, Got: %s", authConfig.IssuerURL, iss)
 		}
 
-		// Проверка audience (опционально)
 		if authConfig.Audience != "" && !verifyAudience(claims, authConfig.Audience) {
 			log.Printf("⚠️  Token audience mismatch. Expected: %s", authConfig.Audience)
 		}
 
-		// Логируем информацию о пользователе
 		if preferredUsername, ok := claims["preferred_username"].(string); ok {
 			log.Printf("✅ Authenticated user: %s", preferredUsername)
 		}
 
-		// Сохраняем claims в контекст
 		c.Locals("userClaims", claims)
 		return c.Next()
 	}
@@ -198,12 +190,10 @@ func verifyAudience(claims jwt.MapClaims, expected string) bool {
 		return true
 	}
 
-	// aud может быть строкой
 	if audStr, ok := claims["aud"].(string); ok {
 		return audStr == expected
 	}
 
-	// или массивом
 	if audSlice, ok := claims["aud"].([]interface{}); ok {
 		for _, v := range audSlice {
 			if s, ok := v.(string); ok && s == expected {

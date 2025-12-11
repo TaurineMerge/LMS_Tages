@@ -129,7 +129,6 @@ func (r *CourseRepository) GetFiltered(ctx context.Context, filter models.Course
 		paramCounter++
 	}
 
-	// Запрос для подсчета общего количества
 	countQuery := "SELECT COUNT(*) as count FROM knowledge_base.course_b"
 	if len(conditions) > 0 {
 		countQuery += " WHERE " + strings.Join(conditions, " AND ")
@@ -145,7 +144,6 @@ func (r *CourseRepository) GetFiltered(ctx context.Context, filter models.Course
 		total = int(count)
 	}
 
-	// Запрос для получения данных с пагинацией
 	query := "SELECT * FROM knowledge_base.course_b"
 	if len(conditions) > 0 {
 		query += " WHERE " + strings.Join(conditions, " AND ")

@@ -45,7 +45,7 @@ type CourseResponse struct {
 	Data   Course `json:"data"`
 }
 
-// PaginatedCoursesResponse - пагинированный ответ со списком курсов
+// PaginatedCoursesResponse - ответ со списком курсов
 //
 // Используется для возврата списка курсов с информацией о пагинации.
 type PaginatedCoursesResponse struct {
