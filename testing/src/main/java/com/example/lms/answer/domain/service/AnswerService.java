@@ -54,18 +54,7 @@ public class AnswerService {
             model.getScore()
         );
     }
-
-    /**
-     * Получает все ответы.
-     *
-     * @return список всех ответов в формате DTO
-     */
-    public List<Answer> getAllAnswers() {
-        return repository.findAll().stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
-    }
-
+    
     /**
      * Получает ответ по его идентификатору.
      *

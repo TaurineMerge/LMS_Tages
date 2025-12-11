@@ -1,10 +1,10 @@
 package com.example.lms.answer.domain.repository;
 
-import com.example.lms.answer.domain.model.AnswerModel;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import com.example.lms.answer.domain.model.AnswerModel;
 
 /**
  * Репозиторий для работы с ответами (ANSWER_D).
@@ -43,13 +43,6 @@ public interface AnswerRepositoryInterface {
      * @return Optional с найденным ответом или пустой, если не найден
      */
     Optional<AnswerModel> findById(UUID id);
-
-    /**
-     * Получить все ответы из таблицы.
-     *
-     * @return список всех ответов
-     */
-    List<AnswerModel> findAll();
 
     /**
      * Найти все ответы для указанного вопроса.

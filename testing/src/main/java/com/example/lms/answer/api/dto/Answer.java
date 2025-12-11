@@ -2,6 +2,8 @@ package com.example.lms.answer.api.dto;
 
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * DTO для представления ответов на вопрос теста.
  * <p>
@@ -30,6 +32,7 @@ public class Answer {
      * Идентификатор вопроса, к которому относится данный ответ.
      * <p>FK на QUESTION_D, not null.</p>
      */
+    @JsonProperty("question_id")
     private UUID questionId;
 
     /**

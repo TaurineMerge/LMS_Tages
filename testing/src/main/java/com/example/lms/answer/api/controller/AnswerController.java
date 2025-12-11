@@ -29,22 +29,6 @@ public class AnswerController {
     }
 
     /**
-     * Получает список всех ответов.
-     * 
-     * @param ctx контекст HTTP-запроса
-     */
-    public void getAllAnswers(Context ctx) {
-        try {
-            List<Answer> answers = answerService.getAllAnswers();
-            logger.info("Получено {} ответов", answers.size());
-            ctx.json(answers);
-        } catch (Exception e) {
-            logger.error("Ошибка при получении всех ответов", e);
-            ctx.status(500).json(new ErrorResponse("Ошибка при получении ответов"));
-        }
-    }
-
-    /**
      * Получает ответ по его идентификатору.
      * 
      * @param ctx контекст HTTP-запроса

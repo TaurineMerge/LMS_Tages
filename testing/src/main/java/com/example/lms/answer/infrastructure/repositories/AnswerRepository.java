@@ -27,64 +27,58 @@ public class AnswerRepository implements AnswerRepositoryInterface {
 
     // SQL запросы для таблицы answer_d
     private static final String INSERT_SQL = """
-        INSERT INTO answer_d (question_id, text, score)
+        INSERT INTO tests.answer_d (question_id, text, score)
         VALUES (?, ?, ?)
         RETURNING id
         """;
 
     private static final String UPDATE_SQL = """
-        UPDATE answer_d
+        UPDATE tests.answer_d
         SET question_id = ?, text = ?, score = ?
         WHERE id = ?
         """;
 
     private static final String SELECT_BY_ID = """
         SELECT id, question_id, text, score
-        FROM answer_d
+        FROM tests.answer_d
         WHERE id = ?
-        """;
-
-    private static final String SELECT_ALL = """
-        SELECT id, question_id, text, score
-        FROM answer_d
-        ORDER BY question_id, text
         """;
 
     private static final String SELECT_BY_QUESTION = """
         SELECT id, question_id, text, score
-        FROM answer_d
+        FROM tests.answer_d
         WHERE question_id = ?
         ORDER BY text
         """;
 
     private static final String SELECT_CORRECT_BY_QUESTION = """
         SELECT id, question_id, text, score
-        FROM answer_d
+        FROM tests.answer_d
         WHERE question_id = ? AND score > 0
         ORDER BY text
         """;
 
-    private static final String DELETE_BY_ID = "DELETE FROM answer_d WHERE id = ?";
+    private static final String DELETE_BY_ID = "DELETE FROM tests.answer_d WHERE id = ?";
 
-    private static final String DELETE_BY_QUESTION = "DELETE FROM answer_d WHERE question_id = ?";
+    private static final String DELETE_BY_QUESTION = "DELETE FROM tests.answer_d WHERE question_id = ?";
 
-    private static final String EXISTS_BY_ID = "SELECT 1 FROM answer_d WHERE id = ?";
+    private static final String EXISTS_BY_ID = "SELECT 1 FROM tests.answer_d WHERE id = ?";
 
     private static final String EXISTS_BY_QUESTION_AND_TEXT = """
         SELECT 1
-        FROM answer_d
+        FROM tests.answer_d
         WHERE question_id = ? AND LOWER(text) = LOWER(?)
         """;
 
     private static final String COUNT_BY_QUESTION = """
         SELECT COUNT(*)
-        FROM answer_d
+        FROM tests.answer_d
         WHERE question_id = ?
         """;
 
     private static final String COUNT_CORRECT_BY_QUESTION = """
         SELECT COUNT(*)
-        FROM answer_d
+        FROM tests.answer_d
         WHERE question_id = ? AND score > 0
         """;
 
@@ -214,34 +208,6 @@ public class AnswerRepository implements AnswerRepositoryInterface {
         } catch (SQLException e) {
             logger.error("Ошибка при поиске ответа по ID: {}", id, e);
             throw new RuntimeException("Ошибка базы данных при поиске ответа", e);
-        }
-    }
-
-    /**
-     * Получает все ответы из базы данных.
-     *
-     * @return список всех ответов, отсортированных по порядку отображения и тексту ответа
-     * @throws RuntimeException если произошла SQL-ошибка
-     */
-    @Override
-    public List<AnswerModel> findAll() {
-        logger.debug("Получение всех ответов");
-        List<AnswerModel> answers = new ArrayList<>();
-
-        try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SELECT_ALL);
-             ResultSet rs = stmt.executeQuery()) {
-
-            while (rs.next()) {
-                answers.add(mapRowToAnswer(rs));
-            }
-
-            logger.debug("Найдено {} ответов", answers.size());
-            return answers;
-
-        } catch (SQLException e) {
-            logger.error("Ошибка при получении всех ответов", e);
-            throw new RuntimeException("Ошибка базы данных при получении ответов", e);
         }
     }
 
