@@ -119,7 +119,7 @@ API для личного кабинета системы онлайн обра�
     version="1.0.0",
     lifespan=lifespan,
     root_path="/account",  # Базовый путь приложения за nginx
-    docs_url="/docs",
+    docs_url="/docs-swagger",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
     swagger_ui_init_oauth={
