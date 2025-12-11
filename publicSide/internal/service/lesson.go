@@ -17,8 +17,8 @@ import (
 
 // LessonService defines the interface for lesson-related business logic.
 type LessonService interface {
-	// GetAllByCourseID retrieves a paginated list of lessons for a specific course.
-	GetAllByCourseID(ctx context.Context, categoryID, courseID string, page, limit int) ([]response.LessonDTO, response.Pagination, error)
+	// GetAllByCourseID retrieves a paginated list of lessons for a specific course, with sorting capabilities.
+	GetAllByCourseID(ctx context.Context, categoryID, courseID string, page, limit int, sort string) ([]response.LessonDTO, response.Pagination, error)
 	// GetByID retrieves a single detailed lesson by its ID.
 	GetByID(ctx context.Context, categoryID, courseID, lessonID string) (response.LessonDTODetailed, error)
 }
@@ -53,9 +53,9 @@ func toLessonDTODetailed(lesson domain.Lesson) response.LessonDTODetailed {
 	}
 }
 
-func (s *lessonService) GetAllByCourseID(ctx context.Context, categoryID, courseID string, page, limit int) ([]response.LessonDTO, response.Pagination, error) {
+func (s *lessonService) GetAllByCourseID(ctx context.Context, categoryID, courseID string, page, limit int, sort string) ([]response.LessonDTO, response.Pagination, error) {
 	ctx, span := otel.Tracer("lessonService").Start(ctx, "GetAllByCourseID")
-	span.SetAttributes(attribute.String("course.id", courseID), attribute.String("category.id", categoryID))
+	span.SetAttributes(attribute.String("course.id", courseID), attribute.String("category.id", categoryID), attribute.String("sort", sort)) // Added sort attribute
 	defer span.End()
 
 	if page <= 0 {
@@ -68,7 +68,7 @@ func (s *lessonService) GetAllByCourseID(ctx context.Context, categoryID, course
 		limit = 100
 	}
 
-	lessons, total, err := s.repo.GetAllByCourseID(ctx, categoryID, courseID, page, limit)
+	lessons, total, err := s.repo.GetAllByCourseID(ctx, categoryID, courseID, page, limit, sort) // Pass sort to repo
 	if err != nil {
 		return nil, response.Pagination{}, err
 	}

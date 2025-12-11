@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
 	"github.com/jackc/pgx/v5"
@@ -14,8 +15,8 @@ import (
 
 // LessonRepository defines the interface for database operations on lessons.
 type LessonRepository interface {
-	// GetAllByCourseID retrieves a paginated list of lessons for a specific course and category.
-	GetAllByCourseID(ctx context.Context, categoryID, courseID string, page, limit int) ([]domain.Lesson, int, error)
+	// GetAllByCourseID retrieves a paginated list of lessons for a specific course and category, with sorting capabilities.
+	GetAllByCourseID(ctx context.Context, categoryID, courseID string, page, limit int, sort string) ([]domain.Lesson, int, error)
 	// GetByID retrieves a single lesson by its ID, scoped to a course and category.
 	GetByID(ctx context.Context, categoryID, courseID, lessonID string) (domain.Lesson, error)
 }
@@ -42,7 +43,7 @@ func (r *lessonRepository) scanLesson(row pgx.Row) (domain.Lesson, error) {
 	return lesson, err
 }
 
-func (r *lessonRepository) GetAllByCourseID(ctx context.Context, categoryID, courseID string, page, limit int) ([]domain.Lesson, int, error) {
+func (r *lessonRepository) GetAllByCourseID(ctx context.Context, categoryID, courseID string, page, limit int, sort string) ([]domain.Lesson, int, error) {
 	var total int
 	countQuery := fmt.Sprintf(`SELECT COUNT(l.*) FROM %s l
 		JOIN %s c ON l.course_id = c.id
@@ -52,10 +53,13 @@ func (r *lessonRepository) GetAllByCourseID(ctx context.Context, categoryID, cou
 		return nil, 0, fmt.Errorf("failed to count lessons by course: %w", err)
 	}
 
+	// Determine ORDER BY clause
+	orderByClause := buildOrderByClause(sort)
+
 	query := fmt.Sprintf(`SELECT l.id, l.title, l.course_id, l.content, l.created_at, l.updated_at FROM %s l
 		JOIN %s c ON l.course_id = c.id
 		WHERE c.category_id = $1 AND l.course_id = $2 AND c.visibility = 'public'
-		ORDER BY l.created_at ASC LIMIT $3 OFFSET $4`, lessonsTable, courseTable)
+		%s LIMIT $3 OFFSET $4`, lessonsTable, courseTable, orderByClause)
 	offset := (page - 1) * limit
 	rows, err := r.db.Query(ctx, query, categoryID, courseID, limit, offset)
 	if err != nil {
@@ -97,4 +101,38 @@ func (r *lessonRepository) GetByID(ctx context.Context, categoryID, courseID, le
 	}
 
 	return lesson, nil
+}
+
+// buildOrderByClause constructs the ORDER BY clause based on the sort parameter.
+// It uses a whitelist of allowed fields to prevent SQL injection.
+// Example sort strings: "title", "-created_at"
+func buildOrderByClause(sort string) string {
+	// Default sort order
+	if sort == "" {
+		return "ORDER BY l.created_at ASC"
+	}
+
+	// Map of allowed sortable fields from API param to database column
+	allowedFields := map[string]string{
+		"title":      "l.title",
+		"created_at": "l.created_at",
+		"updated_at": "l.updated_at",
+	}
+
+	// Determine sort direction and field
+	direction := "ASC"
+	field := sort
+	if strings.HasPrefix(sort, "-") {
+		direction = "DESC"
+		field = strings.TrimPrefix(sort, "-")
+	}
+
+	dbColumn, ok := allowedFields[field]
+	if !ok {
+		// If an invalid field is provided, fall back to default sort to prevent errors.
+		// Alternatively, an error could be returned, but falling back is often more user-friendly for optional sorts.
+		return "ORDER BY l.created_at ASC"
+	}
+
+	return fmt.Sprintf("ORDER BY %s %s", dbColumn, direction)
 }

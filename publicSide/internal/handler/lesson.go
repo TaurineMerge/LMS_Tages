@@ -43,12 +43,12 @@ func (h *LessonHandler) GetLessonsByCourseID(c *fiber.Ctx) error {
 		return apperrors.NewInvalidUUID(apiconst.ParamCourseID)
 	}
 
-	var query request.PaginationQuery
+	var query request.ListQuery
 	if err := c.QueryParser(&query); err != nil {
 		return apperrors.NewInvalidRequest("Wrong query parameters")
 	}
 
-	lessons, pagination, err := h.service.GetAllByCourseID(c.UserContext(), categoryID, courseID, query.Page, query.Limit)
+	lessons, pagination, err := h.service.GetAllByCourseID(c.UserContext(), categoryID, courseID, query.Page, query.Limit, query.Sort) // Added query.Sort
 	if err != nil {
 		return err
 	}
