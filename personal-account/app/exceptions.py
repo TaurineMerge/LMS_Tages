@@ -3,7 +3,7 @@
 
 class app_exception(Exception):
     """Base application exception."""
-    
+
     def __init__(self, message: str, status_code: int = 400):
         self.message = message
         self.status_code = status_code
@@ -12,7 +12,7 @@ class app_exception(Exception):
 
 class not_found_error(app_exception):
     """Resource not found exception."""
-    
+
     def __init__(self, resource: str, identifier: str | None = None):
         message = f"{resource} not found"
         if identifier:
@@ -22,13 +22,13 @@ class not_found_error(app_exception):
 
 class conflict_error(app_exception):
     """Conflict exception (e.g., duplicate resource)."""
-    
+
     def __init__(self, message: str):
         super().__init__(message, status_code=409)
 
 
 class validation_error(app_exception):
     """Validation error exception."""
-    
+
     def __init__(self, message: str):
         super().__init__(message, status_code=422)

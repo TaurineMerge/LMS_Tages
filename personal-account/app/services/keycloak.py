@@ -1,13 +1,15 @@
 import logging
-from typing import Optional, Dict, Any
-from keycloak import KeycloakOpenID, KeycloakAdmin
-from keycloak.exceptions import KeycloakError, KeycloakAuthenticationError
+from typing import Any, Dict, Optional
+
+from keycloak.exceptions import KeycloakAuthenticationError, KeycloakError
 
 from app.config import get_settings
 from app.telemetry import traced
+from keycloak import KeycloakAdmin, KeycloakOpenID
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
+
 
 class KeycloakService:
     """Service for direct interactions with Keycloak API."""
@@ -19,7 +21,7 @@ class KeycloakService:
             client_id=settings.KEYCLOAK_CLIENT_ID,
             realm_name=settings.KEYCLOAK_REALM,
             client_secret_key=settings.KEYCLOAK_CLIENT_SECRET,
-            verify=True
+            verify=True,
         )
 
         # 2. Настройка Admin (для управления пользователями)
@@ -36,8 +38,8 @@ class KeycloakService:
                     username=settings.KEYCLOAK_ADMIN_USERNAME,
                     password=settings.KEYCLOAK_ADMIN_PASSWORD,
                     realm_name=settings.KEYCLOAK_REALM,
-                    user_realm_name="master", # Админ обычно в master реалме
-                    verify=True
+                    user_realm_name="master",  # Админ обычно в master реалме
+                    verify=True,
                 )
             except Exception as e:
                 logger.error(f"Failed to initialize Keycloak Admin: {e}")
@@ -50,11 +52,7 @@ class KeycloakService:
 
     @traced("keycloak.get_token", record_args=True, record_result=True)
     def get_token(self, code: str, redirect_uri: str) -> Dict[str, Any]:
-        return self.openid.token(
-            grant_type='authorization_code',
-            code=code,
-            redirect_uri=redirect_uri
-        )
+        return self.openid.token(grant_type="authorization_code", code=code, redirect_uri=redirect_uri)
 
     @traced("keycloak.refresh_token", record_args=True, record_result=True)
     def refresh_token(self, refresh_token: str) -> Dict[str, Any]:
@@ -72,6 +70,7 @@ class KeycloakService:
     @traced("keycloak.get_user_id", record_args=True, record_result=True)
     def get_user_id(self, username: str) -> Optional[str]:
         return self.admin.get_user_id(username)
+
 
 # Singleton instance
 keycloak_service = KeycloakService()

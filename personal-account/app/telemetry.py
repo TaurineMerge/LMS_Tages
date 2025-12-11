@@ -1,4 +1,5 @@
 """Telemetry helpers for tracing application code."""
+
 from __future__ import annotations
 
 import inspect
@@ -145,9 +146,7 @@ def _attach_code_attributes(span: trace.Span, func: Callable[..., Any]) -> None:
         pass
 
 
-def _attach_args(
-    span: trace.Span, func: Callable[..., Any], args: tuple, kwargs: dict
-) -> None:
+def _attach_args(span: trace.Span, func: Callable[..., Any], args: tuple, kwargs: dict) -> None:
     """Attach function arguments to span."""
     if not span.is_recording():
         return
@@ -173,7 +172,7 @@ def _attach_result(span: trace.Span, result: Any) -> None:
         attributes={
             "result.type": type(result).__name__,
             "result.preview": _safe_serialize(result, max_len=256),
-        }
+        },
     )
 
 

@@ -1,16 +1,17 @@
 """Frontend pages router with Jinja2 templates."""
 
+import logging
+
 from fastapi import APIRouter, Request
 from fastapi.responses import (
     HTMLResponse,
     RedirectResponse,
 )  # <--- Добавили RedirectResponse
 from fastapi.templating import Jinja2Templates
+from opentelemetry import trace
 
 from app.config import get_settings
 from app.telemetry import traced
-from opentelemetry import trace
-import logging
 
 settings = get_settings()
 templates = Jinja2Templates(directory="templates")

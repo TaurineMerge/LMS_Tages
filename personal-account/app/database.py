@@ -1,4 +1,5 @@
 """Database connection management using SQLAlchemy Core (async)."""
+
 from __future__ import annotations
 
 import json
@@ -6,12 +7,12 @@ import logging
 from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator, Mapping
 
+from opentelemetry import trace
+from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+from opentelemetry.trace import StatusCode
 from sqlalchemy import text
 from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, create_async_engine
-from opentelemetry import trace
-from opentelemetry.trace import StatusCode
-from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 
 from app.config import get_settings
 
@@ -26,7 +27,7 @@ _MAX_ATTR_LEN = 1024
 
 
 def _build_async_url(url: str) -> str:
-    if url.startswith("postgresql+" ):
+    if url.startswith("postgresql+"):
         return url
     if url.startswith("postgresql://"):
         return url.replace("postgresql://", "postgresql+asyncpg://", 1)
