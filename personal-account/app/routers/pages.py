@@ -112,12 +112,10 @@ async def root_page(request: Request):
     token = request.cookies.get("access_token")
 
     if token:
-        return RedirectResponse(
-            url="/account/dashboard"
-        )  # Full path with /account prefix
+        return RedirectResponse(url="/dashboard")  # Full path with /account prefix
 
     return _render_template_safe(
-        "landing.hbs", {"request": request, **get_keycloak_urls()}
+        "index.hbs", {"request": request, **get_keycloak_urls()}
     )
 
 
@@ -137,13 +135,13 @@ async def dashboard_page(request: Request):
     )
 
 
-@router.get("/login", response_class=HTMLResponse)
-@traced("pages.login")
-async def login_page(request: Request):
-    """Render login page."""
-    return _render_template_safe(
-        "login.hbs", {"request": request, **get_keycloak_urls()}
-    )
+# @router.get("/login", response_class=HTMLResponse)
+# @traced("pages.login")
+# async def login_page(request: Request):
+#     """Render login page."""
+#     return _render_template_safe(
+#         "login.hbs", {"request": request, **get_keycloak_urls()}
+#     )
 
 
 @router.get("/profile", response_class=HTMLResponse)

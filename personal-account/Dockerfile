@@ -22,7 +22,9 @@ ENV PATH="$POETRY_HOME/bin:$VENV_PATH/bin:$PATH"
 RUN apt-get update && apt-get install --no-install-recommends -y curl \
     && curl -sSL https://install.python-poetry.org | python
 
-RUN poetry self update
+# Проверяем установку Poetry и обновляем
+RUN ${POETRY_HOME}/bin/poetry --version && ${POETRY_HOME}/bin/poetry self update
+RUN poetry config --list
 # Устанавливаем рабочую директорию
 WORKDIR /app
 
@@ -35,7 +37,11 @@ COPY pyproject.toml poetry.lock* /app/
 COPY . .
 
 # Устанавливаем зависимости
-RUN poetry install --no-root --only=main --no-interaction --no-ansi
+# RUN ${POETRY_HOME}/bin/poetry install --only=main --no-interaction --no-ansi
+RUN /opt/poetry/bin/poetry install --only main --no-interaction --no-ansi
+
+# Копируем остальные файлы *после* установки зависимостей для лучшего использования кэша
+COPY . .
 
 # Создаем пользователя для безопасности
 RUN useradd -m -u 1000 fastapiuser && chown -R fastapiuser:fastapiuser /app
