@@ -12,9 +12,9 @@ import com.example.lms.test.domain.repository.TestRepositoryInterface;
  * <p>
  * Отвечает за:
  * <ul>
- *     <li>конвертацию DTO ↔ Domain Model</li>
- *     <li>вызовы репозитория ({@link TestRepositoryInterface})</li>
- *     <li>бизнес-логику CRUD-операций над тестами</li>
+ * <li>конвертацию DTO ↔ Domain Model</li>
+ * <li>вызовы репозитория ({@link TestRepositoryInterface})</li>
+ * <li>бизнес-логику CRUD-операций над тестами</li>
  * </ul>
  *
  * Сервисный слой отделяет контроллеры от репозитория
@@ -35,7 +35,7 @@ public class TestService {
     }
 
     // ---------------------------------------------------------------------
-    //                        DTO -> MODEL
+    // DTO -> MODEL
     // ---------------------------------------------------------------------
 
     /**
@@ -50,15 +50,14 @@ public class TestService {
     private TestModel toModel(Test dto) {
         return new TestModel(
                 dto.getId() != null ? UUID.fromString(dto.getId().toString()) : null,
-                null, // TODO: placeholder, если в дальнейшем появится authorId или структура владельца
+                null,
                 dto.getTitle(),
                 dto.getMin_point(),
-                dto.getDescription()
-        );
+                dto.getDescription());
     }
 
     // ---------------------------------------------------------------------
-    //                        MODEL → DTO
+    // MODEL → DTO
     // ---------------------------------------------------------------------
 
     /**
@@ -69,15 +68,14 @@ public class TestService {
      */
     private Test toDto(TestModel model) {
         return new Test(
-                model.getId() != null ? model.getId().getMostSignificantBits() : null,
+                model.getId() != null ? model.getId().toString() : null,
                 model.getTitle(),
                 model.getMinPoint(),
-                model.getDescription()
-        );
+                model.getDescription());
     }
 
     // ---------------------------------------------------------------------
-    //                        PUBLIC API METHODS
+    // PUBLIC API METHODS
     // ---------------------------------------------------------------------
 
     /**
@@ -106,7 +104,8 @@ public class TestService {
     /**
      * Получает тест по ID.
      * <p>
-     * Если тест не найден — будет выброшено {@link java.util.NoSuchElementException}.
+     * Если тест не найден — будет выброшено
+     * {@link java.util.NoSuchElementException}.
      *
      * @param id строковый UUID теста
      * @return DTO найденного теста

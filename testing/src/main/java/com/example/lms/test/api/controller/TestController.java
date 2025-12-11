@@ -128,7 +128,7 @@ public class TestController {
         SimpleTracer.runWithSpan("updateTest", () -> {
             String id = ctx.pathParam("id");
             Test dto = ctx.bodyAsClass(Test.class);
-            dto.setId(Long.parseLong(id));
+            dto.setId(id);
 
             Test updated = testService.updateTest(dto);
             ctx.json(updated);

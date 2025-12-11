@@ -8,10 +8,10 @@ import java.io.Serializable;
  * Используется для передачи данных о тестах между слоями приложения.
  * Содержит информацию:
  * <ul>
- *     <li><b>id</b> — идентификатор теста</li>
- *     <li><b>title</b> — название теста</li>
- *     <li><b>min_point</b> — минимальный проходной балл</li>
- *     <li><b>description</b> — описание теста</li>
+ * <li><b>id</b> — идентификатор теста</li>
+ * <li><b>title</b> — название теста</li>
+ * <li><b>min_point</b> — минимальный проходной балл</li>
+ * <li><b>description</b> — описание теста</li>
  * </ul>
  *
  * Реализует {@link Serializable}, что позволяет передавать объект
@@ -24,7 +24,7 @@ public class Test implements Serializable {
     /**
      * Идентификатор теста.
      */
-    private Long id;
+    private String id;
 
     /**
      * Название теста.
@@ -55,7 +55,7 @@ public class Test implements Serializable {
      * @param min_point   минимальный проходной балл
      * @param description описание теста
      */
-    public Test(Long id, String title, Integer min_point, String description) {
+    public Test(String id, String title, Integer min_point, String description) {
         this.id = id;
         this.title = title;
         this.min_point = min_point;
@@ -63,12 +63,12 @@ public class Test implements Serializable {
     }
 
     /** @return идентификатор теста */
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
     /** @param id новый идентификатор теста */
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
