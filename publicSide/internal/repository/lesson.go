@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -22,15 +23,24 @@ type LessonRepository interface {
 }
 
 type lessonRepository struct {
-	db *pgxpool.Pool
+	db   *pgxpool.Pool
+	psql squirrel.StatementBuilderType
 }
 
 // NewLessonRepository creates a new instance of a lesson repository.
 func NewLessonRepository(db *pgxpool.Pool) LessonRepository {
-	return &lessonRepository{db: db}
+	return &lessonRepository{
+		db:   db,
+		psql: squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
+	}
 }
 
-func (r *lessonRepository) scanLesson(row pgx.Row) (domain.Lesson, error) {
+// pgx.Row and *pgx.Rows both implement this interface
+type scanner interface {
+	Scan(dest ...any) error
+}
+
+func (r *lessonRepository) scanLesson(row scanner) (domain.Lesson, error) {
 	var lesson domain.Lesson
 	err := row.Scan(
 		&lesson.ID,
@@ -44,24 +54,49 @@ func (r *lessonRepository) scanLesson(row pgx.Row) (domain.Lesson, error) {
 }
 
 func (r *lessonRepository) GetAllByCourseID(ctx context.Context, categoryID, courseID string, page, limit int, sort string) ([]domain.Lesson, int, error) {
+	countBuilder := r.psql.Select("COUNT(l.id)").
+		From(lessonsTable + " AS l").
+		Join(courseTable + " AS c ON l.course_id = c.id").
+		Where(squirrel.Eq{
+			"c.category_id": categoryID,
+			"l.course_id":   courseID,
+			"c.visibility":  "public",
+		})
+
+	countQuery, args, err := countBuilder.ToSql()
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to build count query for lessons: %w", err)
+	}
+
 	var total int
-	countQuery := fmt.Sprintf(`SELECT COUNT(l.*) FROM %s l
-		JOIN %s c ON l.course_id = c.id
-		WHERE c.category_id = $1 AND l.course_id = $2 AND c.visibility = 'public'`, lessonsTable, courseTable)
-	err := r.db.QueryRow(ctx, countQuery, categoryID, courseID).Scan(&total)
+	err = r.db.QueryRow(ctx, countQuery, args...).Scan(&total)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to count lessons by course: %w", err)
 	}
 
-	// Determine ORDER BY clause
-	orderByClause := buildOrderByClause(sort)
+	if total == 0 {
+		return []domain.Lesson{}, 0, nil
+	}
 
-	query := fmt.Sprintf(`SELECT l.id, l.title, l.course_id, l.content, l.created_at, l.updated_at FROM %s l
-		JOIN %s c ON l.course_id = c.id
-		WHERE c.category_id = $1 AND l.course_id = $2 AND c.visibility = 'public'
-		%s LIMIT $3 OFFSET $4`, lessonsTable, courseTable, orderByClause)
-	offset := (page - 1) * limit
-	rows, err := r.db.Query(ctx, query, categoryID, courseID, limit, offset)
+	queryBuilder := r.psql.Select("l.id", "l.title", "l.course_id", "l.content", "l.created_at", "l.updated_at").
+		From(lessonsTable + " AS l").
+		Join(courseTable + " AS c ON l.course_id = c.id").
+		Where(squirrel.Eq{
+			"c.category_id": categoryID,
+			"l.course_id":   courseID,
+			"c.visibility":  "public",
+		}).
+		Limit(uint64(limit)).
+		Offset(uint64((page - 1) * limit))
+
+	queryBuilder = r.applySorting(queryBuilder, sort)
+
+	query, args, err := queryBuilder.ToSql()
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to build get all lessons query: %w", err)
+	}
+
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get lessons by course: %w", err)
 	}
@@ -69,15 +104,7 @@ func (r *lessonRepository) GetAllByCourseID(ctx context.Context, categoryID, cou
 
 	var lessons []domain.Lesson
 	for rows.Next() {
-		var lesson domain.Lesson
-		err := rows.Scan(
-			&lesson.ID,
-			&lesson.Title,
-			&lesson.CourseID,
-			&lesson.Content,
-			&lesson.CreatedAt,
-			&lesson.UpdatedAt,
-		)
+		lesson, err := r.scanLesson(rows)
 		if err != nil {
 			return nil, 0, fmt.Errorf("failed to scan lesson: %w", err)
 		}
@@ -88,10 +115,22 @@ func (r *lessonRepository) GetAllByCourseID(ctx context.Context, categoryID, cou
 }
 
 func (r *lessonRepository) GetByID(ctx context.Context, categoryID, courseID, lessonID string) (domain.Lesson, error) {
-	query := fmt.Sprintf(`SELECT l.id, l.title, l.course_id, l.content, l.created_at, l.updated_at FROM %s l
-		JOIN %s c ON l.course_id = c.id
-		WHERE c.category_id = $1 AND l.course_id = $2 AND l.id = $3`, lessonsTable, courseTable)
-	row := r.db.QueryRow(ctx, query, categoryID, courseID, lessonID)
+	queryBuilder := r.psql.Select("l.id", "l.title", "l.course_id", "l.content", "l.created_at", "l.updated_at").
+		From(lessonsTable + " AS l").
+		Join(courseTable + " AS c ON l.course_id = c.id").
+		Where(squirrel.Eq{
+			"c.category_id": categoryID,
+			"l.course_id":   courseID,
+			"l.id":          lessonID,
+			"c.visibility":  "public",
+		})
+
+	query, args, err := queryBuilder.ToSql()
+	if err != nil {
+		return domain.Lesson{}, fmt.Errorf("failed to build get lesson by id query: %w", err)
+	}
+
+	row := r.db.QueryRow(ctx, query, args...)
 	lesson, err := r.scanLesson(row)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -103,36 +142,27 @@ func (r *lessonRepository) GetByID(ctx context.Context, categoryID, courseID, le
 	return lesson, nil
 }
 
-// buildOrderByClause constructs the ORDER BY clause based on the sort parameter.
-// It uses a whitelist of allowed fields to prevent SQL injection.
-// Example sort strings: "title", "-created_at"
-func buildOrderByClause(sort string) string {
-	// Default sort order
+func (r *lessonRepository) applySorting(builder squirrel.SelectBuilder, sort string) squirrel.SelectBuilder {
 	if sort == "" {
-		return "ORDER BY l.created_at ASC"
+		return builder.OrderBy("l.created_at ASC")
 	}
 
-	// Map of allowed sortable fields from API param to database column
 	allowedFields := map[string]string{
 		"title":      "l.title",
 		"created_at": "l.created_at",
 		"updated_at": "l.updated_at",
 	}
 
-	// Determine sort direction and field
 	direction := "ASC"
-	field := sort
 	if strings.HasPrefix(sort, "-") {
 		direction = "DESC"
-		field = strings.TrimPrefix(sort, "-")
+		sort = strings.TrimPrefix(sort, "-")
 	}
 
-	dbColumn, ok := allowedFields[field]
+	dbColumn, ok := allowedFields[sort]
 	if !ok {
-		// If an invalid field is provided, fall back to default sort to prevent errors.
-		// Alternatively, an error could be returned, but falling back is often more user-friendly for optional sorts.
-		return "ORDER BY l.created_at ASC"
+		return builder.OrderBy("l.created_at ASC")
 	}
 
-	return fmt.Sprintf("ORDER BY %s %s", dbColumn, direction)
+	return builder.OrderBy(fmt.Sprintf("%s %s", dbColumn, direction))
 }

@@ -68,7 +68,7 @@ func (s *lessonService) GetAllByCourseID(ctx context.Context, categoryID, course
 		limit = 100
 	}
 
-	lessons, total, err := s.repo.GetAllByCourseID(ctx, categoryID, courseID, page, limit, sort) // Pass sort to repo
+	lessons, total, err := s.repo.GetAllByCourseID(ctx, categoryID, courseID, page, limit, sort)
 	if err != nil {
 		return nil, response.Pagination{}, err
 	}
