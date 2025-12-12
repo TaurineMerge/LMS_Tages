@@ -2,58 +2,11 @@
 
 {% block title %}Регистрация{% endblock %}
 
-{% block extra_css %}
-<style>
-    .register-container {
-        max-width: 500px;
-        margin: 0 auto;
-    }
-    
-    .register-card {
-        background: white;
-        border-radius: 15px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-        padding: 40px;
-    }
-    
-    .form-floating > label {
-        color: #6c757d;
-    }
-    
-    .password-strength {
-        height: 4px;
-        border-radius: 2px;
-        transition: all 0.3s ease;
-    }
-    
-    .password-strength.weak { background: #dc3545; width: 33%; }
-    .password-strength.medium { background: #ffc107; width: 66%; }
-    .password-strength.strong { background: #198754; width: 100%; }
-    
-    .requirements {
-        font-size: 0.85rem;
-    }
-    
-    .requirements li {
-        color: #6c757d;
-        transition: color 0.3s ease;
-    }
-    
-    .requirements li.valid {
-        color: #198754;
-    }
-    
-    .requirements li.valid::before {
-        content: "✓ ";
-    }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="register-container py-5">
     <div class="register-card">
         <div class="text-center mb-4">
-            <i class="bi bi-person-plus-fill text-primary" style="font-size: 48px;"></i>
+            <p class="bi bi-person-plus-fill text-primary" style="font-size: 48px;"></p>
             <h2 class="mt-3">Регистрация</h2>
             <p class="text-muted">Создайте аккаунт в системе обучения</p>
         </div>
@@ -62,33 +15,33 @@
             <div class="row g-3">
                 <div class="col-md-6">
                     <div class="form-floating">
-                        <input type="text" class="form-control" id="firstName" name="first_name" placeholder="Имя">
-                        <label for="firstName"><i class="bi bi-person me-2"></i>Имя</label>
+                        <pnput type="text" class="form-control" id="firstName" name="first_name" placeholder="Имя">
+                        <label for="firstName"><p class="bi bi-person me-2"></p>Имя</label>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="form-floating">
-                        <input type="text" class="form-control" id="lastName" name="last_name" placeholder="Фамилия">
-                        <label for="lastName"><i class="bi bi-person me-2"></i>Фамилия</label>
+                        <pnput type="text" class="form-control" id="lastName" name="last_name" placeholder="Фамилия">
+                        <label for="lastName"><p class="bi bi-person me-2"></p>Фамилия</label>
                     </div>
                 </div>
             </div>
             
             <div class="form-floating mt-3">
-                <input type="text" class="form-control" id="username" name="username" placeholder="Имя пользователя" required>
-                <label for="username"><i class="bi bi-at me-2"></i>Имя пользователя *</label>
+                <pnput type="text" class="form-control" id="username" name="username" placeholder="Имя пользователя" required>
+                <label for="username"><p class="bi bi-at me-2"></p>Имя пользователя *</label>
                 <div class="invalid-feedback">Имя пользователя обязательно</div>
             </div>
             
             <div class="form-floating mt-3">
-                <input type="email" class="form-control" id="email" name="email" placeholder="Email" required>
-                <label for="email"><i class="bi bi-envelope me-2"></i>Email *</label>
+                <pnput type="email" class="form-control" id="email" name="email" placeholder="Email" required>
+                <label for="email"><p class="bi bi-envelope me-2"></p>Email *</label>
                 <div class="invalid-feedback">Введите корректный email</div>
             </div>
             
             <div class="form-floating mt-3">
-                <input type="password" class="form-control" id="password" name="password" placeholder="Пароль" required>
-                <label for="password"><i class="bi bi-lock me-2"></i>Пароль *</label>
+                <pnput type="password" class="form-control" id="password" name="password" placeholder="Пароль" required>
+                <label for="password"><p class="bi bi-lock me-2"></p>Пароль *</label>
                 <div class="invalid-feedback">Пароль должен быть не менее 8 символов</div>
             </div>
             
@@ -97,8 +50,8 @@
             </div>
             
             <div class="form-floating mt-3">
-                <input type="password" class="form-control" id="confirmPassword" placeholder="Подтвердите пароль" required>
-                <label for="confirmPassword"><i class="bi bi-lock-fill me-2"></i>Подтвердите пароль *</label>
+                <pnput type="password" class="form-control" id="confirmPassword" placeholder="Подтвердите пароль" required>
+                <label for="confirmPassword"><p class="bi bi-lock-fill me-2"></p>Подтвердите пароль *</label>
                 <div class="invalid-feedback">Пароли не совпадают</div>
             </div>
             
@@ -113,14 +66,14 @@
             </div>
             
             <div class="form-check mt-4">
-                <input class="form-check-input" type="checkbox" id="agreeTerms" required>
+                <pnput class="form-check-input" type="checkbox" id="agreeTerms" required>
                 <label class="form-check-label" for="agreeTerms">
                     Я согласен с <a href="#" class="text-decoration-none">условиями использования</a>
                 </label>
             </div>
             
             <button type="submit" class="btn btn-primary w-100 mt-4 py-3" id="submitBtn">
-                <i class="bi bi-person-plus me-2"></i>Зарегистрироваться
+                <p class="bi bi-person-plus me-2"></p>Зарегистрироваться
             </button>
         </form>
         
@@ -136,7 +89,7 @@
         </div>
         
         <a href="/account/api/v1/auth/register" class="btn btn-outline-secondary w-100">
-            <i class="bi bi-box-arrow-in-right me-2"></i>Регистрация через Keycloak
+            <p class="bi bi-box-arrow-in-right me-2"></p>Регистрация через Keycloak
         </a>
     </div>
 </div>
@@ -261,14 +214,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 showToast(errorMsg, 'error');
                 
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="bi bi-person-plus me-2"></i>Зарегистрироваться';
+                submitBtn.innerHTML = '<p class="bi bi-person-plus me-2"></p>Зарегистрироваться';
             }
         } catch (error) {
             console.error('Registration error:', error);
             showToast('Ошибка соединения с сервером', 'error');
             
             submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="bi bi-person-plus me-2"></i>Зарегистрироваться';
+            submitBtn.innerHTML = '<p class="bi bi-person-plus me-2"></p>Зарегистрироваться';
         }
     });
 });

@@ -1,5 +1,3 @@
-/* Custom styles for Personal Account */
-
 /* Variables */
 :root {
     --primary-color: #4361ee;
@@ -192,6 +190,49 @@ body {
 .certificate-preview {
     background: linear-gradient(135deg, #fff9e6 0%, #fff 100%);
 }
+
+    .register-container {
+        max-width: 500px;
+        margin: 0 auto;
+    }
+    
+    .register-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+    }
+    
+    .form-floating > label {
+        color: #6c757d;
+    }
+    
+    .password-strength {
+        height: 4px;
+        border-radius: 2px;
+        transition: all 0.3s ease;
+    }
+    
+    .password-strength.weak { background: #dc3545; width: 33%; }
+    .password-strength.medium { background: #ffc107; width: 66%; }
+    .password-strength.strong { background: #198754; width: 100%; }
+    
+    .requirements {
+        font-size: 0.85rem;
+    }
+    
+    .requirements li {
+        color: #6c757d;
+        transition: color 0.3s ease;
+    }
+    
+    .requirements li.valid {
+        color: #198754;
+    }
+    
+    .requirements li.valid::before {
+        content: "✓ ";
+    }
 
 /* Responsive */
 @media (max-width: 768px) {

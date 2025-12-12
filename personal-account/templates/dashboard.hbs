@@ -15,7 +15,7 @@
                     <h3 class="mb-0" id="stat-courses">-</h3>
                 </div>
                 <div class="icon primary">
-                    <i class="bi bi-book"></i>
+                    <p class="bi bi-book"></p>
                 </div>
             </div>
         </div>
@@ -29,7 +29,7 @@
                     <h3 class="mb-0" id="stat-certificates">-</h3>
                 </div>
                 <div class="icon success">
-                    <i class="bi bi-award"></i>
+                    <p class="bi bi-award"></p>
                 </div>
             </div>
         </div>
@@ -43,7 +43,7 @@
                     <h3 class="mb-0" id="stat-visits">-</h3>
                 </div>
                 <div class="icon warning">
-                    <i class="bi bi-calendar-check"></i>
+                    <p class="bi bi-calendar-check"></p>
                 </div>
             </div>
         </div>
@@ -57,7 +57,7 @@
                     <h3 class="mb-0" id="stat-score">-</h3>
                 </div>
                 <div class="icon danger">
-                    <i class="bi bi-graph-up"></i>
+                    <p class="bi bi-graph-up"></p>
                 </div>
             </div>
         </div>
@@ -68,7 +68,7 @@
     <!-- Activity Chart -->
     <div class="col-lg-8 mb-4">
         <div class="card p-4">
-            <h5 class="mb-4"><i class="bi bi-bar-chart me-2"></i>Активность за неделю</h5>
+            <h5 class="mb-4"><p class="bi bi-bar-chart me-2"></p>Активность за неделю</h5>
             <canvas id="activityChart" height="100"></canvas>
         </div>
     </div>
@@ -76,7 +76,7 @@
     <!-- Recent Certificates -->
     <div class="col-lg-4 mb-4">
         <div class="card p-4">
-            <h5 class="mb-4"><i class="bi bi-award me-2"></i>Последние сертификаты</h5>
+            <h5 class="mb-4"><p class="bi bi-award me-2"></p>Последние сертификаты</h5>
             <div id="recent-certificates">
                 <div class="loading-spinner">
                     <div class="spinner-border text-primary" role="status">
@@ -92,7 +92,7 @@
     <!-- Recent Visits -->
     <div class="col-lg-6 mb-4">
         <div class="card p-4">
-            <h5 class="mb-4"><i class="bi bi-clock-history me-2"></i>Последние посещения</h5>
+            <h5 class="mb-4"><p class="bi bi-clock-history me-2"></p>Последние посещения</h5>
             <div id="recent-visits">
                 <div class="loading-spinner">
                     <div class="spinner-border text-primary" role="status">
@@ -106,29 +106,29 @@
     <!-- Quick Actions -->
     <div class="col-lg-6 mb-4">
         <div class="card p-4">
-            <h5 class="mb-4"><i class="bi bi-lightning me-2"></i>Быстрые действия</h5>
+            <h5 class="mb-4"><p class="bi bi-lightning me-2"></p>Быстрые действия</h5>
             <div class="row g-3">
                 <div class="col-6">
                     <a href="/account/profile" class="btn btn-outline-primary w-100 py-3">
-                        <i class="bi bi-person-gear d-block mb-2" style="font-size: 24px;"></i>
+                        <p class="bi bi-person-gear d-block mb-2" style="font-size: 24px;"></p>
                         Редактировать профиль
                     </a>
                 </div>
                 <div class="col-6">
                     <a href="/account/certificates" class="btn btn-outline-success w-100 py-3">
-                        <i class="bi bi-download d-block mb-2" style="font-size: 24px;"></i>
+                        <p class="bi bi-download d-block mb-2" style="font-size: 24px;"></p>
                         Скачать сертификаты
                     </a>
                 </div>
                 <div class="col-6">
                     <a href="/courses" class="btn btn-outline-info w-100 py-3">
-                        <i class="bi bi-book d-block mb-2" style="font-size: 24px;"></i>
+                        <p class="bi bi-book d-block mb-2" style="font-size: 24px;"></p>
                         Каталог курсов
                     </a>
                 </div>
                 <div class="col-6">
                     <a href="/account/visits" class="btn btn-outline-warning w-100 py-3">
-                        <i class="bi bi-calendar3 d-block mb-2" style="font-size: 24px;"></i>
+                        <p class="bi bi-calendar3 d-block mb-2" style="font-size: 24px;"></p>
                         История посещений
                     </a>
                 </div>
@@ -143,14 +143,14 @@
     {{#each certificates}}
     <div class="d-flex align-items-center mb-3 p-2 bg-light rounded">
         <div class="icon success me-3" style="width: 40px; height: 40px; font-size: 16px;">
-            <i class="bi bi-award-fill"></i>
+            <p class="bi bi-award-fill"></p>
         </div>
         <div class="flex-grow-1">
             <h6 class="mb-0">Курс #{{course_id}}</h6>
             <small class="text-muted">{{formatDate created_at}}</small>
         </div>
         <a href="/account/certificates/{{id}}" class="btn btn-sm btn-outline-primary">
-            <i class="bi bi-eye"></i>
+            <p class="bi bi-eye"></p>
         </a>
     </div>
     {{else}}
@@ -162,7 +162,7 @@
     {{#each visits}}
     <div class="d-flex align-items-center mb-3 p-2 bg-light rounded">
         <div class="icon warning me-3" style="width: 40px; height: 40px; font-size: 16px;">
-            <i class="bi bi-play-circle"></i>
+            <p class="bi bi-play-circle"></p>
         </div>
         <div class="flex-grow-1">
             <h6 class="mb-0">Урок #{{lesson_id}}</h6>
