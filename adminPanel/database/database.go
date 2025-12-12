@@ -26,6 +26,10 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Database - обертка над пулом соединений PostgreSQL
@@ -118,13 +122,55 @@ func GetDB() *Database {
 //   - map[string]interface{}: строка результата или nil
 //   - error: ошибка выполнения (если есть)
 func (db *Database) FetchOne(ctx context.Context, query string, args ...interface{}) (map[string]interface{}, error) {
+	tr := otel.Tracer("admin-panel/database")
+	ctx, span := tr.Start(ctx, "db.query",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("db.system", "postgresql"),
+			attribute.String("db.statement", query),
+			attribute.String("db.operation", "SELECT"),
+		),
+	)
+	defer span.End()
+
+	span.AddEvent("db.query.start", trace.WithAttributes(
+		attribute.String("db.query", query),
+		attribute.Int("db.args.count", len(args)),
+	))
+
+	if len(args) > 0 {
+		argsStr := fmt.Sprintf("%v", args)
+		span.AddEvent("db.query.params", trace.WithAttributes(
+			attribute.String("db.args", argsStr),
+		))
+	}
+
 	rows, err := db.Pool.Query(ctx, query, args...)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 	defer rows.Close()
 
-	return scanRowToMap(rows)
+	result, err := scanRowToMap(rows)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
+	}
+
+	if result != nil {
+		span.SetAttributes(attribute.Int("db.rows_affected", 1))
+	} else {
+		span.SetAttributes(attribute.Int("db.rows_affected", 0))
+	}
+
+	span.AddEvent("db.query.end", trace.WithAttributes(
+		attribute.Int("db.rows_returned", len(result)),
+	))
+
+	return result, nil
 }
 
 // FetchAll выполняет SQL-запрос и возвращает все строки результата
@@ -141,13 +187,50 @@ func (db *Database) FetchOne(ctx context.Context, query string, args ...interfac
 //   - []map[string]interface{}: слайс строк результата
 //   - error: ошибка выполнения (если есть)
 func (db *Database) FetchAll(ctx context.Context, query string, args ...interface{}) ([]map[string]interface{}, error) {
+	tr := otel.Tracer("admin-panel/database")
+	ctx, span := tr.Start(ctx, "db.query",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("db.system", "postgresql"),
+			attribute.String("db.statement", query),
+			attribute.String("db.operation", "SELECT"),
+		),
+	)
+	defer span.End()
+
+	span.AddEvent("db.query.start", trace.WithAttributes(
+		attribute.String("db.query", query),
+		attribute.Int("db.args.count", len(args)),
+	))
+
+	if len(args) > 0 {
+		argsStr := fmt.Sprintf("%v", args)
+		span.AddEvent("db.query.params", trace.WithAttributes(
+			attribute.String("db.args", argsStr),
+		))
+	}
+
 	rows, err := db.Pool.Query(ctx, query, args...)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 	defer rows.Close()
 
-	return scanRowsToMap(rows)
+	results, err := scanRowsToMap(rows)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
+	}
+
+	span.SetAttributes(attribute.Int("db.rows_affected", len(results)))
+	span.AddEvent("db.query.end", trace.WithAttributes(
+		attribute.Int("db.rows_returned", len(results)),
+	))
+
+	return results, nil
 }
 
 // Execute выполняет SQL-запрос без возврата результата
@@ -164,11 +247,43 @@ func (db *Database) FetchAll(ctx context.Context, query string, args ...interfac
 //   - int64: количество затронутых строк
 //   - error: ошибка выполнения (если есть)
 func (db *Database) Execute(ctx context.Context, query string, args ...interface{}) (int64, error) {
+	tr := otel.Tracer("admin-panel/database")
+	ctx, span := tr.Start(ctx, "db.query",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("db.system", "postgresql"),
+			attribute.String("db.statement", query),
+			attribute.String("db.operation", "EXECUTE"),
+		),
+	)
+	defer span.End()
+
+	span.AddEvent("db.query.start", trace.WithAttributes(
+		attribute.String("db.query", query),
+		attribute.Int("db.args.count", len(args)),
+	))
+
+	if len(args) > 0 {
+		argsStr := fmt.Sprintf("%v", args)
+		span.AddEvent("db.query.params", trace.WithAttributes(
+			attribute.String("db.args", argsStr),
+		))
+	}
+
 	result, err := db.Pool.Exec(ctx, query, args...)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return 0, err
 	}
-	return result.RowsAffected(), nil
+
+	rowsAffected := result.RowsAffected()
+	span.SetAttributes(attribute.Int("db.rows_affected", int(rowsAffected)))
+	span.AddEvent("db.query.end", trace.WithAttributes(
+		attribute.Int("db.rows_affected", int(rowsAffected)),
+	))
+
+	return rowsAffected, nil
 }
 
 // ExecuteReturning выполняет SQL-запрос с возвратом результата
@@ -185,13 +300,55 @@ func (db *Database) Execute(ctx context.Context, query string, args ...interface
 //   - map[string]interface{}: строка результата
 //   - error: ошибка выполнения (если есть)
 func (db *Database) ExecuteReturning(ctx context.Context, query string, args ...interface{}) (map[string]interface{}, error) {
+	tr := otel.Tracer("admin-panel/database")
+	ctx, span := tr.Start(ctx, "db.query",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("db.system", "postgresql"),
+			attribute.String("db.statement", query),
+			attribute.String("db.operation", "EXECUTE_RETURNING"),
+		),
+	)
+	defer span.End()
+
+	span.AddEvent("db.query.start", trace.WithAttributes(
+		attribute.String("db.query", query),
+		attribute.Int("db.args.count", len(args)),
+	))
+
+	if len(args) > 0 {
+		argsStr := fmt.Sprintf("%v", args)
+		span.AddEvent("db.query.params", trace.WithAttributes(
+			attribute.String("db.args", argsStr),
+		))
+	}
+
 	rows, err := db.Pool.Query(ctx, query, args...)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 	defer rows.Close()
 
-	return scanRowToMap(rows)
+	result, err := scanRowToMap(rows)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
+	}
+
+	if result != nil {
+		span.SetAttributes(attribute.Int("db.rows_affected", 1))
+	} else {
+		span.SetAttributes(attribute.Int("db.rows_affected", 0))
+	}
+
+	span.AddEvent("db.query.end", trace.WithAttributes(
+		attribute.Int("db.rows_returned", len(result)),
+	))
+
+	return result, nil
 }
 
 // scanRowToMap сканирует одну строку результата в map

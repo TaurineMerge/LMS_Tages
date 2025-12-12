@@ -145,14 +145,8 @@ func (s *CategoryService) GetCategory(ctx context.Context, id string) (*models.C
 //   - *models.Category: созданная категория
 //   - error: ошибка выполнения (если есть)
 func (s *CategoryService) CreateCategory(ctx context.Context, input models.CategoryCreate) (*models.Category, error) {
-	ctx, span := categoryTracer.Start(ctx, "CategoryService.CreateCategory")
-	span.SetAttributes(attribute.String("category.title", input.Title))
-	defer span.End()
-
 	existing, err := s.categoryRepo.GetByTitle(ctx, input.Title)
 	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to check existing category: %v", err))
 	}
 
@@ -163,12 +157,8 @@ func (s *CategoryService) CreateCategory(ctx context.Context, input models.Categ
 	data, err := s.categoryRepo.Create(ctx, input.Title)
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate key") {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
 			return nil, exceptions.ConflictError("Category with this title already exists")
 		}
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to create category: %v", err))
 	}
 
