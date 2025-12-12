@@ -1,4 +1,4 @@
-// Пакет middleware содержит HTTP middleware для admin panel
+// Package middleware содержит HTTP middleware для admin panel
 //
 // Пакет предоставляет:
 //   - Аутентификацию через JWT-токены

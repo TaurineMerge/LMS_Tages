@@ -1,4 +1,4 @@
-// Пакет database предоставляет функции для работы с PostgreSQL
+// Package database предоставляет функции для работы с PostgreSQL
 //
 // Пакет реализует:
 //   - Инициализацию пула соединений
@@ -67,8 +67,8 @@ func InitDB(settings *config.Settings) (*Database, error) {
 	if settings.DatabaseMaxPoolSize < 0 || settings.DatabaseMaxPoolSize > math.MaxInt32 {
 		return nil, fmt.Errorf("invalid DatabaseMaxPoolSize: %d", settings.DatabaseMaxPoolSize)
 	}
-	poolConfig.MinConns = int32(settings.DatabaseMinPoolSize)
-	poolConfig.MaxConns = int32(settings.DatabaseMaxPoolSize)
+	poolConfig.MinConns = int32(settings.DatabaseMinPoolSize) //nolint:gosec
+	poolConfig.MaxConns = int32(settings.DatabaseMaxPoolSize) //nolint:gosec
 
 	poolConfig.HealthCheckPeriod = 1 * time.Minute
 	poolConfig.MaxConnLifetime = 1 * time.Hour
@@ -108,27 +108,27 @@ func GetDB() *Database {
 	return dbInstance
 }
 
-// FetchOne выполняет SQL-запрос и возвращает одну строку результата
+// executeQueryReturning выполняет SQL-запрос с возвратом одной строки и трассировкой
 //
-// Функция аналогична fetch_one из Python. Возвращает первую
-// строку результата или nil, если строк нет.
+// Вспомогательная функция для FetchOne и ExecuteReturning.
 //
 // Параметры:
 //   - ctx: контекст выполнения
 //   - query: SQL-запрос
+//   - operation: тип операции для трассировки
 //   - args: аргументы для запроса
 //
 // Возвращает:
 //   - map[string]interface{}: строка результата или nil
 //   - error: ошибка выполнения (если есть)
-func (db *Database) FetchOne(ctx context.Context, query string, args ...interface{}) (map[string]interface{}, error) {
+func (db *Database) executeQueryReturning(ctx context.Context, query string, operation string, args ...interface{}) (map[string]interface{}, error) {
 	tr := otel.Tracer("admin-panel/database")
 	ctx, span := tr.Start(ctx, "db.query",
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(
 			attribute.String("db.system", "postgresql"),
 			attribute.String("db.statement", query),
-			attribute.String("db.operation", "SELECT"),
+			attribute.String("db.operation", operation),
 		),
 	)
 	defer span.End()
@@ -171,6 +171,23 @@ func (db *Database) FetchOne(ctx context.Context, query string, args ...interfac
 	))
 
 	return result, nil
+}
+
+// FetchOne выполняет SQL-запрос и возвращает одну строку результата
+//
+// Функция аналогична fetch_one из Python. Возвращает первую
+// строку результата или nil, если строк нет.
+//
+// Параметры:
+//   - ctx: контекст выполнения
+//   - query: SQL-запрос
+//   - args: аргументы для запроса
+//
+// Возвращает:
+//   - map[string]interface{}: строка результата или nil
+//   - error: ошибка выполнения (если есть)
+func (db *Database) FetchOne(ctx context.Context, query string, args ...interface{}) (map[string]interface{}, error) {
+	return db.executeQueryReturning(ctx, query, "SELECT", args...)
 }
 
 // FetchAll выполняет SQL-запрос и возвращает все строки результата
@@ -300,55 +317,7 @@ func (db *Database) Execute(ctx context.Context, query string, args ...interface
 //   - map[string]interface{}: строка результата
 //   - error: ошибка выполнения (если есть)
 func (db *Database) ExecuteReturning(ctx context.Context, query string, args ...interface{}) (map[string]interface{}, error) {
-	tr := otel.Tracer("admin-panel/database")
-	ctx, span := tr.Start(ctx, "db.query",
-		trace.WithSpanKind(trace.SpanKindClient),
-		trace.WithAttributes(
-			attribute.String("db.system", "postgresql"),
-			attribute.String("db.statement", query),
-			attribute.String("db.operation", "EXECUTE_RETURNING"),
-		),
-	)
-	defer span.End()
-
-	span.AddEvent("db.query.start", trace.WithAttributes(
-		attribute.String("db.query", query),
-		attribute.Int("db.args.count", len(args)),
-	))
-
-	if len(args) > 0 {
-		argsStr := fmt.Sprintf("%v", args)
-		span.AddEvent("db.query.params", trace.WithAttributes(
-			attribute.String("db.args", argsStr),
-		))
-	}
-
-	rows, err := db.Pool.Query(ctx, query, args...)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, err
-	}
-	defer rows.Close()
-
-	result, err := scanRowToMap(rows)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, err
-	}
-
-	if result != nil {
-		span.SetAttributes(attribute.Int("db.rows_affected", 1))
-	} else {
-		span.SetAttributes(attribute.Int("db.rows_affected", 0))
-	}
-
-	span.AddEvent("db.query.end", trace.WithAttributes(
-		attribute.Int("db.rows_returned", len(result)),
-	))
-
-	return result, nil
+	return db.executeQueryReturning(ctx, query, "EXECUTE_RETURNING", args...)
 }
 
 // scanRowToMap сканирует одну строку результата в map
