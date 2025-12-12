@@ -28,7 +28,7 @@ public class SimpleTracer {
 
     /** Глобальный OpenTelemetry tracer, полученный из Java Agent. */
     private static final Tracer TRACER =
-            GlobalOpenTelemetry.getTracer("lms-service");
+            GlobalOpenTelemetry.getTracer("testing-service");
 
     /**
      * Возвращает traceId текущего активного спана.

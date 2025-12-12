@@ -82,7 +82,7 @@ public class Main {
                 TestRouter.register(testController);
                 AnswerRouter.register(answerController);
             });
-        }).start(APP_PORT);
+        }).start("0.0.0.0", APP_PORT);
 
         // Приложение успешно запустилось
         logger.info("Testing Service started on port %d%n", APP_PORT);
