@@ -142,6 +142,13 @@ def custom_openapi():
         description=app.description,
         routes=app.routes,
     )
+    # Add server with base path so Swagger UI sends requests to correct URLs
+    openapi_schema["servers"] = [
+        {
+            "url": "/account",
+            "description": "Personal Account API (behind nginx proxy)",
+        }
+    ]
     openapi_schema["components"]["securitySchemes"] = {
         "OAuth2PasswordBearer": oauth2_scheme,
         "BearerAuth": {
