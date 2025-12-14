@@ -1,24 +1,24 @@
-{
-  "monitoring": {
-    "show-milliseconds": true,
-    "metrics-namespace": "io.jaeger"
+  {
+    "monitoring": {
+      "show-milliseconds": true,
+      "metrics-namespace": "io.jaeger"
+    },
+    "dependencies": {
+      "menuEnabled": true
+    },
+    "archive": {
+      "enabled": false
+    },
+    "tracking": {
+      "gaID": "UA-000000-2",
+      "trackErrors": true
   },
-  "dependencies": {
-    "menuEnabled": true
-  },
-  "archive": {
-    "enabled": false
-  },
-  "tracking": {
-    "gaID": "UA-000000-2",
-    "trackErrors": true
- },
-  "header": {
-    "links": [
-      {
-        "text": "About",
-        "url": "https://github.com/jaegertracing/jaeger"
-      }
-    ]
+    "header": {
+      "links": [
+        {
+          "text": "About",
+          "url": "https://github.com/jaegertracing/jaeger"
+        }
+      ]
+    }
   }
-}

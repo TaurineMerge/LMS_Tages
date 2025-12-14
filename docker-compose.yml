@@ -170,8 +170,7 @@ services:
       - SPAN_STORAGE_TYPE=memory
       - JAEGER_DISABLED=false
       - JAEGER_QUERY_UI_CONFIG=/etc/jaeger/ui-config.json
-    ports:
-      - "16686:16686"
+    ports: []
     volumes:
       - ./observability/jaeger-ui-config.json:/etc/jaeger/ui-config.json:ro
     networks:
