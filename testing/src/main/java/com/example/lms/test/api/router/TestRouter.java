@@ -3,18 +3,16 @@ package com.example.lms.test.api.router;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.example.lms.security.JwtHandler;
 import com.example.lms.test.api.controller.TestController;
-import com.example.lms.tracing.SimpleTracer;
-
-import io.github.cdimascio.dotenv.Dotenv;
+import com.example.lms.shared.router.RouterUtils;
 
 import static io.javalin.apibuilder.ApiBuilder.*;
+import static com.example.lms.shared.router.RouterUtils.*;
 
 import java.util.Set;
 
 /**
- * Router для сущности Test.
+ * Роутер для управления тестами.
  * <p>
  * Регистрирует REST-эндпоинты:
  * <ul>
@@ -24,90 +22,48 @@ import java.util.Set;
  * <li>PUT /tests/{id} — обновить тест</li>
  * <li>DELETE /tests/{id} — удалить тест</li>
  * </ul>
- *
- * Все запросы:
+ * 
+ * <h2>Политика доступа:</h2>
  * <ul>
- * <li>проходят через JWT-аутентификацию {@link JwtHandler#authenticate()}</li>
- * <li>логируются до и после обработки</li>
- * <li>содержат traceId для трассировки запроса в OpenTelemetry</li>
+ * <li><b>Студенты:</b> просмотр опубликованных тестов</li>
+ * <li><b>Преподаватели:</b> полный доступ к своим тестам</li>
+ * <li><b>Администраторы:</b> полный доступ ко всем тестам</li>
  * </ul>
- *
- * Метод {@link #register(TestController)} вызывается из Main при поднятии
- * приложения.
+ * 
+ * @see TestController
+ * @see RouterUtils
  */
 public class TestRouter {
     private static final Logger logger = LoggerFactory.getLogger(TestRouter.class);
-    private static final Dotenv dotenv = Dotenv.load();
-
-    private static final String KEYCLOAK_STUDENT_REALM = dotenv.get("KEYCLOAK_STUDENT_REALM");
-    private static final String KEYCLOAK_TEACHER_REALM = dotenv.get("KEYCLOAK_TEACHER_REALM");
 
     /**
      * Регистрирует маршруты группы /tests и их подмаршрутов.
-     * <p>
-     * Пример структуры:
      * 
-     * <pre>
-     * /tests
-     *    GET     — список тестов (HTML)
-     *    POST    — создание теста
-     *
-     * /tests/{id}
-     *    GET     — получить тест
-     *    PUT     — обновить тест
-     *    DELETE  — удалить тест
-     * </pre>
-     *
      * @param testController контроллер, содержащий обработчики запросов
+     * @throws IllegalArgumentException если testController равен null
      */
     public static void register(TestController testController) {
+        validateController(testController, "TestController");
 
         path("/tests", () -> {
 
-            // ---- MIDDLEWARE: Аутентификация ----
-            before(JwtHandler.authenticate());
+            // Стандартные middleware
+            applyStandardBeforeMiddleware(logger);
 
-            // ---- MIDDLEWARE: Логирование начала запроса ----
-            before(ctx -> {
-                logger.info("Request started: {} {} (traceId: {})",
-                        ctx.method(),
-                        ctx.path(),
-                        SimpleTracer.getCurrentTraceId());
-            });
-
-            // ---- CRUD маршруты ----
-            get(ctx -> { // GET /tests
-                JwtHandler.requireRealm(Set.of(KEYCLOAK_TEACHER_REALM, KEYCLOAK_STUDENT_REALM));
-                testController.getTests(ctx);
-            });
-            post(ctx -> { // POST /tests
-                JwtHandler.requireRealm(KEYCLOAK_TEACHER_REALM);
-                testController.createTest(ctx);
-            });
+            // Список и создание тестов - для преподавателей и админов
+            get(withRealm(WRITE_ACCESS_REALMS, testController::getTests));
+            post(withRealm(WRITE_ACCESS_REALMS, testController::createTest));
 
             path("/{id}", () -> {
-                get(ctx -> { // GET /tests/{id}
-                    JwtHandler.requireRealm(Set.of(KEYCLOAK_TEACHER_REALM, KEYCLOAK_STUDENT_REALM));
-                    testController.getTestById(ctx);
-                });
-                put(ctx -> { // PUT /tests/{id}
-                    JwtHandler.requireRealm(KEYCLOAK_TEACHER_REALM);
-                    testController.updateTest(ctx);
-                });
-                delete(ctx -> { // DELETE /tests/{id}
-                    JwtHandler.requireRealm(KEYCLOAK_TEACHER_REALM);
-                    testController.deleteTest(ctx);
-                });
+                // Просмотр теста - для всех
+                get(withRealm(ALL_REALMS, testController::getTestById));
+
+                // Редактирование и удаление - для преподавателей и админов
+                put(withRealm(WRITE_ACCESS_REALMS, testController::updateTest));
+                delete(withRealm(Set.of(ADMIN_REALM), testController::deleteTest));
             });
 
-            // ---- MIDDLEWARE: Логирование завершения запроса ----
-            after(ctx -> {
-                logger.info("Request completed: {} {} -> {} (traceId: {})",
-                        ctx.method(),
-                        ctx.path(),
-                        ctx.status(),
-                        SimpleTracer.getCurrentTraceId());
-            });
+            applyStandardAfterMiddleware(logger);
         });
     }
 }

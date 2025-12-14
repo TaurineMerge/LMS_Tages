@@ -3,117 +3,108 @@ package com.example.lms.answer.api.router;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.example.lms.Main;
 import com.example.lms.answer.api.controller.AnswerController;
-import com.example.lms.security.JwtHandler;
-import com.example.lms.tracing.SimpleTracer;
+import com.example.lms.shared.router.RouterUtils;
 
-import io.github.cdimascio.dotenv.Dotenv;
-
-import static io.javalin.apibuilder.ApiBuilder.after;
-import static io.javalin.apibuilder.ApiBuilder.before;
-import static io.javalin.apibuilder.ApiBuilder.delete;
-import static io.javalin.apibuilder.ApiBuilder.get;
-import static io.javalin.apibuilder.ApiBuilder.path;
-import static io.javalin.apibuilder.ApiBuilder.post;
-import static io.javalin.apibuilder.ApiBuilder.put;
-
-import java.util.Set;
+import static io.javalin.apibuilder.ApiBuilder.*;
+import static com.example.lms.shared.router.RouterUtils.*;
 
 /**
- * Роутер для маршрутов управления ответами.
- * Определяет конечные точки REST API для операций с ответами.
+ * Роутер для управления ответами на вопросы тестов.
+ * <p>
+ * Определяет REST API эндпоинты для работы с ответами, включая:
+ * <ul>
+ * <li>Создание, чтение, обновление и удаление ответов</li>
+ * <li>Получение ответов по ID вопроса</li>
+ * <li>Получение правильных ответов</li>
+ * <li>Подсчет ответов и правильных ответов</li>
+ * </ul>
+ * 
+ * <h2>Структура маршрутов:</h2>
+ * 
+ * <pre>
+ * POST   /answers                                    - создание ответа (teacher)
+ * 
+ * GET    /answers/by-question?questionId={id}        - получить все ответы вопроса (student, teacher)
+ * DELETE /answers/by-question?questionId={id}        - удалить все ответы вопроса (teacher)
+ * GET    /answers/by-question/correct?questionId={id} - получить правильные ответы (student, teacher)
+ * GET    /answers/by-question/count?questionId={id}   - подсчет ответов (student, teacher)
+ * GET    /answers/by-question/count-correct?questionId={id} - подсчет правильных ответов (student, teacher)
+ * 
+ * GET    /answers/{id}                               - получить ответ по ID (student, teacher)
+ * PUT    /answers/{id}                               - обновить ответ (teacher)
+ * DELETE /answers/{id}                               - удалить ответ (teacher)
+ * GET    /answers/{id}/correct                       - проверить правильность ответа (student, teacher)
+ * </pre>
+ * 
+ * <h2>Политика доступа:</h2>
+ * <ul>
+ * <li><b>Студенты:</b> могут только читать ответы и проверять их
+ * правильность</li>
+ * <li><b>Преподаватели:</b> полный доступ ко всем операциям</li>
+ * </ul>
+ * 
+ * @see AnswerController
+ * @see RouterUtils
  */
 public class AnswerRouter {
-    private static final Logger logger = LoggerFactory.getLogger(Main.class);
-    private static final Dotenv dotenv = Dotenv.load();
-
-    private static final String KEYCLOAK_STUDENT_REALM = dotenv.get("KEYCLOAK_STUDENT_REALM");
-    private static final String KEYCLOAK_TEACHER_REALM = dotenv.get("KEYCLOAK_TEACHER_REALM");
+    private static final Logger logger = LoggerFactory.getLogger(AnswerRouter.class);
 
     /**
-     * Регистрирует маршруты для управления ответами.
+     * Регистрирует все маршруты для управления ответами.
+     * <p>
+     * Использует стандартные middleware из {@link RouterUtils} для:
+     * <ul>
+     * <li>JWT аутентификации</li>
+     * <li>Логирования запросов</li>
+     * <li>Авторизации по realm</li>
+     * </ul>
      *
-     * @param answerController контроллер для обработки запросов
+     * @param answerController контроллер для обработки бизнес-логики запросов
+     * @throws IllegalArgumentException если answerController равен null
      */
     public static void register(AnswerController answerController) {
+        validateController(answerController, "AnswerController");
+
         path("/answers", () -> {
-            // Аутентификация для всех маршрутов
-            before(JwtHandler.authenticate());
 
-            // Логирование начала запроса
-            before(ctx -> {
-                logger.info("▶️  Request started: {} {} (traceId: {})",
-                        ctx.method(),
-                        ctx.path(),
-                        SimpleTracer.getCurrentTraceId());
-            });
+            // Стандартные middleware: аутентификация и логирование
+            applyStandardBeforeMiddleware(logger);
 
-            // Базовые CRUD операции
-            post(ctx -> { // POST /answers
-                JwtHandler.requireRealm(KEYCLOAK_TEACHER_REALM);
-                answerController.createAnswer(ctx);
-            });
-            // Операции с ответами по вопросам
+            // Создание ответа
+            post(withRealm(TEACHER_REALM, answerController::createAnswer));
+
+            // Операции с ответами по ID вопроса
             path("/by-question", () -> {
-                delete(ctx -> { // DELETE /answers/by-question?questionId={id}
-                    JwtHandler.requireRealm(KEYCLOAK_TEACHER_REALM);
-                    answerController.deleteAnswersByQuestionId(ctx);
-                });
-                get(ctx -> { // GET /answers/by-question?questionId={id}
-                    JwtHandler.requireRealm(Set.of(KEYCLOAK_STUDENT_REALM, KEYCLOAK_TEACHER_REALM));
-                    answerController.getAnswersByQuestionId(ctx);
-                });
+                delete(withRealm(TEACHER_REALM, answerController::deleteAnswersByQuestionId));
+                get(withRealm(READ_ACCESS_REALMS, answerController::getAnswersByQuestionId));
+
                 path("/correct", () -> {
-                    get(ctx -> { // GET /answers/by-question/correct?questionId={id}
-                        JwtHandler.requireRealm(Set.of(KEYCLOAK_STUDENT_REALM, KEYCLOAK_TEACHER_REALM));
-                        answerController.getCorrectAnswersByQuestionId(ctx);
-                    });
+                    get(withRealm(READ_ACCESS_REALMS, answerController::getCorrectAnswersByQuestionId));
                 });
-                path("/count", () -> { // GET /answers/by-question/count?questionId={id}
-                    get(ctx -> {
-                        JwtHandler.requireRealm(Set.of(KEYCLOAK_STUDENT_REALM, KEYCLOAK_TEACHER_REALM));
-                        answerController.countAnswersByQuestionId(ctx);
-                    });
+
+                path("/count", () -> {
+                    get(withRealm(READ_ACCESS_REALMS, answerController::countAnswersByQuestionId));
                 });
+
                 path("/count-correct", () -> {
-                    get(ctx -> { // GET /answers/by-question/count-correct?questionId={id}
-                        JwtHandler.requireRealm(Set.of(KEYCLOAK_STUDENT_REALM, KEYCLOAK_TEACHER_REALM));
-                        answerController.countCorrectAnswersByQuestionId(ctx);
-                    });
+                    get(withRealm(READ_ACCESS_REALMS, answerController::countCorrectAnswersByQuestionId));
                 });
             });
 
             // Операции с конкретным ответом
             path("/{id}", () -> {
-                get(ctx -> { // GET /answers/{id}
-                    JwtHandler.requireRealm(Set.of(KEYCLOAK_STUDENT_REALM, KEYCLOAK_TEACHER_REALM));
-                    answerController.getAnswerById(ctx);
-                });
-                put(ctx -> { // PUT /answers/{id}
-                    JwtHandler.requireRealm(KEYCLOAK_TEACHER_REALM);
-                    answerController.updateAnswer(ctx);
-                });
-                delete(ctx -> { // DELETE /answers/{id}
-                    JwtHandler.requireRealm(KEYCLOAK_TEACHER_REALM);
-                    answerController.deleteAnswer(ctx);
-                });
+                get(withRealm(READ_ACCESS_REALMS, answerController::getAnswerById));
+                put(withRealm(TEACHER_REALM, answerController::updateAnswer));
+                delete(withRealm(TEACHER_REALM, answerController::deleteAnswer));
+
                 path("/correct", () -> {
-                    get(ctx -> { // GET /answers/{id}/correct
-                        JwtHandler.requireRealm(Set.of(KEYCLOAK_STUDENT_REALM, KEYCLOAK_TEACHER_REALM));
-                        answerController.checkIfAnswerIsCorrect(ctx);
-                    });
+                    get(withRealm(READ_ACCESS_REALMS, answerController::checkIfAnswerIsCorrect));
                 });
             });
 
             // Логирование завершения запроса
-            after(ctx -> {
-                logger.info("✅ Request completed: {} {} -> {} (traceId: {})",
-                        ctx.method(),
-                        ctx.path(),
-                        ctx.status(),
-                        SimpleTracer.getCurrentTraceId());
-            });
+            applyStandardAfterMiddleware(logger);
         });
     }
 }
