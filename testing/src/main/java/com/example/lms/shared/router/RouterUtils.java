@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.example.lms.security.JwtHandler;
+import com.example.lms.shared.validation.JsonSchemaValidator;
 import com.example.lms.tracing.SimpleTracer;
 
 import io.github.cdimascio.dotenv.Dotenv;
@@ -18,6 +19,7 @@ import java.util.Set;
  * <ul>
  * <li>Общие middleware для логирования и аутентификации</li>
  * <li>Вспомогательные методы для авторизации по realm</li>
+ * <li>Методы для композиции валидации и авторизации</li>
  * <li>Константы realm из конфигурации</li>
  * </ul>
  * 
@@ -27,22 +29,25 @@ import java.util.Set;
  * public class UserRouter {
  *     public static void register(UserController controller) {
  *         path("/users", () -> {
- *             // Применить стандартные middleware
- *             before(RouterUtils.authenticate());
- *             before(RouterUtils.logRequestStart());
+ *             applyStandardBeforeMiddleware();
  * 
- *             // Эндпоинты с авторизацией по realm
- *             get(RouterUtils.withRealm(RouterUtils.ADMIN_REALM, controller::getUsers));
- *             post(RouterUtils.withRealm(RouterUtils.TEACHER_REALM, controller::createUser));
+ *             // Простая авторизация
+ *             get(withRealm(TEACHER_REALM, controller::getUsers));
  * 
- *             // Логирование завершения
- *             after(RouterUtils.logRequestEnd());
+ *             // Валидация + авторизация
+ *             post(withValidationAndRealm(
+ *                     "/schemas/user-schema.json",
+ *                     TEACHER_REALM,
+ *                     controller::createUser));
+ * 
+ *             applyStandardAfterMiddleware();
  *         });
  *     }
  * }
  * </pre>
  * 
  * @see JwtHandler
+ * @see JsonSchemaValidator
  * @see SimpleTracer
  */
 public class RouterUtils {
@@ -173,7 +178,7 @@ public class RouterUtils {
      * <b>Пример использования:</b>
      * 
      * <pre>
-     * delete(withRealm(ADMIN_REALM, controller::deleteUser));
+     * delete(withRealm(TEACHER_REALM, controller::deleteUser));
      * </pre>
      * 
      * @param realm   разрешенный realm для доступа к эндпоинту
@@ -216,35 +221,69 @@ public class RouterUtils {
         };
     }
 
+    // ============================================================
+    // ВАЛИДАЦИЯ + АВТОРИЗАЦИЯ
+    // ============================================================
+
     /**
-     * Создает Handler только с проверкой realm, без дополнительной логики.
+     * Создает композитный Handler с валидацией JSON и проверкой realm.
      * <p>
-     * Полезно когда нужно просто запретить доступ определенным realm,
-     * а основную логику обрабатывает другой обработчик.
+     * Последовательность выполнения:
+     * <ol>
+     * <li>Валидация JSON по схеме</li>
+     * <li>Проверка realm</li>
+     * <li>Выполнение бизнес-логики</li>
+     * </ol>
      * 
      * <p>
      * <b>Пример использования:</b>
      * 
      * <pre>
-     * before(requireRealm(ADMIN_REALM)); // Применить ко всей группе маршрутов
-     * get(controller::getData); // Логика без дополнительных проверок
+     * post(withValidationAndRealm(
+     *         "/schemas/answer-schema.json",
+     *         TEACHER_REALM,
+     *         controller::createAnswer));
      * </pre>
      * 
-     * @param realm требуемый realm
-     * @return Handler для проверки realm
+     * @param schemaPath путь к JSON Schema в classpath
+     * @param realm      требуемый realm
+     * @param handler    обработчик бизнес-логики
+     * @return композитный Handler
+     * @throws io.javalin.http.BadRequestResponse если валидация не пройдена
+     * @throws io.javalin.http.ForbiddenResponse  если realm не совпадает
      */
-    public static Handler requireRealm(String realm) {
-        return JwtHandler.requireRealm(realm);
+    public static Handler withValidationAndRealm(String schemaPath, String realm, Handler handler) {
+        return ctx -> {
+            JsonSchemaValidator.validate(schemaPath).handle(ctx);
+            JwtHandler.requireRealm(realm).handle(ctx);
+            handler.handle(ctx);
+        };
     }
 
     /**
-     * Создает Handler только с проверкой набора realm, без дополнительной логики.
+     * Создает композитный Handler с валидацией JSON и проверкой набора realm.
      * 
-     * @param realms набор требуемых realm
-     * @return Handler для проверки realm
+     * <p>
+     * <b>Пример использования:</b>
+     * 
+     * <pre>
+     * put(withValidationAndRealm(
+     *         "/schemas/answer-schema.json",
+     *         READ_ACCESS_REALMS,
+     *         controller::updateAnswer));
+     * </pre>
+     * 
+     * @param schemaPath путь к JSON Schema в classpath
+     * @param realms     набор требуемых realm
+     * @param handler    обработчик бизнес-логики
+     * @return композитный Handler
      */
-    public static Handler requireRealm(Set<String> realms) {
-        return JwtHandler.requireRealm(realms);
+    public static Handler withValidationAndRealm(String schemaPath, Set<String> realms, Handler handler) {
+        return ctx -> {
+            JsonSchemaValidator.validate(schemaPath).handle(ctx);
+            JwtHandler.requireRealm(realms).handle(ctx);
+            handler.handle(ctx);
+        };
     }
 
     // ============================================================
@@ -318,7 +357,7 @@ public class RouterUtils {
     }
 
     // ============================================================
-    // ВАЛИДАЦИЯ
+    // ВАЛИДАЦИЯ ПАРАМЕТРОВ
     // ============================================================
 
     /**
