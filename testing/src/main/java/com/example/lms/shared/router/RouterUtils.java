@@ -60,17 +60,8 @@ public class RouterUtils {
     /** Realm для преподавателей из переменных окружения */
     public static final String TEACHER_REALM = dotenv.get("KEYCLOAK_TEACHER_REALM");
 
-    /** Realm для администраторов из переменных окружения (если есть) */
-    public static final String ADMIN_REALM = dotenv.get("KEYCLOAK_ADMIN_REALM", "admin-realm");
-
     /** Набор realm с доступом только на чтение (студенты и преподаватели) */
     public static final Set<String> READ_ACCESS_REALMS = Set.of(STUDENT_REALM, TEACHER_REALM);
-
-    /** Набор realm с доступом на запись (преподаватели и администраторы) */
-    public static final Set<String> WRITE_ACCESS_REALMS = Set.of(TEACHER_REALM, ADMIN_REALM);
-
-    /** Набор всех realm системы */
-    public static final Set<String> ALL_REALMS = Set.of(STUDENT_REALM, TEACHER_REALM, ADMIN_REALM);
 
     // ============================================================
     // MIDDLEWARE: Аутентификация

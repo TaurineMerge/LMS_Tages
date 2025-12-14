@@ -27,7 +27,6 @@ import java.util.Set;
  * <ul>
  * <li><b>Студенты:</b> просмотр опубликованных тестов</li>
  * <li><b>Преподаватели:</b> полный доступ к своим тестам</li>
- * <li><b>Администраторы:</b> полный доступ ко всем тестам</li>
  * </ul>
  * 
  * @see TestController
@@ -50,17 +49,17 @@ public class TestRouter {
             // Стандартные middleware
             applyStandardBeforeMiddleware(logger);
 
-            // Список и создание тестов - для преподавателей и админов
-            get(withRealm(WRITE_ACCESS_REALMS, testController::getTests));
-            post(withRealm(WRITE_ACCESS_REALMS, testController::createTest));
+            // Список и создание тестов
+            get(withRealm(TEACHER_REALM, testController::getTests));
+            post(withRealm(TEACHER_REALM, testController::createTest));
 
             path("/{id}", () -> {
                 // Просмотр теста - для всех
-                get(withRealm(ALL_REALMS, testController::getTestById));
+                get(withRealm(READ_ACCESS_REALMS, testController::getTestById));
 
-                // Редактирование и удаление - для преподавателей и админов
-                put(withRealm(WRITE_ACCESS_REALMS, testController::updateTest));
-                delete(withRealm(Set.of(ADMIN_REALM), testController::deleteTest));
+                // Редактирование и удаление
+                put(withRealm(TEACHER_REALM, testController::updateTest));
+                delete(withRealm(Set.of(TEACHER_REALM), testController::deleteTest));
             });
 
             applyStandardAfterMiddleware(logger);
