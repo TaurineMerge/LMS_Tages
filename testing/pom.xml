@@ -23,6 +23,7 @@
         <postgresql.version>42.6.0</postgresql.version>
         <jknack.version>4.3.1</jknack.version>
         <cdimascio.version>3.0.0</cdimascio.version>
+        <networknt.version>1.5.1</networknt.version>
     </properties>
 
     <dependencies>
@@ -65,6 +66,11 @@
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-api</artifactId>
             <version>${opentelemetry.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.networknt</groupId>
+            <artifactId>json-schema-validator</artifactId>
+            <version>${networknt.version}</version>
         </dependency>
     </dependencies>
 
