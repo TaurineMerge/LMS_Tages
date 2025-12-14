@@ -33,36 +33,36 @@ import java.util.Set;
  * @see RouterUtils
  */
 public class TestRouter {
-    private static final Logger logger = LoggerFactory.getLogger(TestRouter.class);
+	private static final Logger logger = LoggerFactory.getLogger(TestRouter.class);
 
-    /**
-     * Регистрирует маршруты группы /tests и их подмаршрутов.
-     * 
-     * @param testController контроллер, содержащий обработчики запросов
-     * @throws IllegalArgumentException если testController равен null
-     */
-    public static void register(TestController testController) {
-        validateController(testController, "TestController");
+	/**
+	 * Регистрирует маршруты группы /tests и их подмаршрутов.
+	 * 
+	 * @param testController контроллер, содержащий обработчики запросов
+	 * @throws IllegalArgumentException если testController равен null
+	 */
+	public static void register(TestController testController) {
+		validateController(testController, "TestController");
 
-        path("/tests", () -> {
+		path("/tests", () -> {
 
-            // Стандартные middleware
-            applyStandardBeforeMiddleware(logger);
+			// Стандартные middleware
+			applyStandardBeforeMiddleware(logger);
 
-            // Список и создание тестов
-            get(withRealm(TEACHER_REALM, testController::getTests));
-            post(withRealm(TEACHER_REALM, testController::createTest));
+			// Список и создание тестов
+			get(withRealm(TEACHER_REALM, testController::getTests));
+			post(withRealm(TEACHER_REALM, testController::createTest));
 
-            path("/{id}", () -> {
-                // Просмотр теста - для всех
-                get(withRealm(READ_ACCESS_REALMS, testController::getTestById));
+			path("/{id}", () -> {
+				// Просмотр теста - для всех
+				get(withRealm(READ_ACCESS_REALMS, testController::getTestById));
 
-                // Редактирование и удаление
-                put(withRealm(TEACHER_REALM, testController::updateTest));
-                delete(withRealm(Set.of(TEACHER_REALM), testController::deleteTest));
-            });
+				// Редактирование и удаление
+				put(withRealm(TEACHER_REALM, testController::updateTest));
+				delete(withRealm(Set.of(TEACHER_REALM), testController::deleteTest));
+			});
 
-            applyStandardAfterMiddleware(logger);
-        });
-    }
+			applyStandardAfterMiddleware(logger);
+		});
+	}
 }

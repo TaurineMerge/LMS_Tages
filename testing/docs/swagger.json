@@ -1,0 +1,517 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Testing Service API",
+    "description": "API для управления тестами, попытками прохождения тестов и ответами",
+    "version": "1.0.0"
+  },
+  "host": "localhost",
+  "basePath": "/",
+  "schemes": ["http"],
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
+  "paths": {
+    "/tests": {
+      "get": {
+        "tags": ["Tests"],
+        "summary": "Получить список тестов",
+        "description": "Возвращает HTML-страницу со списком тестов (для преподавателей)",
+        "responses": {
+          "200": {
+            "description": "HTML-страница",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Tests"],
+        "summary": "Создать тест",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Test"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Тест создан",
+            "schema": {
+              "$ref": "#/definitions/Test"
+            }
+          },
+          "401": {
+            "description": "Не авторизован"
+          }
+        }
+      }
+    },
+    "/tests/{id}": {
+      "get": {
+        "tags": ["Tests"],
+        "summary": "Получить тест по ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Тест найден",
+            "schema": {
+              "$ref": "#/definitions/Test"
+            }
+          },
+          "404": {
+            "description": "Тест не найден"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Tests"],
+        "summary": "Обновить тест",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Test"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Тест обновлен",
+            "schema": {
+              "$ref": "#/definitions/Test"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Tests"],
+        "summary": "Удалить тест",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Тест удален"
+          }
+        }
+      }
+    },
+    "/test-attempts": {
+      "get": {
+        "tags": ["TestAttempts"],
+        "summary": "Получить список попыток",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "testId",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список попыток",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/TestAttempt"
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["TestAttempts"],
+        "summary": "Создать попытку",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/TestAttempt"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Попытка создана",
+            "schema": {
+              "$ref": "#/definitions/TestAttempt"
+            }
+          }
+        }
+      }
+    },
+    "/test-attempts/{id}": {
+      "get": {
+        "tags": ["TestAttempts"],
+        "summary": "Получить попытку по ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Попытка найдена",
+            "schema": {
+              "$ref": "#/definitions/TestAttempt"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["TestAttempts"],
+        "summary": "Удалить попытку",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Попытка удалена"
+          }
+        }
+      }
+    },
+    "/answers": {
+      "post": {
+        "tags": ["Answers"],
+        "summary": "Создать ответ",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Answer"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Ответ создан",
+            "schema": {
+              "$ref": "#/definitions/Answer"
+            }
+          }
+        }
+      }
+    },
+    "/answers/by-question": {
+      "get": {
+        "tags": ["Answers"],
+        "summary": "Получить ответы вопроса",
+        "parameters": [
+          {
+            "name": "questionId",
+            "in": "query",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список ответов",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Answer"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Answers"],
+        "summary": "Удалить ответы вопроса",
+        "parameters": [
+          {
+            "name": "questionId",
+            "in": "query",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Ответы удалены"
+          }
+        }
+      }
+    },
+    "/answers/by-question/correct": {
+      "get": {
+        "tags": ["Answers"],
+        "summary": "Получить правильные ответы",
+        "parameters": [
+          {
+            "name": "questionId",
+            "in": "query",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Правильные ответы",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Answer"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/answers/by-question/count": {
+      "get": {
+        "tags": ["Answers"],
+        "summary": "Подсчитать ответы",
+        "parameters": [
+          {
+            "name": "questionId",
+            "in": "query",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Количество ответов",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+    "/answers/by-question/count-correct": {
+      "get": {
+        "tags": ["Answers"],
+        "summary": "Подсчитать правильные ответы",
+        "parameters": [
+          {
+            "name": "questionId",
+            "in": "query",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Количество правильных ответов",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+    "/answers/{id}": {
+      "get": {
+        "tags": ["Answers"],
+        "summary": "Получить ответ по ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ответ найден",
+            "schema": {
+              "$ref": "#/definitions/Answer"
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Answers"],
+        "summary": "Обновить ответ",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Answer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ответ обновлен",
+            "schema": {
+              "$ref": "#/definitions/Answer"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Answers"],
+        "summary": "Удалить ответ",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Ответ удален"
+          }
+        }
+      }
+    },
+    "/answers/{id}/correct": {
+      "get": {
+        "tags": ["Answers"],
+        "summary": "Проверить правильность ответа",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Результат проверки",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Test": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Идентификатор теста"
+        },
+        "title": {
+          "type": "string",
+          "description": "Название теста"
+        },
+        "min_point": {
+          "type": "integer",
+          "description": "Минимальный балл"
+        },
+        "description": {
+          "type": "string",
+          "description": "Описание теста"
+        }
+      }
+    },
+    "TestAttempt": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Идентификатор попытки"
+        },
+        "date_of_attempt": {
+          "type": "string",
+          "format": "date",
+          "description": "Дата попытки"
+        },
+        "point": {
+          "type": "integer",
+          "description": "Набранные баллы"
+        },
+        "result": {
+          "type": "string",
+          "description": "Результат"
+        }
+      }
+    },
+    "Answer": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Идентификатор ответа"
+        },
+        "text": {
+          "type": "string",
+          "description": "Текст ответа"
+        },
+        "questionId": {
+          "type": "string",
+          "description": "Идентификатор вопроса"
+        },
+        "score": {
+          "type": "integer",
+          "description": "Балл за ответ"
+        },
+        "order": {
+          "type": "integer",
+          "description": "Порядок ответа"
+        }
+      }
+    }
+  }
+}

@@ -9,6 +9,7 @@ RUN mvn dependency:go-offline
 COPY src ./src
 COPY opentelemetry.properties ./opentelemetry.properties
 COPY .env ./.env
+COPY docs ./docs
 
 # сборка без тестов и javadoc
 RUN mvn clean package -DskipTests -Dmaven.javadoc.skip=true
@@ -22,6 +23,7 @@ RUN apt-get update && apt-get install -y curl ca-certificates && rm -rf /var/lib
 COPY --from=builder /app/target/app.jar ./app.jar
 COPY --from=builder /app/opentelemetry.properties ./opentelemetry.properties
 COPY --from=builder /app/.env ./.env
+COPY --from=builder /app/docs ./docs
 
 # скачать Otel Java Agent
 RUN curl -L -o /app/opentelemetry-javaagent.jar \
