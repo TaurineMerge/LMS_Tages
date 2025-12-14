@@ -7,7 +7,11 @@ import com.example.lms.security.JwtHandler;
 import com.example.lms.test.api.controller.TestController;
 import com.example.lms.tracing.SimpleTracer;
 
+import io.github.cdimascio.dotenv.Dotenv;
+
 import static io.javalin.apibuilder.ApiBuilder.*;
+
+import java.util.Set;
 
 /**
  * Router для сущности Test.
@@ -33,6 +37,10 @@ import static io.javalin.apibuilder.ApiBuilder.*;
  */
 public class TestRouter {
     private static final Logger logger = LoggerFactory.getLogger(TestRouter.class);
+    private static final Dotenv dotenv = Dotenv.load();
+
+    private static final String KEYCLOAK_STUDENT_REALM = dotenv.get("KEYCLOAK_STUDENT_REALM");
+    private static final String KEYCLOAK_TEACHER_REALM = dotenv.get("KEYCLOAK_TEACHER_REALM");
 
     /**
      * Регистрирует маршруты группы /tests и их подмаршрутов.
@@ -68,13 +76,28 @@ public class TestRouter {
             });
 
             // ---- CRUD маршруты ----
-            get(testController::getTests);
-            post(testController::createTest);
+            get(ctx -> { // GET /tests
+                JwtHandler.requireRealm(Set.of(KEYCLOAK_TEACHER_REALM, KEYCLOAK_STUDENT_REALM));
+                testController.getTests(ctx);
+            });
+            post(ctx -> { // POST /tests
+                JwtHandler.requireRealm(KEYCLOAK_TEACHER_REALM);
+                testController.createTest(ctx);
+            });
 
             path("/{id}", () -> {
-                get(testController::getTestById);
-                put(testController::updateTest);
-                delete(testController::deleteTest);
+                get(ctx -> { // GET /tests/{id}
+                    JwtHandler.requireRealm(Set.of(KEYCLOAK_TEACHER_REALM, KEYCLOAK_STUDENT_REALM));
+                    testController.getTestById(ctx);
+                });
+                put(ctx -> { // PUT /tests/{id}
+                    JwtHandler.requireRealm(KEYCLOAK_TEACHER_REALM);
+                    testController.updateTest(ctx);
+                });
+                delete(ctx -> { // DELETE /tests/{id}
+                    JwtHandler.requireRealm(KEYCLOAK_TEACHER_REALM);
+                    testController.deleteTest(ctx);
+                });
             });
 
             // ---- MIDDLEWARE: Логирование завершения запроса ----
