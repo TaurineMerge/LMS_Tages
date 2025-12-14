@@ -33,11 +33,11 @@ public class AnswerService {
      */
     private AnswerModel toModel(Answer dto) {
         return new AnswerModel(
-            dto.getId(),
-            dto.getQuestionId(),
-            dto.getText(),
-            dto.getScore() != null ? dto.getScore() : 0
-        );
+                dto.getId(),
+                dto.getQuestionId(),
+                dto.getText(),
+                dto.getScore() != null ? dto.getScore() : 0,
+                dto.getOrder() != null ? dto.getOrder() : 0);
     }
 
     /**
@@ -48,13 +48,13 @@ public class AnswerService {
      */
     private Answer toDTO(AnswerModel model) {
         return new Answer(
-            model.getId(),
-            model.getText(),
-            model.getQuestionId(),
-            model.getScore()
-        );
+                model.getId(),
+                model.getText(),
+                model.getQuestionId(),
+                model.getScore(),
+                model.getOrder());
     }
-    
+
     /**
      * Получает ответ по его идентификатору.
      *
@@ -110,7 +110,8 @@ public class AnswerService {
      * @param answer объект Answer с данными ответа
      * @return созданный ответ
      * @throws IllegalArgumentException если данные невалидны
-     * @throws RuntimeException если ответ с таким текстом уже существует для этого вопроса
+     * @throws RuntimeException         если ответ с таким текстом уже существует
+     *                                  для этого вопроса
      */
     public Answer createAnswer(Answer answer) {
         // Проверяем обязательные поля
@@ -122,6 +123,9 @@ public class AnswerService {
         }
         if (answer.getScore() == null) {
             throw new IllegalArgumentException("Балл за ответ обязателен");
+        }
+        if (answer.getOrder() == null) {
+            throw new IllegalArgumentException("Порядковый номер ответа обязателен");
         }
 
         // Проверяем уникальность ответа для вопроса
@@ -141,7 +145,7 @@ public class AnswerService {
      * @param answer объект Answer с обновленными данными
      * @return обновленный ответ
      * @throws IllegalArgumentException если данные невалидны
-     * @throws RuntimeException если ответ не найден
+     * @throws RuntimeException         если ответ не найден
      */
     public Answer updateAnswer(Answer answer) {
         if (answer.getId() == null) {
@@ -162,6 +166,9 @@ public class AnswerService {
         }
         if (answer.getScore() == null) {
             throw new IllegalArgumentException("Балл за ответ обязателен");
+        }
+        if (answer.getOrder() == null) {
+            throw new IllegalArgumentException("Порядковый номер ответа обязателен");
         }
 
         // Обновляем модель
@@ -204,7 +211,7 @@ public class AnswerService {
      * Проверяет существование ответа с указанным текстом для вопроса.
      *
      * @param questionId идентификатор вопроса
-     * @param text текст ответа
+     * @param text       текст ответа
      * @return true если такой ответ существует
      */
     public boolean existsByQuestionIdAndText(UUID questionId, String text) {

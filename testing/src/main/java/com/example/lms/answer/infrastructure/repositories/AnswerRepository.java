@@ -27,36 +27,36 @@ public class AnswerRepository implements AnswerRepositoryInterface {
 
     // SQL запросы для таблицы answer_d
     private static final String INSERT_SQL = """
-        INSERT INTO tests.answer_d (question_id, text, score)
-        VALUES (?, ?, ?)
-        RETURNING id
-        """;
+            INSERT INTO tests.answer_d (question_id, text, score)
+            VALUES (?, ?, ?)
+            RETURNING id
+            """;
 
     private static final String UPDATE_SQL = """
-        UPDATE tests.answer_d
-        SET question_id = ?, text = ?, score = ?
-        WHERE id = ?
-        """;
+            UPDATE tests.answer_d
+            SET question_id = ?, text = ?, score = ?
+            WHERE id = ?
+            """;
 
     private static final String SELECT_BY_ID = """
-        SELECT id, question_id, text, score
-        FROM tests.answer_d
-        WHERE id = ?
-        """;
+            SELECT id, question_id, text, score
+            FROM tests.answer_d
+            WHERE id = ?
+            """;
 
     private static final String SELECT_BY_QUESTION = """
-        SELECT id, question_id, text, score
-        FROM tests.answer_d
-        WHERE question_id = ?
-        ORDER BY text
-        """;
+            SELECT id, question_id, text, score
+            FROM tests.answer_d
+            WHERE question_id = ?
+            ORDER BY text
+            """;
 
     private static final String SELECT_CORRECT_BY_QUESTION = """
-        SELECT id, question_id, text, score
-        FROM tests.answer_d
-        WHERE question_id = ? AND score > 0
-        ORDER BY text
-        """;
+            SELECT id, question_id, text, score
+            FROM tests.answer_d
+            WHERE question_id = ? AND score > 0
+            ORDER BY text
+            """;
 
     private static final String DELETE_BY_ID = "DELETE FROM tests.answer_d WHERE id = ?";
 
@@ -65,22 +65,22 @@ public class AnswerRepository implements AnswerRepositoryInterface {
     private static final String EXISTS_BY_ID = "SELECT 1 FROM tests.answer_d WHERE id = ?";
 
     private static final String EXISTS_BY_QUESTION_AND_TEXT = """
-        SELECT 1
-        FROM tests.answer_d
-        WHERE question_id = ? AND LOWER(text) = LOWER(?)
-        """;
+            SELECT 1
+            FROM tests.answer_d
+            WHERE question_id = ? AND LOWER(text) = LOWER(?)
+            """;
 
     private static final String COUNT_BY_QUESTION = """
-        SELECT COUNT(*)
-        FROM tests.answer_d
-        WHERE question_id = ?
-        """;
+            SELECT COUNT(*)
+            FROM tests.answer_d
+            WHERE question_id = ?
+            """;
 
     private static final String COUNT_CORRECT_BY_QUESTION = """
-        SELECT COUNT(*)
-        FROM tests.answer_d
-        WHERE question_id = ? AND score > 0
-        """;
+            SELECT COUNT(*)
+            FROM tests.answer_d
+            WHERE question_id = ? AND score > 0
+            """;
 
     /**
      * Конструктор репозитория.
@@ -109,7 +109,8 @@ public class AnswerRepository implements AnswerRepositoryInterface {
      *
      * @param answer объект AnswerModel для сохранения
      * @return сохраненный объект AnswerModel с присвоенным идентификатором
-     * @throws RuntimeException если не удалось сохранить ответ или произошла SQL-ошибка
+     * @throws RuntimeException если не удалось сохранить ответ или произошла
+     *                          SQL-ошибка
      */
     @Override
     public AnswerModel save(AnswerModel answer) {
@@ -119,7 +120,7 @@ public class AnswerRepository implements AnswerRepositoryInterface {
         answer.validate();
 
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(INSERT_SQL)) {
+                PreparedStatement stmt = conn.prepareStatement(INSERT_SQL)) {
 
             stmt.setObject(1, answer.getQuestionId());
             stmt.setString(2, answer.getText());
@@ -147,7 +148,8 @@ public class AnswerRepository implements AnswerRepositoryInterface {
      * @param answer объект AnswerModel с обновленными данными
      * @return обновленный объект AnswerModel
      * @throws IllegalArgumentException если ответ не имеет идентификатора
-     * @throws RuntimeException если ответ не найден или произошла SQL-ошибка
+     * @throws RuntimeException         если ответ не найден или произошла
+     *                                  SQL-ошибка
      */
     @Override
     public AnswerModel update(AnswerModel answer) {
@@ -161,7 +163,7 @@ public class AnswerRepository implements AnswerRepositoryInterface {
         answer.validate();
 
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(UPDATE_SQL)) {
+                PreparedStatement stmt = conn.prepareStatement(UPDATE_SQL)) {
 
             stmt.setObject(1, answer.getQuestionId());
             stmt.setString(2, answer.getText());
@@ -186,7 +188,8 @@ public class AnswerRepository implements AnswerRepositoryInterface {
      * Находит ответ по его идентификатору.
      *
      * @param id уникальный идентификатор ответа
-     * @return Optional с найденным ответом или пустой Optional, если ответ не найден
+     * @return Optional с найденным ответом или пустой Optional, если ответ не
+     *         найден
      * @throws RuntimeException если произошла SQL-ошибка
      */
     @Override
@@ -194,7 +197,7 @@ public class AnswerRepository implements AnswerRepositoryInterface {
         logger.debug("Поиск ответа по ID: {}", id);
 
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SELECT_BY_ID)) {
+                PreparedStatement stmt = conn.prepareStatement(SELECT_BY_ID)) {
 
             stmt.setObject(1, id);
             ResultSet rs = stmt.executeQuery();
@@ -215,7 +218,8 @@ public class AnswerRepository implements AnswerRepositoryInterface {
      * Находит все ответы для указанного вопроса.
      *
      * @param questionId уникальный идентификатор вопроса
-     * @return список ответов для указанного вопроса, отсортированных по порядку отображения
+     * @return список ответов для указанного вопроса, отсортированных по порядку
+     *         отображения
      * @throws RuntimeException если произошла SQL-ошибка
      */
     @Override
@@ -224,7 +228,7 @@ public class AnswerRepository implements AnswerRepositoryInterface {
         List<AnswerModel> answers = new ArrayList<>();
 
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SELECT_BY_QUESTION)) {
+                PreparedStatement stmt = conn.prepareStatement(SELECT_BY_QUESTION)) {
 
             stmt.setObject(1, questionId);
             ResultSet rs = stmt.executeQuery();
@@ -255,7 +259,7 @@ public class AnswerRepository implements AnswerRepositoryInterface {
         List<AnswerModel> answers = new ArrayList<>();
 
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SELECT_CORRECT_BY_QUESTION)) {
+                PreparedStatement stmt = conn.prepareStatement(SELECT_CORRECT_BY_QUESTION)) {
 
             stmt.setObject(1, questionId);
             ResultSet rs = stmt.executeQuery();
@@ -285,7 +289,7 @@ public class AnswerRepository implements AnswerRepositoryInterface {
         logger.info("Удаление ответа с ID: {}", id);
 
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(DELETE_BY_ID)) {
+                PreparedStatement stmt = conn.prepareStatement(DELETE_BY_ID)) {
 
             stmt.setObject(1, id);
             int deletedRows = stmt.executeUpdate();
@@ -312,7 +316,7 @@ public class AnswerRepository implements AnswerRepositoryInterface {
         logger.info("Удаление всех ответов для вопроса: {}", questionId);
 
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(DELETE_BY_QUESTION)) {
+                PreparedStatement stmt = conn.prepareStatement(DELETE_BY_QUESTION)) {
 
             stmt.setObject(1, questionId);
             int deletedRows = stmt.executeUpdate();
@@ -338,7 +342,7 @@ public class AnswerRepository implements AnswerRepositoryInterface {
         logger.debug("Проверка существования ответа с ID: {}", id);
 
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(EXISTS_BY_ID)) {
+                PreparedStatement stmt = conn.prepareStatement(EXISTS_BY_ID)) {
 
             stmt.setObject(1, id);
             ResultSet rs = stmt.executeQuery();
@@ -358,7 +362,7 @@ public class AnswerRepository implements AnswerRepositoryInterface {
      * Поиск выполняется без учета регистра.
      *
      * @param questionId уникальный идентификатор вопроса
-     * @param text текст ответа для проверки
+     * @param text       текст ответа для проверки
      * @return true если такой ответ уже существует для указанного вопроса
      * @throws RuntimeException если произошла SQL-ошибка
      */
@@ -367,7 +371,7 @@ public class AnswerRepository implements AnswerRepositoryInterface {
         logger.debug("Проверка существования ответа '{}' для вопроса {}", text, questionId);
 
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(EXISTS_BY_QUESTION_AND_TEXT)) {
+                PreparedStatement stmt = conn.prepareStatement(EXISTS_BY_QUESTION_AND_TEXT)) {
 
             stmt.setObject(1, questionId);
             stmt.setString(2, text);
@@ -395,7 +399,7 @@ public class AnswerRepository implements AnswerRepositoryInterface {
         logger.debug("Подсчёт ответов для вопроса: {}", questionId);
 
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(COUNT_BY_QUESTION)) {
+                PreparedStatement stmt = conn.prepareStatement(COUNT_BY_QUESTION)) {
 
             stmt.setObject(1, questionId);
             ResultSet rs = stmt.executeQuery();
@@ -424,7 +428,7 @@ public class AnswerRepository implements AnswerRepositoryInterface {
         logger.debug("Подсчёт правильных ответов для вопроса: {}", questionId);
 
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(COUNT_CORRECT_BY_QUESTION)) {
+                PreparedStatement stmt = conn.prepareStatement(COUNT_CORRECT_BY_QUESTION)) {
 
             stmt.setObject(1, questionId);
             ResultSet rs = stmt.executeQuery();
@@ -450,10 +454,10 @@ public class AnswerRepository implements AnswerRepositoryInterface {
      */
     private AnswerModel mapRowToAnswer(ResultSet rs) throws SQLException {
         return new AnswerModel(
-            rs.getObject("id", UUID.class),
-            rs.getObject("question_id", UUID.class),
-            rs.getString("text"),
-            rs.getInt("score")
-        );
+                rs.getObject("id", UUID.class),
+                rs.getObject("question_id", UUID.class),
+                rs.getString("text"),
+                rs.getInt("score"),
+                rs.getInt("order"));
     }
 }

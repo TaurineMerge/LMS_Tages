@@ -72,7 +72,10 @@ public class AnswerRouter {
             applyStandardBeforeMiddleware(logger);
 
             // Создание ответа
-            post(withRealm(TEACHER_REALM, answerController::createAnswer));
+            post(withValidationAndRealm(
+                    "/schemas/answer-schema.json",
+                    TEACHER_REALM,
+                    answerController::createAnswer));
 
             // Операции с ответами по ID вопроса
             path("/by-question", () -> {
@@ -95,7 +98,10 @@ public class AnswerRouter {
             // Операции с конкретным ответом
             path("/{id}", () -> {
                 get(withRealm(READ_ACCESS_REALMS, answerController::getAnswerById));
-                put(withRealm(TEACHER_REALM, answerController::updateAnswer));
+                put(withValidationAndRealm(
+                        "/schemas/answer-schema.json",
+                        TEACHER_REALM,
+                        answerController::updateAnswer));
                 delete(withRealm(TEACHER_REALM, answerController::deleteAnswer));
 
                 path("/correct", () -> {

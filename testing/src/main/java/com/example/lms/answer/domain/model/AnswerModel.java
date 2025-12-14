@@ -9,10 +9,11 @@ import java.util.UUID;
  * Соответствует строке таблицы answer_d.
  *
  * Поля:
- *  - id:          UUID   — первичный ключ
- *  - question_id: UUID   — идентификатор вопроса (FK → question_d.id)
- *  - text:        String — текст ответа
- *  - score:       int    — количество баллов за ответ (0 — неверный, >0 — верный)
+ * - id: UUID — первичный ключ
+ * - question_id: UUID — идентификатор вопроса (FK → question_d.id)
+ * - text: String — текст ответа
+ * - score: int — количество баллов за ответ (0 — неверный, >0 — верный)
+ * - order: int — порядок ответа
  */
 public class AnswerModel {
 
@@ -28,6 +29,8 @@ public class AnswerModel {
     /** Количество баллов за этот ответ (0 = неверный, >0 = верный). */
     private Integer score;
 
+    /** Порядковый номер ответа. */
+    private Integer order;
 
     /**
      * Конструктор для создания нового ответа (до сохранения в базу данных).
@@ -35,13 +38,14 @@ public class AnswerModel {
      * @param questionId ID вопроса
      * @param text       текст ответа
      * @param score      количество баллов
+     * @param order      порядковый номер
      */
-    public AnswerModel(UUID questionId, String text, Integer score) {
+    public AnswerModel(UUID questionId, String text, Integer score, Integer order) {
         this.questionId = Objects.requireNonNull(questionId, "Question ID не может быть null");
         this.text = Objects.requireNonNull(text, "Текст ответа не может быть null");
         this.score = Objects.requireNonNull(score, "Score не может быть null");
+        this.order = Objects.requireNonNull(order, "Order не может быть null");
     }
-
 
     /**
      * Конструктор для загрузки ответа из базы данных.
@@ -50,22 +54,37 @@ public class AnswerModel {
      * @param questionId идентификатор вопроса
      * @param text       текст ответа
      * @param score      количество баллов
+     * @param order      порядковый номер
      */
-    public AnswerModel(UUID id, UUID questionId, String text, Integer score) {
+    public AnswerModel(UUID id, UUID questionId, String text, Integer score, Integer order) {
         this.id = id;
         this.questionId = questionId;
         this.text = text;
         this.score = score;
+        this.order = order;
     }
-
 
     // ---------------------- GETTERS ----------------------
 
-    public UUID getId() { return id; }
-    public UUID getQuestionId() { return questionId; }
-    public String getText() { return text; }
-    public Integer getScore() { return score; }
+    public UUID getId() {
+        return id;
+    }
 
+    public UUID getQuestionId() {
+        return questionId;
+    }
+
+    public String getText() {
+        return text;
+    }
+
+    public Integer getScore() {
+        return score;
+    }
+
+    public Integer getOrder() {
+        return order;
+    }
 
     // ---------------------- SETTERS ----------------------
 
@@ -85,6 +104,9 @@ public class AnswerModel {
         this.score = Objects.requireNonNull(score, "Score не может быть null");
     }
 
+    public void setOrder(Integer order) {
+        this.order = Objects.requireNonNull(order, "Order не может быть null");
+    }
 
     // ---------------------- ВАЛИДАЦИЯ ----------------------
 
@@ -101,15 +123,19 @@ public class AnswerModel {
         if (questionId == null) {
             throw new IllegalArgumentException("Question ID не может быть null");
         }
+        if (order == null) {
+            throw new IllegalArgumentException("Order не может быть null");
+        }
     }
-
 
     // ---------------------- УТИЛИТЫ ----------------------
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         AnswerModel that = (AnswerModel) o;
         return Objects.equals(id, that.id);
     }
@@ -128,6 +154,7 @@ public class AnswerModel {
                 "id=" + id +
                 ", questionId=" + questionId +
                 ", score=" + score +
+                ", order=" + order +
                 '}';
     }
 }
