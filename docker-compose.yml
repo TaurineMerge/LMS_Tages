@@ -55,12 +55,20 @@ services:
       KC_METRICS_ENABLED: true
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_PROXY: "reencrypt"
+      KC_HOSTNAME: "localhost"
+      KC_HOSTNAME_PORT: "80"
+      KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
+      KC_HTTP_RELATIVE_PATH: "/auth"
+      KC_BASE_URL: "http://localhost/auth"
     command:
       - start-dev
       - --http-port=8080
       - --import-realm
-    ports:
-      - "8080:8080"
+      - --hostname-strict-https=false
+      - --http-relative-path=/auth
+      - --hostname-admin-url=http://localhost/auth
+    ports: []
     volumes:
       - ./keycloak/student.json:/opt/keycloak/data/import/student.json:ro
       - ./keycloak/teacher.json:/opt/keycloak/data/import/teacher.json:ro
@@ -79,13 +87,12 @@ services:
       POSTGRES_DB: appdb
       POSTGRES_USER: appuser
       POSTGRES_PASSWORD: password
-    ports:
-      - "5432:5432"
     volumes:
       - app_data:/var/lib/postgresql/data
       - ./init-sql:/docker-entrypoint-initdb.d:ro
     networks:
       - app-network
+    ports: []
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
       interval: 10s
@@ -95,10 +102,9 @@ services:
   public-side:
     build: ./publicSide
     container_name: public-side
+    ports: []
     env_file:
       - ./publicSide/.env.prod
-    ports:
-      - "3000:3000"
     networks:
       - app-network
     depends_on:
@@ -111,7 +117,7 @@ services:
     build: ./adminPanel
     container_name: admin-panel
     environment:
-      KEYCLOAK_ISSUER_URL: "http://keycloak:8080/realms/teacher"
+      KEYCLOAK_ISSUER_URL: "http://keycloak:8080/auth/realms/teacher"
       KEYCLOAK_CLIENT_ID: "teacher-client"
       KEYCLOAK_CLIENT_SECRET: "TEACHER_SECRET"
       KEYCLOAK_APP_NAME: "LMS Admin Application"
@@ -119,8 +125,7 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
       OTEL_SERVICE_NAME: "admin-panel"
-    ports:
-      - "4000:4000"
+    ports: []
     networks:
       - app-network
     depends_on:
@@ -133,8 +138,7 @@ services:
   personal-account:
     build: ./personal-account
     container_name: personal-account
-    ports:
-      - "8000:8000"
+    ports: []
     env_file:
       - ./personal-account/.env
     environment:
@@ -152,8 +156,7 @@ services:
   testing:
     build: ./testing
     container_name: testing
-    ports:
-      - "8085:8085"
+    ports: []
     networks:
       - app-network
     depends_on:
@@ -164,15 +167,19 @@ services:
     restart: unless-stopped
 
   jaeger:
-    image: jaegertracing/all-in-one:1.54
+    image: jaegertracing/all-in-one:latest
     container_name: jaeger
     environment:
       - COLLECTOR_ZIPKIN_HTTP_PORT=9411
-    ports:
-      - "16686:16686" # UI
-      - "14250:14250" # gRPC ingestion
-      - "14268:14268" # HTTP ingestion
-      - "9411:9411"   # Zipkin compatibility
+      - COLLECTOR_OTLP_ENABLED=true
+      - QUERY_BASE_PATH=/jaeger
+      - SPAN_STORAGE_TYPE=memory
+      - JAEGER_DISABLED=false
+      - JAEGER_QUERY_UI_CONFIG=/etc/jaeger/ui-config.json
+    ports: 
+      - "16686:16686"
+    volumes:
+      - ./observability/jaeger-ui-config.json:/etc/jaeger/ui-config.json:ro
     networks:
       - app-network
     restart: unless-stopped
@@ -183,9 +190,6 @@ services:
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ./observability/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
-    ports:
-      - "4317:4317" # OTLP gRPC
-      - "4318:4318" # OTLP HTTP
     depends_on:
       jaeger:
         condition: service_started

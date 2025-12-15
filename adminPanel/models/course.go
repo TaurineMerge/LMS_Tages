@@ -1,8 +1,9 @@
 package models
 
-// Убираем неиспользуемый импорт time
-// Используйте time только если он нужен в структурах
-
+// Course - модель учебного курса
+//
+// Представляет учебный курс, который может содержать уроки.
+// Курс принадлежит определенной категории и имеет уровень сложности.
 type Course struct {
 	BaseModel
 	Title       string `json:"title"`
@@ -12,21 +13,22 @@ type Course struct {
 	Visibility  string `json:"visibility"`
 }
 
-// CourseResponse - ответ с курсом
-type CourseResponse struct {
-	Course
-}
-
-// CourseCreate - DTO для создания курса
+// CourseCreate - DTO для создания нового курса
+//
+// Используется в запросах на создание курса.
+// Содержит валидацию полей.
 type CourseCreate struct {
 	Title       string `json:"title" validate:"required,min=1,max=255"`
 	Description string `json:"description"`
-	Level       string `json:"level" validate:"required,oneof=hard medium easy"`
+	Level       string `json:"level" validate:"omitempty,oneof=hard medium easy"`
 	CategoryID  string `json:"category_id" validate:"required,uuid4"`
-	Visibility  string `json:"visibility" validate:"required,oneof=draft public private"`
+	Visibility  string `json:"visibility" validate:"omitempty,oneof=draft public private"`
 }
 
 // CourseUpdate - DTO для обновления курса
+//
+// Используется в запросах на обновление курса.
+// Все поля опциональны (omitempty).
 type CourseUpdate struct {
 	Title       string `json:"title" validate:"omitempty,min=1,max=255"`
 	Description string `json:"description"`
@@ -35,16 +37,29 @@ type CourseUpdate struct {
 	Visibility  string `json:"visibility" validate:"omitempty,oneof=draft public private"`
 }
 
-// PaginatedCourseResponse - пагинированный ответ с курсами
-type PaginatedCourseResponse struct {
-	Data  []CourseResponse `json:"data"`
-	Total int              `json:"total"`
-	Page  int              `json:"page"`
-	Limit int              `json:"limit"`
-	Pages int              `json:"pages"`
+// CourseResponse - ответ API с одним курсом
+//
+// Используется для возврата данных об одном курсе.
+type CourseResponse struct {
+	Status string `json:"status"`
+	Data   Course `json:"data"`
 }
 
-// CourseFilter - фильтр для курсов
+// PaginatedCoursesResponse - ответ со списком курсов
+//
+// Используется для возврата списка курсов с информацией о пагинации.
+type PaginatedCoursesResponse struct {
+	Status string `json:"status"`
+	Data   struct {
+		Items      []Course   `json:"items"`
+		Pagination Pagination `json:"pagination"`
+	} `json:"data"`
+}
+
+// CourseFilter - фильтр для поиска курсов
+//
+// Используется для фильтрации курсов по различным критериям:
+// уровень сложности, видимость, категория, пагинация.
 type CourseFilter struct {
 	Level      string `query:"level"`
 	Visibility string `query:"visibility"`

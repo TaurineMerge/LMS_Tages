@@ -1,16 +1,41 @@
+// Package database предоставляет функции для работы с PostgreSQL
+//
+// Пакет реализует:
+//   - Инициализацию пула соединений
+//   - Выполнение SQL-запросов
+//   - Преобразование результатов в map
+//   - Управление жизненным циклом соединений
+//
+// Основные функции:
+//   - InitDB: инициализация пула соединений
+//   - Close: закрытие пула
+//   - FetchOne: выполнение запроса с одним результатом
+//   - FetchAll: выполнение запроса с несколькими результатами
+//   - Execute: выполнение запроса без результата
+//   - ExecuteReturning: выполнение запроса с возвратом результата
 package database
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"math"
 	"time"
+
+	"adminPanel/config"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"adminPanel/config"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
-// Database - обертка над пулом соединений
+// Database - обертка над пулом соединений PostgreSQL
+//
+// Структура предоставляет удобный интерфейс для выполнения
+// SQL-запросов и управления соединениями.
 type Database struct {
 	Pool *pgxpool.Pool
 }
@@ -19,17 +44,32 @@ var (
 	dbInstance *Database
 )
 
-// InitDB инициализирует пул соединений (аналог init_db_pool)
+// InitDB инициализирует пул соединений с PostgreSQL
+//
+// Функция создает и настраивает пул соединений на основе
+// конфигурационных параметров.
+//
+// Параметры:
+//   - settings: конфигурация приложения
+//
+// Возвращает:
+//   - *Database: указатель на экземпляр базы данных
+//   - error: ошибка инициализации (если есть)
 func InitDB(settings *config.Settings) (*Database, error) {
 	poolConfig, err := pgxpool.ParseConfig(settings.DatabaseURL)
 	if err != nil {
 		return nil, err
 	}
 
-	poolConfig.MinConns = int32(settings.DatabaseMinPoolSize)
-	poolConfig.MaxConns = int32(settings.DatabaseMaxPoolSize)
-	
-	// Настройки здоровья соединений
+	if settings.DatabaseMinPoolSize < 0 || settings.DatabaseMinPoolSize > math.MaxInt32 {
+		return nil, fmt.Errorf("invalid DatabaseMinPoolSize: %d", settings.DatabaseMinPoolSize)
+	}
+	if settings.DatabaseMaxPoolSize < 0 || settings.DatabaseMaxPoolSize > math.MaxInt32 {
+		return nil, fmt.Errorf("invalid DatabaseMaxPoolSize: %d", settings.DatabaseMaxPoolSize)
+	}
+	poolConfig.MinConns = int32(settings.DatabaseMinPoolSize) //nolint:gosec
+	poolConfig.MaxConns = int32(settings.DatabaseMaxPoolSize) //nolint:gosec
+
 	poolConfig.HealthCheckPeriod = 1 * time.Minute
 	poolConfig.MaxConnLifetime = 1 * time.Hour
 	poolConfig.MaxConnIdleTime = 30 * time.Minute
@@ -40,7 +80,6 @@ func InitDB(settings *config.Settings) (*Database, error) {
 		return nil, err
 	}
 
-	// Проверяем подключение
 	if err := pool.Ping(ctx); err != nil {
 		return nil, err
 	}
@@ -50,7 +89,10 @@ func InitDB(settings *config.Settings) (*Database, error) {
 	return dbInstance, nil
 }
 
-// Close закрывает пул соединений (аналог close_db_pool)
+// Close закрывает пул соединений с базой данных
+//
+// Функция освобождает все ресурсы, связанные с пулом соединений.
+// Должна вызываться при завершении работы приложения.
 func Close() {
 	if dbInstance != nil && dbInstance.Pool != nil {
 		dbInstance.Pool.Close()
@@ -58,54 +100,237 @@ func Close() {
 	}
 }
 
-// GetDB возвращает инстанс базы данных
+// GetDB возвращает текущий экземпляр базы данных
+//
+// Возвращает:
+//   - *Database: указатель на экземпляр базы данных
 func GetDB() *Database {
 	return dbInstance
 }
 
-// FetchOne - аналог fetch_one из Python
+// executeQueryReturning выполняет SQL-запрос с возвратом одной строки и трассировкой
+//
+// Вспомогательная функция для FetchOne и ExecuteReturning.
+//
+// Параметры:
+//   - ctx: контекст выполнения
+//   - query: SQL-запрос
+//   - operation: тип операции для трассировки
+//   - args: аргументы для запроса
+//
+// Возвращает:
+//   - map[string]interface{}: строка результата или nil
+//   - error: ошибка выполнения (если есть)
+func (db *Database) executeQueryReturning(ctx context.Context, query string, operation string, args ...interface{}) (map[string]interface{}, error) {
+	tr := otel.Tracer("admin-panel/database")
+	ctx, span := tr.Start(ctx, "db.query",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("db.system", "postgresql"),
+			attribute.String("db.statement", query),
+			attribute.String("db.operation", operation),
+		),
+	)
+	defer span.End()
+
+	span.AddEvent("db.query.start", trace.WithAttributes(
+		attribute.String("db.query", query),
+		attribute.Int("db.args.count", len(args)),
+	))
+
+	if len(args) > 0 {
+		argsStr := fmt.Sprintf("%v", args)
+		span.AddEvent("db.query.params", trace.WithAttributes(
+			attribute.String("db.args", argsStr),
+		))
+	}
+
+	rows, err := db.Pool.Query(ctx, query, args...)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
+	}
+	defer rows.Close()
+
+	result, err := scanRowToMap(rows)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
+	}
+
+	if result != nil {
+		span.SetAttributes(attribute.Int("db.rows_affected", 1))
+	} else {
+		span.SetAttributes(attribute.Int("db.rows_affected", 0))
+	}
+
+	span.AddEvent("db.query.end", trace.WithAttributes(
+		attribute.Int("db.rows_returned", len(result)),
+	))
+
+	return result, nil
+}
+
+// FetchOne выполняет SQL-запрос и возвращает одну строку результата
+//
+// Функция аналогична fetch_one из Python. Возвращает первую
+// строку результата или nil, если строк нет.
+//
+// Параметры:
+//   - ctx: контекст выполнения
+//   - query: SQL-запрос
+//   - args: аргументы для запроса
+//
+// Возвращает:
+//   - map[string]interface{}: строка результата или nil
+//   - error: ошибка выполнения (если есть)
 func (db *Database) FetchOne(ctx context.Context, query string, args ...interface{}) (map[string]interface{}, error) {
-	rows, err := db.Pool.Query(ctx, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	return scanRowToMap(rows)
+	return db.executeQueryReturning(ctx, query, "SELECT", args...)
 }
 
-// FetchAll - аналог fetch_all из Python
+// FetchAll выполняет SQL-запрос и возвращает все строки результата
+//
+// Функция аналогична fetch_all из Python. Возвращает все
+// строки результата в виде слайса map.
+//
+// Параметры:
+//   - ctx: контекст выполнения
+//   - query: SQL-запрос
+//   - args: аргументы для запроса
+//
+// Возвращает:
+//   - []map[string]interface{}: слайс строк результата
+//   - error: ошибка выполнения (если есть)
 func (db *Database) FetchAll(ctx context.Context, query string, args ...interface{}) ([]map[string]interface{}, error) {
+	tr := otel.Tracer("admin-panel/database")
+	ctx, span := tr.Start(ctx, "db.query",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("db.system", "postgresql"),
+			attribute.String("db.statement", query),
+			attribute.String("db.operation", "SELECT"),
+		),
+	)
+	defer span.End()
+
+	span.AddEvent("db.query.start", trace.WithAttributes(
+		attribute.String("db.query", query),
+		attribute.Int("db.args.count", len(args)),
+	))
+
+	if len(args) > 0 {
+		argsStr := fmt.Sprintf("%v", args)
+		span.AddEvent("db.query.params", trace.WithAttributes(
+			attribute.String("db.args", argsStr),
+		))
+	}
+
 	rows, err := db.Pool.Query(ctx, query, args...)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 	defer rows.Close()
 
-	return scanRowsToMap(rows)
+	results, err := scanRowsToMap(rows)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
+	}
+
+	span.SetAttributes(attribute.Int("db.rows_affected", len(results)))
+	span.AddEvent("db.query.end", trace.WithAttributes(
+		attribute.Int("db.rows_returned", len(results)),
+	))
+
+	return results, nil
 }
 
-// Execute - аналог execute из Python
+// Execute выполняет SQL-запрос без возврата результата
+//
+// Функция аналогична execute из Python. Используется для
+// INSERT, UPDATE, DELETE и других запросов, не возвращающих данные.
+//
+// Параметры:
+//   - ctx: контекст выполнения
+//   - query: SQL-запрос
+//   - args: аргументы для запроса
+//
+// Возвращает:
+//   - int64: количество затронутых строк
+//   - error: ошибка выполнения (если есть)
 func (db *Database) Execute(ctx context.Context, query string, args ...interface{}) (int64, error) {
+	tr := otel.Tracer("admin-panel/database")
+	ctx, span := tr.Start(ctx, "db.query",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("db.system", "postgresql"),
+			attribute.String("db.statement", query),
+			attribute.String("db.operation", "EXECUTE"),
+		),
+	)
+	defer span.End()
+
+	span.AddEvent("db.query.start", trace.WithAttributes(
+		attribute.String("db.query", query),
+		attribute.Int("db.args.count", len(args)),
+	))
+
+	if len(args) > 0 {
+		argsStr := fmt.Sprintf("%v", args)
+		span.AddEvent("db.query.params", trace.WithAttributes(
+			attribute.String("db.args", argsStr),
+		))
+	}
+
 	result, err := db.Pool.Exec(ctx, query, args...)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return 0, err
 	}
-	return result.RowsAffected(), nil
+
+	rowsAffected := result.RowsAffected()
+	span.SetAttributes(attribute.Int("db.rows_affected", int(rowsAffected)))
+	span.AddEvent("db.query.end", trace.WithAttributes(
+		attribute.Int("db.rows_affected", int(rowsAffected)),
+	))
+
+	return rowsAffected, nil
 }
 
-// ExecuteReturning - аналог execute_returning из Python
+// ExecuteReturning выполняет SQL-запрос с возвратом результата
+//
+// Функция аналогична execute_returning из Python. Используется
+// для запросов, которые возвращают данные (например, INSERT ... RETURNING).
+//
+// Параметры:
+//   - ctx: контекст выполнения
+//   - query: SQL-запрос
+//   - args: аргументы для запроса
+//
+// Возвращает:
+//   - map[string]interface{}: строка результата
+//   - error: ошибка выполнения (если есть)
 func (db *Database) ExecuteReturning(ctx context.Context, query string, args ...interface{}) (map[string]interface{}, error) {
-	rows, err := db.Pool.Query(ctx, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	return scanRowToMap(rows)
+	return db.executeQueryReturning(ctx, query, "EXECUTE_RETURNING", args...)
 }
 
-// Вспомогательная функция для сканирования строки в map
+// scanRowToMap сканирует одну строку результата в map
+//
+// Функция преобразует строку результата запроса в map,
+// где ключи - это имена столбцов, а значения - данные.
+//
+// Параметры:
+//   - rows: результат выполнения запроса
+//
+// Возвращает:
+//   - map[string]interface{}: строка результата
+//   - error: ошибка сканирования (если есть)
 func scanRowToMap(rows pgx.Rows) (map[string]interface{}, error) {
 	if !rows.Next() {
 		return nil, nil
@@ -126,13 +351,22 @@ func scanRowToMap(rows pgx.Rows) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
 	for i, fd := range fieldDescriptions {
 		// Преобразуем значение
-		result[string(fd.Name)] = convertValue(values[i])
+		result[fd.Name] = convertValue(values[i])
 	}
 
 	return result, nil
 }
 
-// Вспомогательная функция для сканирования всех строк
+// scanRowsToMap сканирует все строки результата в слайс map
+//
+// Функция преобразует все строки результата запроса в слайс map.
+//
+// Параметры:
+//   - rows: результат выполнения запроса
+//
+// Возвращает:
+//   - []map[string]interface{}: слайс строк результата
+//   - error: ошибка сканирования (если есть)
 func scanRowsToMap(rows pgx.Rows) ([]map[string]interface{}, error) {
 	var results []map[string]interface{}
 
@@ -151,7 +385,7 @@ func scanRowsToMap(rows pgx.Rows) ([]map[string]interface{}, error) {
 
 		result := make(map[string]interface{})
 		for i, fd := range fieldDescriptions {
-			result[string(fd.Name)] = convertValue(values[i])
+			result[fd.Name] = convertValue(values[i])
 		}
 
 		results = append(results, result)
@@ -160,7 +394,16 @@ func scanRowsToMap(rows pgx.Rows) ([]map[string]interface{}, error) {
 	return results, nil
 }
 
-// Преобразование значений PostgreSQL в Go типы
+// convertValue преобразует значения PostgreSQL в Go типы
+//
+// Функция обрабатывает специфические типы данных PostgreSQL,
+// такие как UUID, и преобразует их в соответствующие Go типы.
+//
+// Параметры:
+//   - value: значение из PostgreSQL
+//
+// Возвращает:
+//   - interface{}: преобразованное значение
 func convertValue(value interface{}) interface{} {
 	switch v := value.(type) {
 	case []byte:
