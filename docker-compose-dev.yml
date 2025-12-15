@@ -62,8 +62,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./keycloak/student.json:/opt/keycloak/data/import/student.json:ro
-      - ./keycloak/teacher.json:/opt/keycloak/data/import/teacher.json:ro
+      - ./keycloak:/opt/keycloak/data/import
     depends_on:
       keycloak-db:
         condition: service_healthy
@@ -79,13 +78,13 @@ services:
       POSTGRES_DB: appdb
       POSTGRES_USER: appuser
       POSTGRES_PASSWORD: password
-    ports:
-      - "5432:5432"
     volumes:
       - app_data:/var/lib/postgresql/data
       - ./init-sql:/docker-entrypoint-initdb.d:ro
     networks:
       - app-network
+    ports:
+      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
       interval: 10s
@@ -135,11 +134,6 @@ services:
     container_name: personal-account
     ports:
       - "8000:8000"
-    env_file:
-      - ./personal-account/.env
-    environment:
-      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}"
-      OTEL_SERVICE_NAME: "${OTEL_SERVICE_NAME:-personal-account-api}"
     networks:
       - app-network
     depends_on:
@@ -169,10 +163,10 @@ services:
     environment:
       - COLLECTOR_ZIPKIN_HTTP_PORT=9411
     ports:
-      - "16686:16686" # UI
-      - "14250:14250" # gRPC ingestion
-      - "14268:14268" # HTTP ingestion
-      - "9411:9411"   # Zipkin compatibility
+      - "16686:16686"  # UI
+      - "14250:14250"  # gRPC ingestion
+      - "14268:14268"  # HTTP ingestion
+      - "9411:9411"    # Zipkin compatibility
     networks:
       - app-network
     restart: unless-stopped

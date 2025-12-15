@@ -1,0 +1,981 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "LMS PublicSide API",
+        "description": "Публичный API для получения категорий, курсов и уроков",
+        "version": "1.0.0"
+    },
+    "host": "localhost:3000",
+    "basePath": "/api/v1",
+    "schemes": [
+        "http"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "tags": [
+        {
+            "name": "Categories",
+            "description": "Операции с категориями"
+        },
+        {
+            "name": "Courses",
+            "description": "Операции с курсами"
+        },
+        {
+            "name": "Lessons",
+            "description": "Операции с уроками"
+        }
+    ],
+    "paths": {
+        "/categories": {
+            "get": {
+                "tags": [
+                    "Categories"
+                ],
+                "summary": "Получить список всех категорий",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "type": "integer",
+                        "default": 1,
+                        "minimum": 1,
+                        "description": "Номер страницы"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "default": 20,
+                        "minimum": 1,
+                        "maximum": 100,
+                        "description": "Количество элементов на странице"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешно получен список категорий",
+                        "schema": {
+                            "$ref": "#/definitions/SuccessResponsePaginatedCategories"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверные параметры запроса",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "INVALID_PARAMETERS",
+                                    "message": "Invalid page or limit parameter"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "INTERNAL_SERVER_ERROR",
+                                    "message": "An unexpected error occurred"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/categories/{category_id}": {
+            "get": {
+                "tags": [
+                    "Categories"
+                ],
+                "summary": "Получить категорию по ID",
+                "parameters": [
+                    {
+                        "name": "category_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Уникальный идентификатор категории"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Категория успешно найдена",
+                        "schema": {
+                            "$ref": "#/definitions/SuccessResponseCategory"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат ID",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "INVALID_UUID",
+                                    "message": "Invalid category ID format"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Категория не найдена",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "NOT_FOUND",
+                                    "message": "Category not found"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "INTERNAL_SERVER_ERROR",
+                                    "message": "An unexpected error occurred"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/categories/{category_id}/courses": {
+            "get": {
+                "tags": [
+                    "Courses"
+                ],
+                "summary": "Получить список курсов категории",
+                "parameters": [
+                    {
+                        "name": "category_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Уникальный идентификатор категории"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "type": "integer",
+                        "default": 1,
+                        "minimum": 1,
+                        "description": "Номер страницы"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "default": 20,
+                        "minimum": 1,
+                        "maximum": 100,
+                        "description": "Количество элементов на странице"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешно получен список курсов категории",
+                        "schema": {
+                            "$ref": "#/definitions/SuccessResponsePaginatedCourses"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат ID или параметры запроса",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "INVALID_PARAMETERS",
+                                    "message": "Invalid category ID or pagination parameters"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Категория не найдена",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "NOT_FOUND",
+                                    "message": "Category not found"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "INTERNAL_SERVER_ERROR",
+                                    "message": "An unexpected error occurred"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/categories/{category_id}/courses/{course_id}": {
+            "get": {
+                "tags": [
+                    "Courses"
+                ],
+                "summary": "Получить курс по ID в рамках категории",
+                "parameters": [
+                    {
+                        "name": "category_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Уникальный идентификатор категории"
+                    },
+                    {
+                        "name": "course_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Уникальный идентификатор курса"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Курс успешно найден",
+                        "schema": {
+                            "$ref": "#/definitions/SuccessResponseCourse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат ID",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "INVALID_UUID",
+                                    "message": "Invalid category ID or course ID format"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Категория или курс не найден",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "NOT_FOUND",
+                                    "message": "Category or course not found"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "INTERNAL_SERVER_ERROR",
+                                    "message": "An unexpected error occurred"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/categories/{category_id}/courses/{course_id}/lessons": {
+            "get": {
+                "tags": [
+                    "Lessons"
+                ],
+                "summary": "Получить список уроков курса",
+                "parameters": [
+                    {
+                        "name": "category_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Уникальный идентификатор категории"
+                    },
+                    {
+                        "name": "course_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Уникальный идентификатор курса"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "type": "integer",
+                        "default": 1,
+                        "minimum": 1,
+                        "description": "Номер страницы"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "default": 20,
+                        "minimum": 1,
+                        "maximum": 100,
+                        "description": "Количество элементов на странице"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешно получен список уроков курса",
+                        "schema": {
+                            "$ref": "#/definitions/SuccessResponsePaginatedLessons"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат ID или параметры запроса",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "INVALID_PARAMETERS",
+                                    "message": "Invalid category ID, course ID or pagination parameters"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Категория или курс не найден",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "NOT_FOUND",
+                                    "message": "Category or course not found"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "INTERNAL_SERVER_ERROR",
+                                    "message": "An unexpected error occurred"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/categories/{category_id}/courses/{course_id}/lessons/{lesson_id}": {
+            "get": {
+                "tags": [
+                    "Lessons"
+                ],
+                "summary": "Получить урок по ID в рамках курса и категории",
+                "parameters": [
+                    {
+                        "name": "category_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Уникальный идентификатор категории"
+                    },
+                    {
+                        "name": "course_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Уникальный идентификатор курса"
+                    },
+                    {
+                        "name": "lesson_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Уникальный идентификатор урока"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Урок успешно найден",
+                        "schema": {
+                            "$ref": "#/definitions/SuccessResponseLesson"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат ID",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "INVALID_UUID",
+                                    "message": "Invalid category ID, course ID or lesson ID format"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Категория, курс или урок не найден",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "NOT_FOUND",
+                                    "message": "Category, course or lesson not found"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "status": "error",
+                                "error": {
+                                    "code": "INTERNAL_SERVER_ERROR",
+                                    "message": "An unexpected error occurred"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "CategoryDTO": {
+            "type": "object",
+            "description": "Объект категории без списка курсов",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "550e8400-e29b-41d4-a716-446655440000",
+                    "description": "Уникальный идентификатор категории"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Программирование",
+                    "description": "Название категории"
+                },
+                "created_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2024-01-15T10:30:00Z",
+                    "description": "Дата создания"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2024-01-15T10:30:00Z",
+                    "description": "Дата последнего обновления"
+                }
+            },
+            "required": [
+                "id",
+                "title",
+                "created_at",
+                "updated_at"
+            ]
+        },
+        "CourseDTO": {
+            "type": "object",
+            "description": "Объект курса без списка уроков",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "660e8400-e29b-41d4-a716-446655440001",
+                    "description": "Уникальный идентификатор курса"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Введение в Python",
+                    "description": "Название курса"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Базовый курс по программированию на Python для начинающих",
+                    "description": "Описание курса"
+                },
+                "level": {
+                    "type": "string",
+                    "enum": [
+                        "easy",
+                        "medium",
+                        "hard"
+                    ],
+                    "example": "easy",
+                    "description": "Уровень сложности курса"
+                },
+                "category_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "550e8400-e29b-41d4-a716-446655440000",
+                    "description": "ID категории, к которой относится курс"
+                },
+                "created_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2024-01-15T11:00:00Z",
+                    "description": "Дата создания"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2024-01-15T11:00:00Z",
+                    "description": "Дата последнего обновления"
+                }
+            },
+            "required": [
+                "id",
+                "title",
+                "description",
+                "level",
+                "category_id",
+                "created_at",
+                "updated_at"
+            ]
+        },
+        "LessonDTO": {
+            "type": "object",
+            "description": "Объект урока без контента",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "770e8400-e29b-41d4-a716-446655440002",
+                    "description": "Уникальный идентификатор урока"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Введение в Python: Урок 1",
+                    "description": "Название урока"
+                },
+                "course_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "660e8400-e29b-41d4-a716-446655440001",
+                    "description": "ID курса, к которому относится урок"
+                },
+                "created_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2024-01-15T12:00:00Z",
+                    "description": "Дата создания"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2024-01-15T12:00:00Z",
+                    "description": "Дата последнего обновления"
+                }
+            },
+            "required": [
+                "id",
+                "title",
+                "course_id",
+                "created_at",
+                "updated_at"
+            ]
+        },
+        "LessonDTODetailed": {
+            "type": "object",
+            "description": "Объект урока вместе с контентом",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "770e8400-e29b-41d4-a716-446655440002",
+                    "description": "Уникальный идентификатор урока"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Введение в Python: Урок 1",
+                    "description": "Название урока"
+                },
+                "course_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "660e8400-e29b-41d4-a716-446655440001",
+                    "description": "ID курса, к которому относится урок"
+                },
+                "content": {
+                    "type": "array",
+                    "description": "Содержание урока (массив блоков текста и изображений)",
+                    "items": {
+                        "type": "object",
+                        "discriminator": "content_type",
+                        "required": [
+                            "content_type"
+                        ],
+                        "properties": {
+                            "content_type": {
+                                "type": "string",
+                                "enum": [
+                                    "text",
+                                    "image"
+                                ],
+                                "description": "Тип контента"
+                            }
+                        }
+                    },
+                    "example": [
+                        {
+                            "content_type": "text",
+                            "data": "В этом уроке мы изучим основы Python..."
+                        },
+                        {
+                            "content_type": "image",
+                            "url": "https://example.com/images/python-logo.png",
+                            "alt": "Логотип языка программирования Python"
+                        }
+                    ]
+                },
+                "created_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2024-01-15T12:00:00Z",
+                    "description": "Дата создания"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2024-01-15T12:00:00Z",
+                    "description": "Дата последнего обновления"
+                }
+            },
+            "required": [
+                "id",
+                "title",
+                "course_id",
+                "content",
+                "created_at",
+                "updated_at"
+            ]
+        },
+        "Pagination": {
+            "type": "object",
+            "description": "Объект пагинации",
+            "properties": {
+                "page": {
+                    "type": "integer",
+                    "example": 1,
+                    "description": "Текущая страница"
+                },
+                "limit": {
+                    "type": "integer",
+                    "example": 20,
+                    "description": "Количество элементов на странице"
+                },
+                "total": {
+                    "type": "integer",
+                    "example": 150,
+                    "description": "Общее количество элементов"
+                },
+                "pages": {
+                    "type": "integer",
+                    "example": 8,
+                    "description": "Общее количество страниц"
+                }
+            },
+            "required": [
+                "page",
+                "limit",
+                "total",
+                "pages"
+            ]
+        },
+        "ErrorDetail": {
+            "type": "object",
+            "description": "Детали ошибки",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "NOT_FOUND",
+                    "description": "Код ошибки"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Course not found",
+                    "description": "Описание ошибки"
+                }
+            },
+            "required": [
+                "code",
+                "message"
+            ]
+        },
+        "ErrorResponse": {
+            "type": "object",
+            "description": "Ответ с ошибкой",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "error"
+                    ],
+                    "example": "error",
+                    "description": "Статус ответа"
+                },
+                "error": {
+                    "$ref": "#/definitions/ErrorDetail"
+                }
+            },
+            "required": [
+                "status",
+                "error"
+            ]
+        },
+        "SuccessResponseCategory": {
+            "type": "object",
+            "description": "Успешный ответ с одной категорией",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "success"
+                    ],
+                    "example": "success",
+                    "description": "Статус ответа"
+                },
+                "data": {
+                    "$ref": "#/definitions/CategoryDTO"
+                }
+            },
+            "required": [
+                "status",
+                "data"
+            ]
+        },
+        "SuccessResponsePaginatedCategories": {
+            "type": "object",
+            "description": "Успешный ответ со списком категорий",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "success"
+                    ],
+                    "example": "success",
+                    "description": "Статус ответа"
+                },
+                "data": {
+                    "type": "object",
+                    "properties": {
+                        "items": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/CategoryDTO"
+                            },
+                            "description": "Список категорий"
+                        },
+                        "pagination": {
+                            "$ref": "#/definitions/Pagination"
+                        }
+                    },
+                    "required": [
+                        "items",
+                        "pagination"
+                    ]
+                }
+            },
+            "required": [
+                "status",
+                "data"
+            ]
+        },
+        "SuccessResponseCourse": {
+            "type": "object",
+            "description": "Успешный ответ с одним курсом",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "success"
+                    ],
+                    "example": "success",
+                    "description": "Статус ответа"
+                },
+                "data": {
+                    "$ref": "#/definitions/CourseDTO"
+                }
+            },
+            "required": [
+                "status",
+                "data"
+            ]
+        },
+        "SuccessResponsePaginatedCourses": {
+            "type": "object",
+            "description": "Успешный ответ со списком курсов",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "success"
+                    ],
+                    "example": "success",
+                    "description": "Статус ответа"
+                },
+                "data": {
+                    "type": "object",
+                    "properties": {
+                        "items": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/CourseDTO"
+                            },
+                            "description": "Список курсов"
+                        },
+                        "pagination": {
+                            "$ref": "#/definitions/Pagination"
+                        }
+                    },
+                    "required": [
+                        "items",
+                        "pagination"
+                    ]
+                }
+            },
+            "required": [
+                "status",
+                "data"
+            ]
+        },
+        "SuccessResponseLesson": {
+            "type": "object",
+            "description": "Успешный ответ с одним уроком",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "success"
+                    ],
+                    "example": "success",
+                    "description": "Статус ответа"
+                },
+                "data": {
+                    "$ref": "#/definitions/LessonDTODetailed"
+                }
+            },
+            "required": [
+                "status",
+                "data"
+            ]
+        },
+        "SuccessResponsePaginatedLessons": {
+            "type": "object",
+            "description": "Успешный ответ со списком уроков",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "success"
+                    ],
+                    "example": "success",
+                    "description": "Статус ответа"
+                },
+                "data": {
+                    "type": "object",
+                    "properties": {
+                        "items": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/LessonDTO"
+                            },
+                            "description": "Список уроков"
+                        },
+                        "pagination": {
+                            "$ref": "#/definitions/Pagination"
+                        }
+                    },
+                    "required": [
+                        "items",
+                        "pagination"
+                    ]
+                }
+            },
+            "required": [
+                "status",
+                "data"
+            ]
+        }
+    }
+}

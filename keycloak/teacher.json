@@ -23,7 +23,6 @@
       "name": "LMS Admin Application",
       "description": "Client for LMS Admin Panel",
       "enabled": true,
-      "clientAuthenticatorType": "client-secret",
       "redirectUris": ["*"],
       "webOrigins": ["*"],
       "bearerOnly": false,
