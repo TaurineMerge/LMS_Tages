@@ -3,7 +3,6 @@ package com.example.lms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.example.lms.config.HandlebarsConfig;
 import com.example.lms.question.domain.service.QuestionService;
 import com.example.lms.question.infrastructure.repositories.QuestionRepository;
 import com.example.lms.question.api.controller.QuestionController;
@@ -13,10 +12,15 @@ import com.example.lms.answer.api.router.AnswerRouter;
 import com.example.lms.answer.domain.service.AnswerService;
 import com.example.lms.answer.infrastructure.repositories.AnswerRepository;
 import com.example.lms.config.DatabaseConfig;
+import com.example.lms.config.HandlebarsConfig;
 import com.example.lms.test.api.controller.TestController;
 import com.example.lms.test.api.router.TestRouter;
 import com.example.lms.test.domain.service.TestService;
 import com.example.lms.test.infrastructure.repositories.TestRepository;
+import com.example.lms.test_attempt.api.controller.TestAttemptController;
+import com.example.lms.test_attempt.api.router.TestAttemptRouter;
+import com.example.lms.test_attempt.domain.service.TestAttemptService;
+import com.example.lms.test_attempt.infrastructure.repositories.Test_AttemptRepository;
 import com.github.jknack.handlebars.Handlebars;
 
 import io.github.cdimascio.dotenv.Dotenv;
@@ -69,16 +73,19 @@ public class Main {
         TestRepository testRepository = new TestRepository(dbConfig);
         AnswerRepository answerRepository = new AnswerRepository(dbConfig);
         QuestionRepository questionRepository = new QuestionRepository(dbConfig);
+        Test_AttemptRepository test_AttemptRepository = new Test_AttemptRepository(dbConfig);
 
         // Сервисный слой (бизнес-логика)
         TestService testService = new TestService(testRepository);
         AnswerService answerService = new AnswerService(answerRepository);
         QuestionService questionService = new QuestionService(questionRepository);
+        TestAttemptService testAttemptService = new TestAttemptService(test_AttemptRepository);
 
         // Контроллер, принимающий HTTP-запросы
         TestController testController = new TestController(testService, handlebars);
         AnswerController answerController = new AnswerController(answerService);
         QuestionController questionController = new QuestionController(questionService);
+        TestAttemptController testAttemptController = new TestAttemptController(testAttemptService);
 
         // ---------------------------------------------------------------
         // 3. Создание и запуск Javalin HTTP-сервера
@@ -89,6 +96,7 @@ public class Main {
                 TestRouter.register(testController);
                 AnswerRouter.register(answerController);
                 QuestionRouter.register(questionController);
+                TestAttemptRouter.register(testAttemptController);
             });
         }).start("0.0.0.0", APP_PORT);
 

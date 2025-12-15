@@ -1,4 +1,4 @@
-package com.example.lms.test_attempt.api.domain.model;
+package com.example.lms.test_attempt.domain.model;
 
 import java.time.LocalDate;
 import java.util.Objects;
@@ -15,14 +15,11 @@ import java.util.UUID;
  *     <li>ID теста</li>
  *     <li>дате прохождения</li>
  *     <li>результате (баллы)</li>
- *     <li>выданном сертификате (если есть)</li>
- *     <li>версии попытки (структура JSON, сохранённая в виде String)</li>
  * </ul>
  *
  * Модель содержит бизнес-методы для:
  * <ul>
  *     <li>завершения попытки</li>
- *     <li>прикрепления сертификата</li>
  *     <li>проверки завершённости и успешности теста</li>
  *     <li>валидации перед сохранением</li>
  * </ul>
@@ -34,8 +31,6 @@ public class Test_AttemptModel {
     private UUID testId;
     private LocalDate dateOfAttempt;
     private Integer point;
-    private UUID certificateId;
-    private String attemptVersion;
 
     /**
      * Конструктор для создания новой попытки.
@@ -44,41 +39,39 @@ public class Test_AttemptModel {
      * Значения:
      * <ul>
      *     <li>{@code dateOfAttempt} устанавливается как текущая дата</li>
-     *     <li>{@code point} и {@code certificateId} изначально равны null</li>
+     *     <li>{@code point} изначально равен null</li>
      * </ul>
      *
-     * @param studentId     идентификатор студента
-     * @param testId        идентификатор теста
-     * @param attemptVersion JSON-структура попытки в виде строки
+     * @param studentId идентификатор студента
+     * @param testId    идентификатор теста
      */
-    public Test_AttemptModel(UUID studentId, UUID testId, String attemptVersion) {
+    public Test_AttemptModel(UUID studentId, UUID testId) {
         this.studentId = Objects.requireNonNull(studentId, "Student ID cannot be null");
         this.testId = Objects.requireNonNull(testId, "Test ID cannot be null");
         this.dateOfAttempt = LocalDate.now();
-        this.attemptVersion = attemptVersion;
+        this.point = null;
+    }
+
+    public Test_AttemptModel() {
+        // Пустой конструктор для десериализации
     }
 
     /**
      * Конструктор для загрузки данных из БД.
      *
-     * @param id             идентификатор попытки
-     * @param studentId      идентификатор студента
-     * @param testId         идентификатор теста
-     * @param dateOfAttempt  дата прохождения
-     * @param point          набранные баллы (null, если не завершено)
-     * @param certificateId  ID сертификата (nullable)
-     * @param attemptVersion JSON-версия попытки
+     * @param id            идентификатор попытки
+     * @param studentId     идентификатор студента
+     * @param testId        идентификатор теста
+     * @param dateOfAttempt дата прохождения
+     * @param point         набранные баллы (null, если не завершено)
      */
     public Test_AttemptModel(UUID id, UUID studentId, UUID testId,
-                             LocalDate dateOfAttempt, Integer point,
-                             UUID certificateId, String attemptVersion) {
+                             LocalDate dateOfAttempt, Integer point) {
         this.id = id;
         this.studentId = studentId;
         this.testId = testId;
         this.dateOfAttempt = dateOfAttempt;
         this.point = point;
-        this.certificateId = certificateId;
-        this.attemptVersion = attemptVersion;
     }
 
     // ----------------------------------------------------------------------
@@ -100,19 +93,6 @@ public class Test_AttemptModel {
             throw new IllegalArgumentException("Points cannot be negative");
         }
         this.point = points;
-    }
-
-    /**
-     * Привязывает сертификат к завершённой попытке.
-     *
-     * @param certificateId идентификатор сертификата
-     * @throws IllegalStateException если попытка ещё не завершена
-     */
-    public void attachCertificate(UUID certificateId) {
-        if (this.point == null) {
-            throw new IllegalStateException("Cannot attach certificate to incomplete attempt");
-        }
-        this.certificateId = certificateId;
     }
 
     /**
@@ -149,8 +129,6 @@ public class Test_AttemptModel {
     public UUID getTestId() { return testId; }
     public LocalDate getDateOfAttempt() { return dateOfAttempt; }
     public Integer getPoint() { return point; }
-    public UUID getCertificateId() { return certificateId; }
-    public String getAttemptVersion() { return attemptVersion; }
 
     // ----------------------------------------------------------------------
     //                              SETTERS
@@ -167,12 +145,13 @@ public class Test_AttemptModel {
         this.point = point;
     }
 
-    public void setCertificateId(UUID certificateId) {
-        this.certificateId = certificateId;
-    }
-
-    public void setAttemptVersion(String attemptVersion) {
-        this.attemptVersion = attemptVersion;
+    /**
+     * Устанавливает дату попытки.
+     * 
+     * @param dateOfAttempt дата попытки
+     */
+    public void setDateOfAttempt(LocalDate dateOfAttempt) {
+        this.dateOfAttempt = dateOfAttempt;
     }
 
     // ----------------------------------------------------------------------
