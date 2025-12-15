@@ -1,0 +1,201 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/includes:/etc/nginx/includes:ro
+    depends_on:
+      keycloak:
+        condition: service_started
+      public-side:
+        condition: service_started
+      admin-panel:
+        condition: service_started
+      personal-account:
+        condition: service_started
+      testing:
+        condition: service_started
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  keycloak-db:
+    image: postgres:15
+    container_name: keycloak-db
+    environment:
+      POSTGRES_DB: keycloaks
+      POSTGRES_USER: keycloaks
+      POSTGRES_PASSWORD: keycloaks
+    volumes:
+      - keycloak_data:/var/lib/postgresql/data
+    networks:
+      - keycloak-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloaks -d keycloaks"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0.0
+    container_name: keycloak
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloaks
+      KC_DB_USERNAME: keycloaks
+      KC_DB_PASSWORD: keycloaks
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: true
+      KC_METRICS_ENABLED: true
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+    command:
+      - start-dev
+      - --http-port=8080
+      - --import-realm
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    networks:
+      - keycloak-network
+      - app-network
+    restart: unless-stopped
+
+  app-db:
+    image: postgres:15
+    container_name: app-db
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: password
+    volumes:
+      - app_data:/var/lib/postgresql/data
+      - ./init-sql:/docker-entrypoint-initdb.d:ro
+    networks:
+      - app-network
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+  public-side:
+    build: ./publicSide
+    container_name: public-side
+    env_file:
+      - ./publicSide/.env.prod
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+    depends_on:
+      app-db:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    restart: unless-stopped
+  admin-panel:
+    build: ./adminPanel
+    container_name: admin-panel
+    environment:
+      KEYCLOAK_ISSUER_URL: "http://keycloak:8080/realms/teacher"
+      KEYCLOAK_CLIENT_ID: "teacher-client"
+      KEYCLOAK_CLIENT_SECRET: "TEACHER_SECRET"
+      KEYCLOAK_APP_NAME: "LMS Admin Application"
+      WAIT_FOR_KEYCLOAK: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_SERVICE_NAME: "admin-panel"
+    ports:
+      - "4000:4000"
+    networks:
+      - app-network
+    depends_on:
+      app-db:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    restart: unless-stopped
+
+  personal-account:
+    build: ./personal-account
+    container_name: personal-account
+    ports:
+      - "8000:8000"
+    networks:
+      - app-network
+    depends_on:
+      app-db:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    restart: unless-stopped
+
+  testing:
+    build: ./testing
+    container_name: testing
+    ports:
+      - "8085:8085"
+    networks:
+      - app-network
+    depends_on:
+      app-db:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    restart: unless-stopped
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.54
+    container_name: jaeger
+    environment:
+      - COLLECTOR_ZIPKIN_HTTP_PORT=9411
+    ports:
+      - "16686:16686"  # UI
+      - "14250:14250"  # gRPC ingestion
+      - "14268:14268"  # HTTP ingestion
+      - "9411:9411"    # Zipkin compatibility
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.94.0
+    container_name: otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./observability/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    ports:
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+    depends_on:
+      jaeger:
+        condition: service_started
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  keycloak-network:
+    driver: bridge
+    internal: true
+  app-network:
+    driver: bridge
+
+volumes:
+  keycloak_data:
+    driver: local
+  app_data:
+    driver: local

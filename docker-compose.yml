@@ -52,9 +52,8 @@ services:
       KC_DB_PASSWORD: keycloaks
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
-      KC_HEALTH_ENABLED: "true"
-      KC_METRICS_ENABLED: "true"
-      KC_HTTP_PORT: 8080
+      KC_HEALTH_ENABLED: true
+      KC_METRICS_ENABLED: true
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
       # Разрешаем Keycloak принимать запросы с разных URL (localhost и keycloak)
@@ -65,8 +64,10 @@ services:
       - start-dev
       - --http-port=8080
       - --import-realm
-    ports:
-      - "8080:8080"
+      - --hostname-strict-https=false
+      - --http-relative-path=/auth
+      - --hostname-admin-url=http://localhost/auth
+    ports: []
     volumes:
       - ./keycloak/student.json:/opt/keycloak/data/import/student.json:ro
       - ./keycloak/teacher.json:/opt/keycloak/data/import/teacher.json:ro
@@ -98,12 +99,12 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
-
   public-side:
     build: ./publicSide
     container_name: public-side
-    ports:
-      - "3000:3000"
+    ports: []
+    env_file:
+      - ./publicSide/.env.prod
     networks:
       - app-network
     depends_on:
@@ -112,18 +113,19 @@ services:
       keycloak:
         condition: service_started
     restart: unless-stopped
-
   admin-panel:
     build: ./adminPanel
     container_name: admin-panel
     environment:
-      KEYCLOAK_ISSUER_URL: "http://keycloak:8080/realms/teacher"
+      KEYCLOAK_ISSUER_URL: "http://keycloak:8080/auth/realms/teacher"
       KEYCLOAK_CLIENT_ID: "teacher-client"
       KEYCLOAK_CLIENT_SECRET: "TEACHER_SECRET"
       KEYCLOAK_APP_NAME: "LMS Admin Application"
       WAIT_FOR_KEYCLOAK: "true"
-    ports:
-      - "4000:4000"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_SERVICE_NAME: "admin-panel"
+    ports: []
     networks:
       - app-network
     depends_on:
@@ -155,8 +157,7 @@ services:
   testing:
     build: ./testing
     container_name: testing
-    ports:
-      - "8085:8085"
+    ports: []
     networks:
       - app-network
     depends_on:
