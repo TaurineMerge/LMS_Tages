@@ -99,23 +99,56 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+
+  knowledge-base-db:
+    image: postgres:15
+    container_name: knowledge-base-db
+    environment:
+      POSTGRES_DB: ${KNOWLEDGE_BASE_DB_NAME}
+      POSTGRES_USER: ${KNOWLEDGE_BASE_DB_SUPERUSER}
+      POSTGRES_PASSWORD: ${KNOWLEDGE_BASE_DB_SUPERUSER_PASSWORD}
+    env_file:
+      - ./.env
+    volumes:
+      - knowledge_base_data:/var/lib/postgresql/data
+      - ./init-sql/knowledge-base-db:/docker-entrypoint-initdb.d:ro
+    networks:
+      - knowledge-base-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${KNOWLEDGE_BASE_DB_SUPERUSER} -d ${KNOWLEDGE_BASE_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   public-side:
     build: ./publicSide
     container_name: public-side
     ports: []
+    environment:
+      DB_NAME: ${KNOWLEDGE_BASE_DB_NAME}
+      DB_USER: ${KNOWLEDGE_BASE_RO_USER}
+      DB_PASSWORD: ${KNOWLEDGE_BASE_RO_PASSWORD}
+      DB_HOST: ${KNOWLEDGE_BASE_DB_HOST}
+      DB_PORT: ${KNOWLEDGE_BASE_DB_PORT}
     env_file:
+      - ./.env
       - ./publicSide/.env.prod
     networks:
       - app-network
+      - knowledge-base-network
     depends_on:
-      app-db:
+      knowledge-base-db:
         condition: service_healthy
       keycloak:
         condition: service_started
     restart: unless-stopped
+
   admin-panel:
     build: ./adminPanel
     container_name: admin-panel
+    env_file:
+      - ./.env
     environment:
       KEYCLOAK_ISSUER_URL: "http://keycloak:8080/auth/realms/teacher"
       KEYCLOAK_CLIENT_ID: "teacher-client"
@@ -128,8 +161,9 @@ services:
     ports: []
     networks:
       - app-network
+      - knowledge-base-network
     depends_on:
-      app-db:
+      knowledge-base-db:
         condition: service_healthy
       keycloak:
         condition: service_started
@@ -203,9 +237,13 @@ networks:
     internal: true
   app-network:
     driver: bridge
+  knowledge-base-network:
+    driver: bridge
 
 volumes:
   keycloak_data:
     driver: local
   app_data:
+    driver: local
+  knowledge_base_data:
     driver: local
