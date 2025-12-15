@@ -20,6 +20,20 @@
 | `KNOWLEDGE_BASE_DB_HOST` | Хост базы данных для подключения из других сервисов. | `knowledge-base-db` |
 | `KNOWLEDGE_BASE_DB_PORT` | Внутренний порт базы данных. | `5432` |
 
+### Пример файла .env
+
+```ini
+KNOWLEDGE_BASE_DB_NAME=knowledge_base
+KNOWLEDGE_BASE_DB_SUPERUSER=superuser
+KNOWLEDGE_BASE_DB_SUPERUSER_PASSWORD=supersecret
+KNOWLEDGE_BASE_ADMIN_USER=kb_admin
+KNOWLEDGE_BASE_ADMIN_PASSWORD=adminsecret
+KNOWLEDGE_BASE_RO_USER=kb_ro
+KNOWLEDGE_BASE_RO_PASSWORD=rosecret
+KNOWLEDGE_BASE_DB_HOST=knowledge-base-db
+KNOWLEDGE_BASE_DB_PORT=5432
+```
+
 ## Инициализация и Миграции
 
 При первом запуске контейнера (когда том с данными пуст), выполняются скрипты из директории `init-sql/knowledge-base-db` в алфавитном порядке.
