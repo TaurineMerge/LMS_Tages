@@ -1,9 +1,10 @@
-package com.example.lms.question.api.domain.repository;
+package com.example.lms.question.domain.repository;
 
-import com.example.lms.question.api.domain.model.QuestionModel;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import com.example.lms.question.domain.model.QuestionModel;
 
 /**
  * Интерфейс репозитория для работы с вопросами тестов
@@ -52,19 +53,6 @@ public interface QuestionRepositoryInterface {
      */
     boolean deleteById(UUID id);
     
-    /**
-     * Удалить все вопросы теста
-     * @param testId идентификатор теста
-     * @return количество удаленных вопросов
-     */
-    int deleteByTestId(UUID testId);
-    
-    /**
-     * Проверить существование вопроса
-     * @param id идентификатор вопроса
-     * @return true если вопрос существует
-     */
-    boolean existsById(UUID id);
     
     /**
      * Получить количество вопросов в тесте

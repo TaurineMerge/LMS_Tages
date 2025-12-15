@@ -1,12 +1,12 @@
-package com.example.lms.question.api.domain.service;
+package com.example.lms.question.domain.service;
 
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.example.lms.question.api.dto.Question;
-import com.example.lms.question.api.domain.model.QuestionModel;
-import com.example.lms.question.api.domain.repository.QuestionRepositoryInterface;
+import com.example.lms.question.domain.model.QuestionModel;
+import com.example.lms.question.domain.repository.QuestionRepositoryInterface;
 
 /**
  * Сервисный слой для работы с вопросами.
@@ -158,10 +158,6 @@ public class QuestionService {
             throw new IllegalArgumentException("Идентификатор вопроса обязателен для обновления");
         }
 
-        if (!repository.existsById(question.getId())) {
-            throw new RuntimeException("Вопрос с ID " + question.getId() + " не найден");
-        }
-
         if (question.getTestId() == null) {
             throw new IllegalArgumentException("Идентификатор теста обязателен");
         }
@@ -185,25 +181,6 @@ public class QuestionService {
         return repository.deleteById(id);
     }
 
-    /**
-     * Удаляет все вопросы для указанного теста.
-     *
-     * @param testId идентификатор теста
-     * @return количество удалённых вопросов
-     */
-    public int deleteQuestionsByTestId(UUID testId) {
-        return repository.deleteByTestId(testId);
-    }
-
-    /**
-     * Проверяет существование вопроса.
-     *
-     * @param id идентификатор вопроса
-     * @return true если вопрос существует
-     */
-    public boolean existsById(UUID id) {
-        return repository.existsById(id);
-    }
 
     /**
      * Подсчитывает количество вопросов в тесте.

@@ -4,6 +4,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.example.lms.config.HandlebarsConfig;
+import com.example.lms.question.domain.service.QuestionService;
+import com.example.lms.question.infrastructure.repositories.QuestionRepository;
+import com.example.lms.question.api.controller.QuestionController;
+import com.example.lms.question.api.router.QuestionRouter;
 import com.example.lms.answer.api.controller.AnswerController;
 import com.example.lms.answer.api.router.AnswerRouter;
 import com.example.lms.answer.domain.service.AnswerService;
@@ -64,14 +68,17 @@ public class Main {
         // Репозитории с логикой работы с БД
         TestRepository testRepository = new TestRepository(dbConfig);
         AnswerRepository answerRepository = new AnswerRepository(dbConfig);
+        QuestionRepository questionRepository = new QuestionRepository(dbConfig);
 
         // Сервисный слой (бизнес-логика)
         TestService testService = new TestService(testRepository);
         AnswerService answerService = new AnswerService(answerRepository);
+        QuestionService questionService = new QuestionService(questionRepository);
 
         // Контроллер, принимающий HTTP-запросы
         TestController testController = new TestController(testService, handlebars);
         AnswerController answerController = new AnswerController(answerService);
+        QuestionController questionController = new QuestionController(questionService);
 
         // ---------------------------------------------------------------
         // 3. Создание и запуск Javalin HTTP-сервера
@@ -81,6 +88,7 @@ public class Main {
             config.router.apiBuilder(() -> {
                 TestRouter.register(testController);
                 AnswerRouter.register(answerController);
+                QuestionRouter.register(questionController);
             });
         }).start("0.0.0.0", APP_PORT);
 

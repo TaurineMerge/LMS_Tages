@@ -1,9 +1,11 @@
-package com.example.lms.question.api.infrastructure.repositories;
+package com.example.lms.question.infrastructure.repositories;
 
-import com.example.lms.question.api.domain.model.QuestionModel;
-import com.example.lms.question.api.domain.repository.QuestionRepositoryInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.example.lms.config.DatabaseConfig;
+import com.example.lms.question.domain.model.QuestionModel;
+import com.example.lms.question.domain.repository.QuestionRepositoryInterface;
 
 import javax.sql.DataSource;
 import java.sql.*;
@@ -33,92 +35,121 @@ public class QuestionRepository implements QuestionRepositoryInterface {
     private static final Logger logger = LoggerFactory.getLogger(QuestionRepository.class);
 
     /** Источник соединений с БД. */
-    private final DataSource dataSource;
+    private final DatabaseConfig dbConfig;
 
     // language=SQL
     private static final String INSERT_SQL = """
-            INSERT INTO question_d (test_id, text_of_question, "order")
+            INSERT INTO tests.question_d (test_id, text_of_question, "order")
             VALUES (?, ?, ?)
             RETURNING id
-            """;
+            """.trim();
 
     // language=SQL
     private static final String UPDATE_SQL = """
-            UPDATE question_d
+            UPDATE tests.question_d
             SET test_id = ?, text_of_question = ?, "order" = ?
             WHERE id = ?
-            """;
+            """.trim();
 
     // language=SQL
     private static final String SELECT_BY_ID = """
             SELECT id, test_id, text_of_question, "order"
-            FROM question_d
+            FROM tests.question_d
             WHERE id = ?
-            """;
+            """.trim();
 
     // language=SQL
     private static final String SELECT_ALL = """
             SELECT id, test_id, text_of_question, "order"
-            FROM question_d
+            FROM tests.question_d
             ORDER BY test_id, "order"
-            """;
+            """.trim();
 
     // language=SQL
     private static final String SELECT_BY_TEST = """
             SELECT id, test_id, text_of_question, "order"
-            FROM question_d
+            FROM tests.question_d
             WHERE test_id = ?
             ORDER BY "order"
-            """;
+            """.trim();
 
-    private static final String DELETE_BY_ID = "DELETE FROM question_d WHERE id = ?";
+    private static final String DELETE_BY_ID = "DELETE FROM tests.question_d WHERE id = ?";
 
-    private static final String DELETE_BY_TEST = "DELETE FROM question_d WHERE test_id = ?";
-
-    private static final String EXISTS_BY_ID = "SELECT 1 FROM question_d WHERE id = ?";
+    private static final String DELETE_BY_TEST = "DELETE FROM tests.question_d WHERE test_id = ?";
 
     // language=SQL
     private static final String COUNT_BY_TEST = """
             SELECT COUNT(*)
-            FROM question_d
+            FROM tests.question_d
             WHERE test_id = ?
-            """;
+            """.trim();
 
     // language=SQL
     private static final String SEARCH_BY_TEXT = """
             SELECT id, test_id, text_of_question, "order"
-            FROM question_d
+            FROM tests.question_d
             WHERE LOWER(text_of_question) LIKE LOWER(?)
             ORDER BY test_id, "order"
-            """;
+            """.trim();
 
     // language=SQL
     private static final String MAX_ORDER_BY_TEST = """
             SELECT COALESCE(MAX("order"), -1)
-            FROM question_d
+            FROM tests.question_d
             WHERE test_id = ?
-            """;
+            """.trim();
 
     // language=SQL
     private static final String SHIFT_ORDER_SQL = """
-            UPDATE question_d
+            UPDATE tests.question_d
             SET "order" = "order" + ?
             WHERE test_id = ? AND "order" >= ?
-            """;
+            """.trim();
+
 
     /**
      * Создаёт репозиторий вопросов.
      *
-     * @param dataSource источник соединений PostgreSQL
+     * @param dbConfig источник соединений PostgreSQL
      */
-    public QuestionRepository(DataSource dataSource) {
-        this.dataSource = dataSource;
+    public QuestionRepository(DatabaseConfig dbConfig) {
+        this.dbConfig = dbConfig;
     }
+
+    /**
+     * Устанавливает соединение с базой данных.
+     *
+     * @return активное соединение с базой данных
+     * @throws SQLException если произошла ошибка при установке соединения
+     */
+    private Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(
+                dbConfig.getUrl(),
+                dbConfig.getUser(),
+                dbConfig.getPassword());
+    }
+
+    static {
+        try {
+            Class.forName("org.postgresql.Driver");
+            logger.info("PostgreSQL драйвер зарегистрирован");
+        } catch (ClassNotFoundException e) {
+            logger.error("Не удалось зарегистрировать драйвер PostgreSQL", e);
+            throw new RuntimeException("Драйвер БД не найден", e);
+        }
+    }
+
+
 
     // ------------------------------------------------------------
     // CRUD + Query методы
     // ------------------------------------------------------------
 
+    //
+    // public QuestionRepository(DatabaseConfig dbConfig) {
+    //    //TODO Auto-generated constructor stub
+    // }
+    //
     /**
      * Сохраняет новый вопрос в БД.
      * <p>
@@ -134,7 +165,7 @@ public class QuestionRepository implements QuestionRepositoryInterface {
 
         question.validate();
 
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = getConnection();
                 PreparedStatement stmt = conn.prepareStatement(INSERT_SQL)) {
 
             stmt.setObject(1, question.getTestId());
@@ -174,7 +205,7 @@ public class QuestionRepository implements QuestionRepositoryInterface {
 
         question.validate();
 
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = getConnection();
                 PreparedStatement stmt = conn.prepareStatement(UPDATE_SQL)) {
 
             stmt.setObject(1, question.getTestId());
@@ -206,7 +237,7 @@ public class QuestionRepository implements QuestionRepositoryInterface {
     public Optional<QuestionModel> findById(UUID id) {
         logger.debug("Поиск вопроса id={}", id);
 
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = getConnection();
                 PreparedStatement stmt = conn.prepareStatement(SELECT_BY_ID)) {
 
             stmt.setObject(1, id);
@@ -235,7 +266,7 @@ public class QuestionRepository implements QuestionRepositoryInterface {
 
         List<QuestionModel> result = new ArrayList<>();
 
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = getConnection();
                 PreparedStatement stmt = conn.prepareStatement(SELECT_ALL);
                 ResultSet rs = stmt.executeQuery()) {
 
@@ -263,7 +294,7 @@ public class QuestionRepository implements QuestionRepositoryInterface {
 
         List<QuestionModel> result = new ArrayList<>();
 
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = getConnection();
                 PreparedStatement stmt = conn.prepareStatement(SELECT_BY_TEST)) {
 
             stmt.setObject(1, testId);
@@ -291,7 +322,7 @@ public class QuestionRepository implements QuestionRepositoryInterface {
     public boolean deleteById(UUID id) {
         logger.info("Удаление вопроса id={}", id);
 
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = getConnection();
                 PreparedStatement stmt = conn.prepareStatement(DELETE_BY_ID)) {
 
             stmt.setObject(1, id);
@@ -300,52 +331,6 @@ public class QuestionRepository implements QuestionRepositoryInterface {
 
         } catch (SQLException e) {
             logger.error("Ошибка удаления вопроса id={}", id, e);
-            throw new RuntimeException("Ошибка базы данных", e);
-        }
-    }
-
-    /**
-     * Удаляет все вопросы теста.
-     *
-     * @param testId ID теста
-     * @return количество удалённых вопросов
-     */
-    @Override
-    public int deleteByTestId(UUID testId) {
-        logger.info("Удаление вопросов теста id={}", testId);
-
-        try (Connection conn = dataSource.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(DELETE_BY_TEST)) {
-
-            stmt.setObject(1, testId);
-            int deleted = stmt.executeUpdate();
-            return deleted;
-
-        } catch (SQLException e) {
-            logger.error("Ошибка удаления вопросов теста id={}", testId, e);
-            throw new RuntimeException("Ошибка базы данных", e);
-        }
-    }
-
-    /**
-     * Проверяет, существует ли вопрос с указанным ID.
-     *
-     * @param id идентификатор вопроса
-     * @return true — если запись существует
-     */
-    @Override
-    public boolean existsById(UUID id) {
-        logger.debug("Проверка существования вопроса id={}", id);
-
-        try (Connection conn = dataSource.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(EXISTS_BY_ID)) {
-
-            stmt.setObject(1, id);
-            ResultSet rs = stmt.executeQuery();
-            return rs.next();
-
-        } catch (SQLException e) {
-            logger.error("Ошибка existsById id={}", id, e);
             throw new RuntimeException("Ошибка базы данных", e);
         }
     }
@@ -360,7 +345,7 @@ public class QuestionRepository implements QuestionRepositoryInterface {
     public int countByTestId(UUID testId) {
         logger.debug("Подсчёт вопросов теста id={}", testId);
 
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = getConnection();
                 PreparedStatement stmt = conn.prepareStatement(COUNT_BY_TEST)) {
 
             stmt.setObject(1, testId);
@@ -386,7 +371,7 @@ public class QuestionRepository implements QuestionRepositoryInterface {
 
         List<QuestionModel> result = new ArrayList<>();
 
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = getConnection();
                 PreparedStatement stmt = conn.prepareStatement(SEARCH_BY_TEXT)) {
 
             stmt.setString(1, "%" + text + "%");
@@ -416,7 +401,7 @@ public class QuestionRepository implements QuestionRepositoryInterface {
     public int getNextOrderForTest(UUID testId) {
         logger.debug("Получение следующего порядка для теста id={}", testId);
 
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = getConnection();
                 PreparedStatement stmt = conn.prepareStatement(MAX_ORDER_BY_TEST)) {
 
             stmt.setObject(1, testId);
@@ -443,7 +428,7 @@ public class QuestionRepository implements QuestionRepositoryInterface {
     public int shiftQuestionsOrder(UUID testId, int fromOrder, int shiftBy) {
         logger.info("Сдвиг порядка вопросов теста id={} с {} на {}", testId, fromOrder, shiftBy);
 
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = getConnection();
                 PreparedStatement stmt = conn.prepareStatement(SHIFT_ORDER_SQL)) {
 
             stmt.setInt(1, shiftBy);
