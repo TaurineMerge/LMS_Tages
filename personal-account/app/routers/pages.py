@@ -105,7 +105,8 @@ async def root_page(request: Request):
     token = request.cookies.get("access_token")
 
     if token:
-        return RedirectResponse(url="/dashboard")  # Full path with /account prefix
+        # Use request.url_for to respect root_path (/account)
+        return RedirectResponse(url=request.url_for("dashboard_page"))
 
     return _render_template_safe("index.hbs", {"request": request, **get_keycloak_urls()})
 
