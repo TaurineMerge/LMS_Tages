@@ -2,6 +2,7 @@ package com.example.lms.test_attempt.api.dto;
 
 import java.io.Serializable;
 import java.sql.Date;
+import java.util.UUID;
 
 /**
  * DTO для передачи данных о попытке прохождения теста через API.
@@ -21,7 +22,7 @@ public class TestAttempt implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /** Уникальный идентификатор попытки. */
-    private Long id;
+    private UUID id;
 
     /** Дата прохождения попытки (java.sql.Date для совместимости с БД). */
     private Date date_of_attempt;
@@ -46,7 +47,7 @@ public class TestAttempt implements Serializable {
      * @param point           набранные баллы
      * @param result          строковый статус результата
      */
-    public TestAttempt(Long id, Date date_of_attempt, Integer point, String result) {
+    public TestAttempt(UUID id, Date date_of_attempt, Integer point, String result) {
         this.id = id;
         this.date_of_attempt = date_of_attempt;
         this.point = point;
@@ -57,11 +58,11 @@ public class TestAttempt implements Serializable {
     //                            GETTERS / SETTERS
     // --------------------------------------------------------------------
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 

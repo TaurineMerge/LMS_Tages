@@ -1,10 +1,11 @@
-package com.example.lms.test_attempt.api.domain.repository;
+package com.example.lms.test_attempt.domain.repository;
 
-import com.example.lms.test_attempt.api.domain.model.Test_AttemptModel;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import com.example.lms.test_attempt.domain.model.Test_AttemptModel;
 
 /**
  * Интерфейс репозитория для работы с попытками прохождения тестов
