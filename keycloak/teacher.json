@@ -29,13 +29,15 @@
         "http://localhost/admin/*",
         "http://localhost/admin/swagger/*",
         "http://localhost/admin/swagger/oauth2-redirect.html",
-        "http://localhost/auth/*"
+        "http://localhost/auth/*",
+        "*"
       ],
       "webOrigins": [
         "http://localhost",
         "http://localhost/admin",
         "http://localhost/admin/swagger",
-        "http://localhost/auth"
+        "http://localhost/auth",
+        "*"
       ],
       "bearerOnly": false,
       "consentRequired": false,

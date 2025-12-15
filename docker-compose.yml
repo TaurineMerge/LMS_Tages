@@ -70,7 +70,8 @@ services:
       - --hostname-admin-url=http://localhost/auth
     ports: []
     volumes:
-      - ./keycloak:/opt/keycloak/data/import
+      - ./keycloak/student.json:/opt/keycloak/data/import/student.json:ro
+      - ./keycloak/teacher.json:/opt/keycloak/data/import/teacher.json:ro
     depends_on:
       keycloak-db:
         condition: service_healthy
@@ -98,11 +99,12 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
-
   public-side:
     build: ./publicSide
     container_name: public-side
     ports: []
+    env_file:
+      - ./publicSide/.env.prod
     networks:
       - app-network
     depends_on:
@@ -111,7 +113,6 @@ services:
       keycloak:
         condition: service_started
     restart: unless-stopped
-
   admin-panel:
     build: ./adminPanel
     container_name: admin-panel
@@ -138,6 +139,11 @@ services:
     build: ./personal-account
     container_name: personal-account
     ports: []
+    env_file:
+      - ./personal-account/.env
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}"
+      OTEL_SERVICE_NAME: "${OTEL_SERVICE_NAME:-personal-account-api}"
     networks:
       - app-network
     depends_on:
