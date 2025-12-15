@@ -347,6 +347,7 @@
                         "required": true,
                         "type": "string",
                         "format": "uuid",
+                        "default": "a1000000-0000-4000-8000-000000000001",
                         "description": "Уникальный идентификатор категории"
                     },
                     {
@@ -355,7 +356,15 @@
                         "required": true,
                         "type": "string",
                         "format": "uuid",
+                        "default": "b1000001-0000-4000-8000-000000000001",
                         "description": "Уникальный идентификатор курса"
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "type": "string",
+                        "default": "created_at",
+                        "description": "Поле для сортировки и порядок. Используйте `-` перед полем для сортировки по убыванию (например, -title). Доступные поля: title, created_at, updated_at."
                     },
                     {
                         "name": "page",
