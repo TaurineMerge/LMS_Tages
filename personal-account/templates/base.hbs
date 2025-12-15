@@ -8,50 +8,61 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+      {% include 'includes/sprite.html' %} 
     <!-- Sidebar -->
     <nav class="sidebar">
-        <div class="brand-logo">
-            <p class="bi bi-mortarboard-fill"></p> LMS
+        <div class="sidebar__box">
+            <div class="sidebar__header">
+            <svg viewBox="0 0 31 30" class="sidebar__header--logo">
+                <use href="#logo"></use>
+            </svg>
+            <p>E-tutor</p>
         </div>
         
-        <ul class="nav flex-column">
-            <li class="nav-item">
-                <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" href="/account/">
-                    <p class="bi bi-speedometer2"></p> Дашборд
+        <ul class="sidebar__nav">
+            <li class="nav-item"> 
+                <a class="nav-link" href="/account/">
+                    <svg viewBox="0 0 24 24" class="nav-link--icon">
+                        <use href="#chart"></use>
+                    </svg>
+                    <p>Дашборд</p>
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link {% if active_page == 'profile' %}active{% endif %}" href="/account/profile">
-                    <p class="bi bi-person"></p> Профиль
+                <a class="nav-link" href="/account/profile">
+                   <svg viewBox="0 0 24 24" class="nav-link--icon">
+                        <use href="#profile"></use>
+                    </svg>
+                    <p>Профиль</p>
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link {% if active_page == 'certificates' %}active{% endif %}" href="/account/certificates">
-                    <p class="bi bi-award"></p> Сертификаты
+                <a class="nav-link" href="/account/certificates">
+                    <svg viewBox="0 0 24 24" class="nav-link--icon">
+                        <use href="#certificate"></use>
+                    </svg>
+                    <p>Сертификаты</p>
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link {% if active_page == 'visits' %}active{% endif %}" href="/account/visits">
-                    <p class="bi bi-calendar-check"></p> Посещения
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/account/api/v1/docs" target="_blank">
-                    <p class="bi bi-code-slash"></p> API Docs
+                <a class="nav-link" href="/account/visits">
+                   <svg viewBox="0 0 24 24" class="nav-link--icon">
+                        <use href="#visits"></use>
+                    </svg>
+                    <p>Посещения</p>
                 </a>
             </li>
         </ul>
         
-        <div class="user-info">
-            <div class="d-flex align-items-center text-white">
-                <div class="avatar me-3">
-                    <p class="bi bi-person-fill"></p>
-                </div>
-                <div id="user-sidebar-info">
-                    <small class="d-block opacity-75">Студент</small>
-                    <span class="username">Гость</span>
-                </div>
-            </div>
+        </div>
+        
+        <div class="sidebar__logout">
+            <a class="nav-link" href="/account/visits">
+                   <svg viewBox="0 0 24 24" class="nav-link--icon">
+                        <use href="#logout"></use>
+                    </svg>
+                    <p>Выйти</p>
+            </a>
         </div>
     </nav>
 

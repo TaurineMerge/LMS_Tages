@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="0" height="0">
+<symbol id="chart" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+  <path fill="none" d="M4.125 19.5V12.75H9.375" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path fill="none" d="M21.375 19.5H2.625" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path fill="none" d="M9.375 19.5V8.25H14.625" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path fill="none" d="M19.875 3.75H14.625V19.5H19.875V3.75Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</symbol>
+
+<symbol id="logo" width="31" height="30" viewBox="0 0 31 30" fill="none">
+<path d="M1.12304 11.2291L15.161 3.74219L29.199 11.2291L15.161 18.716L1.12304 11.2291Z" stroke="#FF6636" stroke-width="2.24607" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M22.18 28.076V14.9739L15.161 11.2305" stroke="#FF6636" stroke-width="2.24607" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M25.9234 12.9766V19.3546C25.9238 19.5565 25.8586 19.753 25.7375 19.9146C24.9494 20.9632 21.6246 24.7996 15.161 24.7996C8.69735 24.7996 5.37258 20.9632 4.58451 19.9146C4.46344 19.753 4.39818 19.5565 4.39856 19.3546V12.9766" stroke="#FF6636" stroke-width="2.24607" stroke-linecap="round" stroke-linejoin="round"/>
+</symbol>
+
+</svg>
