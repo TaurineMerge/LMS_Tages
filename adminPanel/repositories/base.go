@@ -2,13 +2,13 @@ package repositories
 
 import (
 	"context"
-	"fmt"     // Нужен для fmt.Sprintf
-	"strings" // Нужен для strings.Join
+	"fmt"
+	"strings"
 
 	"adminPanel/database"
 )
 
-// BaseRepository - аналог Python BaseRepository
+// BaseRepository - базовый репозиторий
 type BaseRepository struct {
 	db        *database.Database
 	tableName string
@@ -27,18 +27,18 @@ func NewBaseRepository(db *database.Database, tableName, schema string) *BaseRep
 // FullTableName возвращает полное имя таблицы
 func (r *BaseRepository) FullTableName() string {
 	if r.schema == "" {
-		return r.tableName
+		return fmt.Sprintf("appdb.%s", r.tableName)
 	}
-	return fmt.Sprintf("%s.%s", r.schema, r.tableName)
+	return fmt.Sprintf("appdb.%s.%s", r.schema, r.tableName)
 }
 
-// GetByID - аналог get_by_id из Python
+// GetByID - получение по ID
 func (r *BaseRepository) GetByID(ctx context.Context, id string) (map[string]interface{}, error) {
 	query := fmt.Sprintf("SELECT * FROM %s WHERE id = $1", r.FullTableName())
 	return r.db.FetchOne(ctx, query, id)
 }
 
-// GetAll - аналог get_all из Python
+// GetAll - получение всех записей
 func (r *BaseRepository) GetAll(ctx context.Context, limit, offset int, orderBy, orderDir string) ([]map[string]interface{}, error) {
 	if orderBy == "" {
 		orderBy = "created_at"
@@ -56,7 +56,7 @@ func (r *BaseRepository) GetAll(ctx context.Context, limit, offset int, orderBy,
 	return r.db.FetchAll(ctx, query, limit, offset)
 }
 
-// Count - аналог count из Python
+// Count - подсчет записей
 func (r *BaseRepository) Count(ctx context.Context, whereClause string, params ...interface{}) (int, error) {
 	query := fmt.Sprintf("SELECT COUNT(*) as count FROM %s", r.FullTableName())
 
@@ -75,7 +75,7 @@ func (r *BaseRepository) Count(ctx context.Context, whereClause string, params .
 	return 0, nil
 }
 
-// Delete - аналог delete из Python
+// Delete - удаление записи
 func (r *BaseRepository) Delete(ctx context.Context, id string) (bool, error) {
 	query := fmt.Sprintf("DELETE FROM %s WHERE id = $1", r.FullTableName())
 	affected, err := r.db.Execute(ctx, query, id)
@@ -85,7 +85,7 @@ func (r *BaseRepository) Delete(ctx context.Context, id string) (bool, error) {
 	return affected > 0, nil
 }
 
-// Exists - аналог exists из Python
+// Exists - проверка существования
 func (r *BaseRepository) Exists(ctx context.Context, id string) (bool, error) {
 	query := fmt.Sprintf("SELECT 1 FROM %s WHERE id = $1 LIMIT 1", r.FullTableName())
 	result, err := r.db.FetchOne(ctx, query, id)
@@ -95,7 +95,7 @@ func (r *BaseRepository) Exists(ctx context.Context, id string) (bool, error) {
 	return result != nil, nil
 }
 
-// GetFiltered - общий метод для фильтрации (аналог get_filtered)
+// GetFiltered - фильтрация с условиями
 func (r *BaseRepository) GetFiltered(ctx context.Context, conditions []string, params []interface{}, orderBy, orderDir string) ([]map[string]interface{}, error) {
 	if orderBy == "" {
 		orderBy = "created_at"
