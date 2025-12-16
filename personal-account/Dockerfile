@@ -9,7 +9,7 @@ RUN apt-get update \
     && curl -sSL https://install.python-poetry.org | python3 - \
     && rm -rf /var/lib/apt/lists/*
 
-ENV PATH="/root/.local/bin:$PATH"
+    ENV PATH="/root/.local/bin:$PATH"
 
 # Copy only dependency files first (for layer caching)
 COPY pyproject.toml poetry.lock* /app/
