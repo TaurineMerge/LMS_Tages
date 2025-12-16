@@ -152,14 +152,14 @@ services:
       - "8085:8085"
     env_file:
       - ./testing/.env
-    environment:
-      JAVA_TOOL_OPTIONS: ""
     networks:
       - app-network
     depends_on:
       app-db:
         condition: service_healthy
       keycloak:
+        condition: service_started
+      otel-collector:
         condition: service_started
     restart: unless-stopped
 
