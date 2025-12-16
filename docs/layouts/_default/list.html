@@ -1,0 +1,133 @@
+{{ define "main" }}
+<div class="page-content">
+    <div class="breadcrumbs">
+        <a href="/">Главная</a> 
+        {{ if not .IsHome }} → {{ .Title }}{{ end }}
+    </div>
+    
+    <h1>{{ .Title }}</h1>
+    
+    <div class="content">
+        {{ .Content }}
+    </div>
+    
+    {{ if .IsHome }}
+    <!-- Главная страница - показываем общую документацию -->
+    <div class="home-sections">
+        <div class="general-docs">
+            <h2>📚 Общая документация проекта</h2>
+            <div class="docs-grid">
+                <a href="/documentation" class="doc-card">
+                    <div class="doc-icon">📄</div>
+                    <div class="doc-content">
+                        <h3>Общая документация</h3>
+                        <p>Полная документация по проекту LMS</p>
+                    </div>
+                </a>
+                
+                <a href="/c4-diagrams" class="doc-card">
+                    <div class="doc-icon">🏗️</div>
+                    <div class="doc-content">
+                        <h3>C4-диаграмма</h3>
+                        <p>Архитектурная диаграмма в формате C4</p>
+                    </div>
+                </a>
+                
+                <a href="/er-diagrams" class="doc-card">
+                    <div class="doc-icon">🗃️</div>
+                    <div class="doc-content">
+                        <h3>ER-диаграмма</h3>
+                        <p>Диаграмма сущность-связь базы данных</p>
+                    </div>
+                </a>
+                
+                <a href="/glossary" class="doc-card">
+                    <div class="doc-icon">📖</div>
+                    <div class="doc-content">
+                        <h3>Глоссарий</h3>
+                        <p>Термины и определения проекта</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+        
+        <div class="microservices">
+            <h2>🚀 Микросервисы</h2>
+            <div class="services-grid">
+                <a href="/public" class="service-card">
+                    <div class="service-header">
+                        <div class="service-icon">🌐</div>
+                        <h3>Public</h3>
+                    </div>
+                    <p>Публичный сайт на Go</p>
+                    <div class="service-links">
+                        <span>📄 Документация</span>
+                        <span>📈 Диаграммы процессов</span>
+                    </div>
+                </a>
+                
+                <a href="/admin" class="service-card">
+                    <div class="service-header">
+                        <div class="service-icon">⚙️</div>
+                        <h3>Admin</h3>
+                    </div>
+                    <p>Админ-панель на Go</p>
+                    <div class="service-links">
+                        <span>📄 Документация</span>
+                        <span>📈 Диаграммы процессов</span>
+                    </div>
+                </a>
+                
+                <a href="/test" class="service-card">
+                    <div class="service-header">
+                        <div class="service-icon">🧪</div>
+                        <h3>Test</h3>
+                    </div>
+                    <p>Система тестирования на Java</p>
+                    <div class="service-links">
+                        <span>📄 Документация</span>
+                        <span>📈 Диаграммы процессов</span>
+                    </div>
+                </a>
+                
+                <a href="/account" class="service-card">
+                    <div class="service-header">
+                        <div class="service-icon">👤</div>
+                        <h3>ЛК</h3>
+                    </div>
+                    <p>Личный кабинет на Python</p>
+                    <div class="service-links">
+                        <span>📄 Документация</span>
+                        <span>📈 Диаграммы процессов</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    {{ else if in (slice "public" "admin" "test" "account") .Section }}
+    <!-- Страница микросервиса - показываем его разделы -->
+    <div class="microservice-sections">
+        <div class="section-card">
+            <a href="documentation" class="section-link">
+                <div class="section-icon">📄</div>
+                <div class="section-content">
+                    <h3>Документация</h3>
+                    <p>Полная документация по микросервису</p>
+                </div>
+            </a>
+        </div>
+        
+        <div class="section-card">
+            <a href="diagrams/" class="section-link">
+                <div class="section-icon">📈</div>
+                <div class="section-content">
+                    <h3>Диаграммы процессов</h3>
+                    <p>Flowchart, Sequence, User Journey</p>
+                </div>
+            </a>
+        </div>
+    </div>
+    {{ end }}
+</div>
+{{ end }}

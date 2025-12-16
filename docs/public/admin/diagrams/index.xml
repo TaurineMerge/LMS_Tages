@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Диаграммы процессов Admin модули on LMS Documentation</title>
+    <link>//localhost:1313/admin/diagrams/</link>
+    <description>Recent content in Диаграммы процессов Admin модули on LMS Documentation</description>
+    <generator>Hugo</generator>
+    <language>ru-ru</language>
+    <lastBuildDate>Mon, 15 Dec 2025 00:00:00 +0000</lastBuildDate>
+    <atom:link href="//localhost:1313/admin/diagrams/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>ER-диаграмма для схемы knowledge_base в knowledge_base_db</title>
+      <link>//localhost:1313/admin/diagrams/er/</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/admin/diagrams/er/</guid>
+      <description>&lt;div class=&#34;mermaid&#34;&gt;&#xA;    &#xA;&#xA;erDiagram&#xA;    category_d {&#xA;        UUID id PK &#34;not null, default gen_random_uuid()&#34;&#xA;        VARCHAR(255) title &#34;not null&#34;&#xA;        TIMESTAMP created_at &#34;not null, default NOW()&#34;&#xA;        TIMESTAMP updated_at &#34;not null, default NOW()&#34;&#xA;    }&#xA;    course_b {&#xA;        UUID id PK &#34;not null, default gen_random_uuid()&#34;&#xA;        VARCHAR(255) title &#34;not null&#34;&#xA;        TEXT description&#xA;        VARCHAR(20) level &#34;not null, check: [&#39;hard&#39;, &#39;medium&#39;, &#39;easy&#39;]&#34;&#xA;        UUID category_id FK &#34;not null&#34;&#xA;        VARCHAR(20) visibility &#34;not null, check: [&#39;draft&#39;, &#39;public&#39;], default &#39;draft&#39;&#34;&#xA;        TIMESTAMP created_at &#34;not null, default NOW()&#34;&#xA;        TIMESTAMP updated_at &#34;not null, default NOW()&#34;&#xA;    }&#xA;    lesson_d {&#xA;        UUID id PK &#34;not null, default gen_random_uuid()&#34;&#xA;        VARCHAR(255) title &#34;not null&#34;&#xA;        UUID course_id FK &#34;not null&#34;&#xA;        JSONB content &#34;not null, default []&#34;&#xA;        TIMESTAMP created_at &#34;not null, default NOW()&#34;&#xA;        TIMESTAMP updated_at &#34;not null, default NOW()&#34;&#xA;    }&#xA;    category_d ||--o{ course_b : &#34;contains&#34;&#xA;    course_b   ||--o{ lesson_d : &#34;contains&#34;&#xA;&#xA;&#xA;&lt;/div&gt;</description>
+    </item>
+    <item>
+      <title>Sequence-диаграммы архитектуры LMS</title>
+      <link>//localhost:1313/admin/diagrams/sequence/</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/admin/diagrams/sequence/</guid>
+      <description>&lt;h2 id=&#34;авторизация-и-аутентификация-пользователя&#34;&gt;Авторизация и аутентификация пользователя&lt;/h2&gt;&#xA;&lt;div class=&#34;mermaid&#34;&gt;&#xA;    &#xA;&#xA;sequenceDiagram&#xA;    participant С as Студент (Гость)&#xA;    participant N as nginx&#xA;    participant K as Keycloak&#xA;    participant PA as Personal Account (Python)&#xA;    participant PS as Public Side (Go)&#xA;    participant DB_A as PostgreSQL Auth&#xA;    participant DB_L as PostgreSQL LMS&#xA;    &#xA;    Note over С,DB_L: Шаг 1: Регистрация через Keycloak&#xA;    С-&gt;&gt;N: POST /auth/register&#xA;    N-&gt;&gt;K: Проксирует запрос&#xA;    K-&gt;&gt;DB_A: Сохраняет нового пользователя&#xA;    DB_A--&gt;&gt;K: Успех&#xA;    K--&gt;&gt;N: 201 Created + user_id&#xA;    N--&gt;&gt;С: Успешная регистрация&#xA;    &#xA;    Note over С,DB_L: Шаг 2: Аутентификация&#xA;    С-&gt;&gt;N: POST /auth/login (email/password)&#xA;    N-&gt;&gt;K: Проксирует запрос&#xA;    K-&gt;&gt;DB_A: Проверяет учетные данные&#xA;    DB_A--&gt;&gt;K: Валидны&#xA;    K-&gt;&gt;DB_A: Создает сессию и токены&#xA;    DB_A--&gt;&gt;K: Успех&#xA;    K--&gt;&gt;N: JWT Access + Refresh токены&#xA;    N--&gt;&gt;С: Токены&#xA;    &#xA;    Note over С,DB_L: Шаг 3: Получение профиля&#xA;    С-&gt;&gt;N: GET /api/personal/profile (с JWT)&#xA;    N-&gt;&gt;PA: Проксирует запрос&#xA;    PA-&gt;&gt;K: Валидирует JWT /auth/verify&#xA;    K--&gt;&gt;PA: {valid: true, user_id: X, roles: [&#34;student&#34;]}&#xA;    PA-&gt;&gt;DB_L: Ищет student_s по user_id&#xA;    DB_L--&gt;&gt;PA: Не найден (первый вход)&#xA;    PA-&gt;&gt;DB_L: Создает запись student_s&#xA;    DB_L--&gt;&gt;PA: Успех (uuid студента)&#xA;    PA--&gt;&gt;N: Профиль студента с avatar=null&#xA;    N--&gt;&gt;С: Профиль создан&#xA;    &#xA;    Note over С,DB_L: Шаг 4: Просмотр доступных курсов&#xA;    С-&gt;&gt;N: GET /api/public/courses?visibility=public&#xA;    N-&gt;&gt;PS: Проксирует запрос&#xA;    PS-&gt;&gt;DB_L: SELECT из course_b WHERE visibility=&#39;public&#39;&#xA;    DB_L--&gt;&gt;PS: Список курсов&#xA;    PS--&gt;&gt;N: JSON с курсами&#xA;    N--&gt;&gt;С: Каталог курсов&#xA;&#xA;&#xA;&lt;/div&gt;</description>
+    </item>
+    <item>
+      <title></title>
+      <link>//localhost:1313/admin/diagrams/flowchart/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/admin/diagrams/flowchart/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title></title>
+      <link>//localhost:1313/admin/diagrams/user-journey/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/admin/diagrams/user-journey/</guid>
+      <description></description>
+    </item>
+  </channel>
+</rss>

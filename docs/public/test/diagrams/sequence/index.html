@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Документация системы управления обучением (LMS)">
+    
+    <title>
+        
+             | LMS Documentation
+        
+    </title>
+    
+    
+    
+    
+    
+    <link rel="stylesheet" href="/css/custom.css">
+    
+    
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+    <div class="site-wrapper">
+        
+        <header class="site-header">
+    <div class="header-container">
+        <div class="logo">
+            <a href="/" class="logo-link">
+                <span class="logo-icon">📚</span>
+                <span class="logo-text">LMS Docs</span>
+            </a>
+        </div>
+        
+        <nav class="main-nav">
+            <ul class="nav-list">
+                
+                <li class="nav-item ">
+                    <a href="/" class="nav-link">
+                        Главная
+                    </a>
+                </li>
+                
+                <li class="nav-item ">
+                    <a href="/public/" class="nav-link">
+                        Public
+                    </a>
+                </li>
+                
+                <li class="nav-item ">
+                    <a href="/admin/" class="nav-link">
+                        Admin
+                    </a>
+                </li>
+                
+                <li class="nav-item ">
+                    <a href="/test/" class="nav-link">
+                        Test
+                    </a>
+                </li>
+                
+                <li class="nav-item ">
+                    <a href="/account/" class="nav-link">
+                        ЛК
+                    </a>
+                </li>
+                
+            </ul>
+        </nav>
+        
+        <button class="mobile-menu-toggle" aria-label="Открыть меню">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </div>
+</header>
+        
+        
+        <main class="main-content">
+            
+<div class="page-content">
+    <div class="breadcrumbs">
+        <a href="/">Главная</a> 
+        
+            
+                → <a href="/test/">Test</a>
+            
+            
+            → 
+        
+    </div>
+    
+    <h1></h1>
+    
+    <div class="content">
+        
+    </div>
+    
+    
+    
+    <div class="section-links">
+        <h3>Разделы Test:</h3>
+        <div class="section-grid">
+            <a href="/test/documentation" class="section-card">
+                <span class="icon">📄</span>
+                <span class="title">Документация</span>
+                <span class="desc">Документация микросервиса</span>
+            </a>
+            
+            <a href="/test/diagrams/" class="section-card">
+                <span class="icon">📈</span>
+                <span class="title">Диаграммы процессов</span>
+                <span class="desc">Flowchart, Sequence, User Journey</span>
+            </a>
+        </div>
+    </div>
+    
+    
+    <div class="navigation">
+        
+        <a href="//localhost:1313/test/diagrams/user-journey/" class="nav-prev">← </a>
+        
+        
+        
+        <a href="/test/" class="nav-home">↑ К разделу Test</a>
+        
+        
+        
+        <a href="//localhost:1313/test/diagrams/flowchart/" class="nav-next"> →</a>
+        
+    </div>
+</div>
+
+        </main>
+        
+        
+        <footer class="site-footer">
+    <div class="footer-container">
+        <div class="footer-content">
+            <p>LMS Documentation • Обновлено: <span id="update-date">18.1215.151518</span></p>
+            <p class="footer-copyright">© 151518 LMS Project. Все права защищены.</p>
+        </div>
+    </div>
+</footer>
+    </div>
+    
+    
+    <script>
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const updateDateElement = document.getElementById('update-date');
+            if (updateDateElement) {
+                const now = new Date();
+                const formattedDate = now.toLocaleDateString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+                updateDateElement.textContent = formattedDate;
+            }
+        });
+    </script>
+</body>
+</html>

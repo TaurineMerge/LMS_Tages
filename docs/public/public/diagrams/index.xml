@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Диаграммы процессов Public модуля on LMS Documentation</title>
+    <link>//localhost:1313/public/diagrams/</link>
+    <description>Recent content in Диаграммы процессов Public модуля on LMS Documentation</description>
+    <generator>Hugo</generator>
+    <language>ru-ru</language>
+    <lastBuildDate>Mon, 15 Dec 2025 00:00:00 +0000</lastBuildDate>
+    <atom:link href="//localhost:1313/public/diagrams/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>ER-диаграмма для схемы knowledge_base в knowledge_base_db</title>
+      <link>//localhost:1313/public/diagrams/er/</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/public/diagrams/er/</guid>
+      <description>&lt;div class=&#34;mermaid&#34;&gt;&#xA;    &#xA;&#xA;erDiagram&#xA;    category_d {&#xA;        UUID id PK &#34;not null, default gen_random_uuid()&#34;&#xA;        VARCHAR(255) title &#34;not null&#34;&#xA;        TIMESTAMP created_at &#34;not null, default NOW()&#34;&#xA;        TIMESTAMP updated_at &#34;not null, default NOW()&#34;&#xA;    }&#xA;    course_b {&#xA;        UUID id PK &#34;not null, default gen_random_uuid()&#34;&#xA;        VARCHAR(255) title &#34;not null&#34;&#xA;        TEXT description&#xA;        VARCHAR(20) level &#34;not null, check: [&#39;hard&#39;, &#39;medium&#39;, &#39;easy&#39;]&#34;&#xA;        UUID category_id FK &#34;not null&#34;&#xA;        VARCHAR(20) visibility &#34;not null, check: [&#39;draft&#39;, &#39;public&#39;], default &#39;draft&#39;&#34;&#xA;        TIMESTAMP created_at &#34;not null, default NOW()&#34;&#xA;        TIMESTAMP updated_at &#34;not null, default NOW()&#34;&#xA;    }&#xA;    lesson_d {&#xA;        UUID id PK &#34;not null, default gen_random_uuid()&#34;&#xA;        VARCHAR(255) title &#34;not null&#34;&#xA;        UUID course_id FK &#34;not null&#34;&#xA;        JSONB content &#34;not null, default []&#34;&#xA;        TIMESTAMP created_at &#34;not null, default NOW()&#34;&#xA;        TIMESTAMP updated_at &#34;not null, default NOW()&#34;&#xA;    }&#xA;    category_d ||--o{ course_b : &#34;contains&#34;&#xA;    course_b   ||--o{ lesson_d : &#34;contains&#34;&#xA;&#xA;&#xA;&lt;/div&gt;</description>
+    </item>
+    <item>
+      <title></title>
+      <link>//localhost:1313/public/diagrams/flowchart/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/public/diagrams/flowchart/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title></title>
+      <link>//localhost:1313/public/diagrams/sequence/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/public/diagrams/sequence/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title></title>
+      <link>//localhost:1313/public/diagrams/user-journey/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/public/diagrams/user-journey/</guid>
+      <description></description>
+    </item>
+  </channel>
+</rss>
