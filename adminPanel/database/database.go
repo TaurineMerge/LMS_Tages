@@ -56,19 +56,20 @@ var (
 //   - *Database: указатель на экземпляр базы данных
 //   - error: ошибка инициализации (если есть)
 func InitDB(settings *config.Settings) (*Database, error) {
-	poolConfig, err := pgxpool.ParseConfig(settings.DatabaseURL)
+	dbURL := settings.Database.URL()
+	poolConfig, err := pgxpool.ParseConfig(dbURL)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse database URL: %w", err)
 	}
 
-	if settings.DatabaseMinPoolSize < 0 || settings.DatabaseMinPoolSize > math.MaxInt32 {
-		return nil, fmt.Errorf("invalid DatabaseMinPoolSize: %d", settings.DatabaseMinPoolSize)
+	if settings.Database.MinPoolSize < 0 || settings.Database.MinPoolSize > math.MaxInt32 {
+		return nil, fmt.Errorf("invalid DatabaseMinPoolSize: %d", settings.Database.MinPoolSize)
 	}
-	if settings.DatabaseMaxPoolSize < 0 || settings.DatabaseMaxPoolSize > math.MaxInt32 {
-		return nil, fmt.Errorf("invalid DatabaseMaxPoolSize: %d", settings.DatabaseMaxPoolSize)
+	if settings.Database.MaxPoolSize < 0 || settings.Database.MaxPoolSize > math.MaxInt32 {
+		return nil, fmt.Errorf("invalid DatabaseMaxPoolSize: %d", settings.Database.MaxPoolSize)
 	}
-	poolConfig.MinConns = int32(settings.DatabaseMinPoolSize) //nolint:gosec
-	poolConfig.MaxConns = int32(settings.DatabaseMaxPoolSize) //nolint:gosec
+	poolConfig.MinConns = int32(settings.Database.MinPoolSize) //nolint:gosec
+	poolConfig.MaxConns = int32(settings.Database.MaxPoolSize) //nolint:gosec
 
 	poolConfig.HealthCheckPeriod = 1 * time.Minute
 	poolConfig.MaxConnLifetime = 1 * time.Hour
@@ -77,15 +78,16 @@ func InitDB(settings *config.Settings) (*Database, error) {
 	ctx := context.Background()
 	pool, err := pgxpool.NewWithConfig(ctx, poolConfig)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create connection pool: %w", err)
 	}
 
 	if err := pool.Ping(ctx); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
 	dbInstance = &Database{Pool: pool}
-	log.Println("✅ Database connection pool initialized")
+	log.Printf("✅ Database connection pool initialized (host=%s, db=%s)",
+		settings.Database.Host, settings.Database.Name)
 	return dbInstance, nil
 }
 
