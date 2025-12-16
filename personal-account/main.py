@@ -91,7 +91,7 @@ oauth2_scheme = {
     "type": "oauth2",
     "flows": {
         "password": {
-            "tokenUrl": f"{settings.KEYCLOAK_PUBLIC_URL}/realms/{settings.KEYCLOAK_REALM}/protocol/openid-connect/token",
+            "tokenUrl": f"/auth/realms/{settings.KEYCLOAK_REALM}/protocol/openid-connect/token",
             "scopes": {},
         }
     },
