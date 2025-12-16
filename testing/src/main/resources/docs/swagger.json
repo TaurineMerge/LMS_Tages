@@ -5,16 +5,16 @@
     "description": "API для управления тестами, попытками прохождения тестов и ответами",
     "version": "1.0.0"
   },
-  "host": "localhost:8085",
-  "basePath": "/",
+  "host": "localhost",
+  "basePath": "/testing",
   "schemes": ["http"],
   "consumes": ["application/json"],
   "produces": ["application/json"],
   "securityDefinitions": {
     "keycloak": {
       "type": "oauth2",
-      "authorizationUrl": "http://localhost:8080/realms/teacher/protocol/openid-connect/auth",
-      "tokenUrl": "http://localhost:8080/realms/teacher/protocol/openid-connect/token",
+      "authorizationUrl": "http://localhost/realms/teacher/protocol/openid-connect/auth",
+      "tokenUrl": "http://localhost/realms/teacher/protocol/openid-connect/token",
       "flow": "accessCode",
       "scopes": {
         "openid": "OpenID Connect authentication",
