@@ -332,9 +332,10 @@ func main() {
 
 	// Start server
 	log.Printf("🚀 Server starting on %s", settings.Server.Address)
-	log.Printf("📚 Swagger UI: http://localhost%s/swagger/", settings.Server.Address)
-	log.Printf("📖 Swagger JSON: http://localhost%s/swagger/doc.json", settings.Server.Address)
-	log.Printf("🏥 Health check: http://localhost%s/health", settings.Server.Address)
+	log.Printf("📚 Swagger UI (via nginx): http://localhost/admin/swagger/")
+	log.Printf("📖 Swagger JSON (via nginx): http://localhost/admin/doc/swagger.json")
+	log.Printf("🏥 Health check (via nginx): http://localhost/health")
+	log.Printf("📍 API (via nginx): http://localhost/admin/api/v1/")
 
 	if err := app.Listen(settings.Server.Address); err != nil {
 		log.Fatalf("❌ Failed to start server: %v", err)

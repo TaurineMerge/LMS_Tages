@@ -12,7 +12,7 @@ services:
       - ./personal-account/static:/etc/nginx/html/static:ro
     depends_on:
       keycloak:
-        condition: service_started
+        condition: service_healthy
       public-side:
         condition: service_started
       admin-panel:
@@ -20,6 +20,10 @@ services:
       personal-account:
         condition: service_started
       testing:
+        condition: service_started
+      jaeger:
+        condition: service_started
+      otel-collector:
         condition: service_started
     networks:
       - app-network
@@ -77,6 +81,12 @@ services:
     depends_on:
       keycloak-db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /auth/health/ready HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && grep -q '200 OK' <&3 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
     networks:
       - keycloak-network
       - app-network
@@ -106,7 +116,8 @@ services:
   public-side:
     build: ./publicSide
     container_name: public-side
-    ports: []
+    # ports: 
+    #   - "3000:3000"
     env_file:
       - ./publicSide/.env.prod
     networks:
@@ -148,7 +159,7 @@ services:
       app-db:
         condition: service_healthy
       keycloak:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
 
   personal-account:
