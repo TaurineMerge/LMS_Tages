@@ -23,10 +23,16 @@ CREATE TABLE IF NOT EXISTS personal_account.certificate_b (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     certificate_number SERIAL UNIQUE,
     created_at DATE NOT NULL DEFAULT CURRENT_DATE,
+    issued_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     content TEXT,
     student_id UUID REFERENCES personal_account.student_s(id) ON DELETE CASCADE,
     course_id UUID, -- Внешний ключ будет обновлен позже
-    test_attempt_id UUID -- Внешний ключ будет обновлен позже
+    test_attempt_id UUID, -- Внешний ключ будет обновлен позже
+    -- S3 storage fields
+    pdf_s3_key TEXT NOT NULL,
+    snapshot_s3_key TEXT NOT NULL,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 1.3. Посещения уроков
