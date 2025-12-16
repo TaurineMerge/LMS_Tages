@@ -25,10 +25,8 @@ import (
 //   - fiber.Handler: middleware для использования в Fiber
 func ErrorHandlerMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// Выполняем следующий middleware/handler
 		err := c.Next()
 
-		// Если есть ошибка - обрабатываем её
 		if err != nil {
 			log.Printf("Error occurred: %v", err)
 

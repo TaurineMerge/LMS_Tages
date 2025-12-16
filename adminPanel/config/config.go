@@ -71,14 +71,14 @@ import (
 // либо через отдельные DB_* переменные. Когда DATABASE_URL задан, он имеет приоритет
 // над отдельными переменными.
 type DatabaseConfig struct {
-	Host        string // Хост сервера базы данных
-	Port        int    // Порт сервера базы данных
-	User        string // Имя пользователя базы данных
-	Password    string // Пароль базы данных
-	Name        string // Имя базы данных
-	SSLMode     string // Режим SSL (disable, require, verify-ca, verify-full)
-	MinPoolSize int    // Минимальное количество соединений в пуле
-	MaxPoolSize int    // Максимальное количество соединений в пуле
+	Host        string
+	Port        int
+	User        string
+	Password    string
+	Name        string
+	SSLMode     string
+	MinPoolSize int
+	MaxPoolSize int
 }
 
 // URL возвращает строку подключения к PostgreSQL в стандартном формате.
@@ -93,36 +93,36 @@ func (d *DatabaseConfig) URL() string {
 
 // OTelConfig содержит настройки трассировки OpenTelemetry.
 type OTelConfig struct {
-	Endpoint    string // URL эндпоинта OTLP коллектора
-	ServiceName string // Имя сервиса для трасс
-	Protocol    string // Протокол (grpc, http)
-	Enabled     bool   // Включена ли трассировка
+	Endpoint    string
+	ServiceName string
+	Protocol    string
+	Enabled     bool
 }
 
 // KeycloakConfig содержит настройки аутентификации через Keycloak.
 type KeycloakConfig struct {
-	IssuerURL    string // URL издателя токенов для валидации
-	Audience     string // Ожидаемый claim audience в JWT
-	JWKSURL      string // URL эндпоинта JSON Web Key Set
-	ClientID     string // OAuth2 client ID
-	ClientSecret string // OAuth2 client secret
-	AppName      string // Название приложения для OAuth2
+	IssuerURL    string
+	Audience     string
+	JWKSURL      string
+	ClientID     string
+	ClientSecret string
+	AppName      string
 }
 
 // CORSConfig содержит настройки Cross-Origin Resource Sharing.
 type CORSConfig struct {
-	AllowOrigins     string // Список разрешённых origins через запятую
-	AllowMethods     string // Список разрешённых HTTP методов через запятую
-	AllowHeaders     string // Список разрешённых заголовков через запятую
-	AllowCredentials bool   // Разрешить ли передачу credentials
-	ExposeHeaders    string // Список экспонируемых заголовков через запятую
+	AllowOrigins     string
+	AllowMethods     string
+	AllowHeaders     string
+	AllowCredentials bool
+	ExposeHeaders    string
 }
 
 // ServerConfig содержит настройки HTTP сервера.
 type ServerConfig struct {
-	Address  string // Адрес для прослушивания (например, ":4000")
-	AppName  string // Название приложения
-	RootPath string // Корневой путь URL
+	Address  string
+	AppName  string
+	RootPath string
 }
 
 // Settings является главным контейнером конфигурации приложения.
@@ -130,11 +130,11 @@ type ServerConfig struct {
 // Объединяет все подсекции конфигурации и предоставляет методы
 // валидации и доступа к значениям конфигурации.
 type Settings struct {
-	Database DatabaseConfig // Настройки подключения к БД
-	OTel     OTelConfig     // Настройки OpenTelemetry
-	Keycloak KeycloakConfig // Настройки аутентификации Keycloak
-	CORS     CORSConfig     // Настройки CORS
-	Server   ServerConfig   // Настройки HTTP сервера
+	Database DatabaseConfig
+	OTel     OTelConfig
+	Keycloak KeycloakConfig
+	CORS     CORSConfig
+	Server   ServerConfig
 	Debug    bool
 }
 
@@ -145,7 +145,6 @@ type Settings struct {
 func (s *Settings) Validate() error {
 	var missingVars []string
 
-	// Проверяем конфигурацию БД
 	if s.Database.Host == "" {
 		missingVars = append(missingVars, "DB_HOST (or DATABASE_URL)")
 	}
@@ -203,12 +202,9 @@ func loadDatabaseConfig() DatabaseConfig {
 		SSLMode:     getEnv("DB_SSLMODE", "disable"),
 	}
 
-	// Приоритет: DATABASE_URL > отдельные переменные
 	if databaseURL := os.Getenv("DATABASE_URL"); databaseURL != "" {
-		// Парсим DATABASE_URL для заполнения структуры
 		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.Name, cfg.SSLMode = parseDatabaseURL(databaseURL)
 	} else {
-		// Используем отдельные переменные
 		cfg.Host = os.Getenv("DB_HOST")
 		cfg.Port = getEnvAsInt("DB_PORT", 5432)
 		cfg.User = os.Getenv("DB_USER")
@@ -236,20 +232,16 @@ func loadDatabaseConfig() DatabaseConfig {
 //   - name: имя базы данных
 //   - sslmode: режим SSL (по умолчанию "disable")
 func parseDatabaseURL(url string) (host string, port int, user, password, name, sslmode string) {
-	// Формат: postgresql://user:password@host:port/dbname?sslmode=disable
 	port = 5432
 	sslmode = "disable"
 
-	// Убираем протокол
 	url = strings.TrimPrefix(url, "postgresql://")
 	url = strings.TrimPrefix(url, "postgres://")
 
-	// Разделяем на credentials и host
 	if atIdx := strings.LastIndex(url, "@"); atIdx != -1 {
 		credentials := url[:atIdx]
 		rest := url[atIdx+1:]
 
-		// Парсим credentials
 		if colonIdx := strings.Index(credentials, ":"); colonIdx != -1 {
 			user = credentials[:colonIdx]
 			password = credentials[colonIdx+1:]
@@ -257,12 +249,10 @@ func parseDatabaseURL(url string) (host string, port int, user, password, name, 
 			user = credentials
 		}
 
-		// Парсим host:port/dbname?params
 		if slashIdx := strings.Index(rest, "/"); slashIdx != -1 {
 			hostPort := rest[:slashIdx]
 			dbAndParams := rest[slashIdx+1:]
 
-			// Парсим host:port
 			if colonIdx := strings.Index(hostPort, ":"); colonIdx != -1 {
 				host = hostPort[:colonIdx]
 				port = getEnvAsInt("", 5432)
@@ -273,11 +263,9 @@ func parseDatabaseURL(url string) (host string, port int, user, password, name, 
 				host = hostPort
 			}
 
-			// Парсим dbname?params
 			if qIdx := strings.Index(dbAndParams, "?"); qIdx != -1 {
 				name = dbAndParams[:qIdx]
 				params := dbAndParams[qIdx+1:]
-				// Парсим sslmode из параметров
 				for _, param := range strings.Split(params, "&") {
 					if strings.HasPrefix(param, "sslmode=") {
 						sslmode = strings.TrimPrefix(param, "sslmode=")
