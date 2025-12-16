@@ -1,0 +1,20 @@
+# Для доменных папок: принять изменения из incoming ветки (theirs)
+# (при мердже в текущую ветку -- incoming = ветка, которую мержим)
+personal-account/**    merge=theirs
+testing/**             merge=theirs
+public-side/**         merge=theirs
+admin-panel/**         merge=theirs
+
+# Документация и сгенеренные сайты — принимать incoming (чтобы фичи в ветках не терялись)
+personal-account/docs-hugo/** merge=theirs
+personal-account/docs-tech/**  merge=theirs
+public-side/docs/**           merge=theirs
+admin-panel/docs/**           merge=theirs
+
+# Общие конфиги — пробуем объединить, но ревью обязателен (может потребоваться ручной фикс)
+docker-compose.yml            merge=union
+docker-compose.override.yml   merge=union
+nginx/**                      merge=union
+
+# .env — осторожно: union может объединить строки, подумай об .env.example подходе
+*.env                         merge=union
