@@ -1,27 +1,61 @@
-// Package config отвечает за конфигурацию приложения
+// Package config предоставляет управление конфигурацией для Admin Panel.
 //
-// Пакет предоставляет структуру Settings для хранения конфигурационных
-// параметров и функции для их получения из переменных окружения.
+// Пакет поддерживает загрузку конфигурации из переменных окружения с разумными
+// значениями по умолчанию и валидацией. Поддерживаются два способа конфигурации БД:
 //
-// Поддерживаемые параметры:
-//   - База данных: URL или отдельные параметры (host, port, user, password, name)
-//   - Keycloak: URL, аудитория, JWKS
-//   - API: адрес, режим отладки
-//   - CORS: разрешенные origins, credentials
-//   - OpenTelemetry: endpoint, протокол
+//   - DATABASE_URL: полная строка подключения (имеет приоритет)
+//   - Отдельные DB_* переменные: DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
 //
-// Пример использования переменных окружения:
+// # Переменные окружения
 //
-//	# Вариант 1: Полный URL подключения
-//	DATABASE_URL=postgresql://user:pass@host:5432/dbname?sslmode=disable
+// База данных:
 //
-//	# Вариант 2: Отдельные параметры (если DATABASE_URL не задан)
-//	DB_HOST=localhost
-//	DB_PORT=5432
-//	DB_USER=appuser
-//	DB_PASSWORD=password
-//	DB_NAME=appdb
-//	DB_SSLMODE=disable
+//	DATABASE_URL           - Полная строка подключения PostgreSQL
+//	DB_HOST                - Хост базы данных (обязательно, если DATABASE_URL не задан)
+//	DB_PORT                - Порт базы данных (по умолчанию: 5432)
+//	DB_USER                - Пользователь БД (обязательно, если DATABASE_URL не задан)
+//	DB_PASSWORD            - Пароль БД (обязательно, если DATABASE_URL не задан)
+//	DB_NAME                - Имя базы данных (обязательно, если DATABASE_URL не задан)
+//	DB_SSLMODE             - Режим SSL (по умолчанию: disable)
+//	DATABASE_POOL_MIN_SIZE - Минимальный размер пула соединений (по умолчанию: 5)
+//	DATABASE_POOL_MAX_SIZE - Максимальный размер пула соединений (по умолчанию: 20)
+//
+// Сервер:
+//
+//	API_ADDRESS - Адрес для прослушивания (по умолчанию: :4000)
+//	APP_NAME    - Название приложения (по умолчанию: Admin Panel API)
+//	ROOT_PATH   - Корневой путь URL (по умолчанию: /admin)
+//	DEBUG       - Режим отладки (по умолчанию: false)
+//
+// Keycloak:
+//
+//	KEYCLOAK_ISSUER_URL    - URL издателя токенов для валидации
+//	KEYCLOAK_AUDIENCE      - Ожидаемая аудитория JWT
+//	KEYCLOAK_JWKS_URL      - URL эндпоинта JWKS (генерируется автоматически из issuer)
+//	KEYCLOAK_CLIENT_ID     - OAuth client ID
+//	KEYCLOAK_CLIENT_SECRET - OAuth client secret
+//	KEYCLOAK_APP_NAME      - Название приложения для OAuth
+//
+// CORS:
+//
+//	CORS_ALLOW_ORIGINS     - Разрешённые origins (по умолчанию: *)
+//	CORS_ALLOW_METHODS     - Разрешённые методы (по умолчанию: GET,POST,PUT,DELETE,OPTIONS)
+//	CORS_ALLOW_HEADERS     - Разрешённые заголовки
+//	CORS_ALLOW_CREDENTIALS - Разрешить credentials (по умолчанию: false)
+//	CORS_EXPOSE_HEADERS    - Экспонируемые заголовки (по умолчанию: Content-Length)
+//
+// OpenTelemetry:
+//
+//	OTEL_EXPORTER_OTLP_ENDPOINT - Эндпоинт OTLP коллектора
+//	OTEL_SERVICE_NAME           - Имя сервиса (по умолчанию: admin-panel)
+//	OTEL_EXPORTER_OTLP_PROTOCOL - Протокол OTLP (по умолчанию: grpc)
+//
+// # Использование
+//
+//	settings := config.NewSettings()
+//	if err := settings.Validate(); err != nil {
+//	    log.Fatalf("Ошибка конфигурации: %v", err)
+//	}
 package config
 
 import (
@@ -31,22 +65,25 @@ import (
 	"strings"
 )
 
-// DatabaseConfig - конфигурация подключения к базе данных
+// DatabaseConfig содержит настройки подключения к PostgreSQL.
 //
-// Позволяет задавать параметры подключения как через DATABASE_URL,
-// так и через отдельные переменные окружения.
+// Конфигурация может быть предоставлена либо через переменную окружения DATABASE_URL,
+// либо через отдельные DB_* переменные. Когда DATABASE_URL задан, он имеет приоритет
+// над отдельными переменными.
 type DatabaseConfig struct {
-	Host        string
-	Port        int
-	User        string
-	Password    string
-	Name        string
-	SSLMode     string
-	MinPoolSize int
-	MaxPoolSize int
+	Host        string // Хост сервера базы данных
+	Port        int    // Порт сервера базы данных
+	User        string // Имя пользователя базы данных
+	Password    string // Пароль базы данных
+	Name        string // Имя базы данных
+	SSLMode     string // Режим SSL (disable, require, verify-ca, verify-full)
+	MinPoolSize int    // Минимальное количество соединений в пуле
+	MaxPoolSize int    // Максимальное количество соединений в пуле
 }
 
-// URL возвращает строку подключения к базе данных
+// URL возвращает строку подключения к PostgreSQL в стандартном формате.
+//
+// Формат: postgresql://user:password@host:port/dbname?sslmode=value
 func (d *DatabaseConfig) URL() string {
 	return fmt.Sprintf(
 		"postgresql://%s:%s@%s:%d/%s?sslmode=%s",
@@ -54,50 +91,50 @@ func (d *DatabaseConfig) URL() string {
 	)
 }
 
-// OTelConfig - конфигурация OpenTelemetry
+// OTelConfig содержит настройки трассировки OpenTelemetry.
 type OTelConfig struct {
-	Endpoint    string
-	ServiceName string
-	Protocol    string
-	Enabled     bool
+	Endpoint    string // URL эндпоинта OTLP коллектора
+	ServiceName string // Имя сервиса для трасс
+	Protocol    string // Протокол (grpc, http)
+	Enabled     bool   // Включена ли трассировка
 }
 
-// KeycloakConfig - конфигурация Keycloak для аутентификации
+// KeycloakConfig содержит настройки аутентификации через Keycloak.
 type KeycloakConfig struct {
-	IssuerURL    string
-	Audience     string
-	JWKSURL      string
-	ClientID     string
-	ClientSecret string
-	AppName      string
+	IssuerURL    string // URL издателя токенов для валидации
+	Audience     string // Ожидаемый claim audience в JWT
+	JWKSURL      string // URL эндпоинта JSON Web Key Set
+	ClientID     string // OAuth2 client ID
+	ClientSecret string // OAuth2 client secret
+	AppName      string // Название приложения для OAuth2
 }
 
-// CORSConfig - конфигурация CORS
+// CORSConfig содержит настройки Cross-Origin Resource Sharing.
 type CORSConfig struct {
-	AllowOrigins     string
-	AllowMethods     string
-	AllowHeaders     string
-	AllowCredentials bool
-	ExposeHeaders    string
+	AllowOrigins     string // Список разрешённых origins через запятую
+	AllowMethods     string // Список разрешённых HTTP методов через запятую
+	AllowHeaders     string // Список разрешённых заголовков через запятую
+	AllowCredentials bool   // Разрешить ли передачу credentials
+	ExposeHeaders    string // Список экспонируемых заголовков через запятую
 }
 
-// ServerConfig - конфигурация HTTP сервера
+// ServerConfig содержит настройки HTTP сервера.
 type ServerConfig struct {
-	Address  string
-	AppName  string
-	RootPath string
+	Address  string // Адрес для прослушивания (например, ":4000")
+	AppName  string // Название приложения
+	RootPath string // Корневой путь URL
 }
 
-// Settings - структура конфигурации приложения
+// Settings является главным контейнером конфигурации приложения.
 //
-// Содержит все необходимые параметры для работы Admin Panel,
-// организованные в логические группы.
+// Объединяет все подсекции конфигурации и предоставляет методы
+// валидации и доступа к значениям конфигурации.
 type Settings struct {
-	Database DatabaseConfig
-	OTel     OTelConfig
-	Keycloak KeycloakConfig
-	CORS     CORSConfig
-	Server   ServerConfig
+	Database DatabaseConfig // Настройки подключения к БД
+	OTel     OTelConfig     // Настройки OpenTelemetry
+	Keycloak KeycloakConfig // Настройки аутентификации Keycloak
+	CORS     CORSConfig     // Настройки CORS
+	Server   ServerConfig   // Настройки HTTP сервера
 	Debug    bool
 }
 
@@ -147,7 +184,18 @@ func NewSettings() *Settings {
 	}
 }
 
-// loadDatabaseConfig загружает конфигурацию базы данных
+// loadDatabaseConfig загружает конфигурацию базы данных из переменных окружения.
+//
+// Функция читает настройки подключения к PostgreSQL. Поддерживает два способа:
+//   - DATABASE_URL: полная строка подключения (приоритет)
+//   - Отдельные переменные: DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_SSLMODE
+//
+// Дополнительно загружает настройки пула соединений:
+//   - DATABASE_POOL_MIN_SIZE: минимальное количество соединений (по умолчанию: 5)
+//   - DATABASE_POOL_MAX_SIZE: максимальное количество соединений (по умолчанию: 20)
+//
+// Возвращает:
+//   - DatabaseConfig: структура с настройками подключения к БД
 func loadDatabaseConfig() DatabaseConfig {
 	cfg := DatabaseConfig{
 		MinPoolSize: getEnvAsInt("DATABASE_POOL_MIN_SIZE", 5),
@@ -171,7 +219,22 @@ func loadDatabaseConfig() DatabaseConfig {
 	return cfg
 }
 
-// parseDatabaseURL парсит DATABASE_URL и возвращает компоненты
+// parseDatabaseURL разбирает строку подключения DATABASE_URL на отдельные компоненты.
+//
+// Поддерживаемые форматы URL:
+//   - postgresql://user:password@host:port/dbname?sslmode=disable
+//   - postgres://user:password@host:port/dbname
+//
+// Параметры:
+//   - url: строка подключения к PostgreSQL
+//
+// Возвращает:
+//   - host: имя хоста сервера БД
+//   - port: порт сервера БД (по умолчанию 5432)
+//   - user: имя пользователя
+//   - password: пароль пользователя
+//   - name: имя базы данных
+//   - sslmode: режим SSL (по умолчанию "disable")
 func parseDatabaseURL(url string) (host string, port int, user, password, name, sslmode string) {
 	// Формат: postgresql://user:password@host:port/dbname?sslmode=disable
 	port = 5432
@@ -231,7 +294,17 @@ func parseDatabaseURL(url string) (host string, port int, user, password, name, 
 	return
 }
 
-// loadOTelConfig загружает конфигурацию OpenTelemetry
+// loadOTelConfig загружает конфигурацию трассировки OpenTelemetry из переменных окружения.
+//
+// Читаемые переменные:
+//   - OTEL_EXPORTER_OTLP_ENDPOINT: URL эндпоинта OTLP коллектора
+//   - OTEL_SERVICE_NAME: имя сервиса для трасс (по умолчанию: "admin-panel")
+//   - OTEL_EXPORTER_OTLP_PROTOCOL: протокол экспорта (по умолчанию: "grpc")
+//
+// Трассировка автоматически включается, если OTEL_EXPORTER_OTLP_ENDPOINT задан.
+//
+// Возвращает:
+//   - OTelConfig: структура с настройками OpenTelemetry
 func loadOTelConfig() OTelConfig {
 	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 	return OTelConfig{
@@ -242,7 +315,21 @@ func loadOTelConfig() OTelConfig {
 	}
 }
 
-// loadKeycloakConfig загружает конфигурацию Keycloak
+// loadKeycloakConfig загружает конфигурацию аутентификации Keycloak из переменных окружения.
+//
+// Читаемые переменные:
+//   - KEYCLOAK_ISSUER_URL: URL издателя токенов для валидации JWT
+//   - KEYCLOAK_AUDIENCE: ожидаемый claim audience в JWT-токенах
+//   - KEYCLOAK_JWKS_URL: URL эндпоинта JWKS (если не задан, генерируется из issuer)
+//   - KEYCLOAK_CLIENT_ID: OAuth2 client ID для авторизации
+//   - KEYCLOAK_CLIENT_SECRET: OAuth2 client secret
+//   - KEYCLOAK_APP_NAME: название приложения для OAuth2
+//
+// Если KEYCLOAK_JWKS_URL не задан, он автоматически формируется как:
+// {KEYCLOAK_ISSUER_URL}/protocol/openid-connect/certs
+//
+// Возвращает:
+//   - KeycloakConfig: структура с настройками Keycloak
 func loadKeycloakConfig() KeycloakConfig {
 	issuer := os.Getenv("KEYCLOAK_ISSUER_URL")
 	jwksURL := os.Getenv("KEYCLOAK_JWKS_URL")
@@ -260,7 +347,17 @@ func loadKeycloakConfig() KeycloakConfig {
 	}
 }
 
-// loadCORSConfig загружает конфигурацию CORS
+// loadCORSConfig загружает конфигурацию CORS из переменных окружения.
+//
+// Читаемые переменные:
+//   - CORS_ALLOW_ORIGINS: разрешённые origins через запятую (по умолчанию: "*")
+//   - CORS_ALLOW_METHODS: разрешённые HTTP методы (по умолчанию: "GET,POST,PUT,DELETE,OPTIONS")
+//   - CORS_ALLOW_HEADERS: разрешённые заголовки (по умолчанию: "Origin,Content-Type,Accept,Authorization")
+//   - CORS_ALLOW_CREDENTIALS: разрешить передачу credentials (по умолчанию: false)
+//   - CORS_EXPOSE_HEADERS: экспонируемые заголовки (по умолчанию: "Content-Length")
+//
+// Возвращает:
+//   - CORSConfig: структура с настройками CORS
 func loadCORSConfig() CORSConfig {
 	return CORSConfig{
 		AllowOrigins:     getEnv("CORS_ALLOW_ORIGINS", "*"),
@@ -271,7 +368,15 @@ func loadCORSConfig() CORSConfig {
 	}
 }
 
-// loadServerConfig загружает конфигурацию сервера
+// loadServerConfig загружает конфигурацию HTTP сервера из переменных окружения.
+//
+// Читаемые переменные:
+//   - API_ADDRESS: адрес для прослушивания (по умолчанию: ":4000")
+//   - APP_NAME: название приложения (по умолчанию: "Admin Panel API")
+//   - ROOT_PATH: корневой путь URL (по умолчанию: "/admin")
+//
+// Возвращает:
+//   - ServerConfig: структура с настройками сервера
 func loadServerConfig() ServerConfig {
 	return ServerConfig{
 		Address:  getEnv("API_ADDRESS", ":4000"),
