@@ -9,6 +9,7 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/includes:/etc/nginx/includes:ro
       - ./personal-account/docs-tech:/var/www/docs-tech:ro
+      - ./personal-account/static:/etc/nginx/html/static:ro
     depends_on:
       keycloak:
         condition: service_started
