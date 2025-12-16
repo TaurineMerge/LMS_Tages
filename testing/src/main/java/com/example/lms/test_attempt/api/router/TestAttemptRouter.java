@@ -1,161 +1,75 @@
 package com.example.lms.test_attempt.api.router;
 
-import static io.javalin.apibuilder.ApiBuilder.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.example.lms.security.JwtHandler;
 import com.example.lms.test_attempt.api.controller.TestAttemptController;
 import com.example.lms.tracing.SimpleTracer;
 import io.javalin.http.Context;
 
+import static io.javalin.apibuilder.ApiBuilder.before;
+import static io.javalin.apibuilder.ApiBuilder.delete;
+import static io.javalin.apibuilder.ApiBuilder.get;
+import static io.javalin.apibuilder.ApiBuilder.path;
+import static io.javalin.apibuilder.ApiBuilder.post;
+import static io.javalin.apibuilder.ApiBuilder.put;
+
 /**
- * Router для работы с ресурсом TestAttempt.
- * <p>
- * Регистрирует HTTP-маршруты для CRUD-операций над попытками прохождения тестов.
- * Все методы обёрнуты в обработку трассировки (OpenTelemetry) через {@link SimpleTracer},
- * а также используют JWT-аутентификацию через {@link JwtHandler}.
- *
- * Основные эндпоинты:
- * <ul>
- *     <li>GET /test-attempts — получить список попыток</li>
- *     <li>POST /test-attempts — создать новую попытку</li>
- *     <li>GET /test-attempts/{id} — получить попытку по ID</li>
- *     <li>DELETE /test-attempts/{id} — удалить попытку</li>
- * </ul>
- *
- * Каждый запрос автоматически:
- * <ul>
- *     <li>записывает атрибуты пользователя в Span</li>
- *     <li>логирует параметры запроса</li>
- *     <li>создаёт события трассировки (events)</li>
- * </ul>
+ * Router для работы с попытками прохождения тестов.
  */
 public class TestAttemptRouter {
 
-    /**
-     * Регистрирует все маршруты для работы с /test-attempts.
-     * <p>
-     * Вызывается из основного класса приложения (Main.java)
-     * внутри config.router.apiBuilder(...).
-     */
-    public static void register() {
-        path("/test-attempts", () -> {
+	private static final Logger logger = LoggerFactory.getLogger(TestAttemptRouter.class);
 
-            // Обязательная JWT-аутентификация перед каждым запросом
-            before(JwtHandler.authenticate());
+	/**
+	 * Регистрирует маршруты для ресурса {@code /test-attempts}.
+	 */
+	public static void register(TestAttemptController testAttemptController) {
+		path("/test-attempts", () -> {
 
-            /**
-             * GET /test-attempts
-             * Получение списка попыток с опциональными query-параметрами:
-             * userId, testId, status.
-             */
-            get(ctx -> {
-                SimpleTracer.runWithSpan("getTestAttempts", () -> {
-                    captureUserAttributes(ctx);
+			// Глобальный фильтр для всех эндпоинтов /test-attempts — проверка JWT
+			before(JwtHandler.authenticate());
 
-                    // Логируем query-параметры, если они есть
-                    String userId = ctx.queryParam("userId");
-                    String testId = ctx.queryParam("testId");
-                    String status = ctx.queryParam("status");
+			// Основные CRUD операции
+			get(testAttemptController::getAllTestAttempts);
+			post(testAttemptController::createTestAttempt);
 
-                    if (userId != null) SimpleTracer.addAttribute("query.userId", userId);
-                    if (testId != null) SimpleTracer.addAttribute("query.testId", testId);
-                    if (status != null) SimpleTracer.addAttribute("query.status", status);
+			// Специальные запросы
+			get("/completed", testAttemptController::getCompletedTestAttempts);
+			get("/incomplete", testAttemptController::getIncompleteTestAttempts);
 
-                    // Контроллер-заглушка
-                    TestAttemptController.getTestAttempts(ctx);
+			// Операции над конкретной попыткой
+			path("/{id}", () -> {
+				get(testAttemptController::getTestAttemptById);
+				put(testAttemptController::updateTestAttempt);
+				delete(testAttemptController::deleteTestAttempt);
+			});
 
-                    SimpleTracer.addEvent("test_attempts.retrieved");
-                });
-            });
+			// Поиск по критериям
+			path("/student/{studentId}", () -> {
+				get(testAttemptController::getTestAttemptsByStudentId);
+			});
 
-            /**
-             * POST /test-attempts
-             * Создание новой попытки тестирования.
-             * Логируются данные запроса: тип и размер контента.
-             */
-            post(ctx -> {
-                SimpleTracer.runWithSpan("createTestAttempt", () -> {
-                    captureUserAttributes(ctx);
+			path("/test/{testId}", () -> {
+				get(testAttemptController::getTestAttemptsByTestId);
+			});
 
-                    SimpleTracer.addAttribute("content.type", ctx.contentType());
-                    SimpleTracer.addAttribute("content.length", String.valueOf(ctx.contentLength()));
+			path("/date/{date}", () -> {
+				get(testAttemptController::getTestAttemptsByDate);
+			});
 
-                    TestAttemptController.createTestAttempt(ctx);
+			// Дополнительные операции для связки студент-тест
+			path("/student/{studentId}/test/{testId}", () -> {
+				get(testAttemptController::getAttemptsByStudentAndTest);
+				// ("/best", testAttemptController::getBestAttemptByStudentAndTest);
+				get("/count", testAttemptController::countAttemptsByStudentAndTest);
+			});
 
-                    SimpleTracer.addEvent("test_attempt.created");
-                });
-            });
+			// Проверка существования
+			get("/exists/{id}", testAttemptController::existsById);
+		});
 
-            path("/{id}", () -> {
-
-                /**
-                 * GET /test-attempts/{id}
-                 * Получение информации о попытке по ID.
-                 */
-                get(ctx -> {
-                    SimpleTracer.runWithSpan("getTestAttemptById", () -> {
-                        captureUserAttributes(ctx);
-
-                        String attemptId = ctx.pathParam("id");
-                        SimpleTracer.addAttribute("test_attempt.id", attemptId);
-
-                        TestAttemptController.getTestAttemptById(ctx);
-
-                        SimpleTracer.addEvent("test_attempt.retrieved.by.id");
-                    });
-                });
-
-                /**
-                 * DELETE /test-attempts/{id}
-                 * Удаление попытки тестирования.
-                 */
-                delete(ctx -> {
-                    SimpleTracer.runWithSpan("deleteTestAttempt", () -> {
-                        captureUserAttributes(ctx);
-
-                        String attemptId = ctx.pathParam("id");
-                        SimpleTracer.addAttribute("test_attempt.id", attemptId);
-
-                        TestAttemptController.deleteTestAttempt(ctx);
-
-                        SimpleTracer.addEvent("test_attempt.deleted");
-                    });
-                });
-            });
-        });
-    }
-
-    /**
-     * Извлекает пользовательские атрибуты из контекста Javalin
-     * и добавляет их в текущий Span OpenTelemetry.
-     * <p>
-     * Атрибуты:
-     * <ul>
-     *     <li>user.id</li>
-     *     <li>user.username</li>
-     *     <li>user.email</li>
-     *     <li>user.roles (если реализовано)</li>
-     * </ul>
-     *
-     * @param ctx текущий HTTP-контекст Javalin
-     */
-    private static void captureUserAttributes(Context ctx) {
-        Object userId = ctx.attribute("userId");
-        Object username = ctx.attribute("username");
-        Object email = ctx.attribute("email");
-        Object roles = ctx.attribute("roles");
-
-        if (userId != null) {
-            SimpleTracer.addAttribute("user.id", userId.toString());
-        }
-        if (username != null) {
-            SimpleTracer.addAttribute("user.username", username.toString());
-        }
-        if (email != null) {
-            SimpleTracer.addAttribute("user.email", email.toString());
-        }
-        if (roles != null) {
-            SimpleTracer.addAttribute("user.roles", roles.toString());
-        }
-    }
+		logger.info("Маршруты TestAttemptRouter успешно зарегистрированы");
+	}
 }

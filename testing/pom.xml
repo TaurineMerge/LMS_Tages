@@ -18,6 +18,11 @@
         <opentelemetry.version>1.31.0</opentelemetry.version>
         <slf4j.version>2.0.9</slf4j.version>
         <jackson.version>2.16.1</jackson.version>
+        <auth0.version>4.4.0</auth0.version>
+        <postgresql.version>42.6.0</postgresql.version>
+        <jknack.version>4.3.1</jknack.version>
+        <cdimascio.version>3.0.0</cdimascio.version>
+        <networknt.version>1.5.1</networknt.version>
     </properties>
 
     <dependencies>
@@ -34,7 +39,7 @@
         <dependency>
             <groupId>com.auth0</groupId>
             <artifactId>java-jwt</artifactId>
-            <version>4.4.0</version>
+            <version>${auth0.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -42,9 +47,29 @@
             <version>${jackson.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${postgresql.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.github.jknack</groupId>
             <artifactId>handlebars</artifactId>
-            <version>4.3.1</version>
+            <version>${jknack.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.cdimascio</groupId>
+            <artifactId>dotenv-java</artifactId>
+            <version>${cdimascio.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-api</artifactId>
+            <version>${opentelemetry.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.networknt</groupId>
+            <artifactId>json-schema-validator</artifactId>
+            <version>${networknt.version}</version>
         </dependency>
         
         <!-- OpenTelemetry API -->
@@ -98,6 +123,39 @@
                                 </filter>
                             </filters>
                         </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <show>private</show> <!-- Показывать приватные методы -->
+                    <nohelp>true</nohelp> <!-- Скрывать help -->
+                    <source>17</source> <!-- Версия Java -->
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <configLocation>google_checks.xml</configLocation>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>

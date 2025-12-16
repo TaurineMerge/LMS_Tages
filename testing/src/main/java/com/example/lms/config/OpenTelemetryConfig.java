@@ -4,41 +4,49 @@ import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
 
 /**
- * Конфигурационный класс для OpenTelemetry.
+ * Конфигурационный класс для работы с OpenTelemetry.
  * <p>
- * Поскольку проект использует OpenTelemetry Java Agent,
- * инициализация трейсинга происходит автоматически
- * при запуске приложения с аргументами:
+ * Поскольку сервис запускается с OpenTelemetry Java Agent,
+ * ручная инициализация SDK внутри приложения не требуется:
+ * агент автоматически настраивает экспортеры, ресурс (service.name),
+ * обработчики и сборщики метрик/трейсов.
  *
- * <pre>
- * -javaagent:opentelemetry-javaagent.jar
- * -Dotel.service.name=testing-service
- * </pre>
+ * Этот класс выполняет две задачи:
+ * <ul>
+ * <li>фиксирует факт инициализации (для логов и читаемости)</li>
+ * <li>предоставляет доступ к глобальному {@link Tracer}</li>
+ * </ul>
  *
- * Поэтому ручная настройка SDK внутри приложения НЕ требуется.
- * Этот класс остается тонкой оберткой над глобальными объектами OpenTelemetry.
+ * Tracer используется внутри приложения для создания пользовательских
+ * (manual) span-ов — например, в SimpleTracer, сервисах и роутерах.
  */
 public class OpenTelemetryConfig {
 
-    /**
-     * Инициализация OpenTelemetry.
-     * <p>
-     * Метод умышленно пустой, так как все настройки
-     * выполняет OpenTelemetry Java Agent.
-     */
-    public static void init() {
-        // Java Agent полностью берет на себя настройку OpenTelemetry
-        System.out.println("OpenTelemetry will be initialized by Java Agent");
-    }
+	/**
+	 * Метод вызывается при старте сервиса.
+	 * <p>
+	 * Инициализация трейсинга полностью выполняется Java Agent,
+	 * поэтому метод не содержит дополнительной логики.
+	 * Оставлен для читаемости архитектуры и удобства дебага.
+	 */
+	public static void init() {
+		System.out.println("OpenTelemetry will be initialized by Java Agent");
+	}
 
-    /**
-     * Возвращает глобальный Tracer, зарегистрированный Java Agent.
-     * <p>
-     * Используется для создания span-ов в сервисах и контроллерах.
-     *
-     * @return глобальный Tracer, связанный с сервисом testing-service
-     */
-    public static Tracer getTracer() {
-        return GlobalOpenTelemetry.getTracer("testing-service");
-    }
+	/**
+	 * Возвращает глобальный {@link Tracer}, предоставляемый OpenTelemetry Java
+	 * Agent.
+	 * <p>
+	 * Используется для ручного создания span-ов:
+	 * 
+	 * <pre>
+	 * Tracer tracer = OpenTelemetryConfig.getTracer();
+	 * Span span = tracer.spanBuilder("my-operation").startSpan();
+	 * </pre>
+	 *
+	 * @return Tracer, связанный с сервисом "testing-service"
+	 */
+	public static Tracer getTracer() {
+		return GlobalOpenTelemetry.getTracer("testing-service");
+	}
 }

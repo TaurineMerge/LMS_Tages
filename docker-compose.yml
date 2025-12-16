@@ -157,6 +157,8 @@ services:
     build: ./testing
     container_name: testing
     ports: []
+    env_file:
+      - ./testing/.env
     networks:
       - app-network
     depends_on:

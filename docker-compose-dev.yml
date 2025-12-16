@@ -55,10 +55,12 @@ services:
       KC_METRICS_ENABLED: true
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_HTTP_RELATIVE_PATH: "/auth"
     command:
       - start-dev
       - --http-port=8080
       - --import-realm
+      - --http-relative-path=/auth
     ports:
       - "8080:8080"
     volumes:
@@ -110,7 +112,7 @@ services:
     build: ./adminPanel
     container_name: admin-panel
     environment:
-      KEYCLOAK_ISSUER_URL: "http://keycloak:8080/realms/teacher"
+      KEYCLOAK_ISSUER_URL: "http://keycloak:8080/auth/realms/teacher"
       KEYCLOAK_CLIENT_ID: "teacher-client"
       KEYCLOAK_CLIENT_SECRET: "TEACHER_SECRET"
       KEYCLOAK_APP_NAME: "LMS Admin Application"
@@ -148,6 +150,10 @@ services:
     container_name: testing
     ports:
       - "8085:8085"
+    env_file:
+      - ./testing/.env
+    environment:
+      JAVA_TOOL_OPTIONS: ""
     networks:
       - app-network
     depends_on:
