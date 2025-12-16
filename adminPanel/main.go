@@ -304,7 +304,8 @@ func main() {
 
 	categoryHandler.RegisterRoutes(api)
 	courseHandler.RegisterRoutes(api)
-	lessonHandler.RegisterRoutes(api)
+	lessons := api.Group("/categories/:category_id/courses/:course_id/lessons")
+	lessonHandler.RegisterRoutes(lessons)
 
 	log.Printf("🚀 Server starting on %s", settings.APIAddress)
 	log.Printf("📚 Swagger UI: http://localhost%s/swagger/", settings.APIAddress)

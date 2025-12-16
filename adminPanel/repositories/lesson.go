@@ -3,203 +3,180 @@ package repositories
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	"adminPanel/database"
 	"adminPanel/models"
+
+	"github.com/jackc/pgx/v5"
 )
 
 // LessonRepository - репозиторий для работы с уроками в базе данных
-//
-// Репозиторий предоставляет методы для выполнения CRUD операций
-// с уроками, включая работу с JSON-контентом.
 type LessonRepository struct {
-	*BaseRepository
+	db *database.Database
+	// Убираем BaseRepository, т.к. методы теперь специфичны
 }
 
 // NewLessonRepository создает новый репозиторий для уроков
-//
-// Параметры:
-//   - db: экземпляр базы данных
-//
-// Возвращает:
-//   - *LessonRepository: указатель на новый репозиторий
 func NewLessonRepository(db *database.Database) *LessonRepository {
 	return &LessonRepository{
-		BaseRepository: NewBaseRepository(db, "lesson_d", "knowledge_base"),
+		db: db,
 	}
 }
 
-// Create создает новый урок в базе данных
-//
-// Преобразует контент урока в JSON формат для хранения.
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//   - courseID: уникальный идентификатор курса
-//   - categoryID: уникальный идентификатор категории
-//   - lesson: данные для создания урока
-//
-// Возвращает:
-//   - map[string]interface{}: созданный объект урока
-//   - error: ошибка выполнения (если есть)
-func (r *LessonRepository) Create(ctx context.Context, courseID, categoryID string, lesson models.LessonCreate) (map[string]interface{}, error) {
-	contentJSON, _ := json.Marshal(lesson.Content)
+// GetAllByCourseID получает уроки по идентификатору курса с пагинацией и сортировкой
+func (r *LessonRepository) GetAllByCourseID(ctx context.Context, courseID string, limit, offset int, sortBy, sortOrder string) ([]models.Lesson, error) {
+	allowedSortBy := map[string]bool{"title": true, "created_at": true, "updated_at": true}
+	if !allowedSortBy[sortBy] {
+		sortBy = "created_at"
+	}
+	if !(strings.EqualFold(sortOrder, "ASC") || strings.EqualFold(sortOrder, "DESC")) {
+		sortOrder = "ASC"
+	}
 
-	query := `
-		INSERT INTO knowledge_base.lesson_d 
-		(id, title, category_id, course_id, content, created_at, updated_at)
-		VALUES (gen_random_uuid(), $1, $2, $3, $4::jsonb, NOW(), NOW())
-		RETURNING *
-	`
+	query := fmt.Sprintf(`
+		SELECT id, title, course_id, created_at, updated_at
+		FROM knowledge_base.lesson_d
+		WHERE course_id = $1
+		ORDER BY %s %s
+		LIMIT $2 OFFSET $3
+	`, sortBy, sortOrder)
 
-	return r.db.ExecuteReturning(ctx, query,
-		lesson.Title,
-		categoryID,
-		courseID,
-		string(contentJSON),
-	)
+	rows, err := r.db.Pool.Query(ctx, query, courseID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var lessons []models.Lesson
+	for rows.Next() {
+		var lesson models.Lesson
+		if err := rows.Scan(&lesson.ID, &lesson.Title, &lesson.CourseID, &lesson.CreatedAt, &lesson.UpdatedAt); err != nil {
+			return nil, err
+		}
+		lessons = append(lessons, lesson)
+	}
+
+	return lessons, nil
 }
 
-// Update обновляет существующий урок в базе данных
-//
-// Преобразует контент урока в JSON формат для хранения.
-// Использует COALESCE для частичного обновления.
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//   - id: уникальный идентификатор урока
-//   - courseID: уникальный идентификатор курса
-//   - lesson: данные для обновления урока
-//
-// Возвращает:
-//   - map[string]interface{}: обновленный объект урока
-//   - error: ошибка выполнения (если есть)
-func (r *LessonRepository) Update(ctx context.Context, id, courseID string, lesson models.LessonUpdate) (map[string]interface{}, error) {
-	contentJSON, _ := json.Marshal(lesson.Content)
-
-	query := `
-		UPDATE knowledge_base.lesson_d 
-		SET title = COALESCE($1, title),
-			category_id = COALESCE($2, category_id),
-			content = COALESCE($4::jsonb, content),
-			updated_at = NOW()
-		WHERE id = $3 AND course_id = $5
-		RETURNING *
-	`
-
-	return r.db.ExecuteReturning(ctx, query,
-		lesson.Title,
-		lesson.CategoryID,
-		id,
-		string(contentJSON),
-		courseID,
-	)
-}
-
-// GetByCourse получает уроки указанного курса
-//
-// Возвращает уроки, отсортированные по дате создания.
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//   - categoryID: уникальный идентификатор категории
-//   - courseID: уникальный идентификатор курса
-//   - limit: количество элементов
-//   - offset: смещение
-//
-// Возвращает:
-//   - []map[string]interface{}: список уроков
-//   - error: ошибка выполнения (если есть)
-func (r *LessonRepository) GetByCourse(ctx context.Context, categoryID, courseID string, limit, offset int) ([]map[string]interface{}, error) {
-	query := `
-		SELECT * FROM knowledge_base.lesson_d
-		WHERE category_id = $1 AND course_id = $2
-		ORDER BY created_at
-		LIMIT $3 OFFSET $4
-	`
-
-	return r.db.FetchAll(ctx, query, categoryID, courseID, limit, offset)
-}
-
-// GetByIDAndCourse получает урок по уникальному идентификатору и курсу
-//
-// Проверяет принадлежность урока указанной категории и курсу.
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//   - id: уникальный идентификатор урока
-//   - categoryID: уникальный идентификатор категории
-//   - courseID: уникальный идентификатор курса
-//
-// Возвращает:
-//   - map[string]interface{}: найденный урок или nil
-//   - error: ошибка выполнения (если есть)
-func (r *LessonRepository) GetByIDAndCourse(ctx context.Context, id, categoryID, courseID string) (map[string]interface{}, error) {
-	query := `
-		SELECT * FROM knowledge_base.lesson_d
-		WHERE id = $1 AND category_id = $2 AND course_id = $3
-	`
-
-	return r.db.FetchOne(ctx, query, id, categoryID, courseID)
-}
-
-// CountByCourse подсчитывает количество уроков в указанном курсе
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//   - categoryID: уникальный идентификатор категории
-//   - courseID: уникальный идентификатор курса
-//
-// Возвращает:
-//   - int: количество уроков
-//   - error: ошибка выполнения (если есть)
-func (r *LessonRepository) CountByCourse(ctx context.Context, categoryID, courseID string) (int, error) {
-	query := `
-		SELECT COUNT(*) as count FROM knowledge_base.lesson_d
-		WHERE category_id = $1 AND course_id = $2
-	`
-	res, err := r.db.FetchOne(ctx, query, categoryID, courseID)
+// CountByCourseID подсчитывает количество уроков по идентификатору курса
+func (r *LessonRepository) CountByCourseID(ctx context.Context, courseID string) (int, error) {
+	query := `SELECT COUNT(*) FROM knowledge_base.lesson_d WHERE course_id = $1`
+	var count int
+	err := r.db.Pool.QueryRow(ctx, query, courseID).Scan(&count)
 	if err != nil {
 		return 0, err
 	}
-	if res == nil {
-		return 0, nil
-	}
-	if count, ok := res["count"].(int64); ok {
-		return int(count), nil
-	}
-	return 0, nil
+	return count, nil
 }
 
-// ParseContent парсит JSON контент урока
-//
-// Преобразует JSON-данные из базы данных в map[string]interface{}.
-// Если парсинг не удается, возвращает пустой map.
-//
-// Параметры:
-//   - data: данные урока с JSON-контентом
-//
-// Возвращает:
-//   - map[string]interface{}: данные с распарсенным контентом
-//   - error: ошибка выполнения (если есть)
-func (r *LessonRepository) ParseContent(data map[string]interface{}) (map[string]interface{}, error) {
-	if content, ok := data["content"].([]byte); ok {
-		var parsedContent map[string]interface{}
-		if err := json.Unmarshal(content, &parsedContent); err == nil {
-			data["content"] = parsedContent
-		} else {
-			data["content"] = make(map[string]interface{})
+// GetByID получает урок по его уникальному идентификатору
+func (r *LessonRepository) GetByID(ctx context.Context, lessonID string) (*models.LessonDetailed, error) {
+	query := `SELECT id, title, course_id, created_at, updated_at, content FROM knowledge_base.lesson_d WHERE id = $1`
+
+	row := r.db.Pool.QueryRow(ctx, query, lessonID)
+
+	var lesson models.LessonDetailed
+	var contentBytes []byte
+
+	err := row.Scan(&lesson.ID, &lesson.Title, &lesson.CourseID, &lesson.CreatedAt, &lesson.UpdatedAt, &contentBytes)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
 		}
-	} else if contentStr, ok := data["content"].(string); ok {
-		var parsedContent map[string]interface{}
-		if err := json.Unmarshal([]byte(contentStr), &parsedContent); err == nil {
-			data["content"] = parsedContent
-		} else {
-			data["content"] = make(map[string]interface{})
-		}
-	} else {
-		data["content"] = make(map[string]interface{})
+		return nil, err
 	}
 
-	return data, nil
+	if contentBytes != nil {
+		if err := json.Unmarshal(contentBytes, &lesson.Content); err != nil {
+			return nil, err
+		}
+	}
+
+	return &lesson, nil
+}
+
+// Create создает новый урок в базе данных
+func (r *LessonRepository) Create(ctx context.Context, courseID string, lesson models.LessonCreate) (*models.LessonDetailed, error) {
+	contentJSON, err := json.Marshal(lesson.Content)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal lesson content: %w", err)
+	}
+
+	query := `
+		INSERT INTO knowledge_base.lesson_d (title, course_id, content)
+		VALUES ($1, $2, $3)
+		RETURNING id, title, course_id, created_at, updated_at, content
+	`
+
+	row := r.db.Pool.QueryRow(ctx, query, lesson.Title, courseID, contentJSON)
+
+	var newLesson models.LessonDetailed
+	var contentBytes []byte
+
+	err = row.Scan(&newLesson.ID, &newLesson.Title, &newLesson.CourseID, &newLesson.CreatedAt, &newLesson.UpdatedAt, &contentBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	if contentBytes != nil {
+		if err := json.Unmarshal(contentBytes, &newLesson.Content); err != nil {
+			return nil, err
+		}
+	}
+
+	return &newLesson, nil
+}
+
+// Update обновляет существующий урок в базе данных
+func (r *LessonRepository) Update(ctx context.Context, lessonID string, lesson models.LessonUpdate) (*models.LessonDetailed, error) {
+	var contentJSON interface{}
+	if lesson.Content != nil {
+		marshalled, err := json.Marshal(lesson.Content)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal lesson content: %w", err)
+		}
+		contentJSON = marshalled
+	}
+
+	query := `
+		UPDATE knowledge_base.lesson_d 
+		SET 
+			title = COALESCE(NULLIF($1, ''), title),
+			content = COALESCE($2, content),
+			updated_at = NOW()
+		WHERE id = $3
+		RETURNING id, title, course_id, created_at, updated_at, content
+	`
+	row := r.db.Pool.QueryRow(ctx, query, lesson.Title, contentJSON, lessonID)
+
+	var updatedLesson models.LessonDetailed
+	var contentBytes []byte
+
+	err := row.Scan(&updatedLesson.ID, &updatedLesson.Title, &updatedLesson.CourseID, &updatedLesson.CreatedAt, &updatedLesson.UpdatedAt, &contentBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	if contentBytes != nil {
+		if err := json.Unmarshal(contentBytes, &updatedLesson.Content); err != nil {
+			return nil, err
+		}
+	}
+
+	return &updatedLesson, nil
+}
+
+// Delete удаляет урок по его уникальному идентификатору
+func (r *LessonRepository) Delete(ctx context.Context, lessonID string) (bool, error) {
+	query := `DELETE FROM knowledge_base.lesson_d WHERE id = $1`
+
+	result, err := r.db.Pool.Exec(ctx, query, lessonID)
+	if err != nil {
+		return false, err
+	}
+
+	return result.RowsAffected() > 0, nil
 }

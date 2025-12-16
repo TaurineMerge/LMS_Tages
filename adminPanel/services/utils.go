@@ -4,6 +4,7 @@ package services
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -42,4 +43,25 @@ func toString(v interface{}) string {
 		return val
 	}
 	return fmt.Sprintf("%v", v)
+}
+
+// parseTime преобразует интерфейс в time.Time
+//
+// Вспомогательная функция для парсинга времени из различных форматов.
+//
+// Параметры:
+//   - value: значение для преобразования
+//
+// Возвращает:
+//   - time.Time: преобразованное время
+func parseTime(value interface{}) time.Time {
+	if str, ok := value.(string); ok {
+		if t, err := time.Parse(time.RFC3339, str); err == nil {
+			return t
+		}
+	}
+	if t, ok := value.(time.Time); ok {
+		return t
+	}
+	return time.Time{}
 }

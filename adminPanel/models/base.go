@@ -33,3 +33,20 @@ type Pagination struct {
 	Limit int `json:"limit"`
 	Pages int `json:"pages"`
 }
+
+// QueryList - общая структура для обработки параметров запроса со списком
+//
+// Содержит:
+//   - Page: номер текущей страницы
+//   - Limit: количество элементов на странице
+//   - Sort: строка сортировки (например, "created_at" или "-title")
+type QueryList struct {
+	Page  int    `query:"page"`
+	Limit int    `query:"limit"`
+	Sort  string `query:"sort"`
+}
+
+type ResponsePaginationLessonsList struct {
+	Items      []Lesson   `json:"items"`
+	Pagination Pagination `json:"pagination"`
+}
