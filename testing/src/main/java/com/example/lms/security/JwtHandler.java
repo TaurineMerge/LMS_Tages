@@ -250,10 +250,36 @@ public class JwtHandler {
 
 			try {
 				Algorithm algorithm = Algorithm.RSA256(cached.key(), null);
+
+				// ------------------------------------------------------------
+				// В combined-ветке Keycloak работает за nginx с префиксом /auth,
+				// поэтому issuer в токене может быть:
+				//   http://localhost/realms/<realm>
+				// или
+				//   http://localhost/auth/realms/<realm>
+				//
+				// Чтобы не ломать окружения "без /auth" и при этом не ослаблять
+				// проверку, мы:
+				//  1) проверяем подпись токена
+				//  2) отдельно валидируем iss по белому списку допустимых значений
+				// ------------------------------------------------------------
 				DecodedJWT jwt = JWT.require(algorithm)
-						.withIssuer(KEYCLOAK_URL + "/realms/" + realm)
 						.build()
 						.verify(token);
+
+				String base = (KEYCLOAK_URL == null ? "" : KEYCLOAK_URL).replaceAll("/+$", "");
+				String baseNoAuth = base.endsWith("/auth") ? base.substring(0, base.length() - 5) : base;
+
+				String expectedIssuerNoAuth = baseNoAuth + "/realms/" + realm;
+				String expectedIssuerWithAuth = baseNoAuth + "/auth/realms/" + realm;
+
+				String actualIssuer = jwt.getIssuer();
+				if (actualIssuer == null ||
+						(!actualIssuer.equals(expectedIssuerNoAuth) && !actualIssuer.equals(expectedIssuerWithAuth))) {
+					throw new UnauthorizedResponse(
+								"Неверный issuer в JWT. Ожидалось: '" + expectedIssuerNoAuth + "' или '" +
+										expectedIssuerWithAuth + "', получили: '" + actualIssuer + "'");
+				}
 
 				ctx.attribute("userId", jwt.getSubject());
 				ctx.attribute("username", jwt.getClaim("preferred_username").asString());
