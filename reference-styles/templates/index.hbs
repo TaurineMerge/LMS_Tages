@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход - Личный кабинет</title>
+    <link href="/static/css/main.css" rel="stylesheet"/>
+    </head>
+<body>
+    {% include 'includes/sprite.html' %} 
+    <div class="primary-page wrapper">
+        <div class="primary-page__img"></div>
+        <div class="primary-page__box">
+            <svg viewBox="0 0 31 30" class="logo">
+                 <use href="#logo"></use>
+            </svg>
+        <h1 class="primary-page__title">Добро пожаловать в личный кабинет E-tutor!</h2>
+        <p class="primary-page__description">desc</p>
+
+        <div class="primary-page__buttons">
+            <a type="button" href="/account/api/v1/auth/login" class="button button--secondary">
+                Войти через Keycloak
+            </a>
+            <a type="button" href="/account/register" class="button button--primary">
+                Зарегистрироваться
+            </a>
+        </div>
+        
+         <div class="primary-page__features">
+            <h3 class="primary-page__features--title">Возможности кабинета:</h3>
+            <ul class="primary-page__features--list">
+                <li class="primary-page__features--item">Отслеживание прогресса обучения</li>
+                <li class="primary-page__features--item">Управление сертификатами</li>
+                <li class="primary-page__features--item">История посещений уроков</li>
+                <li class="primary-page__features--item">Настройки профиля</li>
+        </ul>
+        </div>
+    </div>
+</body>
+</html>
