@@ -3,13 +3,24 @@ FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
-# Install Poetry once and cache this layer
+# Установка системных зависимостей, необходимых для некоторых пакетов Python
 RUN apt-get update \
-    && apt-get install --no-install-recommends -y curl \
-    && curl -sSL https://install.python-poetry.org | python3 - \
+    && apt-get install --no-install-recommends -y \
+        build-essential \
+        gcc \
     && rm -rf /var/lib/apt/lists/*
 
-    ENV PATH="/root/.local/bin:$PATH"
+# Установка Poetry напрямую через pip (более надёжный способ для Docker)
+RUN pip install poetry
+
+# Установка переменных окружения Poetry до выполнения команд
+ENV POETRY_NO_INTERACTION=1 \
+    POETRY_VIRTUALS_CREATE=false \
+    POETRY_CACHE_DIR=/tmp/poetry_cache
+
+# Проверка установки Poetry и местоположения
+RUN which poetry || echo "Poetry executable not found in PATH"
+RUN poetry --version
 
 # Copy only dependency files first (for layer caching)
 COPY pyproject.toml poetry.lock* /app/
@@ -17,6 +28,9 @@ COPY pyproject.toml poetry.lock* /app/
 # Install dependencies in system Python (skip virtualenv for Docker)
 RUN poetry config virtualenvs.create false \
     && poetry install --no-root --only main --no-interaction --no-ansi
+
+# Clean up Poetry cache to reduce layer size
+RUN rm -rf $POETRY_CACHE_DIR
 
 # Copy application code (won't invalidate dependency layer)
 COPY . /app
