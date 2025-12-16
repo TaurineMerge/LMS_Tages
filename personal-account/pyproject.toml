@@ -1,0 +1,93 @@
+[project]
+name = "personal-account"
+version = "0.1.0"
+description = ""
+package-mode = false
+authors = [
+    {name = "savva", email = "starkovsavva52@gmail.com"},
+    {name = "emilia",email = "tikhonovaemiliya@gmail.com"},
+    {name = "polina",email = "polina.rakovich23@gmail.com"},
+]
+readme = "README.md"
+requires-python = ">=3.11,<4.0"
+dependencies = [
+    "fastapi (==0.104.1)",
+    "uvicorn[standard] (==0.24.0)",
+    "pydantic[email] (==2.5.0)",
+    "pydantic-settings (==2.1.0)",
+    "python-dotenv (==1.0.0)",
+    "psycopg[binary,pool] (==3.1.18)",
+    "sqlalchemy (==2.0.23)",
+    "asyncpg (==0.29.0)",
+    "opentelemetry-api (==1.23.0)",
+    "opentelemetry-sdk (==1.23.0)",
+    "opentelemetry-exporter-otlp-proto-grpc (==1.23.0)",
+    "opentelemetry-instrumentation-fastapi (==0.44b0)",
+    "opentelemetry-instrumentation-httpx (==0.44b0)",
+    "opentelemetry-instrumentation-sqlalchemy (==0.44b0)",
+    "opentelemetry-instrumentation-logging (==0.44b0)",
+    "python-keycloak (==3.12.0)",
+    "httpx (==0.25.2)",
+    "python-jose[cryptography] (==3.3.0)",
+    "jinja2 (==3.1.2)",
+    "aiofiles (==23.2.1)"
+]
+
+[project.scripts]
+dev = "uvicorn main:app --reload"
+
+[dependency-groups]
+dev = [
+    "ruff (>=0.14.8,<0.15.0)"
+]
+
+[tool.ruff]
+line-length = 120
+indent-width = 4
+target-version = "py311"
+
+[tool.ruff.lint]
+# Нестабильные и находящиеся в предварительной версии правила
+preview = true
+# Правила, которые должен применять линтер
+select = [
+    "UP",   # pyupgrade
+    "I",    # isort
+    "E",    # flake8-errors
+    "W",    # flake8-warnings
+    "F",    # flake8-pyflakes
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "S",    # flake8-bandit
+    "BLE",  # flake8-blind-except
+    "T20",  # flake8-print
+    "T10",  # flake8-debugger
+    "PT",   # flake8-pytest-style
+    "RUF",  # Ruff
+    "DTZ",  # flake8-datetimez
+    "ERA",  # eradicate
+    "FURB", # refurb
+]
+# Игнорирование конкретных предупреждений линтера
+ignore = [
+    "C408",  # Ненужный вызов dict, list и т.д.
+    "RUF001", # Игнорирование похожих символов с разными ASCII
+    "RUF002", # Игнорирование похожих символов с разными ASCII
+    "RUF003", # Игнорирование похожих символов с разными ASCII
+    "S110",  # try-except-pass
+]
+
+# Ошибки, которые могут быть исправлены автоматически
+fixable = [
+    "I", # cортировка испортов
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

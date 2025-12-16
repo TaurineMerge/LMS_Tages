@@ -8,6 +8,8 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/includes:/etc/nginx/includes:ro
+      - ./personal-account/docs-tech:/var/www/docs-tech:ro
+      - ./personal-account/static:/etc/nginx/html/static:ro
     depends_on:
       keycloak:
         condition: service_started
@@ -35,7 +37,7 @@ services:
     networks:
       - keycloak-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U keycloaks -d keycloaks"]
+      test: [ "CMD-SHELL", "pg_isready -U keycloaks -d keycloaks" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -87,6 +89,8 @@ services:
       POSTGRES_DB: appdb
       POSTGRES_USER: appuser
       POSTGRES_PASSWORD: password
+    # ports:
+    #   - "5432:5432"
     volumes:
       - app_data:/var/lib/postgresql/data
       - ./init-sql:/docker-entrypoint-initdb.d:ro
@@ -94,7 +98,7 @@ services:
       - app-network
     ports: []
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
+      test: [ "CMD-SHELL", "pg_isready -U appuser -d appdb" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -181,19 +185,15 @@ services:
     restart: unless-stopped
 
   jaeger:
-    image: jaegertracing/all-in-one:latest
+    image: jaegertracing/all-in-one:1.54
     container_name: jaeger
     environment:
       - COLLECTOR_ZIPKIN_HTTP_PORT=9411
-      - COLLECTOR_OTLP_ENABLED=true
-      - QUERY_BASE_PATH=/jaeger
-      - SPAN_STORAGE_TYPE=memory
-      - JAEGER_DISABLED=false
-      - JAEGER_QUERY_UI_CONFIG=/etc/jaeger/ui-config.json
-    ports: 
-      - "16686:16686"
-    volumes:
-      - ./observability/jaeger-ui-config.json:/etc/jaeger/ui-config.json:ro
+    ports:
+      - "16686:16686" # UI
+      - "14250:14250" # gRPC ingestion
+      - "14268:14268" # HTTP ingestion
+      - "9411:9411" # Zipkin compatibility
     networks:
       - app-network
     restart: unless-stopped
@@ -201,9 +201,12 @@ services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.94.0
     container_name: otel-collector
-    command: ["--config=/etc/otel-collector-config.yaml"]
+    command: [ "--config=/etc/otel-collector-config.yaml" ]
     volumes:
       - ./observability/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    ports:
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
     depends_on:
       jaeger:
         condition: service_started

@@ -12,21 +12,10 @@ processors:
     timeout: 5s
 
 exporters:
-  # Используем otlp для отправки в Jaeger
-  otlp/jaeger:
-    endpoint: "jaeger:4317"  # Jaeger с COLLECTOR_OTLP_ENABLED=true принимает на 4317
-    tls:
-      insecure: true
-    compression: none
-    retry_on_failure:
-      enabled: true
-      initial_interval: 5s
-      max_interval: 30s
-      max_elapsed_time: 300s
-  
-  # Для отладки
+  otlphttp/jaeger:
+    endpoint: http://jaeger:4318
   logging:
-    loglevel: debug
+    loglevel: info
 
 service:
   telemetry:
@@ -36,4 +25,4 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp/jaeger, logging]
+      exporters: [otlphttp/jaeger, logging]
