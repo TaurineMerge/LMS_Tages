@@ -5,29 +5,60 @@
     "description": "API для управления тестами, попытками прохождения тестов и ответами",
     "version": "1.0.0"
   },
-  "host": "localhost",
+  "host": "localhost:8085",
   "basePath": "/",
   "schemes": ["http"],
   "consumes": ["application/json"],
   "produces": ["application/json"],
+  "securityDefinitions": {
+    "keycloak": {
+      "type": "oauth2",
+      "authorizationUrl": "http://localhost:8080/realms/teacher/protocol/openid-connect/auth",
+      "tokenUrl": "http://localhost:8080/realms/teacher/protocol/openid-connect/token",
+      "flow": "accessCode",
+      "scopes": {
+        "openid": "OpenID Connect authentication",
+        "profile": "User profile information",
+        "email": "User email address"
+      }
+    }
+  },
+  "security": [
+    {
+      "keycloak": ["openid", "profile", "email"]
+    }
+  ],
   "paths": {
     "/tests": {
       "get": {
         "tags": ["Tests"],
         "summary": "Получить список тестов",
         "description": "Возвращает HTML-страницу со списком тестов (для преподавателей)",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
         "responses": {
           "200": {
             "description": "HTML-страница",
             "schema": {
               "type": "string"
             }
+          },
+          "401": {
+            "description": "Не авторизован"
           }
         }
       },
       "post": {
         "tags": ["Tests"],
         "summary": "Создать тест",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
         "parameters": [
           {
             "name": "body",
@@ -55,6 +86,11 @@
       "get": {
         "tags": ["Tests"],
         "summary": "Получить тест по ID",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -70,6 +106,9 @@
               "$ref": "#/definitions/Test"
             }
           },
+          "401": {
+            "description": "Не авторизован"
+          },
           "404": {
             "description": "Тест не найден"
           }
@@ -78,6 +117,11 @@
       "put": {
         "tags": ["Tests"],
         "summary": "Обновить тест",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -100,12 +144,20 @@
             "schema": {
               "$ref": "#/definitions/Test"
             }
+          },
+          "401": {
+            "description": "Не авторизован"
           }
         }
       },
       "delete": {
         "tags": ["Tests"],
         "summary": "Удалить тест",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -117,6 +169,9 @@
         "responses": {
           "204": {
             "description": "Тест удален"
+          },
+          "401": {
+            "description": "Не авторизован"
           }
         }
       }
@@ -125,6 +180,11 @@
       "get": {
         "tags": ["TestAttempts"],
         "summary": "Получить список попыток",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
         "parameters": [
           {
             "name": "userId",
@@ -151,12 +211,20 @@
                 "$ref": "#/definitions/TestAttempt"
               }
             }
+          },
+          "401": {
+            "description": "Не авторизован"
           }
         }
       },
       "post": {
         "tags": ["TestAttempts"],
         "summary": "Создать попытку",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
         "parameters": [
           {
             "name": "body",
@@ -173,6 +241,9 @@
             "schema": {
               "$ref": "#/definitions/TestAttempt"
             }
+          },
+          "401": {
+            "description": "Не авторизован"
           }
         }
       }
@@ -181,6 +252,11 @@
       "get": {
         "tags": ["TestAttempts"],
         "summary": "Получить попытку по ID",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -196,12 +272,20 @@
             "schema": {
               "$ref": "#/definitions/TestAttempt"
             }
+          },
+          "401": {
+            "description": "Не авторизован"
           }
         }
       },
       "delete": {
         "tags": ["TestAttempts"],
         "summary": "Удалить попытку",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -214,6 +298,9 @@
         "responses": {
           "204": {
             "description": "Попытка удалена"
+          },
+          "401": {
+            "description": "Не авторизован"
           }
         }
       }
@@ -222,6 +309,11 @@
       "post": {
         "tags": ["Answers"],
         "summary": "Создать ответ",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
         "parameters": [
           {
             "name": "body",
@@ -238,6 +330,9 @@
             "schema": {
               "$ref": "#/definitions/Answer"
             }
+          },
+          "401": {
+            "description": "Не авторизован"
           }
         }
       }
@@ -246,6 +341,11 @@
       "get": {
         "tags": ["Answers"],
         "summary": "Получить ответы вопроса",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
         "parameters": [
           {
             "name": "questionId",
@@ -263,12 +363,20 @@
                 "$ref": "#/definitions/Answer"
               }
             }
+          },
+          "401": {
+            "description": "Не авторизован"
           }
         }
       },
       "delete": {
         "tags": ["Answers"],
         "summary": "Удалить ответы вопроса",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
         "parameters": [
           {
             "name": "questionId",
@@ -280,6 +388,9 @@
         "responses": {
           "204": {
             "description": "Ответы удалены"
+          },
+          "401": {
+            "description": "Не авторизован"
           }
         }
       }
@@ -288,6 +399,11 @@
       "get": {
         "tags": ["Answers"],
         "summary": "Получить правильные ответы",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
         "parameters": [
           {
             "name": "questionId",
@@ -305,6 +421,9 @@
                 "$ref": "#/definitions/Answer"
               }
             }
+          },
+          "401": {
+            "description": "Не авторизован"
           }
         }
       }
@@ -313,6 +432,11 @@
       "get": {
         "tags": ["Answers"],
         "summary": "Подсчитать ответы",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
         "parameters": [
           {
             "name": "questionId",
@@ -327,6 +451,9 @@
             "schema": {
               "type": "integer"
             }
+          },
+          "401": {
+            "description": "Не авторизован"
           }
         }
       }
@@ -335,6 +462,11 @@
       "get": {
         "tags": ["Answers"],
         "summary": "Подсчитать правильные ответы",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
         "parameters": [
           {
             "name": "questionId",
@@ -349,6 +481,9 @@
             "schema": {
               "type": "integer"
             }
+          },
+          "401": {
+            "description": "Не авторизован"
           }
         }
       }
@@ -357,6 +492,11 @@
       "get": {
         "tags": ["Answers"],
         "summary": "Получить ответ по ID",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -371,12 +511,20 @@
             "schema": {
               "$ref": "#/definitions/Answer"
             }
+          },
+          "401": {
+            "description": "Не авторизован"
           }
         }
       },
       "put": {
         "tags": ["Answers"],
         "summary": "Обновить ответ",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -399,12 +547,20 @@
             "schema": {
               "$ref": "#/definitions/Answer"
             }
+          },
+          "401": {
+            "description": "Не авторизован"
           }
         }
       },
       "delete": {
         "tags": ["Answers"],
         "summary": "Удалить ответ",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -416,6 +572,9 @@
         "responses": {
           "204": {
             "description": "Ответ удален"
+          },
+          "401": {
+            "description": "Не авторизован"
           }
         }
       }
@@ -424,6 +583,11 @@
       "get": {
         "tags": ["Answers"],
         "summary": "Проверить правильность ответа",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -438,6 +602,9 @@
             "schema": {
               "type": "boolean"
             }
+          },
+          "401": {
+            "description": "Не авторизован"
           }
         }
       }

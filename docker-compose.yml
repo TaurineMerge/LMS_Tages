@@ -139,6 +139,8 @@ services:
     container_name: testing
     ports:
       - "8085:8085"
+    volumes:
+      - ./docs:/app/docs
     networks:
       - app-network
     depends_on:
@@ -147,7 +149,7 @@ services:
       keycloak:
         condition: service_started
     restart: unless-stopped
-  
+
   jaeger:
     image: jaegertracing/all-in-one:1.54
     container_name: jaeger
@@ -157,7 +159,7 @@ services:
       - "16686:16686" # UI
       - "14250:14250" # gRPC ingestion
       - "14268:14268" # HTTP ingestion
-      - "9411:9411"   # Zipkin compatibility
+      - "9411:9411" # Zipkin compatibility
     networks:
       - app-network
     restart: unless-stopped
@@ -177,7 +179,6 @@ services:
     networks:
       - app-network
     restart: unless-stopped
-
 
 networks:
   keycloak-network:
