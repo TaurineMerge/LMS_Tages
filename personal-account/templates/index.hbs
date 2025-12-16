@@ -7,11 +7,15 @@
     <link href="/static/css/main.css" rel="stylesheet"/>
     </head>
 <body>
+    {% include 'includes/sprite.html' %} 
     <div class="primary-page wrapper">
         <div class="primary-page__img"></div>
         <div class="primary-page__box">
-            <h1 class="primary-page__title">Личный кабинет</h2>
-        <p class="primary-page__description">Система онлайн-обучения LMS</p>
+            <svg viewBox="0 0 31 30" class="logo">
+                 <use href="#logo"></use>
+            </svg>
+        <h1 class="primary-page__title">Добро пожаловать в личный кабинет E-tutor!</h2>
+        <p class="primary-page__description">desc</p>
 
         <div class="primary-page__buttons">
             <a type="button" href="/account/api/v1/auth/login" class="button button--secondary">
