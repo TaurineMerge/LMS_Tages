@@ -19,7 +19,6 @@ import com.example.lms.config.DatabaseConfig;
 
 /**
  * Реализация репозитория для работы с таблицей answer_d.
- * Использует DriverManager для подключения к базе данных.
  */
 public class AnswerRepository implements AnswerRepositoryInterface {
     private static final Logger logger = LoggerFactory.getLogger(AnswerRepository.class);
@@ -27,32 +26,32 @@ public class AnswerRepository implements AnswerRepositoryInterface {
 
     // SQL запросы для таблицы answer_d
     private static final String INSERT_SQL = """
-            INSERT INTO tests.answer_d (question_id, text, score)
-            VALUES (?, ?, ?)
+            INSERT INTO tests.answer_d (question_id, text, score, "order")
+            VALUES (?, ?, ?, ?)
             RETURNING id
             """;
 
     private static final String UPDATE_SQL = """
             UPDATE tests.answer_d
-            SET question_id = ?, text = ?, score = ?
+            SET question_id = ?, text = ?, score = ?, "order" = ?
             WHERE id = ?
             """;
 
     private static final String SELECT_BY_ID = """
-            SELECT id, question_id, text, score
+            SELECT id, question_id, text, score, "order"
             FROM tests.answer_d
             WHERE id = ?
             """;
 
     private static final String SELECT_BY_QUESTION = """
-            SELECT id, question_id, text, score
+            SELECT id, question_id, text, score, "order"
             FROM tests.answer_d
             WHERE question_id = ?
             ORDER BY text
             """;
 
     private static final String SELECT_CORRECT_BY_QUESTION = """
-            SELECT id, question_id, text, score
+            SELECT id, question_id, text, score, "order"
             FROM tests.answer_d
             WHERE question_id = ? AND score > 0
             ORDER BY text
@@ -125,6 +124,7 @@ public class AnswerRepository implements AnswerRepositoryInterface {
             stmt.setObject(1, answer.getQuestionId());
             stmt.setString(2, answer.getText());
             stmt.setInt(3, answer.getScore());
+            stmt.setInt(4, answer.getOrder());
 
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
@@ -168,7 +168,8 @@ public class AnswerRepository implements AnswerRepositoryInterface {
             stmt.setObject(1, answer.getQuestionId());
             stmt.setString(2, answer.getText());
             stmt.setInt(3, answer.getScore());
-            stmt.setObject(4, answer.getId());
+            stmt.setInt(4, answer.getOrder());
+            stmt.setObject(5, answer.getId());
 
             int updatedRows = stmt.executeUpdate();
             if (updatedRows == 0) {
