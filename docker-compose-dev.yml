@@ -87,7 +87,7 @@ services:
     ports:
       - "${APP_DB_EXTERNAL_PORT}:${APP_DB_INTERNAL_PORT}"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
+      test: ["CMD-SHELL", "pg_isready -U ${APP_DB_SUPERUSER}"]
       interval: 10s
       timeout: 5s
       retries: 5
