@@ -5,6 +5,7 @@ import (
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/dto/request"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/dto/response"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/service"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apiconst"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apperrors"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -25,9 +26,14 @@ func NewCourseHandler(courseService service.CourseService, categoryService servi
 }
 
 // RegisterRoutes registers the routes for course page endpoints.
-func (h *CourseHandler) RegisterRoutes(router fiber.Router) {
-	router.Get("/:categoryId/courses", h.GetCoursesByCategoryID)
-	router.Get("/:categoryId/courses/:courseId", h.GetCourseByID)
+func (h *CourseHandler) RegisterRoutes(router fiber.Router) fiber.Router {
+	courseRouter := router.Group("/courses")
+	courseRouter.Get("/", h.GetCoursesByCategoryID)
+
+	courseIdRouter := courseRouter.Group("/:" + apiconst.PathVariableCourseID)
+	courseIdRouter.Get("/", h.GetCourseByID)
+
+	return courseIdRouter
 }
 
 // GetCoursesByCategoryID handles the request to get paginated courses for a specific category.

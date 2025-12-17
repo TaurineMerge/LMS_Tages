@@ -14,7 +14,6 @@ import (
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/middleware"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/repository"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/service"
-	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apiconst"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/database"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/tracing"
 	"github.com/gofiber/contrib/otelfiber/v2"
@@ -116,14 +115,10 @@ func main() {
 	categoryHandler := handler.NewCategoryHandler(categoryService)
 	courseHandler := handler.NewCourseHandler(courseService, categoryService)
 
-	// Установка маршрутов
-	categoryRouter := apiV1.Group("/categories")
-	courseRouter := categoryRouter.Group(apiconst.PathCategory + "/courses")
-
 	// Регистрация маршрутов
-	categoryHandler.RegisterRoutes(categoryRouter)
-	courseHandler.RegisterRoutes(categoryRouter)
-	lessonHandler.RegisterRoutes(courseRouter)
+	categoriesIdRouter := categoryHandler.RegisterRoutes(apiV1)
+	courseIdRouter := courseHandler.RegisterRoutes(categoriesIdRouter)
+	lessonHandler.RegisterRoutes(courseIdRouter)
 
 	slog.Info("Starting server", "address", cfg.Port)
 	if err := app.Listen(fmt.Sprintf(":%s", cfg.Port)); err != nil {

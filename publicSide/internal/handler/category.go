@@ -23,9 +23,14 @@ func NewCategoryHandler(s service.CategoryService) *CategoryHandler {
 }
 
 // RegisterRoutes registers the routes for category-related endpoints.
-func (h *CategoryHandler) RegisterRoutes(router fiber.Router) {
-	router.Get("/", h.GetAllCategories)
-	router.Get(apiconst.PathCategory, h.GetCategoryByID)
+func (h *CategoryHandler) RegisterRoutes(router fiber.Router) fiber.Router {
+	categoriesRouter := router.Group("/categories")
+	categoriesRouter.Get("/", h.GetAllCategories)
+	
+	categoriesIdRouter := categoriesRouter.Group("/:" + apiconst.PathVariableCategoryID)
+	categoriesIdRouter.Get("/", h.GetCategoryByID)
+
+	return categoriesIdRouter
 }
 
 // GetAllCategories handles the request to get a paginated list of all categories.
@@ -51,9 +56,9 @@ func (h *CategoryHandler) GetAllCategories(c *fiber.Ctx) error {
 
 // GetCategoryByID handles the request to get a single category by its ID.
 func (h *CategoryHandler) GetCategoryByID(c *fiber.Ctx) error {
-	categoryID := c.Params(apiconst.ParamCategoryID)
+	categoryID := c.Params(apiconst.PathVariableCategoryID)
 	if _, err := uuid.Parse(categoryID); err != nil {
-		return apperrors.NewInvalidUUID(apiconst.ParamCategoryID)
+		return apperrors.NewInvalidUUID(apiconst.PathVariableCategoryID)
 	}
 
 	category, err := h.service.GetByID(c.UserContext(), categoryID)
