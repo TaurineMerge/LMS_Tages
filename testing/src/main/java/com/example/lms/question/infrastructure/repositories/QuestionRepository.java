@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.example.lms.config.DatabaseConfig;
-import com.example.lms.question.api.domain.model.QuestionModel;
+import com.example.lms.question.domain.model.QuestionModel;
 import com.example.lms.question.domain.repository.QuestionRepositoryInterface;
 
 import javax.sql.DataSource;
