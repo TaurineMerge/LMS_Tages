@@ -104,14 +104,17 @@ func main() {
 	// Инициализация репозитория
 	lessonRepo := repository.NewLessonRepository(dbPool)
 	categoryRepo := repository.NewCategoryRepository(dbPool)
+	courseRepo := repository.NewCourseRepository(dbPool)
 
 	// Инициализация сервиса
 	lessonService := service.NewLessonService(lessonRepo)
 	categoryService := service.NewCategoryService(categoryRepo)
+	courseService := service.NewCourseService(courseRepo, categoryRepo)
 
 	// Инициализация хэндлеров
 	lessonHandler := handler.NewLessonHandler(lessonService)
 	categoryHandler := handler.NewCategoryHandler(categoryService)
+	courseHandler := handler.NewCourseHandler(courseService, categoryService)
 
 	// Установка маршрутов
 	categoryRouter := apiV1.Group("/categories")
@@ -119,6 +122,7 @@ func main() {
 
 	// Регистрация маршрутов
 	categoryHandler.RegisterRoutes(categoryRouter)
+	courseHandler.RegisterRoutes(categoryRouter)
 	lessonHandler.RegisterRoutes(courseRouter)
 
 	slog.Info("Starting server", "address", cfg.Port)
