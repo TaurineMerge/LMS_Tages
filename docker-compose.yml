@@ -62,7 +62,6 @@ services:
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
       KC_PROXY: "reencrypt"
-      KC_HOSTNAME: "localhost"
       KC_HOSTNAME_PORT: "80"
       KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
       KC_HTTP_RELATIVE_PATH: "/auth"
@@ -99,8 +98,6 @@ services:
       POSTGRES_DB: appdb
       POSTGRES_USER: appuser
       POSTGRES_PASSWORD: password
-    # ports:
-    #   - "5432:5432"
     volumes:
       - app_data:/var/lib/postgresql/data
       - ./init-sql:/docker-entrypoint-initdb.d:ro
@@ -116,8 +113,6 @@ services:
   public-side:
     build: ./publicSide
     container_name: public-side
-    # ports: 
-    #   - "3000:3000"
     env_file:
       - ./publicSide/.env.prod
     networks:
@@ -134,22 +129,17 @@ services:
     env_file:
       - ./adminPanel/.env.prod
     environment:
-      # Database
       DATABASE_URL: "postgresql://appuser:password@app-db:5432/appdb?sslmode=disable"
       DATABASE_POOL_MIN_SIZE: "5"
       DATABASE_POOL_MAX_SIZE: "20"
-      # Keycloak
       KEYCLOAK_ISSUER_URL: "http://keycloak:8080/auth/realms/teacher"
       KEYCLOAK_CLIENT_ID: "teacher-client"
       KEYCLOAK_CLIENT_SECRET: "TEACHER_SECRET"
       KEYCLOAK_APP_NAME: "LMS Admin Application"
-      # OpenTelemetry
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
       OTEL_SERVICE_NAME: "admin-panel"
-      # Server
       API_ADDRESS: ":4000"
-      # CORS
       CORS_ALLOW_ORIGINS: "*"
       CORS_ALLOW_CREDENTIALS: "false"
     ports: []
@@ -186,6 +176,8 @@ services:
     ports: []
     env_file:
       - ./testing/.env
+    volumes:
+      - ./docs:/app/docs
     networks:
       - app-network
     depends_on:
