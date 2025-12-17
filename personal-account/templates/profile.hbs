@@ -73,39 +73,5 @@
 
 {% block extra_js %}
 <script>
-    async function loadProfile() {
-        const token = API.getToken();
-        
-        if (!token) {
-            document.getElementById('profile-name').textContent = 'Гость';
-            document.getElementById('profile-email').textContent = 'Войдите для просмотра профиля';
-            return;
-        }
-        
-        try {
-            const response = await API.get('/auth/me');
-            const user = response.data;
-            
-            document.getElementById('profile-name').textContent = user.name || user.preferred_username || 'Пользователь';
-            document.getElementById('profile-email').textContent = user.email || '-';
-            document.getElementById('profile-id').textContent = user.sub || '-';
-            document.getElementById('profile-verified').textContent = user.email_verified ? 'Да' : 'Нет';
-            
-            document.getElementById('input-firstname').value = user.given_name || '';
-            document.getElementById('input-lastname').value = user.family_name || '';
-            document.getElementById('input-email').value = user.email || '';
-            
-        } catch (error) {
-            console.error('Failed to load profile:', error);
-            showToast('Ошибка загрузки профиля', 'danger');
-        }
-    }
-    
-    document.getElementById('profile-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        showToast('Профиль обновляется через Keycloak', 'info');
-    });
-    
-    document.addEventListener('DOMContentLoaded', loadProfile);
 </script>
 {% endblock %}

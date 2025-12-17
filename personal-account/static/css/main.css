@@ -66,10 +66,8 @@ ul, ol {
 
 .primary-page__img {
     flex: 0 0 40%;
-    /* padding: 1rem; */
     height: 100vh;
     background: var(--lavender-100) url("/static/images/primary-page-bg.png") no-repeat bottom ;
-    /* background-size: 95%; */
 }
 .primary-page__box {
     flex: 1;
@@ -223,7 +221,10 @@ ul, ol {
 
 /* Main Content */
 .main-content {
-    height: 100%;
+    position: absolute;
+    top: 0;
+    height: 100vh;
+    width: calc(100% - var(--sidebar-width));
     margin-left: var(--sidebar-width);
     padding: 20px;
     background-color: var(--gray-50);
