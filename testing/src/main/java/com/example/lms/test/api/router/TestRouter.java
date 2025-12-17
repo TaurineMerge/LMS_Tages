@@ -33,6 +33,7 @@ import java.util.Set;
  * @see RouterUtils
  */
 public class TestRouter {
+
 	private static final Logger logger = LoggerFactory.getLogger(TestRouter.class);
 
 	/**
@@ -50,14 +51,24 @@ public class TestRouter {
 
 			// Список и создание тестов
 			get(withRealm(TEACHER_REALM, testController::getTests));
-			post(withRealm(TEACHER_REALM, testController::createTest));
+
+			// Создание теста — только преподаватель + schema validation
+			post(withValidationAndRealm(
+					"/schemas/test-schema.json",
+					TEACHER_REALM,
+					testController::createTest));
 
 			path("/{id}", () -> {
 				// Просмотр теста - для всех
 				get(withRealm(READ_ACCESS_REALMS, testController::getTestById));
 
-				// Редактирование и удаление
-				put(withRealm(TEACHER_REALM, testController::updateTest));
+				// Редактирование — преподаватель + schema validation
+				put(withValidationAndRealm(
+						"/schemas/test-schema.json",
+						TEACHER_REALM,
+						testController::updateTest));
+
+				// Удаление — только преподаватель
 				delete(withRealm(Set.of(TEACHER_REALM), testController::deleteTest));
 			});
 
@@ -70,24 +81,4 @@ public class TestRouter {
 			ctx.result("OK");
 		});
 	}
-
-	// private static void captureUserAttributes(Context ctx) {
-	// Object userId = ctx.attribute("userId");
-	// Object username = ctx.attribute("username");
-	// Object email = ctx.attribute("email");
-	// Object roles = ctx.attribute("roles");
-
-	// if (userId != null) {
-	// SimpleTracer.addAttribute("user.id", userId.toString());
-	// }
-	// if (username != null) {
-	// SimpleTracer.addAttribute("user.username", username.toString());
-	// }
-	// if (email != null) {
-	// SimpleTracer.addAttribute("user.email", email.toString());
-	// }
-	// if (roles != null) {
-	// SimpleTracer.addAttribute("user.roles", roles.toString());
-	// }
-	// }
 }
