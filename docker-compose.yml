@@ -8,9 +8,11 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/includes:/etc/nginx/includes:ro
+      - ./personal-account/docs-tech:/var/www/docs-tech:ro
+      - ./personal-account/static:/etc/nginx/html/static:ro
     depends_on:
       keycloak:
-        condition: service_started
+        condition: service_healthy
       public-side:
         condition: service_started
       admin-panel:
@@ -18,6 +20,10 @@ services:
       personal-account:
         condition: service_started
       testing:
+        condition: service_started
+      jaeger:
+        condition: service_started
+      otel-collector:
         condition: service_started
     networks:
       - app-network
@@ -35,7 +41,7 @@ services:
     networks:
       - keycloak-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U keycloaks -d keycloaks"]
+      test: [ "CMD-SHELL", "pg_isready -U keycloaks -d keycloaks" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -75,6 +81,12 @@ services:
     depends_on:
       keycloak-db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /auth/health/ready HTTP/1.1\r\nHost: localhost\r\n\r\n' >&3 && grep -q '200 OK' <&3 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
     networks:
       - keycloak-network
       - app-network
@@ -84,9 +96,11 @@ services:
     image: postgres:15
     container_name: app-db
     environment:
-      POSTGRES_DB: appdb
-      POSTGRES_USER: appuser
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER: ${APP_DB_SUPERUSER}
+      POSTGRES_PASSWORD: ${APP_DB_SUPERUSER_PASSWORD}
+      PGPORT: ${APP_DB_INTERNAL_PORT}
+    env_file:
+      - ./.env
     volumes:
       - app_data:/var/lib/postgresql/data
       - ./init-sql:/docker-entrypoint-initdb.d:ro
@@ -94,28 +108,7 @@ services:
       - app-network
     ports: []
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
-  knowledge-base-db:
-    image: postgres:15
-    container_name: knowledge-base-db
-    environment:
-      POSTGRES_DB: ${KNOWLEDGE_BASE_DB_NAME}
-      POSTGRES_USER: ${KNOWLEDGE_BASE_DB_SUPERUSER}
-      POSTGRES_PASSWORD: ${KNOWLEDGE_BASE_DB_SUPERUSER_PASSWORD}
-    env_file:
-      - ./.env
-    volumes:
-      - knowledge_base_data:/var/lib/postgresql/data
-      - ./init-sql/knowledge-base-db:/docker-entrypoint-initdb.d:ro
-    networks:
-      - knowledge-base-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${KNOWLEDGE_BASE_DB_SUPERUSER} -d ${KNOWLEDGE_BASE_DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -U ${APP_DB_SUPERUSER} -p ${APP_DB_INTERNAL_PORT}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -124,21 +117,18 @@ services:
   public-side:
     build: ./publicSide
     container_name: public-side
-    ports: []
     environment:
       DB_NAME: ${KNOWLEDGE_BASE_DB_NAME}
       DB_USER: ${KNOWLEDGE_BASE_RO_USER}
       DB_PASSWORD: ${KNOWLEDGE_BASE_RO_PASSWORD}
-      DB_HOST: ${KNOWLEDGE_BASE_DB_HOST}
-      DB_PORT: ${KNOWLEDGE_BASE_DB_PORT}
-    env_file:
-      - ./.env
-      - ./publicSide/.env.prod
+      DB_HOST: ${APP_DB_HOST}
+      DB_PORT: ${APP_DB_INTERNAL_PORT}
+      OTEL_EXPORTER_OTLP_ENDPOINT: "otel-collector:4317"
+    ports: []
     networks:
       - app-network
-      - knowledge-base-network
     depends_on:
-      knowledge-base-db:
+      app-db:
         condition: service_healthy
       keycloak:
         condition: service_started
@@ -148,36 +138,44 @@ services:
     build: ./adminPanel
     container_name: admin-panel
     env_file:
-      - ./.env
+      - ./adminPanel/.env.prod
     environment:
+      DB_NAME: ${KNOWLEDGE_BASE_DB_NAME}
+      DB_USER: ${KNOWLEDGE_BASE_ADMIN_USER}
+      DB_PASSWORD: ${KNOWLEDGE_BASE_ADMIN_PASSWORD}
+      DB_HOST: ${APP_DB_HOST}
+      DB_PORT: ${APP_DB_INTERNAL_PORT}
+      DATABASE_POOL_MIN_SIZE: "5"
+      DATABASE_POOL_MAX_SIZE: "20"
       KEYCLOAK_ISSUER_URL: "http://keycloak:8080/auth/realms/teacher"
       KEYCLOAK_CLIENT_ID: "teacher-client"
       KEYCLOAK_CLIENT_SECRET: "TEACHER_SECRET"
       KEYCLOAK_APP_NAME: "LMS Admin Application"
-      WAIT_FOR_KEYCLOAK: "true"
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
       OTEL_SERVICE_NAME: "admin-panel"
+      API_ADDRESS: ":4000"
+      CORS_ALLOW_ORIGINS: "*"
+      CORS_ALLOW_CREDENTIALS: "false"
     ports: []
     networks:
       - app-network
-      - knowledge-base-network
     depends_on:
-      knowledge-base-db:
+      app-db:
         condition: service_healthy
       keycloak:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
 
   personal-account:
     build: ./personal-account
     container_name: personal-account
-    ports: []
     env_file:
       - ./personal-account/.env
     environment:
       OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}"
       OTEL_SERVICE_NAME: "${OTEL_SERVICE_NAME:-personal-account-api}"
+    ports: []
     networks:
       - app-network
     depends_on:
@@ -190,6 +188,8 @@ services:
   testing:
     build: ./testing
     container_name: testing
+    env_file:
+      - ./testing/.env
     ports: []
     networks:
       - app-network
@@ -201,19 +201,15 @@ services:
     restart: unless-stopped
 
   jaeger:
-    image: jaegertracing/all-in-one:latest
+    image: jaegertracing/all-in-one:1.54
     container_name: jaeger
     environment:
       - COLLECTOR_ZIPKIN_HTTP_PORT=9411
-      - COLLECTOR_OTLP_ENABLED=true
-      - QUERY_BASE_PATH=/jaeger
-      - SPAN_STORAGE_TYPE=memory
-      - JAEGER_DISABLED=false
-      - JAEGER_QUERY_UI_CONFIG=/etc/jaeger/ui-config.json
-    ports: 
-      - "16686:16686"
-    volumes:
-      - ./observability/jaeger-ui-config.json:/etc/jaeger/ui-config.json:ro
+    ports:
+      - "16686:16686" # UI
+      - "14250:14250" # gRPC ingestion
+      - "14268:14268" # HTTP ingestion
+      - "9411:9411" # Zipkin compatibility
     networks:
       - app-network
     restart: unless-stopped
@@ -221,9 +217,12 @@ services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.94.0
     container_name: otel-collector
-    command: ["--config=/etc/otel-collector-config.yaml"]
+    command: [ "--config=/etc/otel-collector-config.yaml" ]
     volumes:
       - ./observability/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    ports:
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
     depends_on:
       jaeger:
         condition: service_started
@@ -237,13 +236,9 @@ networks:
     internal: true
   app-network:
     driver: bridge
-  knowledge-base-network:
-    driver: bridge
 
 volumes:
   keycloak_data:
     driver: local
   app_data:
-    driver: local
-  knowledge_base_data:
     driver: local

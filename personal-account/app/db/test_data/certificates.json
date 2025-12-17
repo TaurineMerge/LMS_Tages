@@ -1,0 +1,91 @@
+[
+  {
+    "id": "c1a2b3d4-e5f6-7890-a1b2-c3d4e5f67890",
+    "certificate_number": 1001,
+    "created_at": "2024-06-10",
+    "content": "Настоящим подтверждается, что Алексей Иванов успешно завершил курс «Разработка REST API на FastAPI» и продемонстрировал глубокое понимание архитектуры, Pydantic и аутентификации.",
+    "student_id": "f3a1b8c2-4e0d-4a5f-9c8b-1d2e3f4a5b6c",
+    "course_id": "8a1b2c3d-4e5f-6789-0a1b-2c3d4e5f6a7b",
+    "test_attempt_id": "1d2e3f4a-5b6c-7890-a1b2-c3d4e5f67890"
+  },
+  {
+    "id": "d2b3c4e5-f6a7-8901-b2c3-d4e5f6a7b8c9",
+    "certificate_number": 1002,
+    "created_at": "2024-03-15",
+    "content": "Мария Петрова завершила курс «Frontend-интеграция с FastAPI» с отличием. Подтверждается умение проектировать API-контракты и работать с CORS, DTO и Swagger.",
+    "student_id": "a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+    "course_id": "9b2c3d4e-5f6a-7890-1b2c-3d4e5f6a7b8c",
+    "test_attempt_id": "2e3f4a5b-6c7d-8901-b2c3-d4e5f6a7b8c9"
+  },
+  {
+    "id": "e3c4d5f6-a7b8-9012-c3d4-e5f6a7b8c9d0",
+    "certificate_number": 1003,
+    "created_at": "2024-08-22",
+    "content": "Дмитрий Сидоров прошёл курс «Асинхронное программирование в FastAPI». Подтверждается владение async/await, BackgroundTasks, и интеграцией с aiohttp.",
+    "student_id": "b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e",
+    "course_id": "0c3d4e5f-6a7b-8901-2c3d-4e5f6a7b8c9d",
+    "test_attempt_id": "3f4a5b6c-7d8e-9012-c3d4-e5f6a7b8c9d0"
+  },
+  {
+    "id": "f4d5e6a7-b8c9-0123-d4e5-f6a7b8c9d0e1",
+    "certificate_number": 1004,
+    "created_at": "2024-04-05",
+    "content": "Анна Кузнецова завершила курс «Работа с базами данных в FastAPI (SQLAlchemy + PostgreSQL)». Подтверждается опыт проектирования моделей, репозиториев и миграций.",
+    "student_id": "c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f",
+    "course_id": "1d4e5f6a-7b8c-9012-3d4e-5f6a7b8c9d0e",
+    "test_attempt_id": null
+  },
+  {
+    "id": "a5e6f7b8-c9d0-1234-e5f6-a7b8c9d0e1f2",
+    "certificate_number": 1005,
+    "created_at": "2025-02-01",
+    "content": "Егор Смирнов получил сертификат за курс «Docker и CI/CD для FastAPI». Подтверждается умение писать Dockerfile, docker-compose.yml и настраивать пайплайны в GitLab CI.",
+    "student_id": "d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a",
+    "course_id": "2e5f6a7b-8c9d-0123-4e5f-6a7b8c9d0e1f",
+    "test_attempt_id": "4a5b6c7d-8e9f-0123-d4e5-f6a7b8c9d0e1"
+  },
+  {
+    "id": "b6f7a8c9-d0e1-2345-f6a7-b8c9d0e1f2a3",
+    "certificate_number": 1006,
+    "created_at": "2025-01-30",
+    "content": "Софья Попова успешно завершила курс «Тестирование FastAPI: pytest, TestClient, mocking». Подтверждается навык написания unit и интеграционных тестов.",
+    "student_id": "e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0b",
+    "course_id": "3f6a7b8c-9d0e-1234-5f6a-7b8c9d0e1f2a",
+    "test_attempt_id": "5b6c7d8e-9f0a-1234-e5f6-a7b8c9d0e1f2"
+  },
+  {
+    "id": "c7a8b9d0-e1f2-3456-a7b8-c9d0e1f2a3b4",
+    "certificate_number": 1007,
+    "created_at": "2024-05-12",
+    "content": "Артём Лебедев прошёл курс «JWT-аутентификация и middleware в FastAPI». Подтверждается умение реализовывать безопасные механизмы авторизации и кастомные middleware.",
+    "student_id": "f6a7b8c9-d0e1-2f3a-4b5c-6d7e8f9a0b1c",
+    "course_id": "4a7b8c9d-0e1f-2345-6a7b-8c9d0e1f2a3b",
+    "test_attempt_id": null
+  },
+  {
+    "id": "d8b9c0e1-f2a3-4567-b8c9-d0e1f2a3b4c5",
+    "certificate_number": 1008,
+    "created_at": "2024-07-20",
+    "content": "Полина Новикова завершила курс «Архитектура FastAPI: роуты, сервисы, репозитории». Подтверждается понимание слоистой архитектуры и принципов разделения ответственности.",
+    "student_id": "a7b8c9d0-e1f2-3a4b-5c6d-7e8f9a0b1c2d",
+    "course_id": "5b8c9d0e-1f2a-3456-7b8c-9d0e1f2a3b4c",
+    "test_attempt_id": "6c7d8e9f-0a1b-2345-f6a7-b8c9d0e1f2a3"
+  },
+  {
+    "id": "e9c0d1f2-a3b4-5678-c9d0-e1f2a3b4c5d6",
+    "certificate_number": 1009,
+    "created_at": "2025-02-14",
+    "content": "Максим Морозов получил сертификат за курс «Работа с Pydantic: DTO, валидация, наследование». Подтверждается умение проектировать надёжные схемы и избегать mass assignment.","student_id": "b8c9d0e1-f2a3-4b5c-6d7e-8f9a0b1c2d3e",
+    "course_id": "6c9d0e1f-2a3b-4567-8c9d-0e1f2a3b4c5d",
+    "test_attempt_id": null
+  },
+  {
+    "id": "f0d1e2f3-b4c5-6789-d0e1-f2a3b4c5d6e7",
+    "certificate_number": 1010,
+    "created_at": "2025-04-05",
+    "content": "Екатерина Волкова завершила курс «Продвинутый FastAPI: OpenAPI, кастомизация, документация». Подтверждается навык генерации качественной документации и интеграции с фронтендом.",
+    "student_id": "c9d0e1f2-a3b4-5c6d-7e8f-9a0b1c2d3e4f",
+    "course_id": "7d0e1f2a-3b4c-5678-9d0e-1f2a3b4c5d6e",
+    "test_attempt_id": "7d8e9f0a-1b2c-3456-a7b8-c9d0e1f2a3b4"
+  }
+]

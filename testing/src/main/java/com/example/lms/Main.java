@@ -1,87 +1,106 @@
 package com.example.lms;
 
-import io.javalin.Javalin;
-import com.example.lms.test.api.router.TestRouter;
-import com.example.lms.test_attempt.api.router.TestAttemptRouter;
-import com.example.lms.tracing.SimpleTracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.example.lms.question.domain.service.QuestionService;
+import com.example.lms.question.infrastructure.repositories.QuestionRepository;
+import com.example.lms.question.api.controller.QuestionController;
+import com.example.lms.question.api.router.QuestionRouter;
+import com.example.lms.answer.api.controller.AnswerController;
+import com.example.lms.answer.api.router.AnswerRouter;
+import com.example.lms.answer.domain.service.AnswerService;
+import com.example.lms.answer.infrastructure.repositories.AnswerRepository;
+import com.example.lms.config.DatabaseConfig;
+import com.example.lms.config.HandlebarsConfig;
+import com.example.lms.test.api.controller.TestController;
+import com.example.lms.test.api.router.TestRouter;
+import com.example.lms.test.domain.service.TestService;
+import com.example.lms.test.infrastructure.repositories.TestRepository;
+import com.example.lms.test_attempt.api.controller.TestAttemptController;
+import com.example.lms.test_attempt.api.router.TestAttemptRouter;
+import com.example.lms.test_attempt.domain.service.TestAttemptService;
+import com.example.lms.test_attempt.infrastructure.repositories.TestAttemptRepository;
+import com.github.jknack.handlebars.Handlebars;
+
+import io.github.cdimascio.dotenv.Dotenv;
+import io.javalin.Javalin;
+
 /**
- * Точка входа в сервис тестирования (Testing Service).
+ * Главная точка входа в приложение LMS Testing Service.
  * <p>
- * Отвечает за:
+ * Выполняет:
  * <ul>
- *     <li>запуск Javalin-приложения на порту 8085</li>
- *     <li>регистрацию роутеров тестов и попыток тестов</li>
- *     <li>логирование входящих и исходящих запросов</li>
- *     <li>интеграцию с OpenTelemetry/Tracing через {@link SimpleTracer}</li>
- *     <li>предоставление health-check эндпоинта {@code GET /health}</li>
+ * <li>загрузку переменных окружения через Dotenv</li>
+ * <li>инициализацию конфигурации БД</li>
+ * <li>ручное внедрение зависимостей (Manual Dependency Injection)</li>
+ * <li>создание и настройку Javalin-приложения</li>
+ * <li>регистрацию HTTP-маршрутов</li>
  * </ul>
  *
- * Сервис ожидается, что запускается с OpenTelemetry Java Agent, поэтому
- * в логах дополнительно выводится информация по OTLP и Jaeger UI.
+ * Приложение использует Javalin как лёгкий HTTP-фреймворк и следует принципам
+ * разделения уровней: Controller → Service → Repository → DB.
  */
 public class Main {
+	private static final Logger logger = LoggerFactory.getLogger(TestRouter.class);
 
-    private static final Logger logger = LoggerFactory.getLogger(Main.class);
+	/**
+	 * Главный метод запуска сервиса.
+	 *
+	 * @param args аргументы командной строки (не используются)
+	 */
+	public static void main(String[] args) {
+		// ---------------------------------------------------------------
+		// 1. Загрузка переменных окружения из файла .env
+		// ---------------------------------------------------------------
+		Dotenv dotenv = Dotenv.load();
 
-    /**
-     * Точка входа Java-приложения.
-     * <p>
-     * Действия метода:
-     * <ol>
-     *     <li>Выводит в лог информацию о запуске сервиса и настройках трейсинга</li>
-     *     <li>Создаёт и настраивает Javalin-приложение</li>
-     *     <li>Регистрирует роутеры:
-     *         <ul>
-     *             <li>{@link TestRouter} — работа с тестами</li>
-     *             <li>{@link TestAttemptRouter} — работа с попытками тестов</li>
-     *         </ul>
-     *     </li>
-     *     <li>Добавляет middleware для логирования всех запросов (before/after)</li>
-     *     <li>Регистрирует эндпоинт {@code GET /health} для проверки живости сервиса</li>
-     * </ol>
-     *
-     * @param args аргументы командной строки (не используются)
-     */
-    public static void main(String[] args) {
-        logger.info("Starting Testing Service on port 8085");
-        logger.info("OpenTelemetry Java Agent ENABLED");
-        logger.info("OTLP Endpoint: http://otel-collector:4318");
-        logger.info("Jaeger UI will be available at: http://localhost:16686");
+		final Integer APP_PORT = Integer.parseInt(dotenv.get("APP_PORT"));
+		final String DB_URL = dotenv.get("DB_URL");
+		final String DB_USER = dotenv.get("DB_USER");
+		final String DB_PASSWORD = dotenv.get("DB_PASSWORD");
 
-        // Создаём и настраиваем Javalин-приложение
-        var app = Javalin.create(config -> {
-            config.router.apiBuilder(() -> {
-                TestRouter.register();
-                TestAttemptRouter.register();
-            });
-        }).start(8085);
+		// ---------------------------------------------------------------
+		// 2. Настройка зависимостей (Manual Dependency Injection)
+		// ---------------------------------------------------------------
+		// Конфигурация Handlebars
+		Handlebars handlebars = HandlebarsConfig.configureHandlebars();
 
-        // Middleware ДО обработки запроса
-        app.before(ctx -> {
-            logger.info("Request started: {} {} (traceId: {})",
-                    ctx.method(),
-                    ctx.path(),
-                    SimpleTracer.getCurrentTraceId());
-        });
+		// Конфигурация подключения к базе
+		DatabaseConfig dbConfig = new DatabaseConfig(DB_URL, DB_USER, DB_PASSWORD);
 
-        // Middleware ПОСЛЕ обработки запроса
-        app.after(ctx -> {
-            logger.info("Request completed: {} {} -> {} (traceId: {})",
-                    ctx.method(),
-                    ctx.path(),
-                    ctx.status(),
-                    SimpleTracer.getCurrentTraceId());
-        });
+		// Репозитории с логикой работы с БД
+		TestRepository testRepository = new TestRepository(dbConfig);
+		AnswerRepository answerRepository = new AnswerRepository(dbConfig);
+		QuestionRepository questionRepository = new QuestionRepository(dbConfig);
+		TestAttemptRepository testAttemptRepository = new TestAttemptRepository(dbConfig);
 
-        // Health-check эндпоинт
-        app.get("/health", ctx -> {
-            ctx.json("{\"status\": \"OK\", \"service\": \"testing\", \"traceId\": \"" +
-                    SimpleTracer.getCurrentTraceId() + "\"}");
-        });
+		// Сервисный слой (бизнес-логика)
+		TestService testService = new TestService(testRepository);
+		AnswerService answerService = new AnswerService(answerRepository);
+		QuestionService questionService = new QuestionService(questionRepository);
+		TestAttemptService testAttemptService = new TestAttemptService(testAttemptRepository);
 
-        logger.info("Testing service successfully started!");
-    }
+		// Контроллер, принимающий HTTP-запросы
+		TestController testController = new TestController(testService, handlebars);
+		AnswerController answerController = new AnswerController(answerService);
+		QuestionController questionController = new QuestionController(questionService);
+		TestAttemptController testAttemptController = new TestAttemptController(testAttemptService);
+
+		// ---------------------------------------------------------------
+		// 3. Создание и запуск Javalin HTTP-сервера
+		// ---------------------------------------------------------------
+		Javalin app = Javalin.create(config -> {
+			// Регистрация маршрутов через ApiBuilder
+			config.router.apiBuilder(() -> {
+				TestRouter.register(testController);
+				AnswerRouter.register(answerController);
+				QuestionRouter.register(questionController);
+				TestAttemptRouter.register(testAttemptController);
+			});
+		}).start("0.0.0.0", APP_PORT);
+
+		// Приложение успешно запустилось
+		logger.info("Testing Service started on port %d%n", APP_PORT);
+	}
 }

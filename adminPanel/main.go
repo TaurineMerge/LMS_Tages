@@ -25,7 +25,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"time"
 
@@ -61,16 +60,18 @@ import (
 //
 // Параметры:
 //   - ctx: контекст выполнения
+//   - cfg: конфигурация OpenTelemetry
 //
 // Возвращает:
 //   - TracerProvider: провайдер для создания трасс
 //   - error: ошибка инициализации (если есть)
-func setupTracerProvider(ctx context.Context) (*tracesdk.TracerProvider, error) {
-	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
-	if endpoint == "" {
-		endpoint = "http://otel-collector:4317"
+func setupTracerProvider(ctx context.Context, cfg config.OTelConfig) (*tracesdk.TracerProvider, error) {
+	if !cfg.Enabled {
+		log.Println("ℹ️  OpenTelemetry tracing is disabled (OTEL_EXPORTER_OTLP_ENDPOINT not set)")
+		return nil, nil
 	}
-	target := strings.TrimPrefix(strings.TrimPrefix(endpoint, "http://"), "https://")
+
+	target := strings.TrimPrefix(strings.TrimPrefix(cfg.Endpoint, "http://"), "https://")
 	exp, err := otlptracegrpc.New(ctx,
 		otlptracegrpc.WithEndpoint(target),
 		otlptracegrpc.WithInsecure(),
@@ -81,7 +82,7 @@ func setupTracerProvider(ctx context.Context) (*tracesdk.TracerProvider, error) 
 
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
-			semconv.ServiceNameKey.String("admin-panel"),
+			semconv.ServiceNameKey.String(cfg.ServiceName),
 		),
 	)
 	if err != nil {
@@ -94,6 +95,8 @@ func setupTracerProvider(ctx context.Context) (*tracesdk.TracerProvider, error) 
 	)
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.TraceContext{})
+
+	log.Printf("✅ OpenTelemetry tracing initialized (endpoint=%s, service=%s)", cfg.Endpoint, cfg.ServiceName)
 	return tp, nil
 }
 
@@ -214,7 +217,7 @@ func tracingMiddleware(tracer trace.Tracer) fiber.Handler {
 // main - точка входа приложения Admin Panel
 //
 // Функция выполняет:
-//   - Инициализацию конфигурации
+//   - Инициализацию конфигурации с валидацией
 //   - Настройку аутентификации
 //   - Подключение к базе данных
 //   - Настройку трассировки
@@ -229,21 +232,34 @@ func tracingMiddleware(tracer trace.Tracer) fiber.Handler {
 //   - OpenTelemetry: трассировка
 func main() {
 	ctx := context.Background()
+
+	// Загружаем конфигурацию
 	settings := config.NewSettings()
+
+	// Валидируем обязательные параметры
+	if err := settings.Validate(); err != nil {
+		log.Fatalf("❌ Configuration error: %v", err)
+	}
+
+	log.Printf("📋 Configuration loaded (debug=%v)", settings.Debug)
+
+	// Инициализируем аутентификацию
 	if err := middleware.InitAuth(); err != nil {
 		log.Fatalf("⚠️  Failed to initialize auth: %v", err)
 	}
 
+	// Подключаемся к базе данных
 	db, err := database.InitDB(settings)
 	if err != nil {
 		log.Fatalf("❌ Failed to initialize database: %v", err)
 	}
 	defer database.Close()
 
-	tp, err := setupTracerProvider(ctx)
+	// Настраиваем трассировку
+	tp, err := setupTracerProvider(ctx, settings.OTel)
 	if err != nil {
 		log.Printf("⚠️  Failed to initialize tracing: %v", err)
-	} else {
+	} else if tp != nil {
 		defer func() {
 			if shutdownErr := tp.Shutdown(ctx); shutdownErr != nil {
 				log.Printf("⚠️  Failed to shutdown tracer provider: %v", shutdownErr)
@@ -251,67 +267,77 @@ func main() {
 		}()
 	}
 
+	// Создаём Fiber приложение
 	app := fiber.New(fiber.Config{
-		AppName:               "Admin Panel API",
+		AppName:               settings.Server.AppName,
 		DisableStartupMessage: false,
 	})
 
 	app.Use(recover.New())
 	app.Use(logger.New())
-	app.Use(tracingMiddleware(otel.Tracer("admin-panel")))
+	app.Use(tracingMiddleware(otel.Tracer(settings.OTel.ServiceName)))
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     strings.Join(settings.GetCORSOrigins(), ","),
-		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
-		AllowHeaders:     "Origin,Content-Type,Accept,Authorization",
-		AllowCredentials: settings.CORSAllowCredentials,
-		ExposeHeaders:    "Content-Length",
+		AllowMethods:     settings.CORS.AllowMethods,
+		AllowHeaders:     settings.CORS.AllowHeaders,
+		AllowCredentials: settings.CORS.AllowCredentials,
+		ExposeHeaders:    settings.CORS.ExposeHeaders,
 	}))
 
 	app.Use(middleware.ErrorHandlerMiddleware())
 
+	// Health endpoints
 	healthHandler := handlers.NewHealthHandler(db)
 	app.Get("/health", healthHandler.HealthCheck)
 	app.Get("/health/db", healthHandler.DBHealthCheck)
 
+	// Documentation
 	app.Static("/doc", "./docs")
 
 	app.Get("/swagger/*", swagger.New(swagger.Config{
 		URL:         "/doc/swagger.json",
 		DeepLinking: true,
-		Title:       "Admin Panel API",
+		Title:       settings.Server.AppName,
 		OAuth: &swagger.OAuthConfig{
-			ClientId:     settings.ClientID,
-			ClientSecret: settings.ClientSecret,
-			AppName:      settings.AppName,
+			ClientId:     settings.Keycloak.ClientID,
+			ClientSecret: settings.Keycloak.ClientSecret,
+			AppName:      settings.Keycloak.AppName,
 			Scopes:       []string{"openid", "profile", "email"},
 		},
 	}))
 
+	// API routes
 	api := app.Group("/api/v1")
 	api.Use(middleware.AuthMiddleware())
 
+	// Repositories
 	categoryRepo := repositories.NewCategoryRepository(db)
 	courseRepo := repositories.NewCourseRepository(db)
 	lessonRepo := repositories.NewLessonRepository(db)
 
+	// Services
 	categoryService := services.NewCategoryService(categoryRepo)
 	courseService := services.NewCourseService(courseRepo, categoryRepo)
 	lessonService := services.NewLessonService(lessonRepo, courseRepo)
 
+	// Handlers
 	categoryHandler := handlers.NewCategoryHandler(categoryService)
 	courseHandler := handlers.NewCourseHandler(courseService)
 	lessonHandler := handlers.NewLessonHandler(lessonService)
 
+	// Register routes
 	categoryHandler.RegisterRoutes(api)
 	courseHandler.RegisterRoutes(api)
 	lessonHandler.RegisterRoutes(api)
 
-	log.Printf("🚀 Server starting on %s", settings.APIAddress)
-	log.Printf("📚 Swagger UI: http://localhost%s/swagger/", settings.APIAddress)
-	log.Printf("📖 Swagger JSON: http://localhost%s/swagger/doc.json", settings.APIAddress)
-	log.Printf("🏥 Health check: http://localhost%s/health", settings.APIAddress)
+	// Start server
+	log.Printf("🚀 Server starting on %s", settings.Server.Address)
+	log.Printf("📚 Swagger UI (via nginx): http://localhost/admin/swagger/")
+	log.Printf("📖 Swagger JSON (via nginx): http://localhost/admin/doc/swagger.json")
+	log.Printf("🏥 Health check (via nginx): http://localhost/health")
+	log.Printf("📍 API (via nginx): http://localhost/admin/api/v1/")
 
-	if err := app.Listen(settings.APIAddress); err != nil {
+	if err := app.Listen(settings.Server.Address); err != nil {
 		log.Fatalf("❌ Failed to start server: %v", err)
 	}
 

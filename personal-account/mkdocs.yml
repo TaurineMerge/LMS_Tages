@@ -1,0 +1,116 @@
+site_name: Personal Account - Technical Documentation
+site_url: http://localhost/account/docs-tech/
+site_description: Technical documentation for Personal Account Python API
+site_author: Tages Team
+
+repo_url: https://github.com/TaurineMerge/LMS_Tages
+repo_name: LMS_Tages
+
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - API Reference:
+      - Overview: api/index.md
+      - Routers:
+          - Students: api/routers/students.md
+          - Certificates: api/routers/certificates.md
+          - Visits: api/routers/visits.md
+          - Auth: api/routers/auth.md
+          - Health: api/routers/health.md
+      - Services:
+          - Student Service: api/services/student.md
+          - Certificate Service: api/services/certificate.md
+          - Visit Service: api/services/visit.md
+          - Auth Service: api/services/auth.md
+          - Keycloak Service: api/services/keycloak.md
+      - Core:
+          - Security: api/core/security.md
+          - JWT: api/core/jwt.md
+      - Schemas:
+          - Student: api/schemas/student.md
+          - Certificate: api/schemas/certificate.md
+          - Visit: api/schemas/visit.md
+          - Common: api/schemas/common.md
+          - Validators: api/schemas/validators.md
+      - Repositories:
+          - Base: api/repositories/base.md
+          - Student: api/repositories/student.md
+          - Certificate: api/repositories/certificate.md
+          - Visit: api/repositories/visit.md
+      - Database: api/database.md
+      - Config: api/config.md
+      - Telemetry: api/telemetry.md
+
+theme:
+  name: material
+  language: ru
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+
+plugins:
+  - search:
+      lang: ru
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [.]
+          options:
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: false
+            show_category_heading: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            members_order: source
+            docstring_style: google
+            merge_init_into_class: true
+            show_signature_annotations: true
+            separate_signature: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+  - attr_list
+  - md_in_html
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/TaurineMerge/LMS_Tages

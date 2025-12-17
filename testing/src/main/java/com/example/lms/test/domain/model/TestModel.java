@@ -43,7 +43,7 @@ public class TestModel {
      * Конструктор для создания нового теста.
      */
     public TestModel(UUID courseId, String title, Integer minPoint, String description) {
-        this.courseId = Objects.requireNonNull(courseId, "Course ID cannot be null");
+        this.courseId = courseId;
         this.title = Objects.requireNonNull(title, "Title cannot be null");
         this.minPoint = minPoint;       // допускаем null
         this.description = description; // допускаем null

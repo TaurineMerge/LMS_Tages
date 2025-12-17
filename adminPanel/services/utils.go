@@ -4,6 +4,7 @@ package services
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -42,4 +43,28 @@ func toString(v interface{}) string {
 		return val
 	}
 	return fmt.Sprintf("%v", v)
+}
+
+// parseTime нормализует значение интерфейса в time.Time
+//
+// Функция пытается преобразовать различные типы данных во время:
+//   - string: парсит в формате RFC3339
+//   - time.Time: возвращает как есть
+//   - Для остальных типов возвращает нулевое время
+//
+// Параметры:
+//   - value: интерфейс значения из базы данных
+//
+// Возвращает:
+//   - time.Time: распарсенное время или нулевое время при ошибке
+func parseTime(value interface{}) time.Time {
+	switch val := value.(type) {
+	case string:
+		if t, err := time.Parse(time.RFC3339, val); err == nil {
+			return t
+		}
+	case time.Time:
+		return val
+	}
+	return time.Time{}
 }
