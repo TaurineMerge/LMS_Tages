@@ -10,11 +10,14 @@
 
     --orange-100: #FFEEE8;
     --orange-500: #FF6636;
+
+    --red-600: #E53935;
     
     --font-family: 'Inter', sans-serif;
     --font-semi-bold-20: 600 1.25rem / 1 var(--font-family);
     --font-semi-bold-24: 600 1.5rem / 1 var(--font-family);
     --font-medium-16: 500 1rem / 1 var(--font-family);
+    --font-medium-24: 500 1.5rem / 1 var(--font-family);
     --font-regular-16: 400 1rem / 1 var(--font-family);
     --font-regular-20: 400 1.125rem / 1 var(--font-family);
     --font-regular-24: 400 1.5rem / 1 var(--font-family);
@@ -123,7 +126,14 @@ input {
 
 .button--secondary {
     color: var(--orange-500);
-    background-color: var(--orange-100);
+    background-color: transparent;
+    border: 1px solid var(--orange-500);
+}
+
+.button--red {
+    color: var(--red-600);
+    background-color: transparent;
+    border: 1px solid var(--red-600);
 }
 
 .primary-page__features--title {
@@ -243,13 +253,19 @@ input {
 .profile {
     padding: 1.5rem 10rem;
 }
-.form {
-    display: grid;
-    grid-template-rows: 1fr 1fr 1fr 1fr 0.75fr;
-    grid-template-columns: repeat(2, minmax(200px, 1fr));
-    gap: 1rem;
+
+.profile__container {
     padding: 2.5rem;
     background-color: white;
+}
+
+.form {
+    margin-bottom: 2.5rem;
+    display: grid;
+    grid-template-rows: 1fr 1fr 1fr 0.75fr;
+    grid-template-columns: repeat(2, minmax(200px, 1fr));
+    gap: 1rem;
+    
 }
 
 .form__label {
@@ -272,10 +288,28 @@ input {
     grid-column: auto;
 }
 
-.form .button--primary {
+.form .button{
     margin-top: 0.5rem;
     width: 20rem;
     
+}
+
+.profile__actions {
+    display: flex;
+    flex-flow: column nowrap;
+    gap: 2rem;
+    font: var(--font-semi-bold-20);
+}
+
+.profile__actions .button{
+   width: 20rem;
+}
+
+.profile__password,
+.profile__account {
+    display: flex;
+    flex-flow: column nowrap;
+    gap: 1rem;
 }
 
 /* Cards */

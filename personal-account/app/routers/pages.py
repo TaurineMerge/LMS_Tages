@@ -2,7 +2,7 @@
 
 import logging
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import (
     HTMLResponse,
     RedirectResponse,
@@ -11,6 +11,7 @@ from fastapi.templating import Jinja2Templates
 from opentelemetry import trace
 
 from app.config import get_settings
+from app.core.security import TokenPayload, get_current_user
 from app.telemetry import traced
 
 settings = get_settings()
@@ -128,11 +129,18 @@ async def dashboard_page(request: Request):
 
 @router.get("/profile", response_class=HTMLResponse)
 @traced("pages.profile")
-async def profile_page(request: Request):
+async def profile_page(request: Request, user: TokenPayload = Depends(get_current_user)):
     """Render profile page."""
+    # Подготовим данные для шаблона
+    user_data = {
+        "firstName": user.given_name or "",
+        "lastName": user.family_name or "",
+        "email": user.email or "",
+        "username": user.preferred_username or "",
+    }
     return _render_template_safe(
         "profile.hbs",
-        {"request": request, "active_page": "profile", **get_keycloak_urls()},
+        {"request": request, "active_page": "profile", "user": user_data, **get_keycloak_urls()},
     )
 
 

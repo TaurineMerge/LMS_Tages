@@ -6,29 +6,38 @@
 
 {% block content %}
 <div class="profile">
-    <form class="form profile__form"> 
+    <div class="profile__container">
+        <form class="form profile__form"> 
         <label for="form__input--name" class="form__label name">
             <p>Имя:</p>
-            <input class="form__input" type="text" id="form__input--name" name="name" placeholder="Имя"/>
+            <input class="form__input" type="text" id="form__input--name" name="name" placeholder="Имя" value="{{user.firstName}}"/>
         </label>
         <label for="form__input--surname" class="form__label surname">
             <p>Фамилия:</p>
-            <input class="form__input" type="text" id="form__input--surname" name="surname" placeholder="Фамилия"/>
+            <input class="form__input" type="text" id="form__input--surname" name="surname" placeholder="Фамилия" value="{{user.lastName}}"//>
         </label>
-        <label for="form__input--birthDate" class="form__label">
-            <p>Дата рождения:</p>
-            <input class="form__input" type="text" id="form__input--birthDate" name="birthDate" placeholder="Дата рождения"/>
+        <label for="form__input--username" class="form__label username">
+            <p>Username:</p>
+            <input class="form__input" type="text" id="form__input--username" name="username" placeholder="Username" value="{{user.email}}"//>
         </label>
         <label for="form__input--email" class="form__label">
             <p>Эл. адрес:</p>
-            <input class="form__input" type="email" id="form__input--email" name="email" placeholder="Эл. адрес"/>
-        </label>
-        <label for="form__input--tel" class="form__label">
-            <p>Номер телефона:</p>
-            <input class="form__input" type="text" id="form__input--tel" name="tel" placeholder="Номер телефона"/>
+            <input class="form__input" type="email" id="form__input--email" name="email" placeholder="Эл. адрес" value="{{user.username}}"//>
         </label>
         <button type="submit" class="button button--primary">Сохранить изменения</button>
     </form>
+    <div class="profile__actions">
+        <div class="profile__password">
+        <p>Сброс пароля</p>
+        <button class="button button--secondary">Сбросить пароль</button>
+    </div>
+    <div class="profile__account">
+        <p>Удаление аккаунта</p>
+        <button class="button button--red">Удалить мой аккаунт</button>
+    </div>
+    </div>
+    </div>
+    
 </div>
 {% endblock %}
 
