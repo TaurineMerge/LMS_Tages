@@ -59,7 +59,6 @@ func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
 	slog.SetDefault(logger)
 
-
 	// Initialize Tracer
 	tp, err := tracing.InitTracer(cfg)
 	if err != nil {
@@ -102,15 +101,24 @@ func main() {
 		URL: "/doc/swagger.json",
 	}))
 
+	// Инициализация репозитория
 	lessonRepo := repository.NewLessonRepository(dbPool)
+	categoryRepo := repository.NewCategoryRepository(dbPool)
 
+	// Инициализация сервиса
 	lessonService := service.NewLessonService(lessonRepo)
+	categoryService := service.NewCategoryService(categoryRepo)
 
+	// Инициализация хэндлеров
 	lessonHandler := handler.NewLessonHandler(lessonService)
+	categoryHandler := handler.NewCategoryHandler(categoryService)
 
+	// Установка маршрутов
 	categoryRouter := apiV1.Group("/categories")
 	courseRouter := categoryRouter.Group(apiconst.PathCategory + "/courses")
 
+	// Регистрация маршрутов
+	categoryHandler.RegisterRoutes(categoryRouter)
 	lessonHandler.RegisterRoutes(courseRouter)
 
 	slog.Info("Starting server", "address", cfg.Port)
