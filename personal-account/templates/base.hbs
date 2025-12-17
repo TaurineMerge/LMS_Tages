@@ -21,7 +21,7 @@
         
         <ul class="sidebar__nav">
             <li class="nav-item"> 
-                <a class="nav-link" href="/">
+                <a class="nav-link" href="/account/dashboard">
                     <svg viewBox="0 0 24 24" class="nav-link--icon">
                         <use href="#chart"></use>
                     </svg>
@@ -29,7 +29,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="/profile">
+                <a class="nav-link" href="/account/profile">
                    <svg viewBox="0 0 24 24" class="nav-link--icon">
                         <use href="#profile"></use>
                     </svg>
@@ -37,7 +37,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="/certificates">
+                <a class="nav-link" href="/account/certificates">
                     <svg viewBox="0 0 24 24" class="nav-link--icon">
                         <use href="#certificate"></use>
                     </svg>
@@ -45,7 +45,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="/visits">
+                <a class="nav-link" href="/account/visits">
                    <svg viewBox="0 0 24 24" class="nav-link--icon">
                         <use href="#visits"></use>
                     </svg>
@@ -57,12 +57,12 @@
         </div>
         
         <div class="sidebar__logout">
-            <a class="nav-link" href="/visits">
+            <button class="nav-link" id="sidebar__logout--button">
                    <svg viewBox="0 0 24 24" class="nav-link--icon">
                         <use href="#logout"></use>
                     </svg>
                     <p>Выйти</p>
-            </a>
+            </button>
         </div>
     </nav>
 
@@ -80,84 +80,27 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     
     <script>
-        // Global API Helper(хз)
-        const API = {
-            baseUrl: '/account/api/v1',
+       document.querySelector('#sidebar__logout--button').addEventListener('click', async (event) => {
+        event.preventDefault();
 
-            async request(endpoint, options = {}) {
-                const token = this.getToken();
-                const headers = {
+        try {
+            const response = await fetch('/auth/logout', {
+                method: 'POST',
+                headers: {
                     'Content-Type': 'application/json',
-                    ...this.getTraceHeaders(),
-                    ...options.headers
-                };
-                const response = await fetch(`${this.baseUrl}${endpoint}`, {
-                    ...options,
-                    headers
-                });
-                
-            async get(endpoint) {
-                const response = await this.request(endpoint);
-                return response.json();
-            },
-            
-            async post(endpoint, data) {
-                const response = await this.request(endpoint, {
-                    method: 'POST',
-                    body: JSON.stringify(data)
-                });
-                return response.json();
-            },
-        }
-        }
-       // Check auth and update UI
-        async function checkAuth() {
-    try {
-        const response = await fetch('/account/api/v1/auth/me', {
-            credentials: 'include' // Важно: отправлять куки вместе с запросом
-        });
+                },
+                body: JSON.stringify({}),
+            });
 
-        if (response.ok) {
-            const data = await response.json();
-            return data.data; // Информация о пользователе
-        } else {
-            // Пользователь не авторизован
-            window.location.href = '/account/login';
-            return null;
+            if (response.ok) {
+                window.location.href = '/';
+            } else {
+                console.error('Logout failed');
+            }
+        } catch (error) {
+            console.error('Error during logout:', error);
         }
-    } catch (error) {
-        console.error('Ошибка при проверке авторизации:', error);
-        window.location.href = '/account/login';
-        return null;
-    }
-}
-        // Logout handler
-        document.getElementById('logout-btn')?.addEventListener('click', async (e) => {
-            e.preventDefault();
-            try {
-        // Вызываем серверный logout (удаление куки и сессии)
-        const response = await fetch('/account/api/v1/auth/logout', {
-            method: 'POST',
-            credentials: 'include'  // Важно: отправлять куки с запросом
-        });
-
-        if (response.ok) {
-            // Перенаправляем на страницу входа
-            window.location.href = '/account/login';
-        } else {
-            console.error('Logout failed');
-        }
-    } catch (error) {
-        console.error('Error during logout:', error);
-        // Перенаправляем, даже если были ошибки
-        window.location.href = '/account/login';
-    }
-        });
-
-        // Init
-        document.addEventListener('DOMContentLoaded', () => {
-            checkAuth();
-        });
+    });
     </script>
     
     {% block extra_js %}{% endblock %}
