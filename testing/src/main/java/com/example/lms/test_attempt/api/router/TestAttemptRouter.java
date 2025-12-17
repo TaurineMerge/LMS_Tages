@@ -5,8 +5,8 @@ import org.slf4j.LoggerFactory;
 
 import com.example.lms.security.JwtHandler;
 import com.example.lms.test_attempt.api.controller.TestAttemptController;
-import com.example.lms.tracing.SimpleTracer;
-import io.javalin.http.Context;
+
+import com.example.lms.shared.router.RouterUtils;
 
 import static io.javalin.apibuilder.ApiBuilder.before;
 import static io.javalin.apibuilder.ApiBuilder.delete;
@@ -15,9 +15,11 @@ import static io.javalin.apibuilder.ApiBuilder.path;
 import static io.javalin.apibuilder.ApiBuilder.post;
 import static io.javalin.apibuilder.ApiBuilder.put;
 
-/**
- * Router для работы с попытками прохождения тестов.
- */
+import static com.example.lms.shared.router.RouterUtils.*;
+
+ /**
+  * Router для работы с попытками прохождения тестов.
+  */
 public class TestAttemptRouter {
 
 	private static final Logger logger = LoggerFactory.getLogger(TestAttemptRouter.class);
@@ -26,6 +28,8 @@ public class TestAttemptRouter {
 	 * Регистрирует маршруты для ресурса {@code /test-attempts}.
 	 */
 	public static void register(TestAttemptController testAttemptController) {
+		validateController(testAttemptController, "TestAttemptController");
+
 		path("/test-attempts", () -> {
 
 			// Глобальный фильтр для всех эндпоинтов /test-attempts — проверка JWT
@@ -33,7 +37,12 @@ public class TestAttemptRouter {
 
 			// Основные CRUD операции
 			get(testAttemptController::getAllTestAttempts);
-			post(testAttemptController::createTestAttempt);
+
+			// Создание попытки — teacher + schema validation
+			post(withValidationAndRealm(
+					"/schemas/test-attempt-schema.json",
+					TEACHER_REALM,
+					testAttemptController::createTestAttempt));
 
 			// Специальные запросы
 			get("/completed", testAttemptController::getCompletedTestAttempts);
@@ -42,7 +51,13 @@ public class TestAttemptRouter {
 			// Операции над конкретной попыткой
 			path("/{id}", () -> {
 				get(testAttemptController::getTestAttemptById);
-				put(testAttemptController::updateTestAttempt);
+
+				// Обновление попытки — teacher + schema validation
+				put(withValidationAndRealm(
+						"/schemas/test-attempt-schema.json",
+						TEACHER_REALM,
+						testAttemptController::updateTestAttempt));
+
 				delete(testAttemptController::deleteTestAttempt);
 			});
 
