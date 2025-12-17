@@ -2,6 +2,7 @@
 /* Variables */
 :root {
     --gray-50: #F5F7FA;
+    --gray-100: #E9EAF0;
     --gray-500: #8C94A3;
     --gray-900: #1D2026;
 
@@ -14,6 +15,9 @@
     --font-semi-bold-20: 600 1.25rem / 1 var(--font-family);
     --font-semi-bold-24: 600 1.5rem / 1 var(--font-family);
     --font-medium-16: 500 1rem / 1 var(--font-family);
+    --font-regular-16: 400 1rem / 1 var(--font-family);
+    --font-regular-20: 400 1.125rem / 1 var(--font-family);
+    --font-regular-24: 400 1.5rem / 1 var(--font-family);
    
     --border-radius: 0.5rem; 
     --sidebar-width: 18rem;
@@ -48,6 +52,11 @@ a {
 
 ul, ol {
     list-style: none;
+}
+
+input {
+    outline: none;
+    border: none;
 }
 
 .wrapper {
@@ -228,6 +237,45 @@ ul, ol {
     margin-left: var(--sidebar-width);
     padding: 20px;
     background-color: var(--gray-50);
+}
+
+/*Profile*/
+.profile {
+    padding: 1.5rem 10rem;
+}
+.form {
+    display: grid;
+    grid-template-rows: 1fr 1fr 1fr 1fr 0.75fr;
+    grid-template-columns: repeat(2, minmax(200px, 1fr));
+    gap: 1rem;
+    padding: 2.5rem;
+    background-color: white;
+}
+
+.form__label {
+     display: grid;
+ grid-column: span 2;
+    font: var(--font-regular-20);
+}
+
+.form__input {
+       
+    padding: 0.75rem 1.125rem;
+    width: 100%;
+    margin-top: 0.75rem;
+    font: var(--font-regular-24);
+    border: 1px solid var(--gray-100)
+}
+
+.form__label.name,
+.form__label.surname {
+    grid-column: auto;
+}
+
+.form .button--primary {
+    margin-top: 0.5rem;
+    width: 20rem;
+    
 }
 
 /* Cards */

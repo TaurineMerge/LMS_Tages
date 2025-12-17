@@ -5,69 +5,30 @@
 {% block page_subtitle %}Управление вашими данными{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-4 mb-4">
-        <div class="card p-4 text-center">
-            <div class="avatar mx-auto mb-3" style="width: 120px; height: 120px; background-color: var(--primary-color); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                <p class="bi bi-person-fill text-white" style="font-size: 48px;"></p>
-            </div>
-            <h4 id="profile-name">Загрузка...</h4>
-            <p class="text-muted" id="profile-email">-</p>
-            <span class="badge bg-primary mb-3">Студент</span>
-            <hr>
-            <div class="text-start">
-                <p class="mb-2"><strong>ID:</strong> <span id="profile-id">-</span></p>
-                <p class="mb-2"><strong>Email подтвержден:</strong> <span id="profile-verified">-</span></p>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-lg-8 mb-4">
-        <div class="card p-4">
-            <h5 class="mb-4"><p class="bi bi-person-gear me-2"></p>Редактирование профиля</h5>
-            
-            <form id="profile-form">
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Имя</label>
-                        <pnput type="text" class="form-control" id="input-firstname" placeholder="Введите имя">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Фамилия</label>
-                        <pnput type="text" class="form-control" id="input-lastname" placeholder="Введите фамилию">
-                    </div>
-                </div>
-                
-                <div class="mb-3">
-                    <label class="form-label">Email</label>
-                    <pnput type="email" class="form-control" id="input-email" placeholder="example@email.com" disabled>
-                    <small class="text-muted">Email изменяется через Keycloak</small>
-                </div>
-                
-                <div class="mb-3">
-                    <label class="form-label">Телефон</label>
-                    <pnput type="tel" class="form-control" id="input-phone" placeholder="+7 (999) 123-45-67">
-                </div>
-                
-                <div class="mb-3">
-                    <label class="form-label">О себе</label>
-                    <textarea class="form-control" id="input-bio" rows="3" placeholder="Расскажите о себе..."></textarea>
-                </div>
-                
-                <button type="submit" class="btn btn-primary">
-                    <p class="bi bi-check-lg me-2"></p>Сохранить изменения
-                </button>
-            </form>
-        </div>
-        
-        <div class="card p-4 mt-4">
-            <h5 class="mb-4"><p class="bi bi-shield-lock me-2"></p>Безопасность</h5>
-            <p class="text-muted">Для изменения пароля или настроек безопасности перейдите в Keycloak.</p>
-            <a href="{{ keycloak_account_url }}" target="_blank" class="btn btn-outline-secondary">
-                <p class="bi bi-box-arrow-up-right me-2"></p>Управление аккаунтом в Keycloak
-            </a>
-        </div>
-    </div>
+<div class="profile">
+    <form class="form profile__form"> 
+        <label for="form__input--name" class="form__label name">
+            <p>Имя:</p>
+            <input class="form__input" type="text" id="form__input--name" name="name" placeholder="Имя"/>
+        </label>
+        <label for="form__input--surname" class="form__label surname">
+            <p>Фамилия:</p>
+            <input class="form__input" type="text" id="form__input--surname" name="surname" placeholder="Фамилия"/>
+        </label>
+        <label for="form__input--birthDate" class="form__label">
+            <p>Дата рождения:</p>
+            <input class="form__input" type="text" id="form__input--birthDate" name="birthDate" placeholder="Дата рождения"/>
+        </label>
+        <label for="form__input--email" class="form__label">
+            <p>Эл. адрес:</p>
+            <input class="form__input" type="email" id="form__input--email" name="email" placeholder="Эл. адрес"/>
+        </label>
+        <label for="form__input--tel" class="form__label">
+            <p>Номер телефона:</p>
+            <input class="form__input" type="text" id="form__input--tel" name="tel" placeholder="Номер телефона"/>
+        </label>
+        <button type="submit" class="button button--primary">Сохранить изменения</button>
+    </form>
 </div>
 {% endblock %}
 
