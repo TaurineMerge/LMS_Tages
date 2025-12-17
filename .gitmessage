@@ -1,0 +1,14 @@
+# <type>: <subject> [#<issue-number>](https://tree.taiga.io/project/starkovsavva-tages-py/us/<issue-number>)
+#
+# <body>
+#
+# Type: feat, fix, docs, style, refactor, test, chore
+# Subject: краткое описание (макс 50 символов)
+# Body: детальное описание изменений (опционально)
+# Issue: номер задачи в Taiga
+# Branch naming: feat-#{id}-model-task (например, feat-#102-publicSide-course-filtering-sorting)
+#
+# Примеры:
+# feat: добавлена фильтрация курсов
+#
+# Реализована фильтрация по категориям и поиск по названию
