@@ -1,6 +1,6 @@
 erDiagram
 
-    TEST_D {
+    test_d {
         uuid id PK "not null, unique"
         uuid course_id FK
         varchar title
@@ -8,21 +8,21 @@ erDiagram
         text description
     }
 
-    QUESTION_D {
+    question_d {
         uuid id PK "not null, unique"
         uuid test_id FK "not null"
         text text_of_question
         int order
     }
 
-    ANSWER_D {
+    answer_d {
         uuid id PK "not null, unique"
         text text
         uuid question_id FK "not null"
         int score "not null"
     }
 
-    TEST_ATTEMPT_B {
+    test_attempt_b {
         uuid id PK "student_id, test_id, date_of_attempt"
         uuid student_id "not null"
         uuid test_id "not null"
@@ -32,9 +32,30 @@ erDiagram
         json attempt_version
     }
 
+
+    draft_b {
+        uuid id PK "not null, unique"
+        varchar title
+        integer min_point
+        text description
+        uuid test_id "not null"
+    }
+
+
+    content_d {
+        uuid id PK "not null, unique"
+        int order
+        text content
+        boolen type_of_content
+        uuid question_id FK "not null"
+        uuid answer_id FK "not null"
+    }
+
     %% RELATIONSHIPS
 
-    TEST_D ||--o{ QUESTION_D : "has questions"
-    QUESTION_D ||--o{ ANSWER_D : "has answers"
-
-    TEST_D ||--o{ TEST_ATTEMPT_B : "has attempts"
+    test_d ||--o{ question_d : "has questions"
+    question_d ||--o{ answer_d : "has answers"
+    test_d ||--o{ test_attempt_b : "has attempts"
+    draft_b o|--o| test_d : "has drafts"
+    content_d }o--o| question_d: "has content"
+    content_d }o--o| answer_d: "has content"

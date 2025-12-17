@@ -1,0 +1,21 @@
+name: Build and publish Hugo docs
+
+on:
+  push:
+    branches: [ main, py-dev ]
+  workflow_dispatch: {}
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Hugo site
+        run: |
+          cd personal-account/docs-hugo
+          docker run --rm -v "${{ github.workspace }}/personal-account/docs-hugo":/src -w /src klakegg/hugo:ext hugo -v --destination public
+      - name: Upload docs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hugo-docs
+          path: personal-account/docs-hugo/public

@@ -1,0 +1,74 @@
+#############################
+# Python bytecode / cache   #
+#############################
+__pycache__/
+*.py[cod]
+*$py.class
+
+#############################
+# Virtual environments      #
+#############################
+
+
+#############################
+# Build / packaging         #
+#############################
+build/
+dist/
+wheels/
+*.egg-info/
+.eggs/
+*.egg
+downloads/
+sdist/
+share/python-wheels/
+
+#############################
+# Testing / coverage        #
+#############################
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+
+#############################
+# Logs / temp files         #
+#############################
+*.log
+logs/
+*.tmp
+*.swp
+*.swo
+
+#############################
+# Tooling / editors         #
+#############################
+.idea/
+.vscode/
+*.code-workspace
+
+#############################
+# OS specific               #
+#############################
+.DS_Store
+Thumbs.db
+
+#############################
+# Docker / compose extras   #
+#############################
+.docker/
+docker-compose.override.yml
+
+#############################
+# Local data / secrets      #
+#############################
+*.local
+*.secret
+
+
