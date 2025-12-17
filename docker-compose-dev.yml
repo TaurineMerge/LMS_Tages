@@ -13,14 +13,6 @@ services:
     depends_on:
       keycloak:
         condition: service_healthy
-      public-side:
-        condition: service_started
-      admin-panel:
-        condition: service_started
-      personal-account:
-        condition: service_started
-      testing:
-        condition: service_started
       jaeger:
         condition: service_started
       otel-collector:
@@ -74,7 +66,8 @@ services:
       - --hostname-strict-https=false
       - --http-relative-path=/auth
       - --hostname-admin-url=http://localhost/auth
-    ports: []
+    ports:
+      - "8080:8080"
     volumes:
       - ./keycloak/student.json:/opt/keycloak/data/import/student.json:ro
       - ./keycloak/teacher.json:/opt/keycloak/data/import/teacher.json:ro
@@ -120,13 +113,13 @@ services:
     container_name: public-side
     environment:
       DB_NAME: ${KNOWLEDGE_BASE_DB_NAME}
-      DB_USER: ${KNOWLEDGE_BASE_DB_USER}
-      DB_PASSWORD: ${KNOWLEDGE_BASE_DB_PASSWORD}
+      DB_USER: ${KNOWLEDGE_BASE_RO_USER}
+      DB_PASSWORD: ${KNOWLEDGE_BASE_RO_PASSWORD}
       DB_HOST: ${APP_DB_HOST}
       DB_PORT: ${APP_DB_INTERNAL_PORT}
-    env_file:
-      - ./.env
-      - ./publicSide/.env.prod
+      OTEL_EXPORTER_OTLP_ENDPOINT: "otel-collector:4317"
+    ports:
+      - "3000:3000"
     networks:
       - app-network
     depends_on:
@@ -143,7 +136,11 @@ services:
       - ./adminPanel/.env.prod
     environment:
       # Database
-      DATABASE_URL: "postgresql://appuser:password@app-db:5432/appdb?sslmode=disable"
+      DB_NAME: ${KNOWLEDGE_BASE_DB_NAME}
+      DB_USER: ${KNOWLEDGE_BASE_ADMIN_USER}
+      DB_PASSWORD: ${KNOWLEDGE_BASE_ADMIN_PASSWORD}
+      DB_HOST: ${APP_DB_HOST}
+      DB_PORT: ${APP_DB_INTERNAL_PORT}
       DATABASE_POOL_MIN_SIZE: "5"
       DATABASE_POOL_MAX_SIZE: "20"
       # Keycloak
@@ -160,10 +157,13 @@ services:
       # CORS
       CORS_ALLOW_ORIGINS: "*"
       CORS_ALLOW_CREDENTIALS: "false"
-    ports: []
+    ports:
+      - "4000:4000"
     networks:
       - app-network
     depends_on:
+      app-db:
+        condition: service_healthy
       keycloak:
         condition: service_healthy
     restart: unless-stopped
@@ -171,12 +171,13 @@ services:
   personal-account:
     build: ./personal-account
     container_name: personal-account
-    ports: []
     env_file:
       - ./personal-account/.env
     environment:
       OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}"
       OTEL_SERVICE_NAME: "${OTEL_SERVICE_NAME:-personal-account-api}"
+    ports:
+      - "8000:8000"
     networks:
       - app-network
     depends_on:
@@ -189,9 +190,10 @@ services:
   testing:
     build: ./testing
     container_name: testing
-    ports: []
     env_file:
       - ./testing/.env
+    ports:
+    - "8085:8085"
     networks:
       - app-network
     depends_on:

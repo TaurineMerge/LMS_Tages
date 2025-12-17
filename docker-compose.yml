@@ -82,7 +82,7 @@ services:
       keycloak-db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /auth/health/ready HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && grep -q '200 OK' <&3 || exit 1"]
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /auth/health/ready HTTP/1.1\r\nHost: localhost\r\n\r\n' >&3 && grep -q '200 OK' <&3 || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 10
@@ -96,11 +96,11 @@ services:
     image: postgres:15
     container_name: app-db
     environment:
-      POSTGRES_DB: appdb
-      POSTGRES_USER: appuser
-      POSTGRES_PASSWORD: password
-    # ports:
-    #   - "5432:5432"
+      POSTGRES_USER: ${APP_DB_SUPERUSER}
+      POSTGRES_PASSWORD: ${APP_DB_SUPERUSER_PASSWORD}
+      PGPORT: ${APP_DB_INTERNAL_PORT}
+    env_file:
+      - ./.env
     volumes:
       - app_data:/var/lib/postgresql/data
       - ./init-sql:/docker-entrypoint-initdb.d:ro
@@ -108,28 +108,7 @@ services:
       - app-network
     ports: []
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U appuser -d appdb" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
-  knowledge-base-db:
-    image: postgres:15
-    container_name: knowledge-base-db
-    environment:
-      POSTGRES_DB: ${KNOWLEDGE_BASE_DB_NAME}
-      POSTGRES_USER: ${KNOWLEDGE_BASE_DB_SUPERUSER}
-      POSTGRES_PASSWORD: ${KNOWLEDGE_BASE_DB_SUPERUSER_PASSWORD}
-    env_file:
-      - ./.env
-    volumes:
-      - knowledge_base_data:/var/lib/postgresql/data
-      - ./init-sql/knowledge-base-db:/docker-entrypoint-initdb.d:ro
-    networks:
-      - knowledge-base-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${KNOWLEDGE_BASE_DB_SUPERUSER} -d ${KNOWLEDGE_BASE_DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -U ${APP_DB_SUPERUSER} -p ${APP_DB_INTERNAL_PORT}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -138,21 +117,18 @@ services:
   public-side:
     build: ./publicSide
     container_name: public-side
-    ports: []
     environment:
       DB_NAME: ${KNOWLEDGE_BASE_DB_NAME}
       DB_USER: ${KNOWLEDGE_BASE_RO_USER}
       DB_PASSWORD: ${KNOWLEDGE_BASE_RO_PASSWORD}
-      DB_HOST: ${KNOWLEDGE_BASE_DB_HOST}
-      DB_PORT: ${KNOWLEDGE_BASE_DB_PORT}
-    env_file:
-      - ./.env
-      - ./publicSide/.env.prod
+      DB_HOST: ${APP_DB_HOST}
+      DB_PORT: ${APP_DB_INTERNAL_PORT}
+      OTEL_EXPORTER_OTLP_ENDPOINT: "otel-collector:4317"
+    ports: []
     networks:
       - app-network
-      - knowledge-base-network
     depends_on:
-      knowledge-base-db:
+      app-db:
         condition: service_healthy
       keycloak:
         condition: service_started
@@ -164,30 +140,28 @@ services:
     env_file:
       - ./adminPanel/.env.prod
     environment:
-      # Database
-      DATABASE_URL: "postgresql://appuser:password@app-db:5432/appdb?sslmode=disable"
+      DB_NAME: ${KNOWLEDGE_BASE_DB_NAME}
+      DB_USER: ${KNOWLEDGE_BASE_ADMIN_USER}
+      DB_PASSWORD: ${KNOWLEDGE_BASE_ADMIN_PASSWORD}
+      DB_HOST: ${APP_DB_HOST}
+      DB_PORT: ${APP_DB_INTERNAL_PORT}
       DATABASE_POOL_MIN_SIZE: "5"
       DATABASE_POOL_MAX_SIZE: "20"
-      # Keycloak
       KEYCLOAK_ISSUER_URL: "http://keycloak:8080/auth/realms/teacher"
       KEYCLOAK_CLIENT_ID: "teacher-client"
       KEYCLOAK_CLIENT_SECRET: "TEACHER_SECRET"
       KEYCLOAK_APP_NAME: "LMS Admin Application"
-      # OpenTelemetry
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
       OTEL_SERVICE_NAME: "admin-panel"
-      # Server
       API_ADDRESS: ":4000"
-      # CORS
       CORS_ALLOW_ORIGINS: "*"
       CORS_ALLOW_CREDENTIALS: "false"
     ports: []
     networks:
       - app-network
-      - knowledge-base-network
     depends_on:
-      knowledge-base-db:
+      app-db:
         condition: service_healthy
       keycloak:
         condition: service_healthy
@@ -196,12 +170,12 @@ services:
   personal-account:
     build: ./personal-account
     container_name: personal-account
-    ports: []
     env_file:
       - ./personal-account/.env
     environment:
       OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}"
       OTEL_SERVICE_NAME: "${OTEL_SERVICE_NAME:-personal-account-api}"
+    ports: []
     networks:
       - app-network
     depends_on:
@@ -214,9 +188,9 @@ services:
   testing:
     build: ./testing
     container_name: testing
-    ports: []
     env_file:
       - ./testing/.env
+    ports: []
     networks:
       - app-network
     depends_on:
@@ -262,13 +236,9 @@ networks:
     internal: true
   app-network:
     driver: bridge
-  knowledge-base-network:
-    driver: bridge
 
 volumes:
   keycloak_data:
     driver: local
   app_data:
-    driver: local
-  knowledge_base_data:
     driver: local
