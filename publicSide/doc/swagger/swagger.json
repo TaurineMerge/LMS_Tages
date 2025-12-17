@@ -198,6 +198,24 @@
                         "minimum": 1,
                         "maximum": 100,
                         "description": "Количество элементов на странице"
+                    },
+                    {
+                        "name": "level",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "enum": ["all", "easy", "medium", "hard"],
+                        "default": "all",
+                        "description": "Фильтр по уровню сложности курса"
+                    },
+                    {
+                        "name": "sort_by",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "enum": ["updated_desc", "updated_asc"],
+                        "default": "updated_desc",
+                        "description": "Сортировка по дате обновления (updated_desc - сначала новые, updated_asc - сначала старые)"
                     }
                 ],
                 "responses": {

@@ -15,7 +15,7 @@ import (
 
 // CourseService defines the interface for course business logic.
 type CourseService interface {
-	GetCoursesByCategoryID(ctx context.Context, categoryID string, page, limit int) ([]response.CourseDTO, *response.Pagination, error)
+	GetCoursesByCategoryID(ctx context.Context, categoryID string, page, limit int, level, sortBy string) ([]response.CourseDTO, *response.Pagination, error)
 	GetCategoryByID(ctx context.Context, categoryID string) (*response.CategoryDTO, error)
 }
 
@@ -28,8 +28,8 @@ func NewCourseService(repo repository.CourseRepository) CourseService {
 	return &courseService{repo: repo}
 }
 
-// GetCoursesByCategoryID retrieves paginated courses for a category and converts them to DTOs.
-func (s *courseService) GetCoursesByCategoryID(ctx context.Context, categoryID string, page, limit int) ([]response.CourseDTO, *response.Pagination, error) {
+// GetCoursesByCategoryID retrieves paginated courses for a category with filters and converts them to DTOs.
+func (s *courseService) GetCoursesByCategoryID(ctx context.Context, categoryID string, page, limit int, level, sortBy string) ([]response.CourseDTO, *response.Pagination, error) {
 	tracer := otel.Tracer("service")
 	ctx, span := tracer.Start(ctx, "courseService.GetCoursesByCategoryID")
 	defer span.End()
@@ -38,6 +38,8 @@ func (s *courseService) GetCoursesByCategoryID(ctx context.Context, categoryID s
 		attribute.String("category_id", categoryID),
 		attribute.Int("page", page),
 		attribute.Int("limit", limit),
+		attribute.String("level", level),
+		attribute.String("sort_by", sortBy),
 	)
 
 	// Validate pagination parameters
@@ -48,7 +50,7 @@ func (s *courseService) GetCoursesByCategoryID(ctx context.Context, categoryID s
 		limit = 28 // Default limit
 	}
 
-	courses, total, err := s.repo.GetCoursesByCategoryID(ctx, categoryID, page, limit)
+	courses, total, err := s.repo.GetCoursesByCategoryID(ctx, categoryID, page, limit, level, sortBy)
 	if err != nil {
 		return nil, nil, err
 	}

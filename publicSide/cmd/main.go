@@ -125,6 +125,10 @@ func main() {
 	categoryRouter := apiV1.Group("/categories")
 	courseRouter := categoryRouter.Group(apiconst.PathCategory + "/courses")
 
+	// Register course API handler
+	courseAPIHandler := handler.NewCourseAPIHandler(courseService)
+	courseAPIHandler.RegisterRoutes(courseRouter)
+
 	lessonHandler.RegisterRoutes(courseRouter)
 
 	slog.Info("Starting server", "address", cfg.Port)

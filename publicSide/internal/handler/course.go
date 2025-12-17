@@ -38,6 +38,10 @@ func (h *CourseHandler) ShowCourses(c *fiber.Ctx) error {
 	page := c.QueryInt("page", 1)
 	limit := c.QueryInt("limit", 28)
 
+	// Parse filter and sort parameters
+	level := c.Query("level", "all")             // all, easy, medium, hard
+	sortBy := c.Query("sort_by", "updated_desc") // updated_desc, updated_asc, created_desc, created_asc
+
 	// Get category information
 	category, err := h.courseService.GetCategoryByID(c.UserContext(), categoryID)
 	if err != nil {
@@ -46,8 +50,9 @@ func (h *CourseHandler) ShowCourses(c *fiber.Ctx) error {
 	}
 	slog.Info("Category found", "categoryId", categoryID, "title", category.Title)
 
-	// Get courses for this category with pagination
-	courses, pagination, err := h.courseService.GetCoursesByCategoryID(c.UserContext(), categoryID, page, limit)
+	// Get courses for this category with pagination and filters
+	courses, pagination, err := h.courseService.GetCoursesByCategoryID(c.UserContext(), categoryID, page, limit, level, sortBy)
+
 	if err != nil {
 		slog.Error("Failed to get courses", "categoryId", categoryID, "error", err)
 		return err
@@ -89,6 +94,8 @@ func (h *CourseHandler) ShowCourses(c *fiber.Ctx) error {
 		"Courses":       coursesView,
 		"Pagination":    pagination,
 		"CurrentPage":   page,
+		"Level":         level,
+		"SortBy":        sortBy,
 	}
 
 	slog.Info("Rendering template", "template", "pages/courses", "coursesCount", len(coursesView))
