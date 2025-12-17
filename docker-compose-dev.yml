@@ -77,6 +77,7 @@ services:
     environment:
       POSTGRES_USER: ${APP_DB_SUPERUSER}
       POSTGRES_PASSWORD: ${APP_DB_SUPERUSER_PASSWORD}
+      PGPORT: ${APP_DB_INTERNAL_PORT}
     env_file:
       - ./.env
     volumes:
@@ -87,7 +88,7 @@ services:
     ports:
       - "${APP_DB_EXTERNAL_PORT}:${APP_DB_INTERNAL_PORT}"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${APP_DB_SUPERUSER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${APP_DB_SUPERUSER} -p ${APP_DB_INTERNAL_PORT}"]
       interval: 10s
       timeout: 5s
       retries: 5
