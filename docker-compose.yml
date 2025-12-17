@@ -61,7 +61,7 @@ services:
       KC_METRICS_ENABLED: true
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
-      KC_PROXY: "reencrypt"
+      KC_PROXY: "none"
       KC_HOSTNAME: "localhost"
       KC_HOSTNAME_PORT: "80"
       KC_HOSTNAME_STRICT_BACKCHANNEL: "false"

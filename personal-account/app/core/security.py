@@ -28,7 +28,8 @@ class TokenPayload(BaseModel):
 
     sub: str = Field(..., description="User ID (subject)")
     email: Optional[str] = None
-    name: Optional[str] = None
+    given_name: Optional[str] = None  # ← добавлено
+    family_name: Optional[str] = None
     preferred_username: Optional[str] = None
     exp: int = Field(..., description="Token expiration time")
     iat: Optional[int] = None
@@ -39,7 +40,8 @@ class TokenPayload(BaseModel):
             "example": {
                 "sub": "user-id-uuid",
                 "email": "user@example.com",
-                "name": "User Name",
+                "given_name": "User",
+                "family_name": "Name",
                 "preferred_username": "username",
                 "exp": 1765284914,
                 "iat": 1765284614,
@@ -54,9 +56,10 @@ _jwt_service = JwtService(keycloak_url=settings.KEYCLOAK_SERVER_URL, realm=setti
 class JWTValidator:
     """Validate JWT tokens using Keycloak JWKS."""
 
-    def __init__(self, keycloak_url: str, realm: str, client_id: str):
+    def __init__(self, keycloak_url: str, issuer_url: str, realm: str, client_id: str):
         self.client_id = client_id
-        self.issuer = f"{keycloak_url.rstrip('/')}/realms/{realm}"
+        self.issuer = f"{issuer_url.rstrip('/')}/realms/{realm}"  # ← внешний URL для issuer
+        self.keycloak_url = keycloak_url  # ← внутренний URL для получения ключей
 
     @traced("jwt_validator.validate_token", record_args=True, record_result=True)
     async def validate_token(self, token: str) -> TokenPayload:
@@ -73,7 +76,9 @@ class JWTValidator:
             HTTPException: If token is invalid or expired
         """
         try:
-            payload = await _jwt_service.decode(token, audience="account", issuer=self.issuer)
+            payload = await _jwt_service.decode(
+                token, audience="account", issuer=self.issuer, keycloak_url=self.keycloak_url
+            )
             # extract roles as before
             roles = []
             if isinstance(payload, dict):
@@ -112,6 +117,7 @@ class JWTValidator:
 # Создаём singleton validator
 _jwt_validator = JWTValidator(
     keycloak_url=settings.KEYCLOAK_SERVER_URL,
+    issuer_url=settings.KEYCLOAK_PUBLIC_URL,
     realm=settings.KEYCLOAK_REALM,
     client_id=settings.KEYCLOAK_CLIENT_ID,
 )

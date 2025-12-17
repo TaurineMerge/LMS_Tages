@@ -62,8 +62,8 @@ class settings:
         self.ENVIRONMENT: str = os.getenv("ENVIRONMENT", "production")
 
         # Keycloak Authentication
-        self.KEYCLOAK_SERVER_URL: str = os.getenv("KEYCLOAK_SERVER_URL", "http://keycloak:8080")
-        self.KEYCLOAK_PUBLIC_URL: str = os.getenv("KEYCLOAK_PUBLIC_URL", "http://localhost:8080")
+        self.KEYCLOAK_SERVER_URL: str = os.getenv("KEYCLOAK_SERVER_URL", "http://keycloak:8080/auth/")
+        self.KEYCLOAK_PUBLIC_URL: str = os.getenv("KEYCLOAK_PUBLIC_URL", "http://localhost:80/auth")
         self.KEYCLOAK_REALM: str = os.getenv("KEYCLOAK_REALM", "student")
         self.KEYCLOAK_ADMIN_REALM: str = os.getenv("KEYCLOAK_ADMIN_REALM", "teacher")
         self.KEYCLOAK_CLIENT_ID: str = os.getenv("KEYCLOAK_CLIENT_ID", "personal-account-client")
