@@ -1,0 +1,111 @@
+{% extends "base.hbs" %}
+
+{% block title %}Профиль - Личный кабинет{% endblock %}
+{% block page_title %}Профиль{% endblock %}
+{% block page_subtitle %}Управление вашими данными{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-4 mb-4">
+        <div class="card p-4 text-center">
+            <div class="avatar mx-auto mb-3" style="width: 120px; height: 120px; background-color: var(--primary-color); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <p class="bi bi-person-fill text-white" style="font-size: 48px;"></p>
+            </div>
+            <h4 id="profile-name">Загрузка...</h4>
+            <p class="text-muted" id="profile-email">-</p>
+            <span class="badge bg-primary mb-3">Студент</span>
+            <hr>
+            <div class="text-start">
+                <p class="mb-2"><strong>ID:</strong> <span id="profile-id">-</span></p>
+                <p class="mb-2"><strong>Email подтвержден:</strong> <span id="profile-verified">-</span></p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-8 mb-4">
+        <div class="card p-4">
+            <h5 class="mb-4"><p class="bi bi-person-gear me-2"></p>Редактирование профиля</h5>
+            
+            <form id="profile-form">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Имя</label>
+                        <pnput type="text" class="form-control" id="input-firstname" placeholder="Введите имя">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Фамилия</label>
+                        <pnput type="text" class="form-control" id="input-lastname" placeholder="Введите фамилию">
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <pnput type="email" class="form-control" id="input-email" placeholder="example@email.com" disabled>
+                    <small class="text-muted">Email изменяется через Keycloak</small>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Телефон</label>
+                    <pnput type="tel" class="form-control" id="input-phone" placeholder="+7 (999) 123-45-67">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">О себе</label>
+                    <textarea class="form-control" id="input-bio" rows="3" placeholder="Расскажите о себе..."></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">
+                    <p class="bi bi-check-lg me-2"></p>Сохранить изменения
+                </button>
+            </form>
+        </div>
+        
+        <div class="card p-4 mt-4">
+            <h5 class="mb-4"><p class="bi bi-shield-lock me-2"></p>Безопасность</h5>
+            <p class="text-muted">Для изменения пароля или настроек безопасности перейдите в Keycloak.</p>
+            <a href="{{ keycloak_account_url }}" target="_blank" class="btn btn-outline-secondary">
+                <p class="bi bi-box-arrow-up-right me-2"></p>Управление аккаунтом в Keycloak
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function loadProfile() {
+        const token = API.getToken();
+        
+        if (!token) {
+            document.getElementById('profile-name').textContent = 'Гость';
+            document.getElementById('profile-email').textContent = 'Войдите для просмотра профиля';
+            return;
+        }
+        
+        try {
+            const response = await API.get('/auth/me');
+            const user = response.data;
+            
+            document.getElementById('profile-name').textContent = user.name || user.preferred_username || 'Пользователь';
+            document.getElementById('profile-email').textContent = user.email || '-';
+            document.getElementById('profile-id').textContent = user.sub || '-';
+            document.getElementById('profile-verified').textContent = user.email_verified ? 'Да' : 'Нет';
+            
+            document.getElementById('input-firstname').value = user.given_name || '';
+            document.getElementById('input-lastname').value = user.family_name || '';
+            document.getElementById('input-email').value = user.email || '';
+            
+        } catch (error) {
+            console.error('Failed to load profile:', error);
+            showToast('Ошибка загрузки профиля', 'danger');
+        }
+    }
+    
+    document.getElementById('profile-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        showToast('Профиль обновляется через Keycloak', 'info');
+    });
+    
+    document.addEventListener('DOMContentLoaded', loadProfile);
+</script>
+{% endblock %}

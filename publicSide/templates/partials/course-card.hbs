@@ -1,0 +1,37 @@
+<div class="course-card">
+    {{#if ImageUrl}}
+    <div class="course-card__image">
+        <img src="{{ImageUrl}}" alt="{{Title}}">
+    </div>
+    {{else}}
+    <div class="course-card__image course-card__image--placeholder">
+        <div class="placeholder-icon">📚</div>
+    </div>
+    {{/if}}
+    
+    <div class="course-card__content">
+        <h3 class="course-card__title">{{Title}}</h3>
+        
+        <div class="course-card__meta">
+            {{#if Level}}
+            <span class="course-card__level course-card__level--{{Level}}">
+                {{#if (eq Level "easy")}}Легкий{{/if}}
+                {{#if (eq Level "medium")}}Средний{{/if}}
+                {{#if (eq Level "hard")}}Сложный{{/if}}
+            </span>
+            {{/if}}
+        </div>
+        
+        <p class="course-card__description">{{TruncatedDescription}}</p>
+        
+        <div class="course-card__stats">
+            <span class="course-card__stat">⭐ {{Rating}}</span>
+            <span class="course-card__stat">👥 {{Students}}</span>
+            <span class="course-card__stat">⏱️ {{Duration}}</span>
+        </div>
+    </div>
+    
+    <div class="course-card__footer">
+        <a href="/categories/{{CategoryID}}/courses/{{ID}}" class="btn btn--primary">Подробнее</a>
+    </div>
+</div>

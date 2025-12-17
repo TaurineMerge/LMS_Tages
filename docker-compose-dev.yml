@@ -8,16 +8,14 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/includes:/etc/nginx/includes:ro
+      - ./personal-account/docs-tech:/var/www/docs-tech:ro
+      - ./personal-account/static:/etc/nginx/html/static:ro
     depends_on:
       keycloak:
+        condition: service_healthy
+      jaeger:
         condition: service_started
-      public-side:
-        condition: service_started
-      admin-panel:
-        condition: service_started
-      personal-account:
-        condition: service_started
-      testing:
+      otel-collector:
         condition: service_started
     networks:
       - app-network
@@ -35,7 +33,7 @@ services:
     networks:
       - keycloak-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U keycloaks -d keycloaks"]
+      test: [ "CMD-SHELL", "pg_isready -U keycloaks -d keycloaks" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -55,17 +53,33 @@ services:
       KC_METRICS_ENABLED: true
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_PROXY: "reencrypt"
+      KC_HOSTNAME: "localhost"
+      KC_HOSTNAME_PORT: "80"
+      KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
+      KC_HTTP_RELATIVE_PATH: "/auth"
+      KC_BASE_URL: "http://localhost/auth"
     command:
       - start-dev
       - --http-port=8080
       - --import-realm
+      - --hostname-strict-https=false
+      - --http-relative-path=/auth
+      - --hostname-admin-url=http://localhost/auth
     ports:
       - "8080:8080"
     volumes:
-      - ./keycloak:/opt/keycloak/data/import
+      - ./keycloak/student.json:/opt/keycloak/data/import/student.json:ro
+      - ./keycloak/teacher.json:/opt/keycloak/data/import/teacher.json:ro
     depends_on:
       keycloak-db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /auth/health/ready HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && grep -q '200 OK' <&3 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
     networks:
       - keycloak-network
       - app-network
@@ -75,27 +89,35 @@ services:
     image: postgres:15
     container_name: app-db
     environment:
-      POSTGRES_DB: appdb
-      POSTGRES_USER: appuser
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER: ${APP_DB_SUPERUSER}
+      POSTGRES_PASSWORD: ${APP_DB_SUPERUSER_PASSWORD}
+      PGPORT: ${APP_DB_INTERNAL_PORT}
+    env_file:
+      - ./.env
     volumes:
       - app_data:/var/lib/postgresql/data
       - ./init-sql:/docker-entrypoint-initdb.d:ro
     networks:
       - app-network
     ports:
-      - "5432:5432"
+      - "${APP_DB_EXTERNAL_PORT}:${APP_DB_INTERNAL_PORT}"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
+      test: ["CMD-SHELL", "pg_isready -U ${APP_DB_SUPERUSER} -p ${APP_DB_INTERNAL_PORT}"]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
+
   public-side:
     build: ./publicSide
     container_name: public-side
-    env_file:
-      - ./publicSide/.env.prod
+    environment:
+      DB_NAME: ${KNOWLEDGE_BASE_DB_NAME}
+      DB_USER: ${KNOWLEDGE_BASE_RO_USER}
+      DB_PASSWORD: ${KNOWLEDGE_BASE_RO_PASSWORD}
+      DB_HOST: ${APP_DB_HOST}
+      DB_PORT: ${APP_DB_INTERNAL_PORT}
+      OTEL_EXPORTER_OTLP_ENDPOINT: "otel-collector:4317"
     ports:
       - "3000:3000"
     networks:
@@ -106,18 +128,35 @@ services:
       keycloak:
         condition: service_started
     restart: unless-stopped
+
   admin-panel:
     build: ./adminPanel
     container_name: admin-panel
+    env_file:
+      - ./adminPanel/.env.prod
     environment:
-      KEYCLOAK_ISSUER_URL: "http://keycloak:8080/realms/teacher"
+      # Database
+      DB_NAME: ${KNOWLEDGE_BASE_DB_NAME}
+      DB_USER: ${KNOWLEDGE_BASE_ADMIN_USER}
+      DB_PASSWORD: ${KNOWLEDGE_BASE_ADMIN_PASSWORD}
+      DB_HOST: ${APP_DB_HOST}
+      DB_PORT: ${APP_DB_INTERNAL_PORT}
+      DATABASE_POOL_MIN_SIZE: "5"
+      DATABASE_POOL_MAX_SIZE: "20"
+      # Keycloak
+      KEYCLOAK_ISSUER_URL: "http://keycloak:8080/auth/realms/teacher"
       KEYCLOAK_CLIENT_ID: "teacher-client"
       KEYCLOAK_CLIENT_SECRET: "TEACHER_SECRET"
       KEYCLOAK_APP_NAME: "LMS Admin Application"
-      WAIT_FOR_KEYCLOAK: "true"
+      # OpenTelemetry
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
       OTEL_SERVICE_NAME: "admin-panel"
+      # Server
+      API_ADDRESS: ":4000"
+      # CORS
+      CORS_ALLOW_ORIGINS: "*"
+      CORS_ALLOW_CREDENTIALS: "false"
     ports:
       - "4000:4000"
     networks:
@@ -126,12 +165,17 @@ services:
       app-db:
         condition: service_healthy
       keycloak:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
 
   personal-account:
     build: ./personal-account
     container_name: personal-account
+    env_file:
+      - ./personal-account/.env
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}"
+      OTEL_SERVICE_NAME: "${OTEL_SERVICE_NAME:-personal-account-api}"
     ports:
       - "8000:8000"
     networks:
@@ -146,8 +190,10 @@ services:
   testing:
     build: ./testing
     container_name: testing
+    env_file:
+      - ./testing/.env
     ports:
-      - "8085:8085"
+    - "8085:8085"
     networks:
       - app-network
     depends_on:
@@ -163,10 +209,10 @@ services:
     environment:
       - COLLECTOR_ZIPKIN_HTTP_PORT=9411
     ports:
-      - "16686:16686"  # UI
-      - "14250:14250"  # gRPC ingestion
-      - "14268:14268"  # HTTP ingestion
-      - "9411:9411"    # Zipkin compatibility
+      - "16686:16686" # UI
+      - "14250:14250" # gRPC ingestion
+      - "14268:14268" # HTTP ingestion
+      - "9411:9411" # Zipkin compatibility
     networks:
       - app-network
     restart: unless-stopped
@@ -174,7 +220,7 @@ services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.94.0
     container_name: otel-collector
-    command: ["--config=/etc/otel-collector-config.yaml"]
+    command: [ "--config=/etc/otel-collector-config.yaml" ]
     volumes:
       - ./observability/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
     ports:

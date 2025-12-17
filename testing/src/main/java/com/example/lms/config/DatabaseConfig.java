@@ -3,63 +3,72 @@ package com.example.lms.config;
 /**
  * Конфигурационный класс для параметров подключения к базе данных.
  * <p>
- * Хранит:
+ * Хранит основные параметры JDBC-подключения:
  * <ul>
- *     <li>URL подключения</li>
- *     <li>имя пользователя</li>
- *     <li>пароль</li>
+ * <li>{@code url} — строка подключения к базе данных</li>
+ * <li>{@code user} — имя пользователя базы данных</li>
+ * <li>{@code password} — пароль пользователя</li>
  * </ul>
- * Используется сервисами и репозиториями для создания соединений с БД.
+ *
+ * Класс является immutable-объектом: все поля финальные и задаются только в
+ * конструкторе.
+ * Используется в репозиториях и сервисах, где требуется создание
+ * JDBC-соединений.
  */
 public class DatabaseConfig {
 
-    /**
-     * Строка подключения к базе данных (JDBC URL).
-     * Например: jdbc:postgresql://localhost:5432/lms
-     */
-    private final String url;
+	/**
+	 * JDBC URL базы данных.
+	 * <p>
+	 * Пример:
+	 * 
+	 * <pre>
+	 * jdbc:postgresql://localhost:5432/lms
+	 * </pre>
+	 */
+	private final String url;
 
-    /**
-     * Имя пользователя базы данных.
-     */
-    private final String user;
+	/**
+	 * Имя пользователя базы данных.
+	 */
+	private final String user;
 
-    /**
-     * Пароль пользователя базы данных.
-     */
-    private final String password;
+	/**
+	 * Пароль пользователя базы данных.
+	 */
+	private final String password;
 
-    /**
-     * Создаёт объект конфигурации подключения к базе данных.
-     *
-     * @param url      строка подключения JDBC
-     * @param user     имя пользователя
-     * @param password пароль пользователя
-     */
-    public DatabaseConfig(String url, String user, String password) {
-        this.url = url;
-        this.user = user;
-        this.password = password;
-    }
+	/**
+	 * Создаёт объект конфигурации подключения к базе данных.
+	 *
+	 * @param url      JDBC URL
+	 * @param user     имя пользователя
+	 * @param password пароль пользователя
+	 */
+	public DatabaseConfig(String url, String user, String password) {
+		this.url = url;
+		this.user = user;
+		this.password = password;
+	}
 
-    /**
-     * @return строку подключения (JDBC URL)
-     */
-    public String getUrl() {
-        return url;
-    }
+	/**
+	 * @return JDBC URL базы данных
+	 */
+	public String getUrl() {
+		return url;
+	}
 
-    /**
-     * @return имя пользователя базы данных
-     */
-    public String getUser() {
-        return user;
-    }
+	/**
+	 * @return имя пользователя базы данных
+	 */
+	public String getUser() {
+		return user;
+	}
 
-    /**
-     * @return пароль пользователя базы данных
-     */
-    public String getPassword() {
-        return password;
-    }
+	/**
+	 * @return пароль пользователя базы данных
+	 */
+	public String getPassword() {
+		return password;
+	}
 }

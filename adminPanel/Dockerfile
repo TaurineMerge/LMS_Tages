@@ -27,12 +27,9 @@ COPY --from=builder /app/main .
 # Копируем swagger.json
 COPY --from=builder /app/docs ./docs/
 
-# Устанавливаем переменные окружения
-ENV ROOT_PATH=/admin
-ENV API_PREFIX=/api/v1
-ENV API_ADDRESS=:4000
-ENV CORS_ALLOW_ORIGINS=http://localhost,http://localhost:4000
-ENV CORS_ALLOW_CREDENTIALS=false
+# Все параметры должны передаваться через переменные окружения
+# Нет hardcoded значений - безопасность и гибкость
+# Обязательные переменные будут проверены при старте приложения
 
 EXPOSE 4000
 

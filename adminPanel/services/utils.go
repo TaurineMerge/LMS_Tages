@@ -45,23 +45,26 @@ func toString(v interface{}) string {
 	return fmt.Sprintf("%v", v)
 }
 
-// parseTime преобразует интерфейс в time.Time
+// parseTime нормализует значение интерфейса в time.Time
 //
-// Вспомогательная функция для парсинга времени из различных форматов.
+// Функция пытается преобразовать различные типы данных во время:
+//   - string: парсит в формате RFC3339
+//   - time.Time: возвращает как есть
+//   - Для остальных типов возвращает нулевое время
 //
 // Параметры:
-//   - value: значение для преобразования
+//   - value: интерфейс значения из базы данных
 //
 // Возвращает:
-//   - time.Time: преобразованное время
+//   - time.Time: распарсенное время или нулевое время при ошибке
 func parseTime(value interface{}) time.Time {
-	if str, ok := value.(string); ok {
-		if t, err := time.Parse(time.RFC3339, str); err == nil {
+	switch val := value.(type) {
+	case string:
+		if t, err := time.Parse(time.RFC3339, val); err == nil {
 			return t
 		}
-	}
-	if t, ok := value.(time.Time); ok {
-		return t
+	case time.Time:
+		return val
 	}
 	return time.Time{}
 }
