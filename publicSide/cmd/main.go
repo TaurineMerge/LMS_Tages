@@ -27,7 +27,7 @@ import (
 func main() {
 	// Load .env file first to get all env variables including log level
 	if err := godotenv.Load(); err != nil {
-		slog.Warn("Error loading .env file, using environment variables", "error", err)
+		slog.Warn("Not loaded .env file, using environment variables", "error", err)
 	}
 
 	// Initialize config with all options
