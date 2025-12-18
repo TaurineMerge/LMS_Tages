@@ -1,9 +1,9 @@
-// Package handler contains the HTTP handlers for the application.
-package handler
+// Package v1 contains the HTTP handlers for the application.
+package v1
 
 import (
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/dto/request"
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/dto/response"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/api/v1/dto/request"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/api/v1/dto/response"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/service"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apiconst"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apperrors"

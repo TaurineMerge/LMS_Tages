@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/config"
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler"
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/middleware"
+	v1 "github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/api/v1"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/api/v1/middleware"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/repository"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/service"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/database"
@@ -110,10 +110,10 @@ func main() {
 	categoryService := service.NewCategoryService(categoryRepo)
 	courseService := service.NewCourseService(courseRepo, categoryRepo)
 
-	// Инициализация хэндлеров
-	lessonHandler := handler.NewLessonHandler(lessonService)
-	categoryHandler := handler.NewCategoryHandler(categoryService)
-	courseHandler := handler.NewCourseHandler(courseService, categoryService)
+	// Инициализация хэндлеров для api
+	lessonHandler := v1.NewLessonHandler(lessonService)
+	categoryHandler := v1.NewCategoryHandler(categoryService)
+	courseHandler := v1.NewCourseHandler(courseService, categoryService)
 
 	// Регистрация маршрутов
 	categoriesIdRouter := categoryHandler.RegisterRoutes(apiV1)
