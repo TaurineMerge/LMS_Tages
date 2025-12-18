@@ -28,84 +28,84 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
 	// SQL запросы для таблицы test_attempt_b (без certificate_id и без
 	// attempt_version)
 	private static final String INSERT_SQL = """
-			INSERT INTO tests.test_attempt_b (student_id, test_id, date_of_attempt, point)
+			INSERT INTO testing.test_attempt_b (student_id, test_id, date_of_attempt, point)
 			VALUES (?, ?, ?, ?)
 			RETURNING id
 			""";
 
 	private static final String UPDATE_SQL = """
-			UPDATE tests.test_attempt_b
+			UPDATE testing.test_attempt_b
 			SET student_id = ?, test_id = ?, date_of_attempt = ?, point = ?
 			WHERE id = ?
 			""";
 
 	private static final String SELECT_BY_ID = """
 			SELECT id, student_id, test_id, date_of_attempt, point
-			FROM tests.test_attempt_b
+			FROM testing.test_attempt_b
 			WHERE id = ?
 			""";
 
 	private static final String SELECT_ALL = """
 			SELECT id, student_id, test_id, date_of_attempt, point
-			FROM tests.test_attempt_b
+			FROM testing.test_attempt_b
 			ORDER BY date_of_attempt DESC
 			""";
 
 	private static final String SELECT_BY_STUDENT = """
 			SELECT id, student_id, test_id, date_of_attempt, point
-			FROM tests.test_attempt_b
+			FROM testing.test_attempt_b
 			WHERE student_id = ?
 			ORDER BY date_of_attempt DESC
 			""";
 
 	private static final String SELECT_BY_TEST = """
 			SELECT id, student_id, test_id, date_of_attempt, point
-			FROM tests.test_attempt_b
+			FROM testing.test_attempt_b
 			WHERE test_id = ?
 			ORDER BY date_of_attempt DESC
 			""";
 
 	private static final String SELECT_BY_STUDENT_AND_TEST = """
 			SELECT id, student_id, test_id, date_of_attempt, point
-			FROM tests.test_attempt_b
+			FROM testing.test_attempt_b
 			WHERE student_id = ? AND test_id = ?
 			ORDER BY date_of_attempt DESC
 			""";
 
-	private static final String DELETE_BY_ID = "DELETE FROM tests.test_attempt_b WHERE id = ?";
+	private static final String DELETE_BY_ID = "DELETE FROM testing.test_attempt_b WHERE id = ?";
 
-	private static final String EXISTS_BY_ID = "SELECT 1 FROM tests.test_attempt_b WHERE id = ?";
+	private static final String EXISTS_BY_ID = "SELECT 1 FROM testing.test_attempt_b WHERE id = ?";
 
 	private static final String COUNT_BY_STUDENT_AND_TEST = """
 			SELECT COUNT(*)
-			FROM tests.test_attempt_b
+			FROM testing.test_attempt_b
 			WHERE student_id = ? AND test_id = ?
 			""";
 
 	private static final String SELECT_BY_DATE = """
 			SELECT id, student_id, test_id, date_of_attempt, point
-			FROM tests.test_attempt_b
+			FROM testing.test_attempt_b
 			WHERE date_of_attempt = ?
 			ORDER BY date_of_attempt DESC
 			""";
 
 	private static final String SELECT_COMPLETED = """
 			SELECT id, student_id, test_id, date_of_attempt, point
-			FROM tests.test_attempt_b
+			FROM testing.test_attempt_b
 			WHERE point IS NOT NULL
 			ORDER BY date_of_attempt DESC
 			""";
 
 	private static final String SELECT_INCOMPLETE = """
 			SELECT id, student_id, test_id, date_of_attempt, point
-			FROM tests.test_attempt_b
+			FROM testing.test_attempt_b
 			WHERE point IS NULL
 			ORDER BY date_of_attempt DESC
 			""";
 
 	private static final String SELECT_BEST_ATTEMPT = """
 			SELECT id, student_id, test_id, date_of_attempt, point
-			FROM tests.test_attempt_b
+			FROM testing.test_attempt_b
 			WHERE student_id = ? AND test_id = ? AND point IS NOT NULL
 			ORDER BY point DESC, date_of_attempt DESC
 			LIMIT 1
