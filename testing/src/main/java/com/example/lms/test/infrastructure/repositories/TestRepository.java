@@ -54,7 +54,7 @@ public class TestRepository implements TestRepositoryInterface {
 		test.validate();
 
 		String sql = """
-				INSERT INTO tests.test_d (course_id, title, min_point, description)
+				INSERT INTO testing.test_d (course_id, title, min_point, description)
 				VALUES (?, ?, ?, ?)
 				RETURNING id
 				""";
@@ -102,7 +102,7 @@ public class TestRepository implements TestRepositoryInterface {
 		test.validate();
 
 		String sql = """
-				UPDATE tests.test_d
+				UPDATE testing.test_d
 				SET course_id = ?, title = ?, min_point = ?, description = ?
 				WHERE id = ?
 				""";
@@ -143,7 +143,7 @@ public class TestRepository implements TestRepositoryInterface {
 	public Optional<TestModel> findById(UUID id) {
 		String sql = """
 				SELECT id, course_id, title, min_point, description
-				FROM tests.test_d
+				FROM testing.test_d
 				WHERE id = ?
 				""";
 
@@ -173,20 +173,20 @@ public class TestRepository implements TestRepositoryInterface {
 	public List<TestModel> findAll() {
 		String sql = """
 				SELECT id, course_id, title, min_point, description
-				FROM tests.test_d
+				FROM testing.test_d
 				ORDER BY title
 				""";
 
-		List<TestModel> tests = new ArrayList<>();
+		List<TestModel> testing = new ArrayList<>();
 
 		try (Connection conn = getConnection();
 				PreparedStatement stmt = conn.prepareStatement(sql);
 				ResultSet rs = stmt.executeQuery()) {
 
 			while (rs.next())
-				tests.add(mapRowToTest(rs));
+				testing.add(mapRowToTest(rs));
 
-			return tests;
+			return testing;
 
 		} catch (SQLException e) {
 			throw new RuntimeException("Ошибка при получении всех тестов", e);
@@ -202,7 +202,7 @@ public class TestRepository implements TestRepositoryInterface {
 	 */
 	@Override
 	public boolean deleteById(UUID id) {
-		String sql = "DELETE FROM tests.test_d WHERE id = ?";
+		String sql = "DELETE FROM testing.test_d WHERE id = ?";
 
 		try (Connection conn = getConnection();
 				PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -224,7 +224,7 @@ public class TestRepository implements TestRepositoryInterface {
 	 */
 	@Override
 	public boolean existsById(UUID id) {
-		String sql = "SELECT 1 FROM tests.test_d WHERE id = ?";
+		String sql = "SELECT 1 FROM testing.test_d WHERE id = ?";
 
 		try (Connection conn = getConnection();
 				PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -248,12 +248,12 @@ public class TestRepository implements TestRepositoryInterface {
 	public List<TestModel> findByTitleContaining(String title) {
 		String sql = """
 				SELECT id, course_id, title, min_point, description
-				FROM tests.test_d
+				FROM testing.test_d
 				WHERE LOWER(title) LIKE LOWER(?)
 				ORDER BY title
 				""";
 
-		List<TestModel> tests = new ArrayList<>();
+		List<TestModel> testing = new ArrayList<>();
 
 		try (Connection conn = getConnection();
 				PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -262,9 +262,9 @@ public class TestRepository implements TestRepositoryInterface {
 			ResultSet rs = stmt.executeQuery();
 
 			while (rs.next())
-				tests.add(mapRowToTest(rs));
+				testing.add(mapRowToTest(rs));
 
-			return tests;
+			return testing;
 
 		} catch (SQLException e) {
 			throw new RuntimeException("Ошибка при поиске тестов по названию", e);
@@ -280,7 +280,7 @@ public class TestRepository implements TestRepositoryInterface {
 	 */
 	@Override
 	public int countByCourseId(UUID courseId) {
-		String sql = "SELECT COUNT(*) FROM tests.test_d WHERE course_id = ?";
+		String sql = "SELECT COUNT(*) FROM testing.test_d WHERE course_id = ?";
 
 		try (Connection conn = getConnection();
 				PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -302,12 +302,12 @@ public class TestRepository implements TestRepositoryInterface {
 	public List<TestModel> findByCourseId(UUID courseId) {
 		String sql = """
 				SELECT id, course_id, title, min_point, description
-				FROM tests.test_d
+				FROM testing.test_d
 				WHERE course_id = ?
 				ORDER BY title
 				""";
 
-		List<TestModel> tests = new ArrayList<>();
+		List<TestModel> testing = new ArrayList<>();
 
 		try (Connection conn = getConnection();
 				PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -316,9 +316,9 @@ public class TestRepository implements TestRepositoryInterface {
 			ResultSet rs = stmt.executeQuery();
 
 			while (rs.next())
-				tests.add(mapRowToTest(rs));
+				testing.add(mapRowToTest(rs));
 
-			return tests;
+			return testing;
 
 		} catch (SQLException e) {
 			throw new RuntimeException("Ошибка при поиске тестов по course_id", e);

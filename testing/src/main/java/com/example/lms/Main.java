@@ -21,6 +21,10 @@ import com.example.lms.test_attempt.api.controller.TestAttemptController;
 import com.example.lms.test_attempt.api.router.TestAttemptRouter;
 import com.example.lms.test_attempt.domain.service.TestAttemptService;
 import com.example.lms.test_attempt.infrastructure.repositories.TestAttemptRepository;
+import com.example.lms.draft.domain.service.DraftService;
+import com.example.lms.draft.infrastructure.repositories.DraftRepository;
+import com.example.lms.draft.api.controller.DraftController;
+import com.example.lms.draft.api.router.DraftRouter;
 import com.github.jknack.handlebars.Handlebars;
 
 import io.github.cdimascio.dotenv.Dotenv;
@@ -74,18 +78,21 @@ public class Main {
 		AnswerRepository answerRepository = new AnswerRepository(dbConfig);
 		QuestionRepository questionRepository = new QuestionRepository(dbConfig);
 		TestAttemptRepository testAttemptRepository = new TestAttemptRepository(dbConfig);
+		DraftRepository draftRepository = new DraftRepository(dbConfig);
 
 		// Сервисный слой (бизнес-логика)
 		TestService testService = new TestService(testRepository);
 		AnswerService answerService = new AnswerService(answerRepository);
 		QuestionService questionService = new QuestionService(questionRepository);
 		TestAttemptService testAttemptService = new TestAttemptService(testAttemptRepository);
+		DraftService draftService = new DraftService(draftRepository);
 
 		// Контроллер, принимающий HTTP-запросы
 		TestController testController = new TestController(testService, handlebars);
 		AnswerController answerController = new AnswerController(answerService);
 		QuestionController questionController = new QuestionController(questionService);
 		TestAttemptController testAttemptController = new TestAttemptController(testAttemptService);
+		DraftController draftController = new DraftController(draftService);
 
 		// ---------------------------------------------------------------
 		// 3. Создание и запуск Javalin HTTP-сервера
@@ -97,6 +104,7 @@ public class Main {
 				AnswerRouter.register(answerController);
 				QuestionRouter.register(questionController);
 				TestAttemptRouter.register(testAttemptController);
+				DraftRouter.register(draftController);
 			});
 		}).start("0.0.0.0", APP_PORT);
 
