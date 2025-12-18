@@ -15,6 +15,7 @@ import (
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/web"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/repository"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/service"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apiconst"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/database"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/tracing"
 	"github.com/gofiber/contrib/otelfiber/v2"
@@ -81,6 +82,9 @@ func main() {
 	slog.Info("Database connection pool established")
 
 	engine := handlebars.New("./templates", ".hbs")
+	engine.AddFunc("eq", func(a, b string) bool {
+		return a == b
+	})
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: middleware.GlobalErrorHandler,
@@ -116,21 +120,26 @@ func main() {
 	apiV1.Get("/swagger/*", swagger.New(swagger.Config{
 		URL: "/doc/swagger.json",
 	}))
-	lessonHandler := v1.NewLessonHandler(lessonService)
-	categoryHandler := v1.NewCategoryHandler(categoryService)
-	courseHandler := v1.NewCourseHandler(courseService)
+	apiLessonHandler := v1.NewLessonHandler(lessonService)
+	apiCategoryHandler := v1.NewCategoryHandler(categoryService)
+	apiCourseHandler := v1.NewCourseHandler(courseService)
 
 	// Web
 	homeHandler := web.NewHomeHandler()
+	webLessonHandler := web.NewLessonHandler(lessonService, courseService)
 
 	// --- Регистрация маршрутов ---
 	// API
-	categoriesIdRouter := categoryHandler.RegisterRoutes(apiV1)
-	courseIdRouter := courseHandler.RegisterRoutes(categoriesIdRouter)
-	lessonHandler.RegisterRoutes(courseIdRouter)
+	categoriesIdRouter := apiCategoryHandler.RegisterRoutes(apiV1)
+	courseIdRouter := apiCourseHandler.RegisterRoutes(categoriesIdRouter)
+	apiLessonHandler.RegisterRoutes(courseIdRouter)
 
 	// Web
 	app.Get("/", homeHandler.RenderHome)
+	webCourseRouter := app.Group("/categories/:" + apiconst.PathVariableCategoryID + "/courses")
+	webLessonsRouter := webCourseRouter.Group("/:" + apiconst.PathVariableCourseID + "/lessons")
+	webLessonsRouter.Get("/:" + apiconst.PathVariableLessonID, webLessonHandler.RenderLesson)
+
 
 	slog.Info("Starting server", "address", cfg.Port)
 	if err := app.Listen(fmt.Sprintf(":%s", cfg.Port)); err != nil {
