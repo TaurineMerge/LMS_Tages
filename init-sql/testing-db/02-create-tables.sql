@@ -1,7 +1,7 @@
 CREATE SCHEMA IF NOT EXISTS testing;
 
 CREATE TABLE IF NOT EXISTS testing.test_d (
-    id UUID PRIMARY KEY NOT NULL,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     course_id UUID,
     title VARCHAR,
     min_point INTEGER,
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS testing.test_d (
 );
 
 CREATE TABLE IF NOT EXISTS testing.question_d (
-    id UUID PRIMARY KEY NOT NULL,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     test_id UUID NOT NULL,
     text_of_question TEXT,
     "order" INTEGER,
@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS testing.question_d (
 );
 
 CREATE TABLE IF NOT EXISTS testing.answer_d (
-    id UUID PRIMARY KEY NOT NULL,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     text TEXT,
     question_id UUID NOT NULL,
     score INTEGER NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS testing.answer_d (
 );
 
 CREATE TABLE IF NOT EXISTS testing.test_attempt_b (
-    id UUID PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     student_id UUID NOT NULL,
     test_id UUID NOT NULL,
     date_of_attempt DATE,
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS testing.test_attempt_b (
 );
 
 CREATE TABLE IF NOT EXISTS testing.draft_b (
-    id UUID PRIMARY KEY NOT NULL,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title VARCHAR,
     min_point INTEGER,
     description TEXT,
@@ -50,12 +50,12 @@ CREATE TABLE IF NOT EXISTS testing.draft_b (
 );
 
 CREATE TABLE IF NOT EXISTS testing.content_d (
-    id UUID PRIMARY KEY NOT NULL,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     "order" INTEGER,
     content TEXT,
     type_of_content BOOLEAN,
-    question_id UUID NOT NULL,
-    answer_id UUID NOT NULL,
+    question_id UUID,
+    answer_id UUID,
     UNIQUE(id),
     CONSTRAINT fk_content_question FOREIGN KEY (question_id) REFERENCES testing.question_d(id),
     CONSTRAINT fk_content_answer FOREIGN KEY (answer_id) REFERENCES testing.answer_d(id)
