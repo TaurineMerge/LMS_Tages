@@ -158,3 +158,50 @@ INCREMENT_RAW_ATTEMPT_PROCESSING = """
     WHERE id = :id
     RETURNING processing_attempts
 """
+
+# Business table upsert for attempts (used by StatsRepository)
+TEST_ATTEMPT_UPSERT = """
+INSERT INTO tests.test_attempt_b
+(
+    id,
+    student_id,
+    test_id,
+    date_of_attempt,
+    point,
+    result,
+    completed,
+    passed,
+    certificate_id,
+    attempt_snapshot_s3,
+    attempt_version,
+    meta,
+    created_at,
+    updated_at
+)
+VALUES (
+    :id,
+    :student_id,
+    :test_id,
+    :date_of_attempt,
+    :point,
+    CAST(:result AS jsonb),
+    :completed,
+    :passed,
+    :certificate_id,
+    :snapshot,
+    CAST(:version AS jsonb),
+    CAST(:meta AS jsonb),
+    NOW(),
+    NOW()
+)
+ON CONFLICT (id) DO UPDATE SET
+    point = EXCLUDED.point,
+    result = EXCLUDED.result,
+    completed = EXCLUDED.completed,
+    passed = EXCLUDED.passed,
+    certificate_id = EXCLUDED.certificate_id,
+    attempt_snapshot_s3 = EXCLUDED.attempt_snapshot_s3,
+    attempt_version = EXCLUDED.attempt_version,
+    meta = EXCLUDED.meta,
+    updated_at = NOW();
+"""
