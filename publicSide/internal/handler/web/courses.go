@@ -4,6 +4,7 @@ import (
 	"log/slog"
 
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/service"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apiconst"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
@@ -23,7 +24,7 @@ func NewCoursesHandler(courseService service.CourseService) *CoursesHandler {
 // RenderCourses renders the courses page with filters and sorting.
 func (h *CoursesHandler) RenderCourses(c *fiber.Ctx) error {
 	// Get category ID from URL params
-	categoryID := c.Params("categoryId")
+	categoryID := c.Params(apiconst.PathVariableCategoryID)
 	if _, err := uuid.Parse(categoryID); err != nil {
 		return c.Status(fiber.StatusBadRequest).Render("pages/error", fiber.Map{
 			"title":   "Invalid Category",
