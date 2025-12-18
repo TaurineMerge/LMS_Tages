@@ -7,12 +7,9 @@ Modules:
     - **testing**: Contract validation client for Testing Service API
 """
 
-from app.clients.testing import (
-    ContractManager,
-    ContractValidationError,
-    SchemaLoader,
-    TestingClient,
-)
+from app.clients.testing_client import TestingClient
+from app.clients.validation.contract_manager import ContractManager, ContractValidationError
+from app.clients.validation.schema_loader import SchemaLoader
 
 __all__ = [
     "ContractManager",

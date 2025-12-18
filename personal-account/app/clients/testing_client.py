@@ -35,21 +35,10 @@ from typing import Any
 from uuid import UUID
 
 import httpx
+from contract_manager import ContractManager, ContractValidationError
 
 from app.repositories.integration import integration_repository
-
-from .contract_manager import ContractManager, ContractValidationError
-
-try:  # pragma: no cover - telemetry optional for docs and tests
-    from app.telemetry import traced
-except ImportError:  # fallback to local no-op if telemetry is not installed
-
-    def traced(*_args, **_kwargs):
-        def _decorator(func):
-            return func
-
-        return _decorator
-
+from app.telemetry import traced
 
 logger = logging.getLogger(__name__)
 

@@ -1,8 +1,8 @@
-"""Testing client package for API contract validation.
+"""Validation utilities for clients.
 
-This package provides comprehensive tools for validating API contracts using JSON Schema
-and the fastjsonschema library. It supports versioned schemas, fast validation with
-caching, and detailed error reporting for API testing.
+This package contains shared validation utilities used by client modules:
+- :mod:`contract_manager` — high-level ContractManager
+- :mod:`schema_loader` — async SchemaLoader
 
 Core Components:
     - **ContractManager**: High-level API for contract validation
@@ -73,13 +73,11 @@ Examples:
 
 from .contract_manager import ContractManager, ContractValidationError
 from .schema_loader import SchemaLoader
-from .testing_client import TestingClient
 
 __all__ = [
     "ContractManager",
     "ContractValidationError",
     "SchemaLoader",
-    "TestingClient",
 ]
 
 __version__ = "1.0.0"

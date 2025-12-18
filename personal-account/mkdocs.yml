@@ -37,8 +37,13 @@ nav:
           - Student: api/repositories/student.md
           - Certificate: api/repositories/certificate.md
           - Visit: api/repositories/visit.md
+      - Integration (raw data): api/repositories/integration.md
       - Clients:
           - Overview: api/clients/index.md
+          - Validation:
+              - Overview: api/clients/validation/index.md
+              - Contract Manager: api/clients/validation/contract_manager.md
+              - Schema Loader: api/clients/validation/schema_loader.md
           - Testing Client: api/clients/testing.md
       - Database: api/database.md
       - Config: api/config.md

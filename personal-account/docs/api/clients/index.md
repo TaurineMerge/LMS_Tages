@@ -10,22 +10,24 @@
 ## Модули
 
 - **[Testing](testing.md)** — клиент для работы с сервисом тестирования,
-  включая валидацию контрактов с помощью JSON Schema.
+ - **[Testing Client](testing.md)** — клиент для работы с сервисом тестирования.
+ - **[Validation tools](validation/index.md)** — общие утилиты валидации и загрузки схем
+     (SchemaLoader и ContractManager), вынесённые в `app.clients.validation`.
 
 ## Архитектура
 
 ```
 app/clients/
 ├── __init__.py
-└── testing/
-    ├── __init__.py
-    ├── contract_manager.py   # Менеджер валидации контрактов
-    ├── schema_loader.py      # Загрузчик JSON-схем
-    ├── examples.py           # Примеры использования
-    └── schemas/              # JSON-схемы контрактов
-        ├── user_stats/
-        ├── attempt_detail/
-        └── attempts_list/
+├── validation/
+│   ├── __init__.py
+│   ├── contract_manager.py   # Менеджер валидации контрактов
+│   ├── schema_loader.py      # Загрузчик JSON-схем
+│   └── schemas/              # JSON-схемы контрактов
+│       ├── user_stats/
+│       ├── attempt_detail/
+│       └── attempts_list/
+└── testing_client.py         # HTTP client for testing service
 ```
 
 ## Быстрый старт

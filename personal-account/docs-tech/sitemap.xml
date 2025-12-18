@@ -33,6 +33,18 @@
          <lastmod>2025-12-18</lastmod>
     </url>
     <url>
+         <loc>http://localhost/account/docs-tech/api/clients/validation/</loc>
+         <lastmod>2025-12-18</lastmod>
+    </url>
+    <url>
+         <loc>http://localhost/account/docs-tech/api/clients/validation/contract_manager/</loc>
+         <lastmod>2025-12-18</lastmod>
+    </url>
+    <url>
+         <loc>http://localhost/account/docs-tech/api/clients/validation/schema_loader/</loc>
+         <lastmod>2025-12-18</lastmod>
+    </url>
+    <url>
          <loc>http://localhost/account/docs-tech/api/core/jwt/</loc>
          <lastmod>2025-12-18</lastmod>
     </url>
