@@ -27,6 +27,11 @@ public class Test implements Serializable {
 	private String id;
 
 	/**
+	 *   Идентификатор курса
+	 */
+	private String courseId;
+
+	/**
 	 * Название теста.
 	 */
 	private String title;
@@ -55,8 +60,9 @@ public class Test implements Serializable {
 	 * @param min_point   минимальный проходной балл
 	 * @param description описание теста
 	 */
-	public Test(String id, String title, Integer min_point, String description) {
+	public Test(String id, String courseId, String title, Integer min_point, String description) {
 		this.id = id;
+		this.courseId = courseId;
 		this.title = title;
 		this.min_point = min_point;
 		this.description = description;
@@ -70,6 +76,16 @@ public class Test implements Serializable {
 	/** @param id новый идентификатор теста */
 	public void setId(String id) {
 		this.id = id;
+	}
+
+	/** @return идентификатор теста */
+	public String getCourseId() {
+		return courseId;
+	}
+
+	/** @param id новый идентификатор теста */
+	public void setCourseId(String courseId) {
+		this.courseId = courseId;
 	}
 
 	/** @return название теста */
@@ -111,6 +127,7 @@ public class Test implements Serializable {
 	public String toString() {
 		return "Test{" +
 				"id=" + id +
+				", courseId='" + courseId + '\'' +
 				", title='" + title + '\'' +
 				", min_point=" + min_point +
 				", description='" + description + '\'' +

@@ -13,13 +13,19 @@ import com.example.lms.answer.infrastructure.repositories.AnswerRepository;
 import com.example.lms.config.DatabaseConfig;
 import com.example.lms.config.HandlebarsConfig;
 import com.example.lms.question.api.controller.QuestionController;
+import com.example.lms.question.api.router.QuestionRouter;
 import com.example.lms.question.domain.service.QuestionService;
 import com.example.lms.question.infrastructure.repositories.QuestionRepository;
+import com.example.lms.content.api.controller.ContentController;
+import com.example.lms.content.api.router.ContentRouter;
+import com.example.lms.content.domain.service.ContentService;
+import com.example.lms.content.infrastructure.repositories.ContentRepository;
 import com.example.lms.test.api.controller.TestController;
 import com.example.lms.test.api.router.TestRouter;
 import com.example.lms.test.domain.service.TestService;
 import com.example.lms.test.infrastructure.repositories.TestRepository;
 import com.example.lms.test_attempt.api.controller.TestAttemptController;
+import com.example.lms.test_attempt.api.router.TestAttemptRouter;
 import com.example.lms.test_attempt.domain.service.TestAttemptService;
 import com.example.lms.test_attempt.infrastructure.repositories.TestAttemptRepository;
 import com.example.lms.draft.domain.service.DraftService;
@@ -70,6 +76,7 @@ public class Main {
 		QuestionRepository questionRepository = new QuestionRepository(dbConfig);
 		TestAttemptRepository testAttemptRepository = new TestAttemptRepository(dbConfig);
 		DraftRepository draftRepository = new DraftRepository(dbConfig);
+		ContentRepository contentRepository = new ContentRepository(dbConfig);
 
 		// Сервисный слой (бизнес-логика)
 		TestService testService = new TestService(testRepository);
@@ -77,6 +84,7 @@ public class Main {
 		QuestionService questionService = new QuestionService(questionRepository);
 		TestAttemptService testAttemptService = new TestAttemptService(testAttemptRepository);
 		DraftService draftService = new DraftService(draftRepository);
+		ContentService contentService = new ContentService(contentRepository);
 
 		// Контроллер, принимающий HTTP-запросы
 		TestController testController = new TestController(testService, handlebars);
@@ -84,6 +92,7 @@ public class Main {
 		QuestionController questionController = new QuestionController(questionService);
 		TestAttemptController testAttemptController = new TestAttemptController(testAttemptService);
 		DraftController draftController = new DraftController(draftService);
+		ContentController contentController = new ContentController(contentService, handlebars);
 
 		// ---------------------------------------------------------------
 		// 3. Создание и запуск Javalin HTTP-сервера
@@ -200,6 +209,9 @@ public class Main {
 				// Health check endpoint
 				get("/health", ctx -> ctx.result("OK"));
 				DraftRouter.register(draftController);
+				QuestionRouter.register(questionController);
+				TestAttemptRouter.register(testAttemptController);
+				ContentRouter.register(contentController);
 			});
 		}).start("0.0.0.0", APP_PORT);
 

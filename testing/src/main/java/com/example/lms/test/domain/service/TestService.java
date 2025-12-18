@@ -50,7 +50,7 @@ public class TestService {
     private TestModel toModel(Test dto) {
         return new TestModel(
                 dto.getId() != null ? UUID.fromString(dto.getId().toString()) : null,
-                null,
+                dto.getCourseId() != null ? UUID.fromString(dto.getCourseId().toString()) : null,
                 dto.getTitle(),
                 dto.getMin_point(),
                 dto.getDescription());
@@ -69,6 +69,7 @@ public class TestService {
     private Test toDto(TestModel model) {
         return new Test(
                 model.getId() != null ? model.getId().toString() : null,
+                model.getCourseId() != null ? model.getCourseId().toString() : null,
                 model.getTitle(),
                 model.getMinPoint(),
                 model.getDescription());
