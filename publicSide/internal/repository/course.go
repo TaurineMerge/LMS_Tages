@@ -17,6 +17,7 @@ import (
 // CourseRepository defines the interface for course data operations.
 type CourseRepository interface {
 	GetCoursesByCategoryID(ctx context.Context, categoryID string, page, limit int) ([]domain.Course, int, error)
+	GetCourseByID(ctx context.Context, courseID string) (*domain.Course, error)
 	GetCategoryByID(ctx context.Context, categoryID string) (*domain.Category, error)
 }
 
@@ -144,4 +145,43 @@ func (r *courseRepository) GetCategoryByID(ctx context.Context, categoryID strin
 	}
 
 	return &category, nil
+}
+
+// GetCourseByID retrieves a single public course by its ID.
+func (r *courseRepository) GetCourseByID(ctx context.Context, courseID string) (*domain.Course, error) {
+	tracer := otel.Tracer("repository")
+	ctx, span := tracer.Start(ctx, "courseRepository.GetCourseByID")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("course_id", courseID))
+
+	query := `
+		SELECT id, title, description, level, category_id, visibility, created_at, updated_at
+		FROM knowledge_base.course_b
+		WHERE id = $1 AND visibility = 'public'
+	`
+
+	var course domain.Course
+	err := r.db.QueryRow(ctx, query, courseID).Scan(
+		&course.ID,
+		&course.Title,
+		&course.Description,
+		&course.Level,
+		&course.CategoryID,
+		&course.Visibility,
+		&course.CreatedAt,
+		&course.UpdatedAt,
+	)
+
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			span.SetStatus(codes.Error, "Course not found")
+			return nil, apperrors.NewNotFoundError(fmt.Sprintf("Course with ID %s not found", courseID))
+		}
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "Failed to query course")
+		return nil, apperrors.NewDatabaseError("Failed to retrieve course", err)
+	}
+
+	return &course, nil
 }

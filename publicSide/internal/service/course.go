@@ -16,6 +16,7 @@ import (
 // CourseService defines the interface for course business logic.
 type CourseService interface {
 	GetCoursesByCategoryID(ctx context.Context, categoryID string, page, limit int) ([]response.CourseDTO, *response.Pagination, error)
+	GetCourseByID(ctx context.Context, courseID string) (*response.CourseDTO, error)
 	GetCategoryByID(ctx context.Context, categoryID string) (*response.CategoryDTO, error)
 }
 
@@ -139,4 +140,21 @@ func TruncateDescription(text string, maxChars int) string {
 	}
 
 	return truncated + "..."
+}
+
+// GetCourseByID retrieves a single course by ID and converts it to a DTO.
+func (s *courseService) GetCourseByID(ctx context.Context, courseID string) (*response.CourseDTO, error) {
+	tracer := otel.Tracer("service")
+	ctx, span := tracer.Start(ctx, "courseService.GetCourseByID")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("course_id", courseID))
+
+	course, err := s.repo.GetCourseByID(ctx, courseID)
+	if err != nil {
+		return nil, err
+	}
+
+	courseDTO := s.mapCourseToDTO(*course)
+	return &courseDTO, nil
 }
