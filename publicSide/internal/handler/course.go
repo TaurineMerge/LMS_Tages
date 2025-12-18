@@ -11,25 +11,25 @@ import (
 	"github.com/google/uuid"
 )
 
-// CourseAPIHandler handles HTTP API requests related to courses.
-type CourseAPIHandler struct {
+// CourseHandler handles HTTP API requests related to courses.
+type CourseHandler struct {
 	service service.CourseService
 }
 
-// NewCourseAPIHandler creates a new instance of a course API handler.
-func NewCourseAPIHandler(s service.CourseService) *CourseAPIHandler {
-	return &CourseAPIHandler{service: s}
+// NewCourseHandler creates a new instance of a course handler.
+func NewCourseHandler(s service.CourseService) *CourseHandler {
+	return &CourseHandler{service: s}
 }
 
 // RegisterRoutes registers the routes for course-related API endpoints.
-func (h *CourseAPIHandler) RegisterRoutes(router fiber.Router) fiber.Router {
+func (h *CourseHandler) RegisterRoutes(router fiber.Router) fiber.Router {
 	router.Get("/", h.GetCoursesByCategoryID)
 	router.Get(apiconst.PathCourse, h.GetCourseByID)
 	return router
 }
 
 // GetCoursesByCategoryID handles the API request to get a paginated and filtered list of courses for a category.
-func (h *CourseAPIHandler) GetCoursesByCategoryID(c *fiber.Ctx) error {
+func (h *CourseHandler) GetCoursesByCategoryID(c *fiber.Ctx) error {
 	categoryID := c.Params(apiconst.ParamCategoryID)
 	if _, err := uuid.Parse(categoryID); err != nil {
 		return apperrors.NewInvalidUUID(apiconst.ParamCategoryID)
@@ -54,7 +54,7 @@ func (h *CourseAPIHandler) GetCoursesByCategoryID(c *fiber.Ctx) error {
 }
 
 // GetCourseByID handles the API request to get a single course by its ID.
-func (h *CourseAPIHandler) GetCourseByID(c *fiber.Ctx) error {
+func (h *CourseHandler) GetCourseByID(c *fiber.Ctx) error {
 	categoryID := c.Params(apiconst.ParamCategoryID)
 	if _, err := uuid.Parse(categoryID); err != nil {
 		return apperrors.NewInvalidUUID(apiconst.ParamCategoryID)

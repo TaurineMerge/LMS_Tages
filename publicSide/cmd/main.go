@@ -111,14 +111,14 @@ func main() {
 	lessonService := service.NewLessonService(lessonRepo)
 
 	// Initialize handlers
+	courseHandler := handler.NewCourseHandler(courseService)
 	lessonHandler := handler.NewLessonHandler(lessonService)
 
 	categoryRouter := apiV1.Group("/categories")
 	courseRouter := categoryRouter.Group(apiconst.PathCategory + "/courses")
 
-	// Register course API handler
-	courseAPIHandler := handler.NewCourseAPIHandler(courseService)
-	courseAPIHandler.RegisterRoutes(courseRouter)
+	// Register course handler
+	courseHandler.RegisterRoutes(courseRouter)
 
 	lessonHandler.RegisterRoutes(courseRouter)
 
