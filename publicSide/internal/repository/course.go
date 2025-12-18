@@ -89,14 +89,14 @@ func (r *courseRepository) GetCoursesByCategoryID(ctx context.Context, categoryI
 	// Calculate offset
 	offset := (page - 1) * limit
 
-	// Get paginated courses
+	// Get paginated courses ordered from oldest to newest
 	queryBuilder := r.psql.Select("id", "title", "description", "level", "category_id", "visibility", "created_at", "updated_at").
 		From(courseTable).
 		Where(squirrel.Eq{
 			"category_id": categoryID,
 			"visibility":  "public",
 		}).
-		OrderBy("created_at DESC").
+		OrderBy("created_at ASC").
 		Limit(uint64(limit)).
 		Offset(uint64(offset))
 

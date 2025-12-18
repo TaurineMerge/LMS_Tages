@@ -1,6 +1,6 @@
 <!-- templates/pages/categories.hbs -->
 
-<section class="courses">
+<section class="category-courses">
     <header class="page-header">
         <div class="page-header__breadcrumbs">
             <a href="/">Главная</a>
@@ -10,53 +10,44 @@
         <h1 class="page-header__title">Категории курсов</h1>
     </header>
 
-    {{#each categories}}
-        <section class="courses-category">
-            <div class="courses__header">
-                <h2 class="courses__subtitle">{{Title}}</h2>
+    {{#if categories}}
+        <div class="categories-grid">
+            {{#each categories}}
+                <section class="categories-grid__column">
+                    <h2 class="categories-grid__title">{{Title}}</h2>
 
-                {{#if TotalCourses}}
-                    <span class="courses__count">{{TotalCourses}} курсов</span>
-                {{/if}}
-            </div>
+                    {{#if TotalCourses}}
+                        <div class="categories-grid__count">{{TotalCourses}} курсов</div>
+                    {{/if}}
 
-            {{#if Courses}}
-                <div class="courses__grid">
-                    {{#each Courses}}
-                        <article class="course-card">
-                            <div class="course-card__image">
-                                <span>📚</span>
-                            </div>
-                            <div class="course-card__content">
-                                <h3 class="course-card__title">{{Title}}</h3>
-                            </div>
-                        </article>
-                    {{/each}}
-                </div>
-            {{else}}
-                <div class="empty-state">
-                    <p class="empty-state__text">
-                        В этой категории пока нет доступных курсов.
-                    </p>
-                </div>
-            {{/if}}
+                    {{#if Courses}}
+                        <ul class="categories-grid__courses">
+                            {{#each Courses}}
+                                <li class="categories-grid__course-item">
+                                    {{Title}}
+                                </li>
+                            {{/each}}
+                        </ul>
+                    {{else}}
+                        <div class="categories-grid__empty">
+                            В этой категории пока нет доступных курсов.
+                        </div>
+                    {{/if}}
 
-            {{#if HasMoreCourses}}
-                <div class="courses-category__actions">
-                    <a href="/categories/category_{{ID}}/courses" class="button button--primary">
-                        Показать ещё
-                    </a>
-                </div>
-            {{/if}}
-        </section>
-    {{/each}}
-
-    {{^categories}}
+                    {{#if HasMoreCourses}}
+                        <a href="/categories/category_{{ID}}/courses" class="categories-grid__more-link">
+                            Показать ещё
+                        </a>
+                    {{/if}}
+                </section>
+            {{/each}}
+        </div>
+    {{else}}
         <div class="empty-state">
             <p class="empty-state__text">
                 Пока нет ни одной категории. Создайте категории через Swagger admin, и они появятся здесь автоматически.
             </p>
         </div>
-    {{/categories}}
+    {{/if}}
 </section>
 

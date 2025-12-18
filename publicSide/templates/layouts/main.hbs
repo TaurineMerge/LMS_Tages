@@ -1,18 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{title}} - LMS</title>
     <link rel="stylesheet" href="/static/css/main.css">
+
+    <style>
+        /* Основные стили для прижатия футера */
+        html, body {
+            height: 100%; /* 100% высоты документа */
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh; /* 100% высоты viewport */
+        }
+        
+        .main-content {
+            flex: 1; /* Занимает все доступное пространство */
+        }
+    </style>
 </head>
 <body>
-    <div class="wrapper">
-        {{> partials/header }}
-        <main class="main">
-            {{embed}}
-        </main>
-        {{> partials/footer }}
-    </div>
+    <!-- Обертка для прижатия футера -->
+    
+    {{> partials/header }}
+        
+    <main class="main-content">
+        {{{embed}}}
+    </main>
+        
+    {{> partials/footer }}
+    
 </body>
 </html>
