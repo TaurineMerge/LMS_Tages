@@ -118,16 +118,16 @@ func main() {
 	}))
 	lessonHandler := v1.NewLessonHandler(lessonService)
 	categoryHandler := v1.NewCategoryHandler(categoryService)
-	courseHandler := v1.NewCourseHandler(courseService, categoryService)
+	courseHandler := v1.NewCourseHandler(courseService)
 
 	// Web
 	homeHandler := web.NewHomeHandler()
 
 	// --- Регистрация маршрутов ---
 	// API
-	categoryHandler.RegisterRoutes(apiV1)
-	courseHandler.RegisterRoutes(apiV1)
-	lessonHandler.RegisterRoutes(apiV1)
+	categoriesIdRouter := categoryHandler.RegisterRoutes(apiV1)
+	courseIdRouter := courseHandler.RegisterRoutes(categoriesIdRouter)
+	lessonHandler.RegisterRoutes(courseIdRouter)
 
 	// Web
 	app.Get("/", homeHandler.RenderHome)
