@@ -1,0 +1,39 @@
+<section class="page-header">
+    <div class="page-header__breadcrumbs">
+        <a href="/">Home</a>
+        <span class="page-header__separator">/</span>
+        <a href="#">Categories</a>
+        <span class="page-header__separator">/</span>
+        <a href="#">{{course.Title}}</a>
+    </div>
+    <div class="lesson-header">
+        <h1 class="lesson-header__title">{{lesson.Title}}</h1>
+        <span class="lesson-header__timestamp">Last updated: {{lesson.UpdatedAt}}</span>
+    </div>
+</section>
+
+<article class="lesson-content">
+    {{#each lesson.Content}}
+        {{#if (eqs this.ContentType "text")}}
+            <div class="content-block content-block--text">
+                <p>{{{this.Data}}}</p>
+            </div>
+        {{/if}}
+        {{#if (eqs this.ContentType "image")}}
+            <div class="content-block content-block--image">
+                <img src="{{this.URL}}" alt="{{this.Alt}}">
+            </div>
+        {{/if}}
+    {{/each}}
+</article>
+
+<div class="lesson-navigation">
+    {{#if prevLesson.ID}}
+    <a href="/categories/{{course.CategoryID}}/courses/{{course.ID}}/lessons/{{prevLesson.ID}}" class="button button--primary lesson__button">Previous Lesson</a>
+    {{/if}}
+
+    {{#if nextLesson.ID}}
+    <a href="/categories/{{course.CategoryID}}/courses/{{course.ID}}/lessons/{{nextLesson.ID}}" class="button button--primary lesson__button" style="margin-left: auto;">Next Lesson</a>
+    {{/if}}
+</div>
+

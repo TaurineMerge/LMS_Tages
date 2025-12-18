@@ -16,6 +16,7 @@ import (
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/repository"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/service"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/template"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apiconst"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/database"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/tracing"
 	"github.com/gofiber/contrib/otelfiber/v2"
@@ -116,29 +117,31 @@ func main() {
 	apiV1.Get("/swagger/*", swagger.New(swagger.Config{
 		URL: "/doc/swagger.json",
 	}))
-	lessonHandler := v1.NewLessonHandler(lessonService)
-	categoryHandler := v1.NewCategoryHandler(categoryService)
-	courseHandler := v1.NewCourseHandler(courseService)
+	apiLessonHandler := v1.NewLessonHandler(lessonService)
+	apiCategoryHandler := v1.NewCategoryHandler(categoryService)
+	apiCourseHandler := v1.NewCourseHandler(courseService)
 
 	// Web
 	homeHandler := web.NewHomeHandler()
 	coursesHandler := web.NewCoursesHandler(courseService)
+	webLessonHandler := web.NewLessonHandler(lessonService, courseService)
 
 	// --- Регистрация маршрутов ---
-	// API - регистрируем цепочкой для правильной иерархии маршрутов
-	categoriesIdRouter := categoryHandler.RegisterRoutes(apiV1)
-	courseIdRouter := courseHandler.RegisterRoutes(categoriesIdRouter)
-	lessonHandler.RegisterRoutes(courseIdRouter)
+	// API
+	categoriesIdRouter := apiCategoryHandler.RegisterRoutes(apiV1)
+	courseIdRouter := apiCourseHandler.RegisterRoutes(categoriesIdRouter)
+	apiLessonHandler.RegisterRoutes(courseIdRouter)
 
 	// Web
 	app.Get("/", homeHandler.RenderHome)
-	app.Get("/categories/:categoryId/courses", coursesHandler.RenderCourses)
-	app.Get("/test", func(c *fiber.Ctx) error {
-		return c.Render("pages/test", fiber.Map{
-			"title":         "Test",
-			"CategoryTitle": "Test Category",
-		}, "layouts/main")
-	})
+
+	webCategoriesRouter := app.Group("/categories")
+	
+	webCoursesRouter := webCategoriesRouter.Group("/:" + apiconst.PathVariableCategoryID + "/courses")
+	webCoursesRouter.Get("/", coursesHandler.RenderCourses)
+
+	webLessonsRouter := webCoursesRouter.Group("/:" + apiconst.PathVariableCourseID + "/lessons")
+	webLessonsRouter.Get("/:" + apiconst.PathVariableLessonID, webLessonHandler.RenderLesson)
 
 	slog.Info("Starting server", "address", cfg.Port)
 	if err := app.Listen(fmt.Sprintf(":%s", cfg.Port)); err != nil {

@@ -40,6 +40,10 @@ func NewEngine() *handlebars.Engine {
 		return truncated + "..."
 	})
 
+	engine.AddFunc("eqs", func(a, b string) bool {
+		return a == b
+	})
+
 	// Register custom helper for equality comparison
 	engine.AddFunc("eq", func(a, b int) bool {
 		return a == b
