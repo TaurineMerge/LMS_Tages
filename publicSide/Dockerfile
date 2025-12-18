@@ -26,7 +26,12 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /root/
 
 # Копируем бинарник из этапа сборки
-COPY --from=builder /app .
+COPY --from=builder /app/main .
+
+# Копируем статические файлы и шаблоны
+COPY --from=builder /app/static ./static
+COPY --from=builder /app/templates ./templates
+COPY --from=builder /app/doc ./doc
 
 # Открываем порт 3000
 EXPOSE 3000

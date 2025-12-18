@@ -1,0 +1,27 @@
+<div class="course-card">
+    <div class="course-card__image">📖</div>
+    <div class="course-card__content">
+        <div class="course-card__meta">
+            {{#if LevelRu}}
+            <span class="course-card__level course-card__level--{{Level}}">
+                {{LevelRu}}
+            </span>
+            {{/if}}
+        </div>
+        <h3 class="course-card__title">{{Title}}</h3>
+        <p class="course-card__description">{{#if Description}}{{truncate Description 150}}{{else}}Описание курса отсутствует.{{/if}}</p>
+        <div class="course-card__stats">
+            <div class="course-card__stat">
+                <span>📚</span>
+                <span>10 уроков</span>
+            </div>
+            <div class="course-card__stat">
+                <span>⏱️</span>
+                <span>20 часов</span>
+            </div>
+        </div>
+    </div>
+    <div class="course-card__footer">
+        <a href="/categories/{{../CategoryID}}/courses/{{ID}}" class="button button--primary">Подробнее</a>
+    </div>
+</div>

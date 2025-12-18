@@ -38,9 +38,9 @@ func (h *CourseHandler) RegisterRoutes(router fiber.Router) fiber.Router {
 
 // GetCoursesByCategoryID handles the request to get paginated courses for a specific category.
 func (h *CourseHandler) GetCoursesByCategoryID(c *fiber.Ctx) error {
-	categoryID := c.Params("categoryId")
+	categoryID := c.Params(apiconst.PathVariableCategoryID)
 	if _, err := uuid.Parse(categoryID); err != nil {
-		return apperrors.NewInvalidUUID("categoryId")
+		return apperrors.NewInvalidUUID(apiconst.PathVariableCategoryID)
 	}
 
 	var query request.PaginationQuery
@@ -54,8 +54,8 @@ func (h *CourseHandler) GetCoursesByCategoryID(c *fiber.Ctx) error {
 		return err
 	}
 
-	// Get courses for this category with pagination
-	courses, pagination, err := h.courseService.GetCoursesByCategoryID(c.UserContext(), categoryID, query.Page, query.Limit)
+	// Get courses for this category with pagination (no filters for API)
+	courses, pagination, err := h.courseService.GetCoursesByCategoryID(c.UserContext(), categoryID, query.Page, query.Limit, "", "")
 	if err != nil {
 		return err
 	}
@@ -73,14 +73,14 @@ func (h *CourseHandler) GetCoursesByCategoryID(c *fiber.Ctx) error {
 
 // GetCourseByID handles the request to get a single course by its ID.
 func (h *CourseHandler) GetCourseByID(c *fiber.Ctx) error {
-	categoryID := c.Params("categoryId")
+	categoryID := c.Params(apiconst.PathVariableCategoryID)
 	if _, err := uuid.Parse(categoryID); err != nil {
-		return apperrors.NewInvalidUUID("categoryId")
+		return apperrors.NewInvalidUUID(apiconst.PathVariableCategoryID)
 	}
 
-	courseID := c.Params("courseId")
+	courseID := c.Params(apiconst.PathVariableCourseID)
 	if _, err := uuid.Parse(courseID); err != nil {
-		return apperrors.NewInvalidUUID("courseId")
+		return apperrors.NewInvalidUUID(apiconst.PathVariableCourseID)
 	}
 
 	course, err := h.courseService.GetCourseByID(c.UserContext(), categoryID, courseID)

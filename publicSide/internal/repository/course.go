@@ -15,7 +15,7 @@ import (
 
 // CourseRepository defines the interface for course data operations.
 type CourseRepository interface {
-	GetCoursesByCategoryID(ctx context.Context, categoryID string, page, limit int) ([]domain.Course, int, error)
+	GetCoursesByCategoryID(ctx context.Context, categoryID string, page, limit int, level, sortBy string) ([]domain.Course, int, error)
 	GetCourseByID(ctx context.Context, categoryID, courseID string) (domain.Course, error)
 }
 
@@ -47,8 +47,8 @@ func (r *courseRepository) scanCourse(row scanner) (domain.Course, error) {
 	return course, err
 }
 
-// GetCoursesByCategoryID retrieves paginated public courses for a given category.
-func (r *courseRepository) GetCoursesByCategoryID(ctx context.Context, categoryID string, page, limit int) ([]domain.Course, int, error) {
+// GetCoursesByCategoryID retrieves paginated public courses for a given category with optional filters and sorting.
+func (r *courseRepository) GetCoursesByCategoryID(ctx context.Context, categoryID string, page, limit int, level, sortBy string) ([]domain.Course, int, error) {
 	tracer := otel.Tracer("repository")
 	ctx, span := tracer.Start(ctx, "courseRepository.GetCoursesByCategoryID")
 	defer span.End()
@@ -57,15 +57,22 @@ func (r *courseRepository) GetCoursesByCategoryID(ctx context.Context, categoryI
 		attribute.String("category_id", categoryID),
 		attribute.Int("page", page),
 		attribute.Int("limit", limit),
+		attribute.String("level", level),
+		attribute.String("sort_by", sortBy),
 	)
 
-	// Count total public courses
+	// Count total public courses with filters
 	countQuery := r.psql.Select("COUNT(*)").
 		From(courseTable).
 		Where(squirrel.Eq{
 			"category_id": categoryID,
 			"visibility":  "public",
 		})
+
+	// Apply level filter if specified
+	if level != "" && level != "all" {
+		countQuery = countQuery.Where(squirrel.Eq{"level": level})
+	}
 
 	countSql, countArgs, err := countQuery.ToSql()
 	if err != nil {
@@ -89,14 +96,37 @@ func (r *courseRepository) GetCoursesByCategoryID(ctx context.Context, categoryI
 	// Calculate offset
 	offset := (page - 1) * limit
 
-	// Get paginated courses
+	// Get paginated courses with filters
 	queryBuilder := r.psql.Select("id", "title", "description", "level", "category_id", "visibility", "created_at", "updated_at").
 		From(courseTable).
 		Where(squirrel.Eq{
 			"category_id": categoryID,
 			"visibility":  "public",
-		}).
-		OrderBy("created_at DESC").
+		})
+
+	// Apply level filter if specified
+	if level != "" && level != "all" {
+		queryBuilder = queryBuilder.Where(squirrel.Eq{"level": level})
+	}
+
+	// Determine sort order
+	orderBy := "updated_at DESC"
+	switch sortBy {
+	case "updated_asc":
+		orderBy = "updated_at ASC"
+	case "updated_desc":
+		orderBy = "updated_at DESC"
+	case "created_asc":
+		orderBy = "created_at ASC"
+	case "created_desc":
+		orderBy = "created_at DESC"
+	default:
+		// Default to updated_at DESC
+		orderBy = "updated_at DESC"
+	}
+
+	queryBuilder = queryBuilder.
+		OrderBy(orderBy).
 		Limit(uint64(limit)).
 		Offset(uint64(offset))
 

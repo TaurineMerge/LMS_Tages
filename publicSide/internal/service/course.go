@@ -17,8 +17,9 @@ import (
 
 // CourseService defines the interface for course business logic.
 type CourseService interface {
-	GetCoursesByCategoryID(ctx context.Context, categoryID string, page, limit int) ([]response.CourseDTO, response.Pagination, error)
+	GetCoursesByCategoryID(ctx context.Context, categoryID string, page, limit int, level, sortBy string) ([]response.CourseDTO, response.Pagination, error)
 	GetCourseByID(ctx context.Context, categoryID, courseID string) (response.CourseDTO, error)
+	GetCategoryByID(ctx context.Context, categoryID string) (*response.CategoryDTO, error)
 }
 
 type courseService struct {
@@ -34,8 +35,8 @@ func NewCourseService(repo repository.CourseRepository, categoryRepo repository.
 	}
 }
 
-// GetCoursesByCategoryID retrieves paginated courses for a category and converts them to DTOs.
-func (s *courseService) GetCoursesByCategoryID(ctx context.Context, categoryID string, page, limit int) ([]response.CourseDTO, response.Pagination, error) {
+// GetCoursesByCategoryID retrieves paginated courses for a category with filters and converts them to DTOs.
+func (s *courseService) GetCoursesByCategoryID(ctx context.Context, categoryID string, page, limit int, level, sortBy string) ([]response.CourseDTO, response.Pagination, error) {
 	tracer := otel.Tracer("service")
 	ctx, span := tracer.Start(ctx, "courseService.GetCoursesByCategoryID")
 	defer span.End()
@@ -44,6 +45,8 @@ func (s *courseService) GetCoursesByCategoryID(ctx context.Context, categoryID s
 		attribute.String("category_id", categoryID),
 		attribute.Int("page", page),
 		attribute.Int("limit", limit),
+		attribute.String("level", level),
+		attribute.String("sort_by", sortBy),
 	)
 
 	// Validate that category exists
@@ -63,7 +66,7 @@ func (s *courseService) GetCoursesByCategoryID(ctx context.Context, categoryID s
 		limit = 28 // Default limit
 	}
 
-	courses, total, err := s.repo.GetCoursesByCategoryID(ctx, categoryID, page, limit)
+	courses, total, err := s.repo.GetCoursesByCategoryID(ctx, categoryID, page, limit, level, sortBy)
 	if err != nil {
 		return nil, response.Pagination{}, err
 	}
@@ -130,6 +133,30 @@ func TruncateDescription(text string, maxChars int) string {
 	}
 
 	return truncated + "..."
+}
+
+// GetCategoryByID retrieves a category by ID and converts it to a DTO.
+func (s *courseService) GetCategoryByID(ctx context.Context, categoryID string) (*response.CategoryDTO, error) {
+	tracer := otel.Tracer("service")
+	ctx, span := tracer.Start(ctx, "courseService.GetCategoryByID")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("category_id", categoryID))
+
+	category, err := s.categoryRepo.GetByID(ctx, categoryID)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return nil, apperrors.NewNotFound("Category")
+		}
+		return nil, err
+	}
+
+	return &response.CategoryDTO{
+		ID:        category.ID,
+		Title:     category.Title,
+		CreatedAt: category.CreatedAt,
+		UpdatedAt: category.UpdatedAt,
+	}, nil
 }
 
 // GetCourseByID retrieves a single course by ID and converts it to DTO.
