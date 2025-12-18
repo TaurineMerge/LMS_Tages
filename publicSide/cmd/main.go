@@ -12,6 +12,7 @@ import (
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/config"
 	v1 "github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/api/v1"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/api/v1/middleware"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/web"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/repository"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/service"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/database"
@@ -19,6 +20,7 @@ import (
 	"github.com/gofiber/contrib/otelfiber/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/template/handlebars/v2"
 	"github.com/gofiber/swagger"
 	"github.com/joho/godotenv"
 )
@@ -78,8 +80,11 @@ func main() {
 	defer dbPool.Close()
 	slog.Info("Database connection pool established")
 
+	engine := handlebars.New("./templates", ".hbs")
+
 	app := fiber.New(fiber.Config{
 		ErrorHandler: middleware.GlobalErrorHandler,
+		Views:        engine,
 	})
 
 	app.Use(cors.New(cors.Config{
@@ -93,12 +98,7 @@ func main() {
 	app.Use(middleware.RequestResponseLogger())
 
 	app.Static("/doc", "./doc/swagger")
-
-	apiV1 := app.Group("/api/v1")
-
-	apiV1.Get("/swagger/*", swagger.New(swagger.Config{
-		URL: "/doc/swagger.json",
-	}))
+	app.Static("/static", "./static")
 
 	// Инициализация репозитория
 	lessonRepo := repository.NewLessonRepository(dbPool)
@@ -110,15 +110,27 @@ func main() {
 	categoryService := service.NewCategoryService(categoryRepo)
 	courseService := service.NewCourseService(courseRepo, categoryRepo)
 
-	// Инициализация хэндлеров для api
+	// --- Инициализация хэндлеров ---
+	// API
+	apiV1 := app.Group("/api/v1")
+	apiV1.Get("/swagger/*", swagger.New(swagger.Config{
+		URL: "/doc/swagger.json",
+	}))
 	lessonHandler := v1.NewLessonHandler(lessonService)
 	categoryHandler := v1.NewCategoryHandler(categoryService)
 	courseHandler := v1.NewCourseHandler(courseService, categoryService)
 
-	// Регистрация маршрутов
-	categoriesIdRouter := categoryHandler.RegisterRoutes(apiV1)
-	courseIdRouter := courseHandler.RegisterRoutes(categoriesIdRouter)
-	lessonHandler.RegisterRoutes(courseIdRouter)
+	// Web
+	homeHandler := web.NewHomeHandler()
+
+	// --- Регистрация маршрутов ---
+	// API
+	categoryHandler.RegisterRoutes(apiV1)
+	courseHandler.RegisterRoutes(apiV1)
+	lessonHandler.RegisterRoutes(apiV1)
+
+	// Web
+	app.Get("/", homeHandler.RenderHome)
 
 	slog.Info("Starting server", "address", cfg.Port)
 	if err := app.Listen(fmt.Sprintf(":%s", cfg.Port)); err != nil {

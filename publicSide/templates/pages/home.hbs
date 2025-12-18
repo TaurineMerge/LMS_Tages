@@ -1,0 +1,58 @@
+<section class="page-header">
+    <div class="page-header__breadcrumbs">
+        <a href="#">Home</a>
+    </div>
+    <h1 class="page-header__title">Our Courses</h1>
+</section>
+
+<section class="courses">
+    <div class="courses__header">
+        <h2 class="courses__subtitle">All Courses</h2>
+        <div class="courses__filters">
+            <form class="filters-form">
+                <div class="filter-group">
+                    <label for="level-filter">Level:</label>
+                    <select id="level-filter" name="level">
+                        <option value="all">All</option>
+                        <option value="easy">Easy</option>
+                        <option value="medium">Medium</option>
+                        <option value="hard">Hard</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="courses__grid">
+        {{#each courses}}
+        <div class="course-card">
+            <div class="course-card__image">
+                <span>📚</span>
+            </div>
+            <div class="course-card__content">
+                <h3 class="course-card__title">{{this.Title}}</h3>
+                <div class="course-card__meta">
+                    <span class="course-card__level course-card__level--{{this.Level}}">{{this.Level}}</span>
+                </div>
+                <p class="course-card__description">{{this.Description}}</p>
+            </div>
+            <div class="course-card__footer">
+                <a href="#" class="button button--primary">View Course</a>
+            </div>
+        </div>
+        {{else}}
+        <div class="empty-state" style="grid-column: 1 / -1;">
+            <div class="empty-state__icon">🤷‍♂️</div>
+            <h3 class="empty-state__title">No Courses Found</h3>
+            <p class="empty-state__text">We couldn't find any courses matching your criteria. Try adjusting your filters.</p>
+        </div>
+        {{/each}}
+    </div>
+</section>
+
+<div class="pagination">
+    <div class="pagination__pages">
+        <a href="#" class="pagination__page pagination__page--active">1</a>
+        <a href="#" class="pagination__page">2</a>
+        <a href="#" class="pagination__page">3</a>
+    </div>
+</div>

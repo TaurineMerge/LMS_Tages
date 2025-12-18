@@ -1,0 +1,13 @@
+@import url('./base/fonts.css');
+@import url('./base/variables.css');
+@import url('./base/reset.css');
+@import url('./base/scaffolding.css');
+@import url('./components/header.css');
+@import url('./components/page-header.css');
+@import url('./components/filters.css');
+@import url('./components/course-card.css');
+@import url('./components/button.css');
+@import url('./components/pagination.css');
+@import url('./components/empty-state.css');
+@import url('./components/footer.css');
+@import url('./pages/courses.css');
