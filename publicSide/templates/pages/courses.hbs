@@ -1,0 +1,81 @@
+<div class="page-header">
+    <div class="page-header__breadcrumbs">
+        <a href="/">Главная</a>
+        <span class="page-header__separator">/</span>
+        <a href="/categories">Категории</a>
+        <span class="page-header__separator">/</span>
+        <span>{{CategoryTitle}}</span>
+    </div>
+    <h1 class="page-header__title">{{CategoryTitle}}</h1>
+</div>
+
+<div class="courses">
+    <div class="courses__header">
+        <h2 class="courses__subtitle">
+            {{#if Courses}}
+                Доступные курсы ({{Pagination.Total}})
+            {{else}}
+                Нет доступных курсов
+            {{/if}}
+        </h2>
+        <div class="courses__filters">
+            <form method="GET" action="/categories/{{CategoryID}}/courses" class="filters-form">
+                <div class="filter-group">
+                    <label for="level-filter">Сложность:</label>
+                    <select name="level" id="level-filter" onchange="this.form.submit()">
+                        <option value="all" {{#if (streq Level "all")}}selected{{/if}}>Все уровни</option>
+                        <option value="easy" {{#if (streq Level "easy")}}selected{{/if}}>Легкий</option>
+                        <option value="medium" {{#if (streq Level "medium")}}selected{{/if}}>Средний</option>
+                        <option value="hard" {{#if (streq Level "hard")}}selected{{/if}}>Сложный</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="sort-filter">Сортировка:</label>
+                    <select name="sort_by" id="sort-filter" onchange="this.form.submit()">
+                        <option value="updated_desc" {{#if (streq SortBy "updated_desc")}}selected{{/if}}>Сначала новые</option>
+                        <option value="updated_asc" {{#if (streq SortBy "updated_asc")}}selected{{/if}}>Сначала старые</option>
+                    </select>
+                </div>
+                <input type="hidden" name="page" value="{{CurrentPage}}">
+            </form>
+        </div>
+    </div>
+
+    {{#if Courses}}
+        <div class="courses__grid">
+            {{#each Courses}}
+                {{> partials/course-card}}
+            {{/each}}
+        </div>
+
+        {{#if Pagination}}
+        {{#if (gt Pagination.Pages 1)}}
+        <div class="pagination">
+            {{#if (gt CurrentPage 1)}}
+                <a href="/categories/{{CategoryID}}/courses?page={{subtract CurrentPage 1}}&level={{Level}}&sort_by={{SortBy}}" class="pagination__btn">← Назад</a>
+            {{/if}}
+
+            <div class="pagination__pages">
+                {{#each (range 1 Pagination.Pages)}}
+                    {{#if (eq this ../CurrentPage)}}
+                        <a href="/categories/{{../CategoryID}}/courses?page={{this}}&level={{../Level}}&sort_by={{../SortBy}}" class="pagination__page pagination__page--active">{{this}}</a>
+                    {{else}}
+                        <a href="/categories/{{../CategoryID}}/courses?page={{this}}&level={{../Level}}&sort_by={{../SortBy}}" class="pagination__page">{{this}}</a>
+                    {{/if}}
+                {{/each}}
+            </div>
+
+            {{#if (lt CurrentPage Pagination.Pages)}}
+                <a href="/categories/{{CategoryID}}/courses?page={{add CurrentPage 1}}&level={{Level}}&sort_by={{SortBy}}" class="pagination__btn">Вперёд →</a>
+            {{/if}}
+        </div>
+        {{/if}}
+        {{/if}}
+    {{else}}
+        <div class="empty-state">
+            <div class="empty-state__icon">📭</div>
+            <h2 class="empty-state__title">Курсы не найдены</h2>
+            <p class="empty-state__text">В этой категории пока нет доступных курсов.</p>
+        </div>
+    {{/if}}
+</div>

@@ -8,6 +8,7 @@ require (
 	github.com/gofiber/contrib/otelfiber/v2 v2.2.3
 	github.com/gofiber/fiber/v2 v2.52.8
 	github.com/gofiber/swagger v1.1.0
+	github.com/gofiber/template/handlebars/v2 v2.1.12
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/joho/godotenv v1.5.1
@@ -33,7 +34,6 @@ require (
 	github.com/go-openapi/spec v0.20.4 // indirect
 	github.com/go-openapi/swag v0.19.15 // indirect
 	github.com/gofiber/template v1.8.3 // indirect
-	github.com/gofiber/template/handlebars/v2 v2.1.12 // indirect
 	github.com/gofiber/utils v1.1.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.3 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect

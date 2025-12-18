@@ -46,8 +46,8 @@ func (h *CourseHandler) GetCoursesByCategoryID(c *fiber.Ctx) error {
 		return apperrors.NewInvalidRequest("Wrong query parameters")
 	}
 
-	// Get courses for this category with pagination
-	courses, pagination, err := h.courseService.GetCoursesByCategoryID(c.UserContext(), categoryID, query.Page, query.Limit)
+	// Get courses for this category with pagination (no filters for API)
+	courses, pagination, err := h.courseService.GetCoursesByCategoryID(c.UserContext(), categoryID, query.Page, query.Limit, "", "")
 	if err != nil {
 		return err
 	}

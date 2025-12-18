@@ -15,12 +15,12 @@ import (
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/web"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/repository"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/service"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/template"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/database"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/tracing"
 	"github.com/gofiber/contrib/otelfiber/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/template/handlebars/v2"
 	"github.com/gofiber/swagger"
 	"github.com/joho/godotenv"
 )
@@ -80,7 +80,7 @@ func main() {
 	defer dbPool.Close()
 	slog.Info("Database connection pool established")
 
-	engine := handlebars.New("./templates", ".hbs")
+	engine := template.NewEngine()
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: middleware.GlobalErrorHandler,
@@ -122,15 +122,23 @@ func main() {
 
 	// Web
 	homeHandler := web.NewHomeHandler()
+	coursesHandler := web.NewCoursesHandler(courseService)
 
 	// --- Регистрация маршрутов ---
-	// API
+	// API - регистрируем цепочкой для правильной иерархии маршрутов
 	categoriesIdRouter := categoryHandler.RegisterRoutes(apiV1)
 	courseIdRouter := courseHandler.RegisterRoutes(categoriesIdRouter)
 	lessonHandler.RegisterRoutes(courseIdRouter)
 
 	// Web
 	app.Get("/", homeHandler.RenderHome)
+	app.Get("/categories/:categoryId/courses", coursesHandler.RenderCourses)
+	app.Get("/test", func(c *fiber.Ctx) error {
+		return c.Render("pages/test", fiber.Map{
+			"title":         "Test",
+			"CategoryTitle": "Test Category",
+		}, "layouts/main")
+	})
 
 	slog.Info("Starting server", "address", cfg.Port)
 	if err := app.Listen(fmt.Sprintf(":%s", cfg.Port)); err != nil {
