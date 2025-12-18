@@ -1,8 +1,8 @@
 """Testing client package for API contract validation.
 
 This package provides comprehensive tools for validating API contracts using JSON Schema
-and the AJV (Another JSON Schema Validator) library. It supports versioned schemas,
-fast validation with caching, and detailed error reporting for API testing.
+and the fastjsonschema library. It supports versioned schemas, fast validation with
+caching, and detailed error reporting for API testing.
 
 Core Components:
     - **ContractManager**: High-level API for contract validation
@@ -35,7 +35,7 @@ Quick Start:
     ```
 
 Features:
-    - **High Performance**: AJV-powered validation with compiled schemas
+    - **High Performance**: fastjsonschema compiled validators
     - **Schema Versioning**: Support for v1, v2, and automatic "latest" version
     - **Smart Caching**: Compiled validators cached for repeated validations
     - **Rich Errors**: Structured error objects with JSON paths and details
@@ -51,7 +51,7 @@ Package Structure:
     ```
     app/clients/testing/
     ├── __init__.py           # Package exports (this file)
-    ├── contract_manager.py   # Main validation logic with AJV
+    ├── contract_manager.py   # Main validation logic with fastjsonschema
     ├── schema_loader.py      # Async schema loading and caching
     ├── examples.py           # Usage examples and patterns
     └── schemas/              # JSON Schema definitions
@@ -65,8 +65,7 @@ Package Structure:
 
 See Also:
     - JSON Schema documentation: https://json-schema.org/
-    - AJV documentation: https://ajv.js.org/
-    - pyajv Python bindings: https://pypi.org/project/pyajv/
+    - fastjsonschema: https://pypi.org/project/fastjsonschema/
 
 Examples:
     See `examples.py` for detailed usage patterns and integration examples.

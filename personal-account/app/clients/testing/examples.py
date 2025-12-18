@@ -112,7 +112,7 @@ async def error_handling_example() -> None:
             logger.error(f"Error {i}:")
             logger.error(f"  Path: {error['path']}")
             logger.error(f"  Issue: {error['message']}")
-            logger.error(f"  Keyword: {error['keyword']}")
+            logger.error(f"  Rule: {error['rule']}")
 
 
 async def batch_validation_example() -> None:

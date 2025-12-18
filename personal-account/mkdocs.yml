@@ -37,6 +37,9 @@ nav:
           - Student: api/repositories/student.md
           - Certificate: api/repositories/certificate.md
           - Visit: api/repositories/visit.md
+      - Clients:
+          - Overview: api/clients/index.md
+          - Testing Client: api/clients/testing.md
       - Database: api/database.md
       - Config: api/config.md
       - Telemetry: api/telemetry.md

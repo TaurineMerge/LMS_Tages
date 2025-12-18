@@ -1,14 +1,14 @@
 """Contract validation manager for API contract testing.
 
-This module provides high-performance contract validation using AJV (Another JSON Schema Validator)
-via the pyajv library. It offers fast schema compilation, caching, and detailed error reporting
-for validating API responses and requests against JSON Schema definitions.
+This module provides high-performance contract validation using fastjsonschema library.
+It offers fast schema compilation, caching, and detailed error reporting for validating
+API responses and requests against JSON Schema definitions.
 
 The manager integrates with SchemaLoader to load versioned schemas and provides both
 generic and domain-specific validation methods for common contract types.
 
 Architecture:
-    - Uses pyajv for fast, AJV-compatible validation
+    - Uses fastjsonschema for fast, compiled validation
     - Schema compilation caching for optimal performance
     - Structured error reporting with JSON path information
     - Async-first API design
@@ -38,7 +38,7 @@ Example usage:
     ```
 
 Features:
-    - **Fast validation**: Uses AJV compiled validators for high performance
+    - **Fast validation**: Uses fastjsonschema compiled validators for high performance
     - **Schema caching**: Automatically caches compiled validators
     - **Versioned schemas**: Supports multiple schema versions (v1, v2, latest)
     - **Rich error reporting**: Detailed error messages with JSON paths
@@ -57,9 +57,9 @@ See Also:
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
-import pyajv
+import fastjsonschema
 
 from .schema_loader import SchemaLoader
 
@@ -71,15 +71,14 @@ class ContractValidationError(Exception):
 
     This exception provides detailed information about validation failures,
     including structured error details with JSON paths, messages, and constraint
-    information from the AJV validator.
+    information from the fastjsonschema validator.
 
     Attributes:
         message (str): Human-readable summary of the validation failure.
         errors (list[dict[str, Any]]): List of structured validation errors. Each error contains:
             - `path` (str): JSON pointer to the invalid field (e.g., "data.student_id")
             - `message` (str): Human-readable error description
-            - `keyword` (str): AJV validation keyword that failed (e.g., "type", "required")
-            - `schema_path` (str): Path to the failing constraint in the schema
+            - `rule` (str): Validation rule that failed (e.g., "type", "required")
 
     Example:
 
@@ -93,7 +92,6 @@ class ContractValidationError(Exception):
             for error in e.errors:
                 print(f"  Path: {error['path']}")
                 print(f"  Issue: {error['message']}")
-                print(f"  Keyword: {error['keyword']}")
         ```
     """
 
@@ -115,21 +113,20 @@ class ContractValidationError(Exception):
 
 
 class ContractManager:
-    """Manager for API contract validation using AJV/pyajv.
+    """Manager for API contract validation using fastjsonschema.
 
     This class provides a high-level interface for validating data against JSON schemas
-    using the AJV validator. It handles schema loading, compilation caching, and provides
-    detailed error reporting.
+    using the fastjsonschema library. It handles schema loading, compilation caching,
+    and provides detailed error reporting.
 
-    The manager uses pyajv for fast validation with full AJV feature support including:
-    - JSON Schema Draft-07 and Draft 2020-12
-    - Format validation (uuid, date-time, email, etc.)
-    - Custom keywords and validators
-    - Coercion and type checking
+    The manager uses fastjsonschema for fast validation with compiled validators:
+    - JSON Schema Draft-04, Draft-06, Draft-07 support
+    - Extremely fast validation (compiled to Python code)
+    - Format validation support
+    - Custom format handlers
 
     Attributes:
         schema_loader (SchemaLoader): Loader for JSON schemas.
-        ajv (pyajv.AJV): AJV validator instance.
         cache_size (int): Maximum number of compiled validators to cache.
         enable_caching (bool): Whether to enable validator caching.
 
@@ -158,7 +155,7 @@ class ContractManager:
         cache_size: int = 100,
         enable_caching: bool = True,
     ) -> None:
-        """Initialize contract manager with AJV validator.
+        """Initialize contract manager with fastjsonschema validator.
 
         Args:
             schemas_dir: Path to schemas directory. If None, uses default location
@@ -172,13 +169,10 @@ class ContractManager:
         self.cache_size = cache_size
         self.enable_caching = enable_caching
 
-        # Initialize AJV with recommended settings
-        self.ajv = pyajv.AJV()
+        # Cache for compiled validators: cache_key -> compiled_validator
+        self._validators_cache: dict[str, Callable[[Any], Any]] = {}
 
-        # Cache for compiled validators: schema_hash -> compiled_validator
-        self._validators_cache: dict[str, Any] = {}
-
-        logger.debug("ContractManager initialized with pyajv backend")
+        logger.debug("ContractManager initialized with fastjsonschema backend")
 
     async def validate(
         self,
@@ -189,7 +183,7 @@ class ContractManager:
         """Validate data against a contract schema.
 
         This is the primary validation method. It loads the appropriate schema,
-        compiles it with AJV (or retrieves from cache), and validates the provided data.
+        compiles it with fastjsonschema (or retrieves from cache), and validates the data.
         If validation fails, detailed error information is collected and raised.
 
         Args:
@@ -226,18 +220,18 @@ class ContractManager:
             schema = await self.schema_loader.load(contract_name, version)
 
             # Get or compile validator
-            validator = self._get_validator(schema, f"{contract_name}:{version}")
+            cache_key = f"{contract_name}:{version}"
+            validator = self._get_validator(schema, cache_key)
 
-            # Validate data with AJV
-            is_valid = validator(data)
+            # Validate data with fastjsonschema
+            validator(data)
 
-            if is_valid:
-                logger.debug(f"✓ Contract validation passed: {contract_name}:{version}")
-                return data
+            logger.debug(f"✓ Contract validation passed: {contract_name}:{version}")
+            return data
 
-            # Validation failed - extract errors from AJV
-            ajv_errors = validator.errors or []
-            errors = self._format_ajv_errors(ajv_errors)
+        except fastjsonschema.JsonSchemaValueException as e:
+            # fastjsonschema validation error
+            errors = self._format_fastjsonschema_error(e)
             error_msg = self._create_error_message(contract_name, errors)
 
             logger.warning(
@@ -245,11 +239,17 @@ class ContractManager:
                 extra={"contract": contract_name, "version": version, "error_count": len(errors)},
             )
 
-            raise ContractValidationError(error_msg, errors)
+            raise ContractValidationError(error_msg, errors) from None
+
+        except fastjsonschema.JsonSchemaDefinitionException as e:
+            # Schema definition error (invalid schema)
+            logger.error(f"Invalid schema definition for {contract_name}:{version}: {e}")
+            raise ContractValidationError(f"Invalid schema for {contract_name}: {e!s}") from e
 
         except ContractValidationError:
             # Re-raise validation errors as-is
             raise
+
         except Exception as e:
             # Wrap unexpected errors
             logger.error(
@@ -295,7 +295,8 @@ class ContractManager:
             validated = await manager.validate_user_stats(stats)
             ```
         """
-        return await self.validate(data, "user_stats", "v1")
+        result = await self.validate(data, "user_stats", "v1")
+        return result  # type: ignore[return-value]
 
     async def validate_attempts_list(self, data: dict[str, Any]) -> dict[str, Any]:
         """Validate AttemptsList contract (v1).
@@ -333,7 +334,8 @@ class ContractManager:
             validated = await manager.validate_attempts_list(attempts_data)
             ```
         """
-        return await self.validate(data, "attempts_list", "v1")
+        result = await self.validate(data, "attempts_list", "v1")
+        return result  # type: ignore[return-value]
 
     async def validate_attempt_detail(self, data: dict[str, Any]) -> dict[str, Any]:
         """Validate AttemptDetail contract (v1).
@@ -377,7 +379,8 @@ class ContractManager:
             validated = await manager.validate_attempt_detail(attempt)
             ```
         """
-        return await self.validate(data, "attempt_detail", "v1")
+        result = await self.validate(data, "attempt_detail", "v1")
+        return result  # type: ignore[return-value]
 
     def clear_cache(self) -> None:
         """Clear all cached compiled validators.
@@ -396,19 +399,19 @@ class ContractManager:
         self._validators_cache.clear()
         logger.debug("Validator cache cleared")
 
-    def _get_validator(self, schema: dict[str, Any], cache_key: str) -> Any:
-        """Get compiled AJV validator from cache or compile new one.
+    def _get_validator(self, schema: dict[str, Any], cache_key: str) -> Callable[[Any], Any]:
+        """Get compiled fastjsonschema validator from cache or compile new one.
 
         Args:
             schema: JSON Schema to compile.
             cache_key: Key to use for caching (typically "contract:version").
 
         Returns:
-            Compiled AJV validator function.
+            Compiled fastjsonschema validator function.
         """
         # Return new validator if caching disabled
         if not self.enable_caching:
-            return self.ajv.compile(schema)
+            return fastjsonschema.compile(schema)
 
         # Check cache
         if cache_key in self._validators_cache:
@@ -416,7 +419,7 @@ class ContractManager:
             return self._validators_cache[cache_key]
 
         # Compile new validator
-        validator = self.ajv.compile(schema)
+        validator = fastjsonschema.compile(schema)
 
         # Add to cache
         self._validators_cache[cache_key] = validator
@@ -430,37 +433,49 @@ class ContractManager:
         logger.debug(f"Compiled and cached validator: {cache_key}")
         return validator
 
-    def _format_ajv_errors(self, ajv_errors: list[Any]) -> list[dict[str, Any]]:
-        """Format AJV validation errors into structured list.
+    def _format_fastjsonschema_error(self, error: fastjsonschema.JsonSchemaValueException) -> list[dict[str, Any]]:
+        """Format fastjsonschema validation error into structured list.
 
-        Converts pyajv error objects into a consistent dictionary format
-        with path, message, and metadata for easier consumption.
+        Converts fastjsonschema exception into a consistent dictionary format
+        with path, message, and rule for easier consumption.
 
         Args:
-            ajv_errors: List of AJV error objects from validator.errors.
+            error: JsonSchemaValueException from fastjsonschema.
 
         Returns:
             List of formatted error dictionaries with keys:
-                - path: JSON pointer to invalid field
+                - path: JSON path to invalid field
                 - message: Human-readable error message
-                - keyword: AJV keyword that failed
-                - schema_path: Path in schema to constraint
+                - rule: Validation rule that failed
+                - value: The invalid value (if available)
         """
-        errors: list[dict[str, Any]] = []
+        # fastjsonschema provides: message, value, name, path, rule, rule_definition
+        path = ".".join(str(p) for p in error.path) if error.path else "root"
 
-        for err in ajv_errors:
-            # AJV error objects have: instancePath, keyword, message, params, schemaPath
-            errors.append(
-                {
-                    "path": err.get("instancePath", "/").lstrip("/") or "root",
-                    "message": err.get("message", "Validation failed"),
-                    "keyword": err.get("keyword", "unknown"),
-                    "schema_path": err.get("schemaPath", ""),
-                    "params": err.get("params", {}),
-                }
-            )
+        # Extract rule from error name (e.g., "data.student_id must be string")
+        rule = getattr(error, "rule", "unknown")
+        if rule == "unknown":
+            # Try to extract rule from message
+            msg = str(error.message)
+            if "must be" in msg:
+                rule = "type"
+            elif "required" in msg.lower():
+                rule = "required"
+            elif "minimum" in msg or "maximum" in msg:
+                rule = "range"
+            elif "pattern" in msg:
+                rule = "pattern"
+            elif "format" in msg:
+                rule = "format"
 
-        return errors
+        return [
+            {
+                "path": path,
+                "message": str(error.message),
+                "rule": rule,
+                "value": error.value if hasattr(error, "value") else None,
+            }
+        ]
 
     def _create_error_message(self, contract_name: str, errors: list[dict[str, Any]]) -> str:
         """Create human-readable error message from validation errors.
@@ -483,8 +498,8 @@ class ContractManager:
         for i, error in enumerate(errors[:5], 1):
             path = error["path"]
             message = error["message"]
-            keyword = error["keyword"]
-            lines.append(f"  {i}. [{path}] {message} (keyword: {keyword})")
+            rule = error.get("rule", "unknown")
+            lines.append(f"  {i}. [{path}] {message} (rule: {rule})")
 
         if len(errors) > 5:
             lines.append(f"  ... and {len(errors) - 5} more error(s)")

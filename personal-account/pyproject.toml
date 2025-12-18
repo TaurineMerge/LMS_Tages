@@ -31,7 +31,7 @@ dependencies = [
     "python-jose[cryptography] (==3.3.0)",
     "jinja2 (==3.1.2)",
     "aiofiles (==23.2.1)",
-    "pyajv (>=0.1.3,<1.0.0)"
+    "fastjsonschema (>=2.19.0,<3.0.0)"
 ]
 
 [project.scripts]
