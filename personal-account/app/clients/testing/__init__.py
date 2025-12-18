@@ -73,11 +73,13 @@ Examples:
 
 from .contract_manager import ContractManager, ContractValidationError
 from .schema_loader import SchemaLoader
+from .testing_client import TestingClient
 
 __all__ = [
     "ContractManager",
     "ContractValidationError",
     "SchemaLoader",
+    "TestingClient",
 ]
 
 __version__ = "1.0.0"

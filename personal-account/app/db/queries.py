@@ -101,3 +101,60 @@ VISIT_EXISTS = """
     """
 
 VISIT_BY_ID = "SELECT * FROM personal_account.visit_students_for_lessons WHERE id = :id"
+
+# Integration (raw data) queries -------------------------------------------
+INSERT_RAW_USER_STATS = """
+    INSERT INTO integration.raw_user_stats
+        (student_id, payload, received_at, processed, error_message)
+    VALUES
+        (:student_id, CAST(:payload AS jsonb), :received_at, :processed, :error_message)
+    RETURNING *
+"""
+
+INSERT_RAW_ATTEMPT = """
+    INSERT INTO integration.raw_attempts
+        (external_attempt_id, student_id, test_id, payload, received_at, processed, processing_attempts, error_message)
+    VALUES
+        (:external_attempt_id, :student_id, :test_id, CAST(:payload AS jsonb), :received_at, :processed, :processing_attempts, :error_message)
+    ON CONFLICT (external_attempt_id) DO UPDATE
+      SET payload = EXCLUDED.payload,
+          received_at = EXCLUDED.received_at,
+          processed = EXCLUDED.processed,
+          processing_attempts = integration.raw_attempts.processing_attempts
+    RETURNING *
+"""
+
+SELECT_UNPROCESSED_USER_STATS = """
+    SELECT * FROM integration.raw_user_stats
+    WHERE processed = FALSE
+    ORDER BY received_at ASC
+    LIMIT :limit
+"""
+
+SELECT_UNPROCESSED_ATTEMPTS = """
+    SELECT * FROM integration.raw_attempts
+    WHERE processed = FALSE
+    ORDER BY received_at ASC
+    LIMIT :limit
+"""
+
+MARK_RAW_USER_STATS_PROCESSED = """
+    UPDATE integration.raw_user_stats
+    SET processed = TRUE, updated_at = CURRENT_TIMESTAMP
+    WHERE id = :id
+    RETURNING *
+"""
+
+MARK_RAW_ATTEMPT_PROCESSED = """
+    UPDATE integration.raw_attempts
+    SET processed = TRUE, updated_at = CURRENT_TIMESTAMP
+    WHERE id = :id
+    RETURNING *
+"""
+
+INCREMENT_RAW_ATTEMPT_PROCESSING = """
+    UPDATE integration.raw_attempts
+    SET processing_attempts = processing_attempts + 1, updated_at = CURRENT_TIMESTAMP
+    WHERE id = :id
+    RETURNING processing_attempts
+"""
