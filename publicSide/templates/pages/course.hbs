@@ -17,14 +17,14 @@
             <div class="course-info__header">
                 <div class="course-info__icon">📖</div>
                 <div class="course-info__meta">
-                    <span class="course-info__level course-info__level--{{Course.Level}}">
-                        {{LevelRu}}
-                    </span>
-                    {{#if Course.UpdatedAt}}
-                    <span class="course-info__date">
-                        Обновлено: {{formatDate Course.UpdatedAt}}
-                    </span>
-                    {{/if}}
+                    <div class="course-info__meta-row">
+                        <span class="course-info__level course-info__level--{{Course.Level}}">
+                            {{LevelRu}}
+                        </span>
+                        <span class="course-info__date">
+                            Обновлено: {{formatDate Course.UpdatedAt}}
+                        </span>
+                    </div>
                 </div>
             </div>
 

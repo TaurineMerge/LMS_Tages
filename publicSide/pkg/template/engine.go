@@ -3,6 +3,7 @@ package template
 
 import (
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/gofiber/template/handlebars/v2"
@@ -77,6 +78,11 @@ func NewEngine() *handlebars.Engine {
 			result = append(result, i)
 		}
 		return result
+	})
+
+	// Register helper for date formatting
+	engine.AddFunc("formatDate", func(t time.Time) string {
+		return t.Format("02.01.2006")
 	})
 
 	return engine
