@@ -113,7 +113,7 @@ func main() {
 	// Инициализация хэндлеров
 	lessonHandler := handler.NewLessonHandler(lessonService)
 	categoryHandler := handler.NewCategoryHandler(categoryService)
-	courseHandler := handler.NewCourseHandler(courseService, categoryService)
+	courseHandler := handler.NewCourseHandler(courseService)
 
 	// Регистрация маршрутов
 	categoriesIdRouter := categoryHandler.RegisterRoutes(apiV1)

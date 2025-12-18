@@ -13,15 +13,13 @@ import (
 
 // CourseHandler handles HTTP requests related to course pages.
 type CourseHandler struct {
-	courseService   service.CourseService
-	categoryService service.CategoryService
+	courseService service.CourseService
 }
 
 // NewCourseHandler creates a new instance of a course handler.
-func NewCourseHandler(courseService service.CourseService, categoryService service.CategoryService) *CourseHandler {
+func NewCourseHandler(courseService service.CourseService) *CourseHandler {
 	return &CourseHandler{
-		courseService:   courseService,
-		categoryService: categoryService,
+		courseService: courseService,
 	}
 }
 
@@ -38,20 +36,14 @@ func (h *CourseHandler) RegisterRoutes(router fiber.Router) fiber.Router {
 
 // GetCoursesByCategoryID handles the request to get paginated courses for a specific category.
 func (h *CourseHandler) GetCoursesByCategoryID(c *fiber.Ctx) error {
-	categoryID := c.Params("categoryId")
+	categoryID := c.Params(apiconst.PathVariableCategoryID)
 	if _, err := uuid.Parse(categoryID); err != nil {
-		return apperrors.NewInvalidUUID("categoryId")
+		return apperrors.NewInvalidUUID(apiconst.PathVariableCategoryID)
 	}
 
 	var query request.PaginationQuery
 	if err := c.QueryParser(&query); err != nil {
 		return apperrors.NewInvalidRequest("Wrong query parameters")
-	}
-
-	// Get category information to validate it exists
-	category, err := h.categoryService.GetByID(c.UserContext(), categoryID)
-	if err != nil {
-		return err
 	}
 
 	// Get courses for this category with pagination
@@ -63,24 +55,22 @@ func (h *CourseHandler) GetCoursesByCategoryID(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(response.SuccessResponse{
 		Status: response.StatusSuccess,
 		Data: response.PaginatedCoursesData{
-			CategoryID:   category.ID,
-			CategoryName: category.Title,
-			Items:        courses,
-			Pagination:   pagination,
+			Items:      courses,
+			Pagination: pagination,
 		},
 	})
 }
 
 // GetCourseByID handles the request to get a single course by its ID.
 func (h *CourseHandler) GetCourseByID(c *fiber.Ctx) error {
-	categoryID := c.Params("categoryId")
+	categoryID := c.Params(apiconst.PathVariableCategoryID)
 	if _, err := uuid.Parse(categoryID); err != nil {
-		return apperrors.NewInvalidUUID("categoryId")
+		return apperrors.NewInvalidUUID(apiconst.PathVariableCategoryID)
 	}
 
-	courseID := c.Params("courseId")
+	courseID := c.Params(apiconst.PathVariableCourseID)
 	if _, err := uuid.Parse(courseID); err != nil {
-		return apperrors.NewInvalidUUID("courseId")
+		return apperrors.NewInvalidUUID(apiconst.PathVariableCourseID)
 	}
 
 	course, err := h.courseService.GetCourseByID(c.UserContext(), categoryID, courseID)
