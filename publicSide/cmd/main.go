@@ -133,6 +133,7 @@ func main() {
 	// Web
 	app.Get("/", homeHandler.RenderHome)
 	app.Get("/categories/:categoryId/courses", coursesHandler.RenderCourses)
+	app.Get("/categories/:categoryId/courses/:courseId", coursesHandler.RenderCoursePage)
 	app.Get("/test", func(c *fiber.Ctx) error {
 		return c.Render("pages/test", fiber.Map{
 			"title":         "Test",

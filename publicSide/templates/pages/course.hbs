@@ -1,0 +1,74 @@
+<div class="page-header">
+    <div class="page-header__breadcrumbs">
+        <a href="/">Главная</a>
+        <span class="page-header__separator">/</span>
+        <a href="/categories">Категории</a>
+        <span class="page-header__separator">/</span>
+        <a href="/categories/{{CategoryID}}/courses">{{CategoryTitle}}</a>
+        <span class="page-header__separator">/</span>
+        <span>{{Course.Title}}</span>
+    </div>
+    <h1 class="page-header__title">{{Course.Title}}</h1>
+</div>
+
+<div class="course-page">
+    <div class="course-page__main">
+        <div class="course-info">
+            <div class="course-info__header">
+                <div class="course-info__icon">📖</div>
+                <div class="course-info__meta">
+                    <span class="course-info__level course-info__level--{{Course.Level}}">
+                        {{LevelRu}}
+                    </span>
+                    {{#if Course.UpdatedAt}}
+                    <span class="course-info__date">
+                        Обновлено: {{formatDate Course.UpdatedAt}}
+                    </span>
+                    {{/if}}
+                </div>
+            </div>
+
+            <div class="course-info__description">
+                <h2>О курсе</h2>
+                {{#if Course.Description}}
+                    <p>{{Course.Description}}</p>
+                {{else}}
+                    <p>Описание курса отсутствует.</p>
+                {{/if}}
+            </div>
+
+            <div class="course-info__stats">
+                <div class="course-stat">
+                    <div class="course-stat__icon">📚</div>
+                    <div class="course-stat__content">
+                        <div class="course-stat__value">10</div>
+                        <div class="course-stat__label">Уроков</div>
+                    </div>
+                </div>
+                <div class="course-stat">
+                    <div class="course-stat__icon">⏱️</div>
+                    <div class="course-stat__content">
+                        <div class="course-stat__value">20 ч</div>
+                        <div class="course-stat__label">Длительность</div>
+                    </div>
+                </div>
+                <div class="course-stat">
+                    <div class="course-stat__icon">👥</div>
+                    <div class="course-stat__content">
+                        <div class="course-stat__value">1,234</div>
+                        <div class="course-stat__label">Студентов</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="course-info__actions">
+                <a href="/categories/{{CategoryID}}/courses/{{Course.ID}}/lessons" class="button button--primary button--large">
+                    Перейти к урокам
+                </a>
+                <a href="/categories/{{CategoryID}}/courses" class="button button--secondary button--large">
+                    Назад к курсам
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
