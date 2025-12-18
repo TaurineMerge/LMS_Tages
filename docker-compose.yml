@@ -81,7 +81,7 @@ services:
       keycloak-db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /auth/health/ready HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && grep -q '200 OK' <&3 || exit 1"]
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /auth/health/ready HTTP/1.1\r\nHost: localhost\r\n\r\n' >&3 && grep -q '200 OK' <&3 || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 10
@@ -95,9 +95,11 @@ services:
     image: postgres:15
     container_name: app-db
     environment:
-      POSTGRES_DB: appdb
-      POSTGRES_USER: appuser
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER: ${APP_DB_SUPERUSER}
+      POSTGRES_PASSWORD: ${APP_DB_SUPERUSER_PASSWORD}
+      PGPORT: ${APP_DB_INTERNAL_PORT}
+    env_file:
+      - ./.env
     volumes:
       - app_data:/var/lib/postgresql/data
       - ./init-sql:/docker-entrypoint-initdb.d:ro
@@ -105,16 +107,23 @@ services:
       - app-network
     ports: []
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U appuser -d appdb" ]
+      test: ["CMD-SHELL", "pg_isready -U ${APP_DB_SUPERUSER} -p ${APP_DB_INTERNAL_PORT}"]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
+
   public-side:
     build: ./publicSide
     container_name: public-side
-    env_file:
-      - ./publicSide/.env.prod
+    environment:
+      DB_NAME: ${KNOWLEDGE_BASE_DB_NAME}
+      DB_USER: ${KNOWLEDGE_BASE_RO_USER}
+      DB_PASSWORD: ${KNOWLEDGE_BASE_RO_PASSWORD}
+      DB_HOST: ${APP_DB_HOST}
+      DB_PORT: ${APP_DB_INTERNAL_PORT}
+      OTEL_EXPORTER_OTLP_ENDPOINT: "otel-collector:4317"
+    ports: []
     networks:
       - app-network
     depends_on:
@@ -123,13 +132,18 @@ services:
       keycloak:
         condition: service_started
     restart: unless-stopped
+
   admin-panel:
     build: ./adminPanel
     container_name: admin-panel
     env_file:
       - ./adminPanel/.env.prod
     environment:
-      DATABASE_URL: "postgresql://appuser:password@app-db:5432/appdb?sslmode=disable"
+      DB_NAME: ${KNOWLEDGE_BASE_DB_NAME}
+      DB_USER: ${KNOWLEDGE_BASE_ADMIN_USER}
+      DB_PASSWORD: ${KNOWLEDGE_BASE_ADMIN_PASSWORD}
+      DB_HOST: ${APP_DB_HOST}
+      DB_PORT: ${APP_DB_INTERNAL_PORT}
       DATABASE_POOL_MIN_SIZE: "5"
       DATABASE_POOL_MAX_SIZE: "20"
       KEYCLOAK_ISSUER_URL: "http://keycloak:8080/auth/realms/teacher"
@@ -155,12 +169,12 @@ services:
   personal-account:
     build: ./personal-account
     container_name: personal-account
-    ports: []
     env_file:
       - ./personal-account/.env
     environment:
       OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}"
       OTEL_SERVICE_NAME: "${OTEL_SERVICE_NAME:-personal-account-api}"
+    ports: []
     networks:
       - app-network
     depends_on:
@@ -173,11 +187,11 @@ services:
   testing:
     build: ./testing
     container_name: testing
-    ports: []
     env_file:
       - ./testing/.env
     volumes:
       - ./docs:/app/docs
+    ports: []
     networks:
       - app-network
     depends_on:
