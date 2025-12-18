@@ -28,10 +28,6 @@ WORKDIR /root/
 # Копируем бинарник из этапа сборки
 COPY --from=builder /app/main .
 
-# Копируем необходимые директории для фронтенда
-COPY --from=builder /app/templates ./templates
-COPY --from=builder /app/static ./static
-
 # Копируем директорию с документацией Swagger
 COPY --from=builder /app/doc ./doc
 

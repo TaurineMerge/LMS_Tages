@@ -14,7 +14,6 @@ import (
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/middleware"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/repository"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/service"
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/template"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apiconst"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/database"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/tracing"
@@ -80,12 +79,8 @@ func main() {
 	defer dbPool.Close()
 	slog.Info("Database connection pool established")
 
-	// Initialize Handlebars template engine
-	engine := template.NewEngine()
-
 	app := fiber.New(fiber.Config{
 		ErrorHandler: middleware.GlobalErrorHandler,
-		Views:        engine,
 	})
 
 	app.Use(cors.New(cors.Config{
@@ -98,16 +93,7 @@ func main() {
 	app.Use(otelfiber.Middleware())
 	app.Use(middleware.RequestResponseLogger())
 
-	// Serve static files
-	app.Static("/static", "./static")
-
 	app.Static("/doc", "./doc/swagger")
-
-	// HTML pages routes
-	courseRepo := repository.NewCourseRepository(dbPool)
-	courseService := service.NewCourseService(courseRepo)
-	courseHandler := handler.NewCourseHandler(courseService)
-	courseHandler.RegisterRoutes(app)
 
 	// API routes
 	apiV1 := app.Group("/api/v1")
@@ -116,10 +102,15 @@ func main() {
 		URL: "/doc/swagger.json",
 	}))
 
+	// Initialize repositories
+	courseRepo := repository.NewCourseRepository(dbPool)
 	lessonRepo := repository.NewLessonRepository(dbPool)
 
+	// Initialize services
+	courseService := service.NewCourseService(courseRepo)
 	lessonService := service.NewLessonService(lessonRepo)
 
+	// Initialize handlers
 	lessonHandler := handler.NewLessonHandler(lessonService)
 
 	categoryRouter := apiV1.Group("/categories")
