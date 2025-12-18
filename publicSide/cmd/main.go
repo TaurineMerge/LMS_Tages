@@ -20,8 +20,8 @@ import (
 	"github.com/gofiber/contrib/otelfiber/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/template/handlebars/v2"
 	"github.com/gofiber/swagger"
+	"github.com/gofiber/template/handlebars/v2"
 	"github.com/joho/godotenv"
 )
 
@@ -122,6 +122,7 @@ func main() {
 
 	// Web
 	homeHandler := web.NewHomeHandler()
+	categoryPageHandler := web.NewCategoryHandler(categoryService, courseService)
 
 	// --- Регистрация маршрутов ---
 	// API
@@ -131,6 +132,7 @@ func main() {
 
 	// Web
 	app.Get("/", homeHandler.RenderHome)
+	app.Get("/categories", categoryPageHandler.RenderCategories)
 
 	slog.Info("Starting server", "address", cfg.Port)
 	if err := app.Listen(fmt.Sprintf(":%s", cfg.Port)); err != nil {
