@@ -13,6 +13,10 @@ import com.example.lms.answer.domain.service.AnswerService;
 import com.example.lms.answer.infrastructure.repositories.AnswerRepository;
 import com.example.lms.config.DatabaseConfig;
 import com.example.lms.config.HandlebarsConfig;
+import com.example.lms.content.api.controller.ContentController;
+import com.example.lms.content.api.router.ContentRouter;
+import com.example.lms.content.domain.service.ContentService;
+import com.example.lms.content.infrastructure.repositories.ContentRepository;
 import com.example.lms.test.api.controller.TestController;
 import com.example.lms.test.api.router.TestRouter;
 import com.example.lms.test.domain.service.TestService;
@@ -74,18 +78,21 @@ public class Main {
 		AnswerRepository answerRepository = new AnswerRepository(dbConfig);
 		QuestionRepository questionRepository = new QuestionRepository(dbConfig);
 		TestAttemptRepository testAttemptRepository = new TestAttemptRepository(dbConfig);
+		ContentRepository contentRepository = new ContentRepository(dbConfig);
 
 		// Сервисный слой (бизнес-логика)
 		TestService testService = new TestService(testRepository);
 		AnswerService answerService = new AnswerService(answerRepository);
 		QuestionService questionService = new QuestionService(questionRepository);
 		TestAttemptService testAttemptService = new TestAttemptService(testAttemptRepository);
+		ContentService contentService = new ContentService(contentRepository);
 
 		// Контроллер, принимающий HTTP-запросы
 		TestController testController = new TestController(testService, handlebars);
 		AnswerController answerController = new AnswerController(answerService);
 		QuestionController questionController = new QuestionController(questionService);
 		TestAttemptController testAttemptController = new TestAttemptController(testAttemptService);
+		ContentController contentController = new ContentController(contentService, handlebars);
 
 		// ---------------------------------------------------------------
 		// 3. Создание и запуск Javalin HTTP-сервера
@@ -97,6 +104,7 @@ public class Main {
 				AnswerRouter.register(answerController);
 				QuestionRouter.register(questionController);
 				TestAttemptRouter.register(testAttemptController);
+				ContentRouter.register(contentController);
 			});
 		}).start("0.0.0.0", APP_PORT);
 
