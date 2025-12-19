@@ -35,6 +35,7 @@ from typing import Any
 from uuid import UUID
 
 import httpx
+import settings
 from contract_manager import ContractManager, ContractValidationError
 
 from app.repositories.integration import integration_repository
@@ -72,7 +73,7 @@ class TestingClient:
         contract_manager: ContractManager | None = None,
         repo: Any | None = None,
     ) -> None:
-        self.base_url = base_url.rstrip("/")
+        self.base_url = settings.TESTING_BASE_URL
         self.timeout = timeout_seconds
         self.contract_manager = contract_manager or ContractManager()
         self.repo = repo or integration_repository

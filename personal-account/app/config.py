@@ -90,6 +90,9 @@ class settings:
         self.STATS_WORKER_FETCH_INTERVAL: int = int(os.getenv("STATS_WORKER_FETCH_INTERVAL", "60"))
         self.STATS_WORKER_PROCESS_INTERVAL: int = int(os.getenv("STATS_WORKER_PROCESS_INTERVAL", "15"))
 
+        # Testing configuration
+        self.TESTING_BASE_URL: str = os.getenv("TESTING_BASE_URL", "http://testing:8085")
+
     @property
     def database_url(self) -> str:
         """Construct database URL."""
