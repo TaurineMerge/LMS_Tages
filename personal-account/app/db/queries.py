@@ -102,7 +102,7 @@ VISIT_EXISTS = """
 
 VISIT_BY_ID = "SELECT * FROM personal_account.visit_students_for_lessons WHERE id = :id"
 
-# Integration (raw data) queries -------------------------------------------
+# Integration (raw data) queries ---------------------------------------MARK_RAW_ATTEMPT_PROCESSED----
 INSERT_RAW_USER_STATS = """
     INSERT INTO integration.raw_user_stats
         (student_id, payload, received_at, processed, error_message)

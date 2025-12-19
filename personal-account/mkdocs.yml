@@ -23,6 +23,8 @@ nav:
           - Visit Service: api/services/visit.md
           - Auth Service: api/services/auth.md
           - Keycloak Service: api/services/keycloak.md
+          - Stats Worker Service: api/services/stats_worker.md
+          - Stats Service: api/services/stats_service.md
       - Core:
           - Security: api/core/security.md
           - JWT: api/core/jwt.md
@@ -37,6 +39,7 @@ nav:
           - Student: api/repositories/student.md
           - Certificate: api/repositories/certificate.md
           - Visit: api/repositories/visit.md
+          - Stats: api/repositories/stats.md
       - Integration (raw data): api/repositories/integration.md
       - Clients:
           - Overview: api/clients/index.md

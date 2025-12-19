@@ -54,6 +54,8 @@ class StatsProcessor:
                 # Вставка/обновление в tests.test_attempt_b через репозиторий
                 await self.repo.upsert_attempt(payload)
                 await self.repo.mark_attempt_processed(raw_id, None)
+                # Invalidate cache for this student since data changed
+                await self.repo.invalidate_user_stats_cache(student_id)
                 stats["processed"] += 1
             except Exception as e:
                 logger.exception("Failed to process raw attempt %s", raw_id)

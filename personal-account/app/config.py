@@ -79,6 +79,17 @@ class settings:
             os.getenv("KEYCLOAK_USER_EMAIL_VERIFIED_DEFAULT", "true").lower() == "true"
         )
 
+        # Redis Configuration
+        self.REDIS_HOST: str = os.getenv("REDIS_HOST", "redis")
+        self.REDIS_PORT: int = int(os.getenv("REDIS_PORT", "6379"))
+        self.REDIS_DB: int = int(os.getenv("REDIS_DB", "0"))
+        self.REDIS_PASSWORD: str | None = os.getenv("REDIS_PASSWORD")
+        self.REDIS_CACHE_TTL: int = int(os.getenv("REDIS_CACHE_TTL", "1800"))  # 30 minutes in seconds
+
+        # Stats Worker intervals (in seconds)
+        self.STATS_WORKER_FETCH_INTERVAL: int = int(os.getenv("STATS_WORKER_FETCH_INTERVAL", "60"))
+        self.STATS_WORKER_PROCESS_INTERVAL: int = int(os.getenv("STATS_WORKER_PROCESS_INTERVAL", "15"))
+
     @property
     def database_url(self) -> str:
         """Construct database URL."""
@@ -88,7 +99,7 @@ class settings:
         )
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> settings:
     """Get cached settings instance."""
     return settings()

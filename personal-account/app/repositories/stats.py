@@ -13,6 +13,7 @@ from uuid import UUID
 
 from app.database import execute, execute_returning, fetch_all
 from app.db import queries as q
+from app.redis_client import get_redis_client
 from app.telemetry import traced
 
 
@@ -39,7 +40,7 @@ class StatsRepository:
         await execute_returning(q.MARK_RAW_ATTEMPT_PROCESSED, {"id": str(raw_id)})
 
     @traced("stats.get_unprocessed_user_stats", record_args=True, record_result=True)
-    async def get_unprocessed_user_stats(self, limit: int = 100) -> list[dict[str, Any]]:
+    async def get_unproceMARK_RAW_ATTEMPT_PROCESSEDssed_user_stats(self, limit: int = 100) -> list[dict[str, Any]]:
         return await fetch_all(q.SELECT_UNPROCESSED_USER_STATS, {"limit": limit})
 
     @traced("stats.mark_user_stats_processed", record_args=True, record_result=True)
@@ -71,3 +72,77 @@ class StatsRepository:
         }
 
         await execute(q.TEST_ATTEMPT_UPSERT, params)
+
+    @traced("stats.get_cached_user_stats", record_args=True, record_result=True)
+    async def get_cached_user_stats(self, student_id: UUID) -> dict[str, Any] | None:
+        """Get cached user statistics from Redis.
+
+        Returns aggregated statistics for the user if available in cache,
+        otherwise returns None.
+        """
+        redis_client = get_redis_client()
+        cache_key = f"user_stats:{student_id}"
+        cached_data = await redis_client.get(cache_key)
+        if cached_data:
+            return json.loads(cached_data)
+        return None
+
+    @traced("stats.set_cached_user_stats", record_args=True, record_result=True)
+    async def set_cached_user_stats(self, student_id: UUID, stats: dict[str, Any]) -> None:
+        """Cache user statistics in Redis with TTL.
+
+        Stores aggregated statistics for the user with configured TTL.
+        """
+        from app.config import get_settings
+
+        settings = get_settings()
+        redis_client = get_redis_client()
+        cache_key = f"user_stats:{student_id}"
+        await redis_client.setex(cache_key, settings.REDIS_CACHE_TTL, json.dumps(stats))
+
+    @traced("stats.get_user_stats_from_db", record_args=True, record_result=True)
+    async def get_user_stats_from_db(self, student_id: UUID) -> dict[str, Any]:
+        """Get aggregated user statistics from database.
+
+        Calculates statistics from the business table for the given user.
+        This is a placeholder - implement actual aggregation logic based on requirements.
+        """
+        # Placeholder: implement actual aggregation query
+        # For example: count attempts, average scores, etc.
+        result = await fetch_all(
+            "SELECT COUNT(*) as total_attempts FROM tests.test_attempt_b WHERE student_id = $1", [str(student_id)]
+        )
+        return {
+            "student_id": str(student_id),
+            "total_attempts": result[0]["total_attempts"] if result else 0,
+            # Add more aggregated fields as needed
+        }
+
+    @traced("stats.invalidate_user_stats_cache", record_args=True, record_result=True)
+    async def invalidate_user_stats_cache(self, student_id: UUID) -> None:
+        """Invalidate cached user statistics in Redis.
+
+        Removes the cached statistics for the user, forcing fresh calculation on next access.
+        """
+        redis_client = get_redis_client()
+        cache_key = f"user_stats:{student_id}"
+        await redis_client.delete(cache_key)
+
+    @traced("stats.get_user_stats", record_args=True, record_result=True)
+    async def get_user_stats(self, student_id: UUID) -> dict[str, Any]:
+        """Get user statistics with caching.
+
+        First checks Redis cache, if not found calculates from database and caches the result.
+        """
+        # Try cache first
+        cached_stats = await self.get_cached_user_stats(student_id)
+        if cached_stats:
+            return cached_stats
+
+        # Calculate from database
+        stats = await self.get_user_stats_from_db(student_id)
+
+        # Cache the result
+        await self.set_cached_user_stats(student_id, stats)
+
+        return stats
