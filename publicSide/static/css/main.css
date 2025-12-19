@@ -10,5 +10,6 @@
 @import url('./components/pagination.css');
 @import url('./components/empty-state.css');
 @import url('./components/footer.css');
+@import url('./pages/category_courses.css');
 @import url('./pages/courses.css');
 @import url('./pages/lesson.css');

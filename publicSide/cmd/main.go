@@ -125,6 +125,7 @@ func main() {
 	homeHandler := web.NewHomeHandler()
 	coursesHandler := web.NewCoursesHandler(courseService)
 	webLessonHandler := web.NewLessonHandler(lessonService, courseService)
+	categoryPageHandler := web.NewCategoryHandler(categoryService, courseService)
 
 	// --- Регистрация маршрутов ---
 	// API
@@ -134,14 +135,15 @@ func main() {
 
 	// Web
 	app.Get("/", homeHandler.RenderHome)
+	app.Get("/categories", categoryPageHandler.RenderCategories)
 
 	webCategoriesRouter := app.Group("/categories")
-	
+
 	webCoursesRouter := webCategoriesRouter.Group("/:" + apiconst.PathVariableCategoryID + "/courses")
 	webCoursesRouter.Get("/", coursesHandler.RenderCourses)
 
 	webLessonsRouter := webCoursesRouter.Group("/:" + apiconst.PathVariableCourseID + "/lessons")
-	webLessonsRouter.Get("/:" + apiconst.PathVariableLessonID, webLessonHandler.RenderLesson)
+	webLessonsRouter.Get("/:"+apiconst.PathVariableLessonID, webLessonHandler.RenderLesson)
 
 	slog.Info("Starting server", "address", cfg.Port)
 	if err := app.Listen(fmt.Sprintf(":%s", cfg.Port)); err != nil {

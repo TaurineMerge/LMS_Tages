@@ -27,6 +27,20 @@
     margin: 0;
 }
 
+.courses__count {
+    font-size: 0.9375rem;
+    color: var(--gray-500);
+}
+
+.courses-category {
+    margin-bottom: 3rem;
+}
+
+.courses-category__actions {
+    margin-top: 1.5rem;
+    max-width: 240px;
+}
+
 /* Courses Grid */
 .courses__grid {
     display: grid;
