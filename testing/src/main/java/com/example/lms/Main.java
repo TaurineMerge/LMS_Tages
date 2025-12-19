@@ -12,6 +12,9 @@ import com.example.lms.answer.domain.service.AnswerService;
 import com.example.lms.answer.infrastructure.repositories.AnswerRepository;
 import com.example.lms.config.DatabaseConfig;
 import com.example.lms.config.HandlebarsConfig;
+import com.example.lms.internal.api.controller.InternalApiController;
+import com.example.lms.internal.api.router.InternalApiRouter;
+import com.example.lms.internal.service.InternalApiService;
 import com.example.lms.question.api.controller.QuestionController;
 import com.example.lms.question.api.router.QuestionRouter;
 import com.example.lms.question.domain.service.QuestionService;
@@ -74,12 +77,14 @@ public class Main {
 		AnswerService answerService = new AnswerService(answerRepository);
 		QuestionService questionService = new QuestionService(questionRepository);
 		TestAttemptService testAttemptService = new TestAttemptService(testAttemptRepository);
+		InternalApiService internalApiService = new InternalApiService(testAttemptService, testService);
 
 		// Контроллер, принимающий HTTP-запросы
 		TestController testController = new TestController(testService, handlebars);
 		AnswerController answerController = new AnswerController(answerService);
 		QuestionController questionController = new QuestionController(questionService);
 		TestAttemptController testAttemptController = new TestAttemptController(testAttemptService);
+		InternalApiController internalApiController = new InternalApiController(internalApiService);
 
 		// ---------------------------------------------------------------
 		// 3. Создание и запуск Javalin HTTP-сервера
@@ -87,7 +92,7 @@ public class Main {
 		Javalin app = Javalin.create(config -> {
 			// Используем JavalinJackson по умолчанию (без кастомного ObjectMapper)
 			config.jsonMapper(new JavalinJackson());
-			
+
 			// Добавляем логирование запросов для отладки
 			config.requestLogger.http((ctx, executionTimeMs) -> {
 				logger.info("{} {} - {}ms", ctx.method(), ctx.path(), executionTimeMs);
@@ -120,10 +125,12 @@ public class Main {
 				AnswerRouter.register(answerController);
 				QuestionRouter.register(questionController);
 				TestAttemptRouter.register(testAttemptController);
+				InternalApiRouter.register(internalApiController);
 
 				// Swagger UI
 				get("/swagger", ctx -> {
-					try (InputStream inputStream = Main.class.getClassLoader().getResourceAsStream("public/swagger.html")) {
+					try (InputStream inputStream = Main.class.getClassLoader()
+							.getResourceAsStream("public/swagger.html")) {
 						if (inputStream == null) {
 							logger.error("Swagger HTML file not found in classpath");
 							ctx.status(404).result("Swagger UI not found");
@@ -139,7 +146,8 @@ public class Main {
 
 				// Swagger JSON
 				get("/swagger.json", ctx -> {
-					try (InputStream inputStream = Main.class.getClassLoader().getResourceAsStream("docs/swagger.json")) {
+					try (InputStream inputStream = Main.class.getClassLoader()
+							.getResourceAsStream("docs/swagger.json")) {
 						if (inputStream == null) {
 							logger.error("Swagger JSON file not found in classpath");
 							ctx.status(404).result("Swagger JSON not found");

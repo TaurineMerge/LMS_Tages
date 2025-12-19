@@ -79,7 +79,8 @@ public class TestAttemptController {
     public void getTestAttemptById(Context ctx) {
         SimpleTracer.runWithSpan("getTestAttemptById", () -> {
             String id = ctx.pathParam("id");
-            TestAttempt dto = testAttemptService.getTestAttemptById(id);
+            UUID uuid = UUID.fromString(id);
+            TestAttempt dto = testAttemptService.getTestAttemptById(uuid);
             ctx.json(dto);
         });
     }
@@ -123,12 +124,12 @@ public class TestAttemptController {
             String id = ctx.pathParam("id");
             Map<String, Object> body = ctx.bodyAsClass(Map.class);
             Integer finalPoint = (Integer) body.get("finalPoint");
-            
+
             if (finalPoint == null) {
                 ctx.status(400).json(Map.of("error", "finalPoint is required"));
                 return;
             }
-            
+
             TestAttempt completed = testAttemptService.completeTestAttempt(id, finalPoint);
             ctx.json(completed);
         });
@@ -144,12 +145,12 @@ public class TestAttemptController {
             String id = ctx.pathParam("id");
             Map<String, Object> body = ctx.bodyAsClass(Map.class);
             String snapshot = (String) body.get("snapshot");
-            
+
             if (snapshot == null || snapshot.trim().isEmpty()) {
                 ctx.status(400).json(Map.of("error", "snapshot is required"));
                 return;
             }
-            
+
             TestAttempt updated = testAttemptService.updateSnapshot(id, snapshot);
             ctx.json(updated);
         });
@@ -187,7 +188,8 @@ public class TestAttemptController {
     public static class CompleteRequest {
         private Integer finalPoint;
 
-        public CompleteRequest() {}
+        public CompleteRequest() {
+        }
 
         public CompleteRequest(Integer finalPoint) {
             this.finalPoint = finalPoint;
@@ -208,7 +210,8 @@ public class TestAttemptController {
     public static class SnapshotRequest {
         private String snapshot;
 
-        public SnapshotRequest() {}
+        public SnapshotRequest() {
+        }
 
         public SnapshotRequest(String snapshot) {
             this.snapshot = snapshot;

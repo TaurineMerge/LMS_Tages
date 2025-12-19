@@ -1,30 +1,23 @@
 package com.example.lms.internal.service;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.example.lms.internal.api.dto.AttemptDetail;
-import com.example.lms.internal.api.dto.AttemptsListItem;
-import com.example.lms.internal.api.dto.PerTestStats;
-import com.example.lms.internal.api.dto.UserStats;
+import com.example.lms.internal.api.dto.*;
 import com.example.lms.test.api.dto.Test;
 import com.example.lms.test.domain.service.TestService;
-import com.example.lms.test_attempt.domain.model.TestAttemptModel;
+import com.example.lms.test_attempt.api.dto.TestAttempt;
 import com.example.lms.test_attempt.domain.service.TestAttemptService;
 
 /**
- * Сервис для работы с Internal API.
- * Агрегирует данные из TestAttemptService и TestService
- * для предоставления данных Python-сервису.
+ * Facade-сервис для Internal API.
+ * Агрегирует данные тестов и попыток,
+ * не раскрывая доменную модель.
  */
 public class InternalApiService {
 
@@ -33,151 +26,68 @@ public class InternalApiService {
     private final TestAttemptService testAttemptService;
     private final TestService testService;
 
-    public InternalApiService(TestAttemptService testAttemptService, TestService testService) {
+    public InternalApiService(
+            TestAttemptService testAttemptService,
+            TestService testService) {
         this.testAttemptService = testAttemptService;
         this.testService = testService;
     }
 
-    /**
-     * Получить детальную информацию о попытке по ID.
-     *
-     * @param attemptId ID попытки
-     * @return AttemptDetailDto или null если не найдено
-     */
+    // ------------------------------------------------------------------
+    // PUBLIC API
+    // ------------------------------------------------------------------
+
     public AttemptDetail getAttemptDetail(UUID attemptId) {
         logger.debug("Получение деталей попытки: {}", attemptId);
 
-        TestAttemptModel attempt = testAttemptService.findById(attemptId).orElse(null);
+        TestAttempt attempt = safeGetAttempt(attemptId);
         if (attempt == null) {
-            logger.warn("Попытка {} не найдена", attemptId);
             return null;
         }
-
-        // Получаем информацию о тесте для определения passed
-        Test test = getTestOrNull(attempt.getTestId());
+        UUID testId = UUID.fromString(attempt.getTest_id());
+        Test test = getTestOrNull(testId);
         Boolean passed = calculatePassed(attempt, test);
 
-        return new AttemptDetail(
-                attempt.getId(),
-                attempt.getStudentId(),
-                attempt.getTestId(),
-                attempt.getDateOfAttempt().toString(),
-                attempt.getPoint(),
-                attempt.getCompleted(),
-                passed,
-                attempt.getCertificateId(), // всегда null
-                null, // attempt_version - пропускаем
-                attempt.getAttemptSnapshot(),
-                null // meta - пока null
-        );
+        return mapToAttemptDetail(attempt, passed);
     }
 
-    /**
-     * Получить список всех попыток пользователя.
-     *
-     * @param userId ID пользователя (студента)
-     * @return список попыток
-     */
     public List<AttemptsListItem> getUserAttempts(UUID userId) {
         logger.debug("Получение попыток пользователя: {}", userId);
 
-        List<TestAttemptModel> attempts = testAttemptService.getTestAttemptsByStudentId(userId);
+        List<TestAttempt> attempts = testAttemptService.getTestAttemptsByStudentId(userId.toString());
 
-        // Кэш для тестов, чтобы не запрашивать каждый раз
         Map<UUID, Test> testCache = new HashMap<>();
 
         return attempts.stream()
                 .map(attempt -> {
-                    Test test = testCache.computeIfAbsent(
-                            attempt.getTestId(),
-                            this::getTestOrNull);
+                    UUID testId = UUID.fromString(attempt.getTest_id());
+                    Test test = getCachedTest(testCache, testId);
 
                     Boolean passed = calculatePassed(attempt, test);
-
-                    return new AttemptsListItemDto(
-                            attempt.getId(),
-                            attempt.getTestId(),
-                            attempt.getDateOfAttempt().toString(),
-                            attempt.getPoint(),
-                            attempt.getCompleted(),
-                            passed,
-                            attempt.getCertificateId(),
-                            attempt.getAttemptSnapshot());
+                    return mapToAttemptsListItem(attempt, passed);
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 
-    /**
-     * Получить статистику пользователя по всем попыткам.
-     *
-     * @param userId ID пользователя
-     * @return статистика пользователя
-     */
     public UserStats getUserStats(UUID userId) {
         logger.debug("Получение статистики пользователя: {}", userId);
 
-        List<TestAttemptModel> allAttempts = testAttemptService.getTestAttemptsByStudentId(userId);
+        List<TestAttempt> attempts = testAttemptService.getTestAttemptsByStudentId(userId.toString());
 
-        // Общая статистика
-        int attemptsTotal = allAttempts.size();
-        Integer bestScore = allAttempts.stream()
-                .map(TestAttemptModel::getPoint)
-                .filter(point -> point != null)
+        Map<UUID, Test> testCache = new HashMap<>();
+
+        int attemptsTotal = attempts.size();
+        int attemptsPassed = countPassed(attempts, testCache);
+
+        Integer bestScore = attempts.stream()
+                .map(TestAttempt::getPoint)
+                .filter(Objects::nonNull)
                 .max(Integer::compareTo)
                 .orElse(null);
 
-        // Последняя попытка
-        String lastAttemptAt = allAttempts.stream()
-                .filter(a -> a.getCompleted() != null && a.getCompleted())
-                .map(a -> a.getDateOfAttempt().atStartOfDay())
-                .max(LocalDateTime::compareTo)
-                .map(dt -> dt.format(DateTimeFormatter.ISO_DATE_TIME))
-                .orElse(null);
+        String lastAttemptAt = getLastCompletedAttemptDate(attempts);
 
-        // Группируем по тестам
-        Map<UUID, List<TestAttemptModel>> attemptsByTest = allAttempts.stream()
-                .collect(Collectors.groupingBy(TestAttemptModel::getTestId));
-
-        // Кэш тестов
-        Map<UUID, Test> testCache = new HashMap<>();
-
-        // Считаем пройденные попытки
-        int attemptsPassed = 0;
-        for (TestAttemptModel attempt : allAttempts) {
-            Test test = testCache.computeIfAbsent(attempt.getTestId(), this::getTestOrNull);
-            if (calculatePassed(attempt, test)) {
-                attemptsPassed++;
-            }
-        }
-
-        // Статистика по каждому тесту
-        List<PerTestStats> perTestStats = new ArrayList<>();
-
-        for (Map.Entry<UUID, List<TestAttemptModel>> entry : attemptsByTest.entrySet()) {
-            UUID testId = entry.getKey();
-            List<TestAttemptModel> testAttempts = entry.getValue();
-
-            Test test = testCache.computeIfAbsent(testId, this::getTestOrNull);
-
-            String testTitle = test != null ? test.getTitle() : "Unknown Test";
-
-            Integer testBestScore = testAttempts.stream()
-                    .map(TestAttemptModel::getPoint)
-                    .filter(point -> point != null)
-                    .max(Integer::compareTo)
-                    .orElse(null);
-
-            int passedCount = (int) testAttempts.stream()
-                    .filter(attempt -> calculatePassed(attempt, test))
-                    .count();
-
-            perTestStats.add(new PerTestStats(
-                    testId,
-                    testTitle,
-                    testAttempts.size(),
-                    testBestScore,
-                    passedCount));
-        }
+        List<PerTestStats> perTestStats = buildPerTestStats(attempts, testCache);
 
         return new UserStats(
                 userId,
@@ -189,48 +99,158 @@ public class InternalApiService {
     }
 
     // ------------------------------------------------------------------
-    // ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
+    // AGGREGATION HELPERS
     // ------------------------------------------------------------------
 
-    /**
-     * Получить тест по ID или вернуть null если не найден.
-     */
+    private int countPassed(
+            List<TestAttempt> attempts,
+            Map<UUID, Test> testCache) {
+        int passed = 0;
+        for (TestAttempt attempt : attempts) {
+            UUID testId = UUID.fromString(attempt.getTest_id());
+            Test test = getCachedTest(testCache, testId);
+
+            if (Boolean.TRUE.equals(calculatePassed(attempt, test))) {
+                passed++;
+            }
+        }
+        return passed;
+    }
+
+    private List<PerTestStats> buildPerTestStats(
+            List<TestAttempt> attempts,
+            Map<UUID, Test> testCache) {
+        Map<UUID, List<TestAttempt>> byTest = attempts.stream()
+                .collect(Collectors.groupingBy(
+                        a -> UUID.fromString(a.getTest_id())));
+
+        List<PerTestStats> stats = new ArrayList<>();
+
+        for (var entry : byTest.entrySet()) {
+            UUID testId = entry.getKey();
+            List<TestAttempt> testAttempts = entry.getValue();
+
+            Test test = getCachedTest(testCache, testId);
+            String title = test != null ? test.getTitle() : "Unknown Test";
+
+            Integer bestScore = testAttempts.stream()
+                    .map(TestAttempt::getPoint)
+                    .filter(Objects::nonNull)
+                    .max(Integer::compareTo)
+                    .orElse(null);
+
+            int passedCount = (int) testAttempts.stream()
+                    .filter(a -> Boolean.TRUE.equals(
+                            calculatePassed(a, test)))
+                    .count();
+
+            stats.add(new PerTestStats(
+                    testId,
+                    title,
+                    testAttempts.size(),
+                    bestScore,
+                    passedCount));
+        }
+
+        return stats;
+    }
+
+    private String getLastCompletedAttemptDate(
+            List<TestAttempt> attempts) {
+        return attempts.stream()
+                .filter(a -> Boolean.TRUE.equals(a.getCompleted()))
+                .map(TestAttempt::getDate_of_attempt)
+                .filter(Objects::nonNull)
+                .map(LocalDate::parse)
+                .max(LocalDate::compareTo)
+                .map(d -> d.format(DateTimeFormatter.ISO_DATE))
+                .orElse(null);
+    }
+
+    // ------------------------------------------------------------------
+    // MAPPERS
+    // ------------------------------------------------------------------
+
+    private AttemptDetail mapToAttemptDetail(
+            TestAttempt attempt,
+            Boolean passed) {
+        return new AttemptDetail(
+                UUID.fromString(attempt.getId()),
+                UUID.fromString(attempt.getStudent_id()),
+                UUID.fromString(attempt.getTest_id()),
+                attempt.getDate_of_attempt(),
+                attempt.getPoint(),
+                attempt.getCompleted(),
+                passed,
+                parseUuid(attempt.getCertificate_id()),
+                attempt.getAttempt_version(),
+                attempt.getAttempt_snapshot(),
+                null);
+    }
+
+    private AttemptsListItem mapToAttemptsListItem(
+            TestAttempt attempt,
+            Boolean passed) {
+        return new AttemptsListItem(
+                UUID.fromString(attempt.getId()),
+                UUID.fromString(attempt.getTest_id()),
+                attempt.getDate_of_attempt(),
+                attempt.getPoint(),
+                attempt.getCompleted(),
+                passed,
+                parseUuid(attempt.getCertificate_id()),
+                attempt.getAttempt_snapshot());
+    }
+
+    // ------------------------------------------------------------------
+    // DOMAIN ACCESS
+    // ------------------------------------------------------------------
+
+    private Test getCachedTest(
+            Map<UUID, Test> cache,
+            UUID testId) {
+        return cache.computeIfAbsent(testId, this::getTestOrNull);
+    }
+
     private Test getTestOrNull(UUID testId) {
         try {
             return testService.getTestById(testId.toString());
         } catch (Exception e) {
-            logger.warn("Тест {} не найден: {}", testId, e.getMessage());
+            logger.warn("Тест {} не найден", testId);
             return null;
         }
     }
 
-    /**
-     * Вычислить значение passed для попытки.
-     * 
-     * @param attempt попытка
-     * @param test    тест (может быть null)
-     * @return true если тест пройден, false если нет, null если не завершён
-     */
-    private Boolean calculatePassed(TestAttemptModel attempt, Test test) {
-        if (attempt.getCompleted() == null || !attempt.getCompleted()) {
-            return null; // Не завершено
+    private TestAttempt safeGetAttempt(UUID attemptId) {
+        try {
+            return testAttemptService.getTestAttemptById(attemptId);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // BUSINESS RULE
+    // ------------------------------------------------------------------
+
+    private Boolean calculatePassed(TestAttempt attempt, Test test) {
+        if (!Boolean.TRUE.equals(attempt.getCompleted())) {
+            return null;
         }
 
-        if (attempt.getPoint() == null) {
-            return null; // Нет баллов
-        }
-
-        if (test == null) {
-            // Тест не найден - не можем определить
+        if (attempt.getPoint() == null || test == null) {
             return null;
         }
 
         Integer minPoint = test.getMin_point();
-        if (minPoint == null) {
-            // Нет минимального порога - считаем пройденным
-            return true;
-        }
+        return minPoint == null || attempt.getPoint() >= minPoint;
+    }
 
-        return attempt.getPoint() >= minPoint;
+    // ------------------------------------------------------------------
+    // UTIL
+    // ------------------------------------------------------------------
+
+    private UUID parseUuid(String value) {
+        return value != null ? UUID.fromString(value) : null;
     }
 }

@@ -31,7 +31,7 @@ public class TestAttemptService {
                 System.err.println("Ошибка парсинга даты: " + dto.getDate_of_attempt());
             }
         }
-        
+
         return new TestAttemptModel(
                 dto.getId() != null ? UUID.fromString(dto.getId()) : null,
                 dto.getStudent_id() != null ? UUID.fromString(dto.getStudent_id()) : null,
@@ -51,7 +51,7 @@ public class TestAttemptService {
         if (model.getDateOfAttempt() != null) {
             dateStr = model.getDateOfAttempt().toString(); // ISO формат: "2025-12-18"
         }
-        
+
         return new TestAttempt(
                 model.getId() != null ? model.getId().toString() : null,
                 model.getStudentId() != null ? model.getStudentId().toString() : null,
@@ -77,8 +77,7 @@ public class TestAttemptService {
         return toDto(saved);
     }
 
-    public TestAttempt getTestAttemptById(String id) {
-        UUID uuid = UUID.fromString(id);
+    public TestAttempt getTestAttemptById(UUID uuid) {
         TestAttemptModel model = repository.findById(uuid).orElseThrow();
         return toDto(model);
     }

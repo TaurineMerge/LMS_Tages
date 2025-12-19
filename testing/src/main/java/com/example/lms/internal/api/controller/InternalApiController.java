@@ -37,7 +37,7 @@ public class InternalApiController {
      */
     public void getAttemptDetail(Context ctx) {
         try {
-            String attemptIdParam = ctx.pathParam("attempt_id");
+            String attemptIdParam = ctx.pathParam("attemptId");
             logger.info("Запрос деталей попытки: {}", attemptIdParam);
 
             UUID attemptId = UUID.fromString(attemptIdParam);
@@ -73,7 +73,7 @@ public class InternalApiController {
      */
     public void getUserAttempts(Context ctx) {
         try {
-            String userIdParam = ctx.pathParam("user_id");
+            String userIdParam = ctx.pathParam("userId");
             logger.info("Запрос попыток пользователя: {}", userIdParam);
 
             UUID userId = UUID.fromString(userIdParam);
@@ -102,7 +102,7 @@ public class InternalApiController {
      */
     public void getUserStats(Context ctx) {
         try {
-            String userIdParam = ctx.pathParam("user_id");
+            String userIdParam = ctx.pathParam("userId");
             logger.info("Запрос статистики пользователя: {}", userIdParam);
 
             UUID userId = UUID.fromString(userIdParam);
