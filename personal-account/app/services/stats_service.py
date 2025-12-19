@@ -11,10 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 class StatsService:
-    """Service for user statistics operations.
+    """Service for user statistics with Redis caching.
 
-    Provides high-level operations for retrieving user statistics
-    with caching support.
+    Provides high-level operations for retrieving user statistics.
+    Flow: Redis cache -> DB aggregated table -> calculate from business table.
     """
 
     def __init__(self):
@@ -24,9 +24,6 @@ class StatsService:
     async def get_user_statistics(self, student_id: UUID) -> dict[str, Any]:
         """Get aggregated statistics for a user.
 
-        Retrieves statistics from cache if available, otherwise calculates
-        from database and caches the result.
-
         Args:
             student_id: UUID of the student
 
@@ -34,3 +31,22 @@ class StatsService:
             Dictionary containing user statistics
         """
         return await self.repo.get_user_stats(student_id)
+
+    @traced("stats_service.refresh_user_statistics", record_args=True, record_result=True)
+    async def refresh_user_statistics(self, student_id: UUID) -> dict[str, Any]:
+        """Force refresh of user statistics.
+
+        Recalculates from business table, updates DB and Redis cache.
+
+        Args:
+            student_id: UUID of the student
+
+        Returns:
+            Fresh aggregated statistics
+        """
+        stats = await self.repo.calculate_and_save_aggregated(student_id)
+        await self.repo.save_to_redis(student_id, stats)
+        return stats
+
+
+stats_service = StatsService()

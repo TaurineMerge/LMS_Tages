@@ -205,3 +205,58 @@ ON CONFLICT (id) DO UPDATE SET
     meta = EXCLUDED.meta,
     updated_at = NOW();
 """
+
+# Aggregated stats table query
+STUDENT_STATS_AGGREGATED_UPSERT = """
+INSERT INTO stats.student_stats_aggregated (
+    student_id,
+    total_attempts,
+    passed_attempts,
+    failed_attempts,
+    avg_score,
+    total_tests_taken,
+    last_attempt_at,
+    stats_json,
+    created_at,
+    updated_at
+)
+VALUES (
+    :student_id,
+    :total_attempts,
+    :passed_attempts,
+    :failed_attempts,
+    :avg_score,
+    :total_tests_taken,
+    :last_attempt_at,
+    CAST(:stats_json AS jsonb),
+    NOW(),
+    NOW()
+)
+ON CONFLICT (student_id) DO UPDATE SET
+    total_attempts = EXCLUDED.total_attempts,
+    passed_attempts = EXCLUDED.passed_attempts,
+    failed_attempts = EXCLUDED.failed_attempts,
+    avg_score = EXCLUDED.avg_score,
+    total_tests_taken = EXCLUDED.total_tests_taken,
+    last_attempt_at = EXCLUDED.last_attempt_at,
+    stats_json = EXCLUDED.stats_json,
+    updated_at = NOW();
+"""
+
+STUDENT_STATS_AGGREGATED_SELECT = """
+SELECT * FROM stats.student_stats_aggregated WHERE student_id = :student_id
+"""
+
+STUDENT_STATS_CALCULATE = """
+SELECT
+    student_id,
+    COUNT(*) as total_attempts,
+    COUNT(*) FILTER (WHERE passed = true) as passed_attempts,
+    COUNT(*) FILTER (WHERE passed = false) as failed_attempts,
+    COALESCE(AVG(point), 0) as avg_score,
+    COUNT(DISTINCT test_id) as total_tests_taken,
+    MAX(date_of_attempt) as last_attempt_at
+FROM tests.test_attempt_b
+WHERE student_id = :student_id
+GROUP BY student_id
+"""
