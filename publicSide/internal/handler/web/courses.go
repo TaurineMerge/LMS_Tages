@@ -11,12 +11,14 @@ import (
 // CoursesHandler handles web requests for the courses page.
 type CoursesHandler struct {
 	courseService service.CourseService
+	lessonService service.LessonService
 }
 
 // NewCoursesHandler creates a new instance of CoursesHandler.
-func NewCoursesHandler(courseService service.CourseService) *CoursesHandler {
+func NewCoursesHandler(courseService service.CourseService, lessonService service.LessonService) *CoursesHandler {
 	return &CoursesHandler{
 		courseService: courseService,
+		lessonService: lessonService,
 	}
 }
 
@@ -161,11 +163,21 @@ func (h *CoursesHandler) RenderCoursePage(c *fiber.Ctx) error {
 		levelRu = "Сложный"
 	}
 
+	// Get the first lesson (newest by created_at DESC) for this course
+	var firstLessonID string
+	lessons, _, err := h.lessonService.GetAllByCourseID(c.UserContext(), categoryID, courseID, 1, 1, "-created_at")
+	if err != nil {
+		slog.Warn("Failed to get first lesson", "categoryId", categoryID, "courseId", courseID, "error", err)
+	} else if len(lessons) > 0 {
+		firstLessonID = lessons[0].ID
+	}
+
 	data := fiber.Map{
 		"CategoryTitle": category.Title,
 		"CategoryID":    category.ID,
 		"Course":        course,
 		"LevelRu":       levelRu,
+		"FirstLessonID": firstLessonID,
 	}
 
 	slog.Info("Rendering course page", "categoryId", categoryID, "courseId", courseID)

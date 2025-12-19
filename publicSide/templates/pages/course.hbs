@@ -62,9 +62,15 @@
             </div>
 
             <div class="course-info__actions">
+                {{#if FirstLessonID}}
+                <a href="/categories/{{CategoryID}}/courses/{{Course.ID}}/lessons/{{FirstLessonID}}" class="button button--primary button--large">
+                    Перейти к урокам
+                </a>
+                {{else}}
                 <a href="/categories/{{CategoryID}}/courses/{{Course.ID}}/lessons" class="button button--primary button--large">
                     Перейти к урокам
                 </a>
+                {{/if}}
                 <a href="/categories/{{CategoryID}}/courses" class="button button--secondary button--large">
                     Назад к курсам
                 </a>

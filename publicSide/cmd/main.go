@@ -122,7 +122,7 @@ func main() {
 
 	// Web
 	homeHandler := web.NewHomeHandler()
-	coursesHandler := web.NewCoursesHandler(courseService)
+	coursesHandler := web.NewCoursesHandler(courseService, lessonService)
 
 	// --- Регистрация маршрутов ---
 	// API - регистрируем цепочкой для правильной иерархии маршрутов
