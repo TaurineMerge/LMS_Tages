@@ -38,17 +38,24 @@ func (h *LessonHandler) RenderLesson(c *fiber.Ctx) error {
 	prevLesson, nextLesson, err := h.lessonService.GetNeighboringLessons(c.UserContext(), categoryID, courseID, lessonID)
 	if err != nil {
 		// Log the error but don't fail the page render if neighbors can't be fetched
-		// This might be better handled by returning a specific error type from service
-		// or logging with slog.Warn, but for now, pass empty DTOs.
 		prevLesson = response.LessonDTO{}
 		nextLesson = response.LessonDTO{}
 	}
 
+	// Fetch all lessons for the sidebar
+	allLessons, _, err := h.lessonService.GetAllByCourseID(c.UserContext(), categoryID, courseID, 1, 999, "") // page 1, limit 999, default sort
+	if err != nil {
+		// Don't fail the render, just show an empty sidebar
+		allLessons = []response.LessonDTO{}
+	}
+
 	return c.Render("pages/lesson", fiber.Map{
-		"title":      lesson.Title,
-		"lesson":     lesson,
-		"course":     course,
-		"prevLesson": prevLesson,
-		"nextLesson": nextLesson,
+		"title":       lesson.Title,
+		"lesson":      lesson,
+		"course":      course,
+		"prevLesson":  prevLesson,
+		"nextLesson":  nextLesson,
+		"allLessons":  allLessons,
+		"categoryID": categoryID,
 	}, "layouts/main")
 }

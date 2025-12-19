@@ -1,3 +1,10 @@
+.lesson-page-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 2rem;
+    align-items: start;
+}
+
 .lesson-header {
     display: flex;
     justify-content: space-between;
@@ -55,6 +62,13 @@
 .lesson__button {
     max-width: 200px;
 }
+
+@media (max-width: 1024px) {
+    .lesson-page-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
 
 @media (max-width: 768px) {
     .lesson-header__title {
