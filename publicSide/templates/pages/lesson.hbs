@@ -2,9 +2,13 @@
     <div class="page-header__breadcrumbs">
         <a href="/">Home</a>
         <span class="page-header__separator">/</span>
-        <a href="#">Categories</a>
+        <a href="/categories">Categories</a>
         <span class="page-header__separator">/</span>
-        <a href="#">{{course.Title}}</a>
+        <a href="/categories/{{category.ID}}/courses">{{category.Title}}</a>
+        <span class="page-header__separator">/</span>
+        <a href="/categories/{{categoryID}}/courses/{{course.ID}}">{{course.Title}}</a>
+        <span class="page-header__separator">/</span>
+        <span>{{lesson.Title}}</span>
     </div>
     <div class="lesson-header">
         <h1 class="lesson-header__title">{{lesson.Title}}</h1>
