@@ -12,10 +12,3 @@
     margin: 0 auto;
     padding: 0 2rem;
 }
-
-/* Основной контейнер для прижатия футера */
-.page-wrapper {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh; /* Минимальная высота = высота окна */
-}

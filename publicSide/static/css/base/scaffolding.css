@@ -8,16 +8,20 @@ body {
 }
 
 .wrapper {
+    display: flex; 
+    flex-direction: column; 
     width: 100%;
     min-height: 100vh;
 }
 
 /* Main Content */
 .main {
+    flex: 1;                  
     max-width: 1800px;
     margin: 0 auto;
     padding: 2.5rem 2rem;
 }
+
 
 /* Responsive */
 @media (max-width: 768px) {

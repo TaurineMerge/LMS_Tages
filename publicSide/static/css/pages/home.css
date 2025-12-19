@@ -1,0 +1,290 @@
+/* Home page hero - рамка во всю ширину */
+.welcome-section {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 160px);
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.welcome-hero {
+    width: 100%;
+    max-width: none;
+    margin: 0 auto;
+    padding: 3rem 2.5rem; /* увеличил внутренние отступы */
+    background-color: #FFFFFF;
+    border-radius: var(--border-radius);
+    border: 2px solid var(--orange-500);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.03);
+}
+
+/* Основной заголовок */
+.welcome-heading {
+    font-size: 2.5rem; /* увеличил с 2rem до 2.5rem (40px) */
+    font-weight: 700;
+    margin-top: 1rem;
+    text-align: center;
+    margin-bottom: 2rem; /* увеличил отступ снизу */
+    color: var(--gray-900);
+    line-height: 1.3; /* добавил межстрочный интервал */
+}
+
+.welcome-text {
+    margin-bottom: 2rem; /* увеличил отступ */
+    text-align: left;
+}
+
+/* Вступительный текст */
+.welcome-intro {
+    font-size: 1.6rem; /* увеличил с 1.4rem до 1.6rem (25.6px) */
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 30px; /* увеличил отступ */
+    text-align: center;
+    line-height: 1.5;
+}
+
+/* Стили для платформенной информации */
+.welcome-platform-info {
+    font-size: 1.4rem; /* увеличил с 1.25rem до 1.4rem (22.4px) */
+    color: #000000;
+    font-weight: 500; /* сделал немного жирнее */
+    margin: 20px 0 12px 0; /* увеличил отступы */
+    line-height: 1.6; /* увеличил межстрочный интервал */
+}
+
+.welcome-platform-subinfo {
+    font-size: 1.2rem; /* увеличил с 1.1rem до 1.2rem (19.2px) */
+    color: #555;
+    margin: 0 0 18px 0; /* увеличил отступ снизу */
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+/* Подзаголовки */
+.welcome-subtitle {
+    font-size: 1.5rem; /* увеличил с 1.25rem до 1.5rem (24px) */
+    color: #FF6636;
+    margin: 25px 0 18px 0; /* увеличил отступы */
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.welcome-features,
+.welcome-section-divider {
+    margin-bottom: 30px; /* увеличил отступ */
+    padding-bottom: 25px; /* увеличил отступ */
+    border-bottom: 1px dashed #eee;
+}
+
+.welcome-section-divider:last-of-type {
+    border-bottom: none;
+}
+
+/* Списки с увеличенными шрифтами */
+.welcome-list {
+    list-style: none;
+    padding-left: 0;
+    margin: 20px 0; /* увеличил отступы */
+    text-align: left;
+}
+
+.welcome-list-left {
+    text-align: left;
+}
+
+.welcome-list li {
+    padding: 10px 0; /* увеличил отступы между пунктами */
+    display: flex;
+    align-items: flex-start;
+    gap: 15px; /* увеличил расстояние между иконкой и текстом */
+    color: #555;
+    font-size: 1.15rem; /* добавил размер шрифта для пунктов списка (18.4px) */
+    line-height: 1.5;
+}
+
+.welcome-list-statistics {
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.welcome-list i {
+    color: #FF6636;
+    flex-shrink: 0;
+    margin-top: 4px; /* немного увеличил отступ для иконок */
+    font-size: 1.2rem; /* увеличил иконки */
+}
+
+/* Вложенный список - увеличенные шрифты */
+.welcome-sublist {
+    list-style: disc;
+    padding-left: 30px; /* увеличил отступ слева */
+    margin-top: 10px; /* увеличил отступ сверху */
+    text-align: left;
+    margin-left: 35px; /* увеличил отступ от иконки */
+}
+
+.welcome-sublist li {
+    padding: 5px 0; /* увеличил отступы между пунктами */
+    display: list-item;
+    color: #666;
+    font-size: 1.05rem; /* увеличил с 0.95rem до 1.05rem (16.8px) */
+    text-align: left;
+    margin-left: 0;
+    line-height: 1.5;
+}
+
+.welcome-conclusion {
+    margin-top: 30px; /* увеличил отступ сверху */
+    padding: 25px; /* увеличил внутренние отступы */
+    background: #f8f9fa;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.welcome-thank-you {
+    font-size: 1.3rem; /* увеличил с 1.2rem до 1.3rem (20.8px) */
+    color: #2c3e50;
+    font-style: italic;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.welcome-thank-you i {
+    color: #FF6636;
+    margin-right: 10px;
+    font-size: 1.3rem; /* увеличил иконку сердца */
+}
+
+.welcome-divider {
+    margin: 2rem 0; /* увеличил отступы */
+    color: var(--orange-500);
+}
+
+.welcome-info {
+    margin-top: 35px; /* увеличил отступ сверху */
+    text-align: center;
+}
+
+.welcome-info p {
+    margin: 0.35rem 0; /* увеличил вертикальные отступы */
+    font-size: 1.05rem; /* увеличил с 0.95rem до 1.05rem (16.8px) */
+    color: var(--gray-500);
+    display: inline-block;
+    margin-right: 25px; /* увеличил горизонтальные отступы */
+    line-height: 1.5;
+}
+
+.welcome-info p:last-child {
+    margin-right: 0;
+}
+
+.welcome-info i {
+    color: #FF6636;
+    margin-right: 10px; /* увеличил отступ для иконок */
+    font-size: 1.1rem; /* увеличил иконки */
+}
+
+/* Адаптивность */
+@media (max-width: 1200px) {
+    .welcome-hero {
+        padding: 2.5rem 2rem; /* немного уменьшил для средних экранов */
+    }
+}
+
+@media (max-width: 768px) {
+    .welcome-section {
+        min-height: calc(100vh - 140px);
+        padding: 8px;
+    }
+
+    .welcome-hero {
+        padding: 2rem 1.5rem; /* уменьшил для планшетов */
+    }
+
+    .welcome-heading {
+        font-size: 2rem; /* уменьшил для мобильных, но все еще читаемо */
+    }
+    
+    .welcome-intro {
+        font-size: 1.4rem;
+    }
+    
+    .welcome-platform-info {
+        font-size: 1.25rem;
+    }
+    
+    .welcome-subtitle {
+        font-size: 1.3rem;
+    }
+    
+    .welcome-list li {
+        font-size: 1.1rem;
+        gap: 10px;
+    }
+
+    .welcome-list li {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .welcome-list-statistics {
+        align-items: flex-start;
+    }
+
+    .welcome-sublist {
+        padding-left: 25px;
+        margin-left: 20px;
+    }
+    
+    .welcome-sublist li {
+        font-size: 1rem;
+    }
+
+    .welcome-thank-you {
+        font-size: 1.2rem;
+    }
+    
+    .welcome-info p {
+        display: block;
+        margin-right: 0;
+        margin-bottom: 10px;
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .welcome-hero {
+        padding: 1.5rem 1rem;
+    }
+    
+    .welcome-heading {
+        font-size: 1.8rem; /* уменьшил, но все еще хорошо читаемо */
+    }
+    
+    .welcome-intro {
+        font-size: 1.3rem;
+    }
+    
+    .welcome-platform-info {
+        font-size: 1.15rem;
+    }
+    
+    .welcome-subtitle {
+        font-size: 1.2rem;
+    }
+    
+    .welcome-list li {
+        font-size: 1.05rem;
+    }
+    
+    .welcome-sublist li {
+        font-size: 0.95rem;
+    }
+    
+    .welcome-thank-you {
+        font-size: 1.1rem;
+    }
+}
