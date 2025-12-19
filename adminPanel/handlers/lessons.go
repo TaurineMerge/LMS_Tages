@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"adminPanel/exceptions"
+	"adminPanel/handlers/dto/request"
+	"adminPanel/handlers/dto/response"
 	"adminPanel/models"
 	"adminPanel/services"
 
@@ -87,7 +89,7 @@ func (h *LessonHandler) createLesson(c *fiber.Ctx) error {
 		return exceptions.NewAppError("Invalid course ID format", 400, "INVALID_UUID")
 	}
 
-	var input models.LessonCreate
+	var input request.LessonCreate
 	if err := c.BodyParser(&input); err != nil {
 		return exceptions.NewAppError(fmt.Sprintf("Invalid request body: %v", err), 400, "VALIDATION_ERROR")
 	}
@@ -110,7 +112,7 @@ func (h *LessonHandler) updateLesson(c *fiber.Ctx) error {
 		return exceptions.NewAppError("Invalid course or lesson ID format", 400, "INVALID_UUID")
 	}
 
-	var input models.LessonUpdate
+	var input request.LessonUpdate
 	if err := c.BodyParser(&input); err != nil {
 		return exceptions.NewAppError(fmt.Sprintf("Invalid request body: %v", err), 400, "VALIDATION_ERROR")
 	}
@@ -138,5 +140,5 @@ func (h *LessonHandler) deleteLesson(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(models.StatusOnly{Status: "success"})
+	return c.JSON(response.StatusOnly{Status: "success"})
 }

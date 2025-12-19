@@ -6,18 +6,20 @@ import (
 	"strings"
 
 	"adminPanel/exceptions"
+	"adminPanel/handlers/dto/request"
+	"adminPanel/handlers/dto/response"
 	"adminPanel/models"
 	"adminPanel/repositories"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
-    "go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // LessonService - сервис для работы с уроками
 type LessonService struct {
-	lessonRepo *repositories.LessonRepository
-	courseRepo *repositories.CourseRepository
+	lessonRepo   *repositories.LessonRepository
+	courseRepo   *repositories.CourseRepository
 	lessonTracer trace.Tracer
 }
 
@@ -27,14 +29,14 @@ func NewLessonService(
 	courseRepo *repositories.CourseRepository,
 ) *LessonService {
 	return &LessonService{
-		lessonRepo: lessonRepo,
-		courseRepo: courseRepo,
+		lessonRepo:   lessonRepo,
+		courseRepo:   courseRepo,
 		lessonTracer: otel.Tracer("admin-panel/lesson-service"),
 	}
 }
 
 // GetLessons получает уроки курса с фильтрацией и пагинацией
-func (s *LessonService) GetLessons(ctx context.Context, courseID string, queryParams models.QueryList) (*models.LessonListResponse, error) {
+func (s *LessonService) GetLessons(ctx context.Context, courseID string, queryParams models.QueryList) (*response.LessonListResponse, error) {
 	ctx, span := s.lessonTracer.Start(ctx, "LessonService.GetLessons")
 	defer span.End()
 
@@ -80,9 +82,9 @@ func (s *LessonService) GetLessons(ctx context.Context, courseID string, queryPa
 		pages = 1
 	}
 
-	return &models.LessonListResponse{
+	return &response.LessonListResponse{
 		Status: "success",
-		Data: models.ResponsePaginationLessonsList {
+		Data: models.ResponsePaginationLessonsList{
 			Items: lessons,
 			Pagination: models.Pagination{
 				Total: total,
@@ -95,7 +97,7 @@ func (s *LessonService) GetLessons(ctx context.Context, courseID string, queryPa
 }
 
 // GetLesson получает урок по его уникальному идентификатору
-func (s *LessonService) GetLesson(ctx context.Context, lessonID, courseID string) (*models.LessonResponse, error) {
+func (s *LessonService) GetLesson(ctx context.Context, lessonID, courseID string) (*response.LessonResponse, error) {
 	ctx, span := s.lessonTracer.Start(ctx, "LessonService.GetLesson")
 	defer span.End()
 
@@ -109,14 +111,14 @@ func (s *LessonService) GetLesson(ctx context.Context, lessonID, courseID string
 		return nil, exceptions.NotFoundError("Lesson", lessonID)
 	}
 
-	return &models.LessonResponse{
+	return &response.LessonResponse{
 		Status: "success",
 		Data:   *lesson,
 	}, nil
 }
 
 // CreateLesson создает новый урок в указанном курсе
-func (s *LessonService) CreateLesson(ctx context.Context, courseID string, input models.LessonCreate) (*models.LessonResponse, error) {
+func (s *LessonService) CreateLesson(ctx context.Context, courseID string, input request.LessonCreate) (*response.LessonResponse, error) {
 	ctx, span := s.lessonTracer.Start(ctx, "LessonService.CreateLesson")
 	defer span.End()
 
@@ -135,14 +137,14 @@ func (s *LessonService) CreateLesson(ctx context.Context, courseID string, input
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to create lesson: %v", err))
 	}
 
-	return &models.LessonResponse{
+	return &response.LessonResponse{
 		Status: "success",
 		Data:   *lesson,
 	}, nil
 }
 
 // UpdateLesson обновляет существующий урок
-func (s *LessonService) UpdateLesson(ctx context.Context, lessonID, courseID string, input models.LessonUpdate) (*models.LessonResponse, error) {
+func (s *LessonService) UpdateLesson(ctx context.Context, lessonID, courseID string, input request.LessonUpdate) (*response.LessonResponse, error) {
 	ctx, span := s.lessonTracer.Start(ctx, "LessonService.UpdateLesson")
 	defer span.End()
 
@@ -161,7 +163,7 @@ func (s *LessonService) UpdateLesson(ctx context.Context, lessonID, courseID str
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to update lesson: %v", err))
 	}
 
-	return &models.LessonResponse{
+	return &response.LessonResponse{
 		Status: "success",
 		Data:   *lesson,
 	}, nil

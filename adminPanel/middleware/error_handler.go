@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"adminPanel/exceptions"
-	"adminPanel/models"
+	dto "adminPanel/handlers/dto/response"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -32,18 +32,18 @@ func ErrorHandlerMiddleware() fiber.Handler {
 
 			switch e := err.(type) {
 			case *exceptions.AppError:
-				return c.Status(e.StatusCode).JSON(models.ErrorResponse{
+				return c.Status(e.StatusCode).JSON(dto.ErrorResponse{
 					Status: "error",
-					Error: models.ErrorDetails{
+					Error: dto.ErrorDetails{
 						Code:    e.Code,
 						Message: e.Message,
 					},
 				})
 
 			case *fiber.Error:
-				return c.Status(e.Code).JSON(models.ErrorResponse{
+				return c.Status(e.Code).JSON(dto.ErrorResponse{
 					Status: "error",
-					Error: models.ErrorDetails{
+					Error: dto.ErrorDetails{
 						Code:    getErrorCode(e.Code),
 						Message: e.Message,
 					},
@@ -54,36 +54,36 @@ func ErrorHandlerMiddleware() fiber.Handler {
 
 				switch {
 				case strings.Contains(errMsg, "no rows in result set"):
-					return c.Status(404).JSON(models.ErrorResponse{
+					return c.Status(404).JSON(dto.ErrorResponse{
 						Status: "error",
-						Error: models.ErrorDetails{
+						Error: dto.ErrorDetails{
 							Code:    "NOT_FOUND",
 							Message: "Resource not found",
 						},
 					})
 
 				case strings.Contains(errMsg, "duplicate key"):
-					return c.Status(409).JSON(models.ErrorResponse{
+					return c.Status(409).JSON(dto.ErrorResponse{
 						Status: "error",
-						Error: models.ErrorDetails{
+						Error: dto.ErrorDetails{
 							Code:    "ALREADY_EXISTS",
 							Message: "Resource already exists",
 						},
 					})
 
 				case strings.Contains(errMsg, "violates foreign key constraint"):
-					return c.Status(400).JSON(models.ErrorResponse{
+					return c.Status(400).JSON(dto.ErrorResponse{
 						Status: "error",
-						Error: models.ErrorDetails{
+						Error: dto.ErrorDetails{
 							Code:    "INVALID_REFERENCE",
 							Message: "Invalid reference",
 						},
 					})
 
 				default:
-					return c.Status(500).JSON(models.ErrorResponse{
+					return c.Status(500).JSON(dto.ErrorResponse{
 						Status: "error",
-						Error: models.ErrorDetails{
+						Error: dto.ErrorDetails{
 							Code:    "SERVER_ERROR",
 							Message: "Internal server error",
 						},

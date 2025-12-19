@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"adminPanel/models"
+	"adminPanel/handlers/dto/response"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -67,9 +67,9 @@ func ValidateRequest(dto interface{}) fiber.Handler {
 		dtoValue := reflect.New(dtoType).Interface()
 
 		if err := c.BodyParser(dtoValue); err != nil {
-			return c.Status(400).JSON(models.ErrorResponse{
+			return c.Status(400).JSON(response.ErrorResponse{
 				Status: "error",
-				Error: models.ErrorDetails{
+				Error: response.ErrorDetails{
 					Code:    "VALIDATION_ERROR",
 					Message: "Invalid request body",
 				},
@@ -77,17 +77,17 @@ func ValidateRequest(dto interface{}) fiber.Handler {
 		}
 
 		if validationErrors, err := ValidateStruct(dtoValue); err != nil {
-			return c.Status(500).JSON(models.ErrorResponse{
+			return c.Status(500).JSON(response.ErrorResponse{
 				Status: "error",
-				Error: models.ErrorDetails{
+				Error: response.ErrorDetails{
 					Code:    "SERVER_ERROR",
 					Message: "Validation error",
 				},
 			})
 		} else if len(validationErrors) > 0 {
-			return c.Status(422).JSON(models.ValidationErrorResponse{
+			return c.Status(422).JSON(response.ValidationErrorResponse{
 				Status: "error",
-				Error: models.ErrorDetails{
+				Error: response.ErrorDetails{
 					Code:    "VALIDATION_ERROR",
 					Message: "Validation failed",
 				},
@@ -118,9 +118,9 @@ func ValidateMiddleware(dto interface{}) fiber.Handler {
 		dtoValue := reflect.New(dtoType).Interface()
 
 		if err := c.BodyParser(dtoValue); err != nil {
-			return c.Status(400).JSON(models.ErrorResponse{
+			return c.Status(400).JSON(response.ErrorResponse{
 				Status: "error",
-				Error: models.ErrorDetails{
+				Error: response.ErrorDetails{
 					Code:    "VALIDATION_ERROR",
 					Message: "Invalid request body",
 				},
@@ -128,9 +128,9 @@ func ValidateMiddleware(dto interface{}) fiber.Handler {
 		}
 
 		if validationErrors := validateStruct(dtoValue); len(validationErrors) > 0 {
-			return c.Status(422).JSON(models.ValidationErrorResponse{
+			return c.Status(422).JSON(response.ValidationErrorResponse{
 				Status: "error",
-				Error: models.ErrorDetails{
+				Error: response.ErrorDetails{
 					Code:    "VALIDATION_ERROR",
 					Message: "Validation failed",
 				},

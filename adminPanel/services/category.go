@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"adminPanel/exceptions"
+	"adminPanel/handlers/dto/request"
 	"adminPanel/models"
 	"adminPanel/repositories"
 
@@ -143,7 +144,7 @@ func (s *CategoryService) GetCategory(ctx context.Context, id string) (*models.C
 // Возвращает:
 //   - *models.Category: созданная категория
 //   - error: ошибка выполнения (если есть)
-func (s *CategoryService) CreateCategory(ctx context.Context, input models.CategoryCreate) (*models.Category, error) {
+func (s *CategoryService) CreateCategory(ctx context.Context, input request.CategoryCreate) (*models.Category, error) {
 	existing, err := s.categoryRepo.GetByTitle(ctx, input.Title)
 	if err != nil {
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to check existing category: %v", err))
@@ -185,7 +186,7 @@ func (s *CategoryService) CreateCategory(ctx context.Context, input models.Categ
 // Возвращает:
 //   - *models.Category: обновленная категория
 //   - error: ошибка выполнения (если есть)
-func (s *CategoryService) UpdateCategory(ctx context.Context, id string, input models.CategoryUpdate) (*models.Category, error) {
+func (s *CategoryService) UpdateCategory(ctx context.Context, id string, input request.CategoryUpdate) (*models.Category, error) {
 	ctx, span := categoryTracer.Start(ctx, "CategoryService.UpdateCategory")
 	span.SetAttributes(
 		attribute.String("category.id", id),

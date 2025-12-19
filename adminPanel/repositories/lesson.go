@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"adminPanel/database"
+	"adminPanel/handlers/dto/request"
 	"adminPanel/models"
 
 	"github.com/jackc/pgx/v5"
@@ -99,7 +100,7 @@ func (r *LessonRepository) GetByID(ctx context.Context, lessonID string) (*model
 }
 
 // Create создает новый урок в базе данных
-func (r *LessonRepository) Create(ctx context.Context, courseID string, lesson models.LessonCreate) (*models.LessonDetailed, error) {
+func (r *LessonRepository) Create(ctx context.Context, courseID string, lesson request.LessonCreate) (*models.LessonDetailed, error) {
 	contentJSON, err := json.Marshal(lesson.Content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal lesson content: %w", err)
@@ -131,7 +132,7 @@ func (r *LessonRepository) Create(ctx context.Context, courseID string, lesson m
 }
 
 // Update обновляет существующий урок в базе данных
-func (r *LessonRepository) Update(ctx context.Context, lessonID string, lesson models.LessonUpdate) (*models.LessonDetailed, error) {
+func (r *LessonRepository) Update(ctx context.Context, lessonID string, lesson request.LessonUpdate) (*models.LessonDetailed, error) {
 	var contentJSON interface{}
 	if lesson.Content != nil {
 		marshalled, err := json.Marshal(lesson.Content)

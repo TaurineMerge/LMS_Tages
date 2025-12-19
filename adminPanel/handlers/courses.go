@@ -5,8 +5,9 @@ import (
 	"strings"
 
 	"adminPanel/exceptions"
+	"adminPanel/handlers/dto/request"
+	"adminPanel/handlers/dto/response"
 	"adminPanel/middleware"
-	"adminPanel/models"
 	"adminPanel/services"
 
 	"github.com/gofiber/fiber/v2"
@@ -87,15 +88,15 @@ func (h *CourseHandler) getCourses(c *fiber.Ctx) error {
 	categoryID := c.Params("category_id")
 
 	if !isValidUUID(categoryID) {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "INVALID_UUID",
 				Message: "Invalid category ID format",
 			},
 		})
 	}
-	filter := models.CourseFilter{
+	filter := request.CourseFilter{
 		CategoryID: categoryID,
 	}
 	page, _ := strconv.Atoi(c.Query("page", "1"))
@@ -107,17 +108,17 @@ func (h *CourseHandler) getCourses(c *fiber.Ctx) error {
 	result, err := h.courseService.GetCourses(ctx, filter)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
-			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
+			return c.Status(appErr.StatusCode).JSON(response.ErrorResponse{
 				Status: "error",
-				Error: models.ErrorDetails{
+				Error: response.ErrorDetails{
 					Code:    appErr.Code,
 					Message: appErr.Message,
 				},
 			})
 		}
-		return c.Status(500).JSON(models.ErrorResponse{
+		return c.Status(500).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "SERVER_ERROR",
 				Message: "Internal server error",
 			},
@@ -155,16 +156,16 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 	categoryID := c.Params("category_id")
 
 	if !isValidUUID(categoryID) {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "INVALID_UUID",
 				Message: "Invalid category ID format",
 			},
 		})
 	}
 
-	var input models.CourseCreate
+	var input request.CourseCreate
 
 	if len(c.Body()) > 0 {
 		body := c.Body()
@@ -179,9 +180,9 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 	}
 
 	if err := c.BodyParser(&input); err != nil {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "VALIDATION_ERROR",
 				Message: "Invalid request body",
 			},
@@ -191,17 +192,17 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 	input.CategoryID = categoryID
 
 	if validationErrors, err := middleware.ValidateStruct(&input); err != nil {
-		return c.Status(500).JSON(models.ErrorResponse{
+		return c.Status(500).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "SERVER_ERROR",
 				Message: "Validation error",
 			},
 		})
 	} else if len(validationErrors) > 0 {
-		return c.Status(422).JSON(models.ValidationErrorResponse{
+		return c.Status(422).JSON(response.ValidationErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "VALIDATION_ERROR",
 				Message: "Validation failed",
 			},
@@ -210,9 +211,9 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 	}
 
 	if input.Level != "" && !isValidLevel(input.Level) {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "VALIDATION_ERROR",
 				Message: "Level must be one of: hard, medium, easy",
 			},
@@ -220,9 +221,9 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 	}
 
 	if input.Visibility != "" && !isValidVisibility(input.Visibility) {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "VALIDATION_ERROR",
 				Message: "Visibility must be one of: draft, public, private",
 			},
@@ -232,17 +233,17 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 	course, err := h.courseService.CreateCourse(ctx, input)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
-			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
+			return c.Status(appErr.StatusCode).JSON(response.ErrorResponse{
 				Status: "error",
-				Error: models.ErrorDetails{
+				Error: response.ErrorDetails{
 					Code:    appErr.Code,
 					Message: appErr.Message,
 				},
 			})
 		}
-		return c.Status(500).JSON(models.ErrorResponse{
+		return c.Status(500).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "SERVER_ERROR",
 				Message: "Internal server error",
 			},
@@ -283,9 +284,9 @@ func (h *CourseHandler) getCourse(c *fiber.Ctx) error {
 	id := c.Params("course_id")
 
 	if !isValidUUID(id) || !isValidUUID(categoryID) {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "INVALID_UUID",
 				Message: "Invalid ID format",
 			},
@@ -295,17 +296,17 @@ func (h *CourseHandler) getCourse(c *fiber.Ctx) error {
 	course, err := h.courseService.GetCourse(ctx, categoryID, id)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
-			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
+			return c.Status(appErr.StatusCode).JSON(response.ErrorResponse{
 				Status: "error",
-				Error: models.ErrorDetails{
+				Error: response.ErrorDetails{
 					Code:    appErr.Code,
 					Message: appErr.Message,
 				},
 			})
 		}
-		return c.Status(500).JSON(models.ErrorResponse{
+		return c.Status(500).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "SERVER_ERROR",
 				Message: "Internal server error",
 			},
@@ -346,15 +347,15 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 	id := c.Params("course_id")
 
 	if !isValidUUID(id) || !isValidUUID(categoryID) {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "INVALID_UUID",
 				Message: "Invalid ID format",
 			},
 		})
 	}
-	var input models.CourseUpdate
+	var input request.CourseUpdate
 
 	if len(c.Body()) > 0 {
 		body := c.Body()
@@ -369,9 +370,9 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 	}
 
 	if err := c.BodyParser(&input); err != nil {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "VALIDATION_ERROR",
 				Message: "Invalid request body",
 			},
@@ -385,17 +386,17 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 
 	// Валидация через middleware
 	if validationErrors, err := middleware.ValidateStruct(&input); err != nil {
-		return c.Status(500).JSON(models.ErrorResponse{
+		return c.Status(500).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "SERVER_ERROR",
 				Message: "Validation error",
 			},
 		})
 	} else if len(validationErrors) > 0 {
-		return c.Status(422).JSON(models.ValidationErrorResponse{
+		return c.Status(422).JSON(response.ValidationErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "VALIDATION_ERROR",
 				Message: "Validation failed",
 			},
@@ -404,9 +405,9 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 	}
 
 	if input.Level != "" && !isValidLevel(input.Level) {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "VALIDATION_ERROR",
 				Message: "Level must be one of: hard, medium, easy",
 			},
@@ -414,9 +415,9 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 	}
 
 	if input.Visibility != "" && !isValidVisibility(input.Visibility) {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "VALIDATION_ERROR",
 				Message: "Visibility must be one of: draft, public, private",
 			},
@@ -426,17 +427,17 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 	course, err := h.courseService.UpdateCourse(ctx, categoryID, id, input)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
-			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
+			return c.Status(appErr.StatusCode).JSON(response.ErrorResponse{
 				Status: "error",
-				Error: models.ErrorDetails{
+				Error: response.ErrorDetails{
 					Code:    appErr.Code,
 					Message: appErr.Message,
 				},
 			})
 		}
-		return c.Status(500).JSON(models.ErrorResponse{
+		return c.Status(500).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "SERVER_ERROR",
 				Message: "Internal server error",
 			},
@@ -477,9 +478,9 @@ func (h *CourseHandler) deleteCourse(c *fiber.Ctx) error {
 	id := c.Params("course_id")
 
 	if !isValidUUID(id) || !isValidUUID(categoryID) {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "INVALID_UUID",
 				Message: "Invalid ID format",
 			},
@@ -489,17 +490,17 @@ func (h *CourseHandler) deleteCourse(c *fiber.Ctx) error {
 	err := h.courseService.DeleteCourse(ctx, categoryID, id)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
-			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
+			return c.Status(appErr.StatusCode).JSON(response.ErrorResponse{
 				Status: "error",
-				Error: models.ErrorDetails{
+				Error: response.ErrorDetails{
 					Code:    appErr.Code,
 					Message: appErr.Message,
 				},
 			})
 		}
-		return c.Status(500).JSON(models.ErrorResponse{
+		return c.Status(500).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "SERVER_ERROR",
 				Message: "Internal server error",
 			},
