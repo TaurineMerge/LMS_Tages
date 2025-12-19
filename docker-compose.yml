@@ -183,6 +183,24 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_started
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: redis-server --appendonly yes
+    ports: []
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   testing:
@@ -241,4 +259,6 @@ volumes:
   keycloak_data:
     driver: local
   app_data:
+    driver: local
+  redis_data:
     driver: local
