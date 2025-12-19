@@ -8,114 +8,286 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.example.lms.test_attempt.api.dto.TestAttempt;
 import com.example.lms.test_attempt.domain.model.TestAttemptModel;
 import com.example.lms.test_attempt.domain.repository.TestAttemptRepositoryInterface;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
+/**
+ * Сервис для работы с попытками тестов.
+ *
+ * ✅ Сохранён весь функционал HEAD (DTO ↔ Model + CRUD/поиск),
+ * ✅ и добавлена UI-часть (attempt_version JSON, saveAnswer, completeAttemptForToday).
+ */
 public class TestAttemptService {
 
-	private static final Logger logger = LoggerFactory.getLogger(TestAttemptService.class);
+    private static final Logger logger = LoggerFactory.getLogger(TestAttemptService.class);
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-	private final TestAttemptRepositoryInterface testAttemptRepository;
+    private final TestAttemptRepositoryInterface repository;
 
-	public TestAttemptService(TestAttemptRepositoryInterface testAttemptRepository) {
-		this.testAttemptRepository = testAttemptRepository;
-	}
+    public TestAttemptService(TestAttemptRepositoryInterface repository) {
+        this.repository = repository;
+    }
 
-	// Существующие методы...
-	public TestAttemptModel createTestAttempt(UUID studentId, UUID testId, String attemptVersion) {
-		TestAttemptModel testAttempt = new TestAttemptModel(studentId, testId);
-		testAttempt.validate();
-		return testAttemptRepository.save(testAttempt);
-	}
+    // ---------------------------------------------------------------------
+    // DTO -> MODEL (как в HEAD)
+    // ---------------------------------------------------------------------
+    private TestAttemptModel toModel(TestAttempt dto) {
+        LocalDate date = null;
+        if (dto.getDate_of_attempt() != null && !dto.getDate_of_attempt().isEmpty()) {
+            try {
+                date = LocalDate.parse(dto.getDate_of_attempt());
+            } catch (Exception e) {
+                logger.warn("Ошибка парсинга даты: {}", dto.getDate_of_attempt());
+            }
+        }
 
-	public TestAttemptModel getTestAttemptById(UUID id) {
-		return testAttemptRepository.findById(id)
-				.orElseThrow(() -> new IllegalArgumentException("No test attempt found with id: " + id));
-	}
+        return new TestAttemptModel(
+                dto.getId() != null ? UUID.fromString(dto.getId()) : null,
+                dto.getStudent_id() != null ? UUID.fromString(dto.getStudent_id()) : null,
+                dto.getTest_id() != null ? UUID.fromString(dto.getTest_id()) : null,
+                date,
+                dto.getPoint(),
+                dto.getCertificate_id() != null ? UUID.fromString(dto.getCertificate_id()) : null,
+                dto.getAttempt_version(),
+                dto.getAttempt_snapshot(),
+                dto.getCompleted()
+        );
+    }
 
-	public TestAttemptModel updateTestAttempt(TestAttemptModel testAttempt) {
-		UUID id = testAttempt.getId();
-		if (id == null) {
-			throw new IllegalArgumentException("Test Attempt ID cannot be null for update");
-		}
+    // ---------------------------------------------------------------------
+    // MODEL -> DTO (как в HEAD)
+    // ---------------------------------------------------------------------
+    private TestAttempt toDto(TestAttemptModel model) {
+        String dateStr = (model.getDateOfAttempt() == null) ? null : model.getDateOfAttempt().toString();
 
-		TestAttemptModel existingAttempt = testAttemptRepository.findById(id)
-				.orElseThrow(() -> new IllegalArgumentException("No test attempt found with id: " + id));
+        return new TestAttempt(
+                model.getId() != null ? model.getId().toString() : null,
+                model.getStudentId() != null ? model.getStudentId().toString() : null,
+                model.getTestId() != null ? model.getTestId().toString() : null,
+                dateStr,
+                model.getPoint(),
+                model.getCertificateId() != null ? model.getCertificateId().toString() : null,
+                model.getAttemptVersion(),
+                model.getAttemptSnapshot(),
+                model.getCompleted()
+        );
+    }
 
-		existingAttempt.setPoint(testAttempt.getPoint());
-		existingAttempt.validate();
+    // ---------------------------------------------------------------------
+    // PUBLIC API METHODS (как в HEAD)
+    // ---------------------------------------------------------------------
+    public List<TestAttempt> getAllTestAttempts() {
+        return repository.findAll().stream().map(this::toDto).toList();
+    }
 
-		return testAttemptRepository.update(existingAttempt);
-	}
+    public TestAttempt createTestAttempt(TestAttempt dto) {
+        TestAttemptModel model = toModel(dto);
+        TestAttemptModel saved = repository.save(model);
+        return toDto(saved);
+    }
 
-	public void completeTestAttempt(UUID id, int points) {
-		TestAttemptModel testAttempt = getTestAttemptById(id);
-		testAttempt.complete(points);
-		testAttempt.validate();
-		testAttemptRepository.update(testAttempt);
-	}
+    public TestAttempt getTestAttemptById(String id) {
+        UUID uuid = UUID.fromString(id);
+        TestAttemptModel model = repository.findById(uuid).orElseThrow();
+        return toDto(model);
+    }
 
-	public void attachCertificate(UUID id, UUID certificateId) {
-		TestAttemptModel testAttempt = getTestAttemptById(id);
-		testAttempt.validate();
-		testAttemptRepository.update(testAttempt);
-	}
+    public TestAttempt updateTestAttempt(TestAttempt dto) {
+        TestAttemptModel model = toModel(dto);
+        TestAttemptModel updated = repository.update(model);
+        return toDto(updated);
+    }
 
-	public void deleteTestAttempt(UUID id) {
-		testAttemptRepository.deleteById(id);
-	}
+    public boolean deleteTestAttempt(String id) {
+        UUID uuid = UUID.fromString(id);
+        return repository.deleteById(uuid);
+    }
 
-	// public Optional<TestAttemptModel> getBestAttempt(UUID studentId, UUID testId)
-	// {
-	// return testAttemptRepository.findBestAttemptByStudentAndTest(studentId,
-	// testId);
-	// }
+    public TestAttempt completeTestAttempt(String id, Integer finalPoint) {
+        UUID uuid = UUID.fromString(id);
+        TestAttemptModel model = repository.findById(uuid).orElseThrow();
+        model.completeAttempt(finalPoint);
+        TestAttemptModel updated = repository.update(model);
+        return toDto(updated);
+    }
 
-	// Новые методы для поддержки контроллера:
+    public TestAttempt updateSnapshot(String id, String snapshot) {
+        UUID uuid = UUID.fromString(id);
+        TestAttemptModel model = repository.findById(uuid).orElseThrow();
+        model.updateSnapshot(snapshot);
+        TestAttemptModel updated = repository.update(model);
+        return toDto(updated);
+    }
 
-	public List<TestAttemptModel> getAllTestAttempts() {
-		return testAttemptRepository.findAll();
-	}
+    public List<TestAttempt> getTestAttemptsByStudentId(String studentId) {
+        UUID uuid = UUID.fromString(studentId);
+        return repository.findByStudentId(uuid).stream().map(this::toDto).toList();
+    }
 
-	public Optional<TestAttemptModel> findById(UUID id) {
-		return testAttemptRepository.findById(id);
-	}
+    public List<TestAttempt> getTestAttemptsByTestId(String testId) {
+        UUID uuid = UUID.fromString(testId);
+        return repository.findByTestId(uuid).stream().map(this::toDto).toList();
+    }
 
-	public List<TestAttemptModel> getTestAttemptsByStudentId(UUID studentId) {
-		return testAttemptRepository.findByStudentId(studentId);
-	}
+    public List<TestAttempt> getTestAttemptsByStudentIdAndTestId(String studentId, String testId) {
+        UUID studentUuid = UUID.fromString(studentId);
+        UUID testUuid = UUID.fromString(testId);
+        return repository.findByStudentIdAndTestId(studentUuid, testUuid).stream().map(this::toDto).toList();
+    }
 
-	public List<TestAttemptModel> getTestAttemptsByTestId(UUID testId) {
-		return testAttemptRepository.findByTestId(testId);
-	}
+    public int countByStudentId(String studentId) {
+        UUID uuid = UUID.fromString(studentId);
+        return repository.countByStudentId(uuid);
+    }
 
-	public List<TestAttemptModel> getTestAttemptsByDate(LocalDate date) {
-		return testAttemptRepository.findByDate(date);
-	}
+    public int countByTestId(String testId) {
+        UUID uuid = UUID.fromString(testId);
+        return repository.countByTestId(uuid);
+    }
 
-	public List<TestAttemptModel> getCompletedTestAttempts() {
-		return testAttemptRepository.findCompletedAttempts();
-	}
+    public List<TestAttempt> getCompletedTestAttempts() {
+        return repository.findCompletedAttempts().stream().map(this::toDto).toList();
+    }
 
-	public List<TestAttemptModel> getIncompleteTestAttempts() {
-		return testAttemptRepository.findIncompleteAttempts();
-	}
+    // ---------------------------------------------------------------------
+    // UI METHODS (чтобы UI часть работала)
+    // ---------------------------------------------------------------------
 
-	public List<TestAttemptModel> getAttemptsByStudentAndTest(UUID studentId, UUID testId) {
-		return testAttemptRepository.findByStudentAndTest(studentId, testId);
-	}
+    /**
+     * ✅ UI: получить attempt_version (JSON).
+     */
+    public Optional<String> getAttemptVersion(UUID studentId, UUID testId, LocalDate date) {
+        if (date == null) {
+            date = LocalDate.now();
+        }
+        return repository.findAttemptVersion(studentId, testId, date.toString());
+    }
 
-	public int countAttemptsByStudentAndTest(UUID studentId, UUID testId) {
-		return testAttemptRepository.countAttemptsByStudentAndTest(studentId, testId);
-	}
+    /**
+     * UI: Сохраняет ответ студента на конкретный вопрос в attempt_version (JSON).
+     *
+     * Формат attempt_version:
+     * {
+     *   "answers": [
+     *     { "question": "<questionUuid>", "answer": "<answerUuid>" }
+     *   ]
+     * }
+     *
+     * Правило "без возможности исправления":
+     * если в answers уже есть запись с question == questionId, повтор игнорируем.
+     */
+    public void saveAnswer(UUID studentId, UUID testId, UUID questionId, UUID answerId) {
+        String today = LocalDate.now().toString();
 
-	public boolean existsById(UUID id) {
-		return testAttemptRepository.existsById(id);
-	}
+        try {
+            String existingJson = repository.findAttemptVersion(studentId, testId, today).orElse(null);
 
-	// public Optional<TestAttemptModel> findBestAttemptByStudentAndTest(UUID
-	// studentId, UUID testId) {
-	// return testAttemptRepository.findBestAttemptByStudentAndTest(studentId,
-	// testId);
-	// }
+            ObjectNode root = toObjectNodeOrEmpty(existingJson);
+            ArrayNode answersArray = ensureAnswersArray(root);
+
+            String q = questionId.toString();
+            String a = answerId.toString();
+
+            for (JsonNode item : answersArray) {
+                if (item != null && item.isObject()) {
+                    JsonNode qNode = item.get("question");
+                    if (qNode != null && q.equals(qNode.asText())) {
+                        logger.info("Ответ уже сохранён (student={}, test={}, date={}, question={}). Повтор игнорируем.",
+                                studentId, testId, today, questionId);
+                        return;
+                    }
+                }
+            }
+
+            ObjectNode entry = OBJECT_MAPPER.createObjectNode();
+            entry.put("question", q);
+            entry.put("answer", a);
+            answersArray.add(entry);
+
+            String updatedJson = OBJECT_MAPPER.writeValueAsString(root);
+            repository.upsertAttemptVersion(studentId, testId, today, updatedJson);
+
+            logger.info("Ответ сохранён (student={}, test={}, date={}, question={}, answer={})",
+                    studentId, testId, today, questionId, answerId);
+
+        } catch (Exception e) {
+            logger.error("Ошибка при сохранении ответа в attempt_version", e);
+            throw new RuntimeException("Ошибка при сохранении ответа", e);
+        }
+    }
+
+    /**
+     * UI: завершить попытку за сегодня (если записи за сегодня нет — создаём).
+     */
+    public void completeAttemptForToday(UUID studentId, UUID testId, int points) {
+        LocalDate today = LocalDate.now();
+
+        List<TestAttemptModel> attempts = repository.findByStudentIdAndTestId(studentId, testId);
+
+        TestAttemptModel todayAttempt = null;
+        for (TestAttemptModel a : attempts) {
+            if (a.getDateOfAttempt() != null && today.equals(a.getDateOfAttempt())) {
+                todayAttempt = a;
+                break;
+            }
+        }
+
+        if (todayAttempt == null) {
+            todayAttempt = new TestAttemptModel(studentId, testId);
+            todayAttempt.validate();
+            todayAttempt = repository.save(todayAttempt);
+        }
+
+        todayAttempt.completeAttempt(points);
+        todayAttempt.validate();
+        repository.update(todayAttempt);
+    }
+
+    // ---------------------------------------------------------------------
+    // JSON helpers
+    // ---------------------------------------------------------------------
+
+    private ArrayNode ensureAnswersArray(ObjectNode root) {
+        JsonNode answers = root.get("answers");
+
+        if (answers != null && answers.isArray()) {
+            return (ArrayNode) answers;
+        }
+
+        if (answers != null && answers.isObject()) {
+            ArrayNode arr = OBJECT_MAPPER.createArrayNode();
+            answers.fields().forEachRemaining(entry -> {
+                ObjectNode item = OBJECT_MAPPER.createObjectNode();
+                item.put("question", entry.getKey());
+                JsonNode v = entry.getValue();
+                item.put("answer", v == null ? null : v.asText());
+                arr.add(item);
+            });
+            root.set("answers", arr);
+            return arr;
+        }
+
+        ArrayNode arr = OBJECT_MAPPER.createArrayNode();
+        root.set("answers", arr);
+        return arr;
+    }
+
+    private ObjectNode toObjectNodeOrEmpty(String json) {
+        if (json == null || json.isBlank()) {
+            return OBJECT_MAPPER.createObjectNode();
+        }
+        try {
+            JsonNode node = OBJECT_MAPPER.readTree(json);
+            if (node != null && node.isObject()) {
+                return (ObjectNode) node;
+            }
+        } catch (Exception ignored) {
+        }
+        return OBJECT_MAPPER.createObjectNode();
+    }
 }

@@ -34,12 +34,15 @@ import com.example.lms.test_attempt.api.controller.TestAttemptController;
 import com.example.lms.test_attempt.api.router.TestAttemptRouter;
 import com.example.lms.test_attempt.domain.service.TestAttemptService;
 import com.example.lms.test_attempt.infrastructure.repositories.TestAttemptRepository;
+import com.example.lms.ui.UiRouter;
+import com.example.lms.ui.UiTestController;
 import com.github.jknack.handlebars.Handlebars;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import io.javalin.Javalin;
 import static io.javalin.apibuilder.ApiBuilder.get;
 import io.javalin.http.staticfiles.Location;
+import io.javalin.json.JavalinJackson;
 
 /**
  * Главная точка входа в приложение LMS Testing Service.
@@ -97,10 +100,16 @@ public class Main {
 		ContentController contentController = new ContentController(contentService, handlebars);
 		TestFormController testWebController = new TestFormController(testService, questionService, answerService, handlebars);
 
+		// UI controller (ВАЖНО: добавили testAttemptService)
+		var uiTestController = new UiTestController(testService, questionService, answerService, testAttemptService);
+
 		// ---------------------------------------------------------------
 		// 3. Создание и запуск Javalin HTTP-сервера
 		// ---------------------------------------------------------------
 		Javalin app = Javalin.create(config -> {
+			// Используем JavalinJackson по умолчанию (без кастомного ObjectMapper)
+			config.jsonMapper(new JavalinJackson());
+			
 			// Добавляем логирование запросов для отладки
 			config.requestLogger.http((ctx, executionTimeMs) -> {
 				logger.info("{} {} - {}ms", ctx.method(), ctx.path(), executionTimeMs);
@@ -133,6 +142,13 @@ public class Main {
 				AnswerRouter.register(answerController);
 				// Веб-маршруты конструктора тестов
 				TestWebRouter.register(testWebController);
+				QuestionRouter.register(questionController);
+				TestAttemptRouter.register(testAttemptController);
+				DraftRouter.register(draftController);
+				ContentRouter.register(contentController);
+
+				// UI маршруты
+				UiRouter.register(uiTestController);
 
 				// Swagger UI
 				get("/swagger", ctx -> {
@@ -213,10 +229,6 @@ public class Main {
 
 				// Health check endpoint
 				get("/health", ctx -> ctx.result("OK"));
-				DraftRouter.register(draftController);
-				QuestionRouter.register(questionController);
-				TestAttemptRouter.register(testAttemptController);
-				ContentRouter.register(contentController);
 			});
 		}).start("0.0.0.0", APP_PORT);
 

@@ -1,6 +1,5 @@
 package com.example.lms.test_attempt.domain.repository;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -9,72 +8,64 @@ import com.example.lms.test_attempt.domain.model.TestAttemptModel;
 
 /**
  * Репозиторий для работы с попытками прохождения тестов.
- * Соответствует таблице TEST_ATTEMPT_B.
+ *
+ * Таблица: testing.test_attempt_b
+ * Поля:
+ *  - id UUID (PK)
+ *  - student_id UUID (not null)
+ *  - test_id UUID (not null)
+ *  - date_of_attempt DATE
+ *  - point INTEGER
+ *  - certificate_id UUID
+ *  - attempt_version JSON
+ *  - attempt_snapshot VARCHAR(256)
+ *  - completed BOOLEAN
  */
 public interface TestAttemptRepositoryInterface {
 
-	/**
-	 * Сохранить новую попытку.
-	 */
-	TestAttemptModel save(TestAttemptModel attempt);
+    // ---------------- CRUD ----------------
 
-	/**
-	 * Обновить существующую попытку.
-	 */
-	TestAttemptModel update(TestAttemptModel attempt);
+    TestAttemptModel save(TestAttemptModel testAttempt);
 
-	/**
-	 * Найти попытку по её ID.
-	 */
-	Optional<TestAttemptModel> findById(UUID id);
+    TestAttemptModel update(TestAttemptModel testAttempt);
 
-	/**
-	 * Получить все попытки.
-	 */
-	List<TestAttemptModel> findAll();
+    Optional<TestAttemptModel> findById(UUID id);
 
-	/**
-	 * Получить все попытки студента.
-	 */
-	List<TestAttemptModel> findByStudentId(UUID studentId);
+    List<TestAttemptModel> findAll();
 
-	/**
-	 * Получить все попытки по тесту.
-	 */
-	List<TestAttemptModel> findByTestId(UUID testId);
+    boolean deleteById(UUID id);
 
-	/**
-	 * Получить все попытки конкретного студента по конкретному тесту.
-	 */
-	List<TestAttemptModel> findByStudentAndTest(UUID studentId, UUID testId);
+    boolean existsById(UUID id);
 
-	/**
-	 * Удалить попытку по ID.
-	 */
-	boolean deleteById(UUID id);
+    // ---------------- Queries ----------------
 
-	/**
-	 * Проверить существование попытки по ID.
-	 */
-	boolean existsById(UUID id);
+    List<TestAttemptModel> findByStudentId(UUID studentId);
 
-	/**
-	 * Подсчитать количество попыток студента по тесту.
-	 */
-	int countAttemptsByStudentAndTest(UUID studentId, UUID testId);
+    List<TestAttemptModel> findByTestId(UUID testId);
 
-	/**
-	 * Найти попытки по дате прохождения.
-	 */
-	List<TestAttemptModel> findByDate(LocalDate date);
+    List<TestAttemptModel> findByStudentIdAndTestId(UUID studentId, UUID testId);
 
-	/**
-	 * Найти все завершённые попытки (где point IS NOT NULL).
-	 */
-	List<TestAttemptModel> findCompletedAttempts();
+    int countByStudentId(UUID studentId);
 
-	/**
-	 * Найти все незавершённые попытки (где point IS NULL).
-	 */
-	List<TestAttemptModel> findIncompleteAttempts();
+    int countByTestId(UUID testId);
+
+    List<TestAttemptModel> findCompletedAttempts();
+
+    List<TestAttemptModel> findIncompleteAttempts();
+
+    // ---------------- UI: attempt_version ----------------
+
+    /**
+     * Вернуть attempt_version (JSON) для попытки (student_id + test_id + date_of_attempt).
+     *
+     * @param date ISO-строка формата YYYY-MM-DD (пример: "2025-12-19")
+     */
+    Optional<String> findAttemptVersion(UUID studentId, UUID testId, String date);
+
+    /**
+     * Insert или Update attempt_version (JSON) для попытки (student_id + test_id + date_of_attempt).
+     *
+     * @param date ISO-строка формата YYYY-MM-DD (пример: "2025-12-19")
+     */
+    void upsertAttemptVersion(UUID studentId, UUID testId, String date, String attemptVersionJson);
 }

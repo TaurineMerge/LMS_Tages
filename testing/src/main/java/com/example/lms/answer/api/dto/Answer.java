@@ -48,14 +48,6 @@ public class Answer {
 	private Integer score;
 
 	/**
-	 * Порядковый номер ответа в тесте.
-	 * <p>
-	 * Значение not null.
-	 * </p>
-	 */
-	private Integer order;
-
-	/**
 	 * Пустой конструктор для сериализации/десериализации.
 	 */
 	public Answer() {
@@ -116,14 +108,4 @@ public class Answer {
 	public void setScore(Integer score) {
 		this.score = score;
 	}
-
-	/* /** @return порядковый номер ответа */
-	/* public Integer getOrder() {
-		return order;
-	} */
-
-	// /** @param order новый порядковый номер ответа */
-	/* public void setOrder(Integer order) {
-		this.order = order;
-	} */ 
 }
