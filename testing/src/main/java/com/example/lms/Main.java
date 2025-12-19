@@ -13,6 +13,7 @@ import com.example.lms.answer.infrastructure.repositories.AnswerRepository;
 import com.example.lms.config.DatabaseConfig;
 import com.example.lms.config.HandlebarsConfig;
 import com.example.lms.question.api.controller.QuestionController;
+import com.example.lms.question.api.router.QuestionRouter;
 import com.example.lms.question.domain.service.QuestionService;
 import com.example.lms.question.infrastructure.repositories.QuestionRepository;
 import com.example.lms.test.api.controller.TestController;
@@ -20,12 +21,14 @@ import com.example.lms.test.api.router.TestRouter;
 import com.example.lms.test.domain.service.TestService;
 import com.example.lms.test.infrastructure.repositories.TestRepository;
 import com.example.lms.test_attempt.api.controller.TestAttemptController;
+import com.example.lms.test_attempt.api.router.TestAttemptRouter;
 import com.example.lms.test_attempt.domain.service.TestAttemptService;
 import com.example.lms.test_attempt.infrastructure.repositories.TestAttemptRepository;
 import com.github.jknack.handlebars.Handlebars;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import io.javalin.Javalin;
+import io.javalin.json.JavalinJackson;
 import static io.javalin.apibuilder.ApiBuilder.get;
 import io.javalin.http.staticfiles.Location;
 
@@ -82,6 +85,9 @@ public class Main {
 		// 3. Создание и запуск Javalin HTTP-сервера
 		// ---------------------------------------------------------------
 		Javalin app = Javalin.create(config -> {
+			// Используем JavalinJackson по умолчанию (без кастомного ObjectMapper)
+			config.jsonMapper(new JavalinJackson());
+			
 			// Добавляем логирование запросов для отладки
 			config.requestLogger.http((ctx, executionTimeMs) -> {
 				logger.info("{} {} - {}ms", ctx.method(), ctx.path(), executionTimeMs);
@@ -112,6 +118,8 @@ public class Main {
 			config.router.apiBuilder(() -> {
 				TestRouter.register(testController);
 				AnswerRouter.register(answerController);
+				QuestionRouter.register(questionController);
+				TestAttemptRouter.register(testAttemptController);
 
 				// Swagger UI
 				get("/swagger", ctx -> {
