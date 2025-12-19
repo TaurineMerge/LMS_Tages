@@ -66,6 +66,7 @@ services:
       KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
       KC_HTTP_RELATIVE_PATH: "/auth"
       KC_BASE_URL: "http://localhost/auth"
+      KC_HOSTNAME: "localhost"
     command:
       - start-dev
       - --http-port=8080
