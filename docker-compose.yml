@@ -13,8 +13,8 @@ services:
     depends_on:
       keycloak:
         condition: service_healthy
-      public-side:
-        condition: service_started
+      # public-side:
+      #   condition: service_started
       admin-panel:
         condition: service_started
       personal-account:
@@ -46,6 +46,28 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+  
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    command: "minio server /data --console-address ':9001' & /init-minio.sh && wait"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+      - ./minio/certs:/root/.minio/certs:ro
+      - ./minio/init-minio.sh:/init-minio.sh:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - app-network
 
   keycloak:
     image: quay.io/keycloak/keycloak:23.0.0
@@ -74,7 +96,7 @@ services:
       - --hostname-strict-https=false
       - --http-relative-path=/auth
       - --hostname-admin-url=http://localhost/auth
-    ports: []
+    ports: [8080:8080]
     volumes:
       - ./keycloak/student.json:/opt/keycloak/data/import/student.json:ro
       - ./keycloak/teacher.json:/opt/keycloak/data/import/teacher.json:ro
@@ -185,6 +207,8 @@ services:
         condition: service_started
       redis:
         condition: service_healthy
+      minio:
+        condition: service_healthy
     restart: unless-stopped
 
   redis:
@@ -256,6 +280,8 @@ networks:
     driver: bridge
 
 volumes:
+  minio_data:
+    driver: local
   keycloak_data:
     driver: local
   app_data:
