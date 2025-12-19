@@ -156,6 +156,19 @@ async def visits_page(request: Request):
     )
 
 
+@router.get("/statistics", response_class=HTMLResponse)
+@traced("pages.statistics")
+async def statistics_page(request: Request):
+    """Render statistics page.
+
+    This page displays aggregated user statistics loaded from Redis cache.
+    """
+    return _render_template_safe(
+        "statistics.hbs",
+        {"request": request, "active_page": "statistics", **get_keycloak_urls()},
+    )
+
+
 @router.get("/register", response_class=HTMLResponse)
 @traced("pages.register")
 async def register_page(request: Request):

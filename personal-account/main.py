@@ -13,7 +13,7 @@ from opentelemetry import trace
 from app.config import get_settings
 from app.database import close_db_pool, init_db_pool
 from app.exceptions import app_exception
-from app.routers import auth, certificates, health, pages, students, visits
+from app.routers import auth, certificates, health, pages, stats, students, visits
 from app.telemetry_config import (
     configure_telemetry,
     instrument_fastapi,
@@ -224,6 +224,7 @@ app.include_router(auth.router, prefix=settings.API_PREFIX)
 app.include_router(students.router, prefix=settings.API_PREFIX)
 app.include_router(certificates.router, prefix=settings.API_PREFIX)
 app.include_router(visits.router, prefix=settings.API_PREFIX)
+app.include_router(stats.router, prefix=settings.API_PREFIX)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
