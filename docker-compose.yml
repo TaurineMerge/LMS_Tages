@@ -62,7 +62,6 @@ services:
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
       KC_PROXY: "reencrypt"
-      KC_HOSTNAME: "localhost"
       KC_HOSTNAME_PORT: "80"
       KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
       KC_HTTP_RELATIVE_PATH: "/auth"
@@ -190,6 +189,8 @@ services:
     container_name: testing
     env_file:
       - ./testing/.env
+    volumes:
+      - ./docs:/app/docs
     ports: []
     networks:
       - app-network

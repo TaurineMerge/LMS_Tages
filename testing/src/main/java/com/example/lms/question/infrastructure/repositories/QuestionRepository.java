@@ -39,14 +39,14 @@ public class QuestionRepository implements QuestionRepositoryInterface {
 
 	// language=SQL
 	private static final String INSERT_SQL = """
-			INSERT INTO tests.question_d (test_id, text_of_question, "order")
+			INSERT INTO testing.question_d (test_id, text_of_question, "order")
 			VALUES (?, ?, ?)
 			RETURNING id
 			""".trim();
 
 	// language=SQL
 	private static final String UPDATE_SQL = """
-			UPDATE tests.question_d
+			UPDATE testing.question_d
 			SET test_id = ?, text_of_question = ?, "order" = ?
 			WHERE id = ?
 			""".trim();
@@ -54,40 +54,40 @@ public class QuestionRepository implements QuestionRepositoryInterface {
 	// language=SQL
 	private static final String SELECT_BY_ID = """
 			SELECT id, test_id, text_of_question, "order"
-			FROM tests.question_d
+			FROM testing.question_d
 			WHERE id = ?
 			""".trim();
 
 	// language=SQL
 	private static final String SELECT_ALL = """
 			SELECT id, test_id, text_of_question, "order"
-			FROM tests.question_d
+			FROM testing.question_d
 			ORDER BY test_id, "order"
 			""".trim();
 
 	// language=SQL
 	private static final String SELECT_BY_TEST = """
 			SELECT id, test_id, text_of_question, "order"
-			FROM tests.question_d
+			FROM testing.question_d
 			WHERE test_id = ?
 			ORDER BY "order"
 			""".trim();
 
-	private static final String DELETE_BY_ID = "DELETE FROM tests.question_d WHERE id = ?";
+	private static final String DELETE_BY_ID = "DELETE FROM testing.question_d WHERE id = ?";
 
-	private static final String DELETE_BY_TEST = "DELETE FROM tests.question_d WHERE test_id = ?";
+	private static final String DELETE_BY_TEST = "DELETE FROM testing.question_d WHERE test_id = ?";
 
 	// language=SQL
 	private static final String COUNT_BY_TEST = """
 			SELECT COUNT(*)
-			FROM tests.question_d
+			FROM testing.question_d
 			WHERE test_id = ?
 			""".trim();
 
 	// language=SQL
 	private static final String SEARCH_BY_TEXT = """
 			SELECT id, test_id, text_of_question, "order"
-			FROM tests.question_d
+			FROM testing.question_d
 			WHERE LOWER(text_of_question) LIKE LOWER(?)
 			ORDER BY test_id, "order"
 			""".trim();
@@ -95,13 +95,13 @@ public class QuestionRepository implements QuestionRepositoryInterface {
 	// language=SQL
 	private static final String MAX_ORDER_BY_TEST = """
 			SELECT COALESCE(MAX("order"), -1)
-			FROM tests.question_d
+			FROM testing.question_d
 			WHERE test_id = ?
 			""".trim();
 
 	// language=SQL
 	private static final String SHIFT_ORDER_SQL = """
-			UPDATE tests.question_d
+			UPDATE testing.question_d
 			SET "order" = "order" + ?
 			WHERE test_id = ? AND "order" >= ?
 			""".trim();
