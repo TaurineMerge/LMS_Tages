@@ -1,0 +1,21 @@
+# Path for the output SQL file
+output: "999-populate.sql"
+
+# Ollama API configuration
+ollama_url: "http://localhost:11434"
+ollama_model: "llama3"
+
+# Generation counts. Use a single number (e.g., 5) or a range (e.g., "2:6").
+counts:
+  categories: "3:5"       # Number of categories to generate
+  courses: "2:4"        # Number of courses per category
+  lessons: "5:10"       # Number of lessons per course
+  content_blocks: "2:4" # Number of text content blocks per lesson
+
+# Prompts for Ollama content generation.
+# Use placeholders like {{.CategoryTitle}} or {{.CourseTitle}} for dynamic content.
+prompts:
+  category_title: "Сгенерируй одно уникальное и интересное название для категории онлайн-курсов на русском языке. Избегай уже сгенерированных названий: {{.ExistingTitles}}. Примеры: 'Веб-разработка', 'Наука о данных', 'Мобильная разработка'. Укажи только название, без кавычек и пояснений."
+  course_content: "Для IT-категории '{{.CategoryTitle}}' сгенерируй подходящее название онлайн-курса и описание в один абзац. Верни в виде одного необработанного JSON-объекта: {\"title\": \"...\", \"description\": \"...\"}"
+  lesson_title: "Для онлайн-курса '{{.CourseTitle}}' сгенерируй короткое, убедительное название для одного урока. Пример: 'Урок 5: Продвинутые горутины'. Укажи только название."
+  lesson_content_block: "Напиши один образовательный абзац на тему '{{.LessonTitle}}' для онлайн-курса. Абзац должен быть на русском языке."
