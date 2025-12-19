@@ -6,6 +6,7 @@ import (
 	"adminPanel/exceptions"
 	"adminPanel/handlers/dto/request"
 	"adminPanel/handlers/dto/response"
+	"adminPanel/middleware"
 	"adminPanel/models"
 	"adminPanel/services"
 
@@ -29,9 +30,9 @@ func NewLessonHandler(lessonService *services.LessonService) *LessonHandler {
 // RegisterRoutes регистрирует маршруты для уроков
 func (h *LessonHandler) RegisterRoutes(lessons fiber.Router) {
 	lessons.Get("/", h.getLessons)
-	lessons.Post("/", h.createLesson)
+	lessons.Post("/", middleware.ValidateJSONSchema("lesson-create.json"), h.createLesson)
 	lessons.Get("/:lesson_id", h.getLesson)
-	lessons.Put("/:lesson_id", h.updateLesson)
+	lessons.Put("/:lesson_id", middleware.ValidateJSONSchema("lesson-update.json"), h.updateLesson)
 	lessons.Delete("/:lesson_id", h.deleteLesson)
 }
 

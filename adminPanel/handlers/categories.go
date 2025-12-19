@@ -54,9 +54,9 @@ func (h *CategoryHandler) RegisterRoutes(router fiber.Router) {
 	categories := router.Group("/categories")
 
 	categories.Get("/", h.getCategories)
-	categories.Post("/", h.createCategory)
+	categories.Post("/", middleware.ValidateJSONSchema("category-create.json"), h.createCategory)
 	categories.Get("/:category_id", h.getCategory)
-	categories.Put("/:category_id", h.updateCategory)
+	categories.Put("/:category_id", middleware.ValidateJSONSchema("category-update.json"), h.updateCategory)
 	categories.Delete("/:category_id", h.deleteCategory)
 }
 
@@ -185,7 +185,7 @@ func (h *CategoryHandler) getCategory(c *fiber.Ctx) error {
 
 // createCategory обрабатывает POST /categories
 //
-// Создает новую категорию с валидацией данных.
+// Создает новую категорию с валидацией данных через JSON Schema.
 //
 // Параметры:
 //   - c: контекст Fiber
@@ -215,32 +215,15 @@ func (h *CategoryHandler) createCategory(c *fiber.Ctx) error {
 			))
 	}
 
+	// JSON Schema валидация уже выполнена middleware
+	// Парсим тело запроса в структуру
 	if err := c.BodyParser(&input); err != nil {
 		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
 			Error: response.ErrorDetails{
-				Code:    "VALIDATION_ERROR",
+				Code:    "INVALID_JSON",
 				Message: "Invalid request body",
 			},
-		})
-	}
-
-	if validationErrors, err := middleware.ValidateStruct(&input); err != nil {
-		return c.Status(500).JSON(response.ErrorResponse{
-			Status: "error",
-			Error: response.ErrorDetails{
-				Code:    "SERVER_ERROR",
-				Message: "Validation error",
-			},
-		})
-	} else if len(validationErrors) > 0 {
-		return c.Status(422).JSON(response.ValidationErrorResponse{
-			Status: "error",
-			Error: response.ErrorDetails{
-				Code:    "VALIDATION_ERROR",
-				Message: "Validation failed",
-			},
-			Errors: validationErrors,
 		})
 	}
 
@@ -279,7 +262,7 @@ func (h *CategoryHandler) createCategory(c *fiber.Ctx) error {
 
 // updateCategory обрабатывает PUT /categories/:id
 //
-// Обновляет существующую категорию с валидацией данных.
+// Обновляет существующую категорию с валидацией данных через JSON Schema.
 //
 // Параметры:
 //   - c: контекст Fiber
@@ -288,7 +271,6 @@ func (h *CategoryHandler) createCategory(c *fiber.Ctx) error {
 //   - error: ошибка выполнения (если есть)
 func (h *CategoryHandler) updateCategory(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	// Логируем вызов метода
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent("handler.updateCategory.start",
 		trace.WithAttributes(
@@ -323,32 +305,15 @@ func (h *CategoryHandler) updateCategory(c *fiber.Ctx) error {
 			))
 	}
 
+	// JSON Schema валидация уже выполнена middleware
+	// Парсим тело запроса в структуру
 	if err := c.BodyParser(&input); err != nil {
 		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
 			Error: response.ErrorDetails{
-				Code:    "VALIDATION_ERROR",
+				Code:    "INVALID_JSON",
 				Message: "Invalid request body",
 			},
-		})
-	}
-
-	if validationErrors, err := middleware.ValidateStruct(&input); err != nil {
-		return c.Status(500).JSON(response.ErrorResponse{
-			Status: "error",
-			Error: response.ErrorDetails{
-				Code:    "SERVER_ERROR",
-				Message: "Validation error",
-			},
-		})
-	} else if len(validationErrors) > 0 {
-		return c.Status(422).JSON(response.ValidationErrorResponse{
-			Status: "error",
-			Error: response.ErrorDetails{
-				Code:    "VALIDATION_ERROR",
-				Message: "Validation failed",
-			},
-			Errors: validationErrors,
 		})
 	}
 

@@ -58,9 +58,9 @@ func (h *CourseHandler) RegisterRoutes(router fiber.Router) {
 	courses := router.Group("/categories/:category_id/courses")
 
 	courses.Get("/", h.getCourses)
-	courses.Post("/", h.createCourse)
+	courses.Post("/", middleware.ValidateJSONSchema("course-create.json"), h.createCourse)
 	courses.Get("/:course_id", h.getCourse)
-	courses.Put("/:course_id", h.updateCourse)
+	courses.Put("/:course_id", middleware.ValidateJSONSchema("course-update.json"), h.updateCourse)
 	courses.Delete("/:course_id", h.deleteCourse)
 }
 
@@ -183,7 +183,7 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
 			Error: response.ErrorDetails{
-				Code:    "VALIDATION_ERROR",
+				Code:    "INVALID_JSON",
 				Message: "Invalid request body",
 			},
 		})
@@ -191,25 +191,7 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 
 	input.CategoryID = categoryID
 
-	if validationErrors, err := middleware.ValidateStruct(&input); err != nil {
-		return c.Status(500).JSON(response.ErrorResponse{
-			Status: "error",
-			Error: response.ErrorDetails{
-				Code:    "SERVER_ERROR",
-				Message: "Validation error",
-			},
-		})
-	} else if len(validationErrors) > 0 {
-		return c.Status(422).JSON(response.ValidationErrorResponse{
-			Status: "error",
-			Error: response.ErrorDetails{
-				Code:    "VALIDATION_ERROR",
-				Message: "Validation failed",
-			},
-			Errors: validationErrors,
-		})
-	}
-
+	// JSON Schema валидация уже выполнена middleware
 	if input.Level != "" && !isValidLevel(input.Level) {
 		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
@@ -373,7 +355,7 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
 			Error: response.ErrorDetails{
-				Code:    "VALIDATION_ERROR",
+				Code:    "INVALID_JSON",
 				Message: "Invalid request body",
 			},
 		})
@@ -384,26 +366,7 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 		input.CategoryID = categoryID
 	}
 
-	// Валидация через middleware
-	if validationErrors, err := middleware.ValidateStruct(&input); err != nil {
-		return c.Status(500).JSON(response.ErrorResponse{
-			Status: "error",
-			Error: response.ErrorDetails{
-				Code:    "SERVER_ERROR",
-				Message: "Validation error",
-			},
-		})
-	} else if len(validationErrors) > 0 {
-		return c.Status(422).JSON(response.ValidationErrorResponse{
-			Status: "error",
-			Error: response.ErrorDetails{
-				Code:    "VALIDATION_ERROR",
-				Message: "Validation failed",
-			},
-			Errors: validationErrors,
-		})
-	}
-
+	// JSON Schema валидация уже выполнена middleware
 	if input.Level != "" && !isValidLevel(input.Level) {
 		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
