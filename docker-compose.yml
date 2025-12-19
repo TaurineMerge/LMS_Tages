@@ -41,7 +41,7 @@ services:
     networks:
       - keycloak-network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U keycloaks -d keycloaks" ]
+      test: ["CMD-SHELL", "pg_isready -U keycloaks -d keycloaks"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -62,7 +62,6 @@ services:
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
       KC_PROXY: "reencrypt"
-      KC_HOSTNAME: "localhost"
       KC_HOSTNAME_PORT: "80"
       KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
       KC_HTTP_RELATIVE_PATH: "/auth"
@@ -82,7 +81,11 @@ services:
       keycloak-db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /auth/health/ready HTTP/1.1\r\nHost: localhost\r\n\r\n' >&3 && grep -q '200 OK' <&3 || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /auth/health/ready HTTP/1.1\r\nHost: localhost\r\n\r\n' >&3 && grep -q '200 OK' <&3 || exit 1",
+        ]
       interval: 15s
       timeout: 10s
       retries: 10
@@ -106,9 +109,14 @@ services:
       - ./init-sql:/docker-entrypoint-initdb.d:ro
     networks:
       - app-network
-    ports: []
+    ports:
+      - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${APP_DB_SUPERUSER} -p ${APP_DB_INTERNAL_PORT}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${APP_DB_SUPERUSER} -p ${APP_DB_INTERNAL_PORT}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -190,6 +198,8 @@ services:
     container_name: testing
     env_file:
       - ./testing/.env
+    volumes:
+      - ./docs:/app/docs
     ports: []
     networks:
       - app-network
@@ -217,7 +227,7 @@ services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.94.0
     container_name: otel-collector
-    command: [ "--config=/etc/otel-collector-config.yaml" ]
+    command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ./observability/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
     ports:

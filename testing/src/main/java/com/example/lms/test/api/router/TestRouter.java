@@ -1,15 +1,24 @@
 package com.example.lms.test.api.router;
 
+import java.util.Set;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.example.lms.test.api.controller.TestController;
 import com.example.lms.shared.router.RouterUtils;
+import static com.example.lms.shared.router.RouterUtils.READ_ACCESS_REALMS;
+import static com.example.lms.shared.router.RouterUtils.TEACHER_REALM;
+import static com.example.lms.shared.router.RouterUtils.applyStandardAfterMiddleware;
+import static com.example.lms.shared.router.RouterUtils.applyStandardBeforeMiddleware;
+import static com.example.lms.shared.router.RouterUtils.validateController;
+import static com.example.lms.shared.router.RouterUtils.withRealm;
+import com.example.lms.test.api.controller.TestController;
 
-import static io.javalin.apibuilder.ApiBuilder.*;
-import static com.example.lms.shared.router.RouterUtils.*;
-
-import java.util.Set;
+import static io.javalin.apibuilder.ApiBuilder.delete;
+import static io.javalin.apibuilder.ApiBuilder.get;
+import static io.javalin.apibuilder.ApiBuilder.path;
+import static io.javalin.apibuilder.ApiBuilder.post;
+import static io.javalin.apibuilder.ApiBuilder.put;
 
 /**
  * Роутер для управления тестами.
