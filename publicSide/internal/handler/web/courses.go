@@ -164,9 +164,9 @@ func (h *CoursesHandler) RenderCoursePage(c *fiber.Ctx) error {
 		levelRu = "Сложный"
 	}
 
-	// Get the first lesson (newest by created_at DESC) for this course
+	// Get the first lesson (oldest by created_at ASC) for this course
 	var firstLessonID string
-	lessons, _, err := h.lessonService.GetAllByCourseID(c.UserContext(), categoryID, courseID, 1, 1, "-created_at")
+	lessons, _, err := h.lessonService.GetAllByCourseID(c.UserContext(), categoryID, courseID, 1, 1, "created_at")
 	if err != nil {
 		slog.Warn("Failed to get first lesson", "categoryId", categoryID, "courseId", courseID, "error", err)
 	} else if len(lessons) > 0 {
