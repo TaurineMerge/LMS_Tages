@@ -12,12 +12,14 @@ import (
 // CoursesHandler handles web requests for the courses page.
 type CoursesHandler struct {
 	courseService service.CourseService
+	lessonService service.LessonService
 }
 
 // NewCoursesHandler creates a new instance of CoursesHandler.
-func NewCoursesHandler(courseService service.CourseService) *CoursesHandler {
+func NewCoursesHandler(courseService service.CourseService, lessonService service.LessonService) *CoursesHandler {
 	return &CoursesHandler{
 		courseService: courseService,
+		lessonService: lessonService,
 	}
 }
 
@@ -111,4 +113,75 @@ func (h *CoursesHandler) RenderCourses(c *fiber.Ctx) error {
 	slog.Info("Rendering template", "template", "pages/courses", "coursesCount", len(coursesView))
 
 	return c.Render("pages/courses", data, "layouts/main")
+}
+
+// RenderCoursePage renders the individual course page with course details.
+func (h *CoursesHandler) RenderCoursePage(c *fiber.Ctx) error {
+	// Get category ID and course ID from URL params
+	categoryID := c.Params(apiconst.PathVariableCategoryID)
+	courseID := c.Params(apiconst.PathVariableCourseID)
+
+	// Validate UUIDs
+	if _, err := uuid.Parse(categoryID); err != nil {
+		return c.Status(fiber.StatusBadRequest).Render("pages/error", fiber.Map{
+			"title":   "Invalid Category",
+			"message": "The category ID is invalid.",
+		}, "layouts/main")
+	}
+	if _, err := uuid.Parse(courseID); err != nil {
+		return c.Status(fiber.StatusBadRequest).Render("pages/error", fiber.Map{
+			"title":   "Invalid Course",
+			"message": "The course ID is invalid.",
+		}, "layouts/main")
+	}
+
+	// Get category information
+	category, err := h.courseService.GetCategoryByID(c.UserContext(), categoryID)
+	if err != nil {
+		slog.Error("Failed to get category", "categoryId", categoryID, "error", err)
+		return c.Status(fiber.StatusNotFound).Render("pages/error", fiber.Map{
+			"title":   "Category Not Found",
+			"message": "The requested category could not be found.",
+		}, "layouts/main")
+	}
+
+	// Get course information
+	course, err := h.courseService.GetCourseByID(c.UserContext(), categoryID, courseID)
+	if err != nil {
+		slog.Error("Failed to get course", "categoryId", categoryID, "courseId", courseID, "error", err)
+		return c.Status(fiber.StatusNotFound).Render("pages/error", fiber.Map{
+			"title":   "Course Not Found",
+			"message": "The requested course could not be found.",
+		}, "layouts/main")
+	}
+
+	// Prepare localized level name
+	levelRu := "Средний"
+	switch course.Level {
+	case "easy":
+		levelRu = "Легкий"
+	case "hard":
+		levelRu = "Сложный"
+	}
+
+	// Get the first lesson (newest by created_at DESC) for this course
+	var firstLessonID string
+	lessons, _, err := h.lessonService.GetAllByCourseID(c.UserContext(), categoryID, courseID, 1, 1, "-created_at")
+	if err != nil {
+		slog.Warn("Failed to get first lesson", "categoryId", categoryID, "courseId", courseID, "error", err)
+	} else if len(lessons) > 0 {
+		firstLessonID = lessons[0].ID
+	}
+
+	data := fiber.Map{
+		"CategoryTitle": category.Title,
+		"CategoryID":    category.ID,
+		"Course":        course,
+		"LevelRu":       levelRu,
+		"FirstLessonID": firstLessonID,
+	}
+
+	slog.Info("Rendering course page", "categoryId", categoryID, "courseId", courseID)
+
+	return c.Render("pages/course", data, "layouts/main")
 }

@@ -15,9 +15,9 @@ import (
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/web"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/repository"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/service"
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/template"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apiconst"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/database"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/template"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/tracing"
 	"github.com/gofiber/contrib/otelfiber/v2"
 	"github.com/gofiber/fiber/v2"
@@ -123,9 +123,9 @@ func main() {
 
 	// Web
 	homeHandler := web.NewHomeHandler()
-	coursesHandler := web.NewCoursesHandler(courseService)
 	webLessonHandler := web.NewLessonHandler(lessonService, courseService)
 	categoryPageHandler := web.NewCategoryHandler(categoryService, courseService)
+	coursesHandler := web.NewCoursesHandler(courseService, lessonService)
 
 	// --- Регистрация маршрутов ---
 	// API
@@ -141,6 +141,7 @@ func main() {
 
 	webCoursesRouter := webCategoriesRouter.Group("/:" + apiconst.PathVariableCategoryID + "/courses")
 	webCoursesRouter.Get("/", coursesHandler.RenderCourses)
+	webCoursesRouter.Get("/:"+apiconst.PathVariableCourseID, coursesHandler.RenderCoursePage)
 
 	webLessonsRouter := webCoursesRouter.Group("/:" + apiconst.PathVariableCourseID + "/lessons")
 	webLessonsRouter.Get("/:"+apiconst.PathVariableLessonID, webLessonHandler.RenderLesson)
