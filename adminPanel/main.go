@@ -31,6 +31,7 @@ import (
 	"adminPanel/config"
 	"adminPanel/database"
 	"adminPanel/handlers"
+	webhandlers "adminPanel/handlers/web"
 	"adminPanel/middleware"
 	"adminPanel/repositories"
 	"adminPanel/services"
@@ -42,6 +43,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/swagger"
+	"github.com/gofiber/template/handlebars/v2"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -268,9 +270,11 @@ func main() {
 	}
 
 	// Создаём Fiber приложение
+	engine := handlebars.New("./templates", ".hbs")
 	app := fiber.New(fiber.Config{
 		AppName:               settings.Server.AppName,
 		DisableStartupMessage: false,
+		Views:                 engine,
 	})
 
 	app.Use(recover.New())
@@ -330,6 +334,42 @@ func main() {
 	courseHandler.RegisterRoutes(api)
 	lessons := api.Group("/categories/:category_id/courses/:course_id/lessons")
 	lessonHandler.RegisterRoutes(lessons)
+
+	// Статические файлы (CSS, изображения и т.д.)
+	app.Static("/static", "./static")
+
+	// Web routes (без auth для админки)
+	// Serve web pages under root (nginx adds /admin prefix), so routes will be available at /admin/...
+	web := app.Group("")
+
+	// Web handlers
+	categoryWebHandler := webhandlers.NewCategoryWebHandler(categoryService)
+	courseWebHandler := webhandlers.NewCourseWebHandler(courseService, categoryService)
+	lessonWebHandler := webhandlers.NewLessonWebHandler(lessonService, courseService, categoryService)
+
+	// Register web routes
+	web.Get("/categories", categoryWebHandler.RenderCategoriesEditor)
+	web.Get("/categories/new", categoryWebHandler.RenderNewCategoryForm)
+	web.Post("/categories/create", categoryWebHandler.CreateCategory)
+	web.Get("/categories/:id/edit", categoryWebHandler.RenderEditCategoryForm)
+	web.Post("/categories/:id/update", categoryWebHandler.UpdateCategory)
+	web.Post("/categories/:id/delete", categoryWebHandler.DeleteCategory)
+
+	// Course web routes
+	web.Get("/categories/:category_id/courses", courseWebHandler.RenderCoursesEditor)
+	web.Get("/categories/:category_id/courses/new", courseWebHandler.RenderNewCourseForm)
+	web.Post("/categories/:category_id/courses/create", courseWebHandler.CreateCourse)
+	web.Get("/categories/:category_id/courses/:course_id/edit", courseWebHandler.RenderEditCourseForm)
+	web.Post("/categories/:category_id/courses/:course_id/update", courseWebHandler.UpdateCourse)
+	web.Post("/categories/:category_id/courses/:course_id/delete", courseWebHandler.DeleteCourse)
+
+	// Lesson web routes
+	web.Get("/categories/:category_id/courses/:course_id/lessons", lessonWebHandler.RenderLessonsEditor)
+	web.Get("/categories/:category_id/courses/:course_id/lessons/new", lessonWebHandler.RenderNewLessonForm)
+	web.Post("/categories/:category_id/courses/:course_id/lessons/create", lessonWebHandler.CreateLesson)
+	web.Get("/categories/:category_id/courses/:course_id/lessons/:lesson_id/edit", lessonWebHandler.RenderEditLessonForm)
+	web.Post("/categories/:category_id/courses/:course_id/lessons/:lesson_id/update", lessonWebHandler.UpdateLesson)
+	web.Post("/categories/:category_id/courses/:course_id/lessons/:lesson_id/delete", lessonWebHandler.DeleteLesson)
 
 	// Start server
 	log.Printf("🚀 Server starting on %s", settings.Server.Address)

@@ -1,0 +1,83 @@
+<!-- templates/pages/lesson-form.hbs -->
+<div class="form-container">
+    <div class="form-header">
+        <nav class="breadcrumb">
+            <a href="/admin/categories">Категории</a>
+            <span class="breadcrumb__separator">/</span>
+            <a href="/admin/categories/{{categoryID}}/courses">{{categoryName}}</a>
+            <span class="breadcrumb__separator">/</span>
+            <a href="/admin/categories/{{categoryID}}/courses/{{courseID}}/lessons">{{courseName}}</a>
+            <span class="breadcrumb__separator">/</span>
+            <span>
+                {{#if lesson}}
+                    Редактировать
+                {{else}}
+                    Новый урок
+                {{/if}}
+            </span>
+        </nav>
+        <h1 class="form-header__title">
+            {{#if lesson}}
+                Редактировать урок
+            {{else}}
+                Новый урок
+            {{/if}}
+        </h1>
+        <a href="/admin/categories/{{categoryID}}/courses/{{courseID}}/lessons" class="form-header__back">← Назад к списку</a>
+    </div>
+
+    {{#if error}}
+        <div class="alert alert--error">
+            {{error}}
+        </div>
+    {{/if}}
+
+    <form method="POST" 
+          action="{{#if lesson}}/admin/categories/{{categoryID}}/courses/{{courseID}}/lessons/{{lesson.ID}}/update{{else}}/admin/categories/{{categoryID}}/courses/{{courseID}}/lessons/create{{/if}}" 
+          class="form">
+        
+        <div class="form__group">
+            <label for="title" class="form__label">
+                Название урока <span class="form__required">*</span>
+            </label>
+            <input 
+                type="text" 
+                id="title" 
+                name="title" 
+                class="form__input" 
+                value="{{#if lesson}}{{lesson.Title}}{{/if}}"
+                placeholder="Введите название урока"
+                required
+                autofocus
+            />
+            <p class="form__hint">Краткое и понятное название урока</p>
+        </div>
+
+        {{#if lesson}}
+            <div class="form__info">
+                <p class="form__info-item">
+                    <strong>ID:</strong> {{lesson.ID}}
+                </p>
+                <p class="form__info-item">
+                    <strong>Создан:</strong> {{lesson.CreatedAt}}
+                </p>
+                <p class="form__info-item">
+                    <strong>Обновлен:</strong> {{lesson.UpdatedAt}}
+                </p>
+            </div>
+        {{/if}}
+
+        <div class="form__actions">
+            <button type="submit" class="button button--primary">
+                {{#if lesson}}
+                    Сохранить изменения
+                {{else}}
+                    Создать урок
+                {{/if}}
+            </button>
+            <a href="/admin/categories/{{categoryID}}/courses/{{courseID}}/lessons" class="button button--secondary">
+                Отмена
+            </a>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,67 @@
+<!-- templates/pages/categories-editor.hbs -->
+<div class="editor">
+    <div class="editor__header">
+        <h1 class="editor__title">Управление категориями</h1>
+        <a href="/admin/categories/new" class="button button--primary">
+            <span class="button__icon">+</span>
+            Создать категорию
+        </a>
+    </div>
+
+    {{#if error}}
+        <div class="alert alert--error">
+            {{error}}
+        </div>
+    {{/if}}
+
+    {{#if success}}
+        <div class="alert alert--success">
+            {{success}}
+        </div>
+    {{/if}}
+
+    {{#if categories}}
+        <div class="table-container">
+            <table class="table">
+                <thead class="table__head">
+                    <tr>
+                        <th class="table__th">Название</th>
+                        <th class="table__th">Создано</th>
+                        <th class="table__th">Обновлено</th>
+                        <th class="table__th table__th--actions">Действия</th>
+                    </tr>
+                </thead>
+                <tbody class="table__body">
+                    {{#each categories}}
+                        <tr class="table__row">
+                            <td class="table__td table__td--title">{{Title}}</td>
+                            <td class="table__td">{{CreatedAt}}</td>
+                            <td class="table__td">{{UpdatedAt}}</td>
+                            <td class="table__td table__td--actions">
+                                <div class="table__actions">
+                                    <a href="/admin/categories/{{ID}}/edit" class="table__action table__action--edit" title="Редактировать">
+                                        ✏️
+                                    </a>
+                                    <form method="POST" action="/admin/categories/{{ID}}/delete" class="table__action-form" onsubmit="return confirm('Вы уверены, что хотите удалить эту категорию?');">
+                                        <button type="submit" class="table__action table__action--delete" title="Удалить">
+                                            🗑️
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+    {{else}}
+        <div class="empty-state">
+            <div class="empty-state__icon">📂</div>
+            <h2 class="empty-state__title">Нет категорий</h2>
+            <p class="empty-state__text">Создайте первую категорию для начала работы</p>
+            <a href="/admin/categories/new" class="button button--primary">
+                Создать категорию
+            </a>
+        </div>
+    {{/if}}
+</div>

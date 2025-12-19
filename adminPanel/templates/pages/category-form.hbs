@@ -1,0 +1,68 @@
+<!-- templates/pages/category-form.hbs -->
+<div class="form-container">
+    <div class="form-header">
+        <h1 class="form-header__title">
+            {{#if category}}
+                Редактировать категорию
+            {{else}}
+                Новая категория
+            {{/if}}
+        </h1>
+        <a href="/admin/categories" class="form-header__back">← Назад к списку</a>
+    </div>
+
+    {{#if error}}
+        <div class="alert alert--error">
+            {{error}}
+        </div>
+    {{/if}}
+
+    <form method="POST" 
+          action="{{#if category}}/admin/categories/{{category.ID}}/update{{else}}/admin/categories/create{{/if}}" 
+          class="form">
+        
+        <div class="form__group">
+            <label for="title" class="form__label">
+                Название категории <span class="form__required">*</span>
+            </label>
+            <input 
+                type="text" 
+                id="title" 
+                name="title" 
+                class="form__input" 
+                value="{{#if category}}{{category.Title}}{{/if}}"
+                placeholder="Введите название категории"
+                required
+                autofocus
+            />
+            <p class="form__hint">Краткое и понятное название категории</p>
+        </div>
+
+        {{#if category}}
+            <div class="form__info">
+                <p class="form__info-item">
+                    <strong>ID:</strong> {{category.ID}}
+                </p>
+                <p class="form__info-item">
+                    <strong>Создано:</strong> {{category.CreatedAt}}
+                </p>
+                <p class="form__info-item">
+                    <strong>Обновлено:</strong> {{category.UpdatedAt}}
+                </p>
+            </div>
+        {{/if}}
+
+        <div class="form__actions">
+            <button type="submit" class="button button--primary">
+                {{#if category}}
+                    Сохранить изменения
+                {{else}}
+                    Создать категорию
+                {{/if}}
+            </button>
+            <a href="/admin/categories" class="button button--secondary">
+                Отмена
+            </a>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,93 @@
+<!-- templates/pages/courses-editor.hbs -->
+<div class="editor">
+    <div class="editor__header">
+        <div>
+            <nav class="breadcrumb">
+                <a href="/admin/categories">Категории</a>
+                <span class="breadcrumb__separator">/</span>
+                <span>{{categoryName}}</span>
+            </nav>
+            <h1 class="editor__title">Курсы: {{categoryName}}</h1>
+        </div>
+        <a href="/admin/categories/{{categoryID}}/courses/new" class="button button--primary">
+            <span class="button__icon">+</span>
+            Создать курс
+        </a>
+    </div>
+
+    {{#if error}}
+        <div class="alert alert--error">
+            {{error}}
+        </div>
+    {{/if}}
+
+    {{#if success}}
+        <div class="alert alert--success">
+            {{success}}
+        </div>
+    {{/if}}
+
+    {{#if courses}}
+        <div class="table-container">
+            <table class="table">
+                <thead class="table__head">
+                    <tr>
+                        <th class="table__th">Название</th>
+                        <th class="table__th">Описание</th>
+                        <th class="table__th">Уровень</th>
+                        <th class="table__th">Видимость</th>
+                        <th class="table__th">Обновлено</th>
+                        <th class="table__th table__th--actions">Действия</th>
+                    </tr>
+                </thead>
+                <tbody class="table__body">
+                    {{#each courses}}
+                        <tr class="table__row">
+                            <td class="table__td table__td--title">
+                                <a href="/admin/categories/{{CategoryID}}/courses/{{ID}}/lessons" class="table__link">
+                                    {{Title}}
+                                </a>
+                            </td>
+                            <td class="table__td table__td--description">{{Description}}</td>
+                            <td class="table__td">
+                                <span class="badge badge--{{Level}}">{{Level}}</span>
+                            </td>
+                            <td class="table__td">
+                                {{#if Visible}}
+                                    <span class="badge badge--success">✓ Виден</span>
+                                {{else}}
+                                    <span class="badge badge--secondary">✗ Скрыт</span>
+                                {{/if}}
+                            </td>
+                            <td class="table__td">{{UpdatedAt}}</td>
+                            <td class="table__td table__td--actions">
+                                <div class="table__actions">
+                                    <a href="/admin/categories/{{CategoryID}}/courses/{{ID}}/lessons" class="table__action table__action--view" title="Уроки">
+                                        📚
+                                    </a>
+                                    <a href="/admin/categories/{{CategoryID}}/courses/{{ID}}/edit" class="table__action table__action--edit" title="Редактировать">
+                                        ✏️
+                                    </a>
+                                    <form method="POST" action="/admin/categories/{{CategoryID}}/courses/{{ID}}/delete" class="table__action-form" onsubmit="return confirm('Вы уверены, что хотите удалить этот курс?');">
+                                        <button type="submit" class="table__action table__action--delete" title="Удалить">
+                                            🗑️
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+    {{else}}
+        <div class="empty-state">
+            <div class="empty-state__icon">📚</div>
+            <h2 class="empty-state__title">Нет курсов</h2>
+            <p class="empty-state__text">Создайте первый курс для этой категории</p>
+            <a href="/admin/categories/{{categoryID}}/courses/new" class="button button--primary">
+                Создать курс
+            </a>
+        </div>
+    {{/if}}
+</div>

@@ -27,6 +27,10 @@ COPY --from=builder /app/main .
 # Копируем swagger.json
 COPY --from=builder /app/docs ./docs/
 
+# Копируем templates и static для SSR
+COPY --from=builder /app/templates ./templates/
+COPY --from=builder /app/static ./static/
+
 # Все параметры должны передаваться через переменные окружения
 # Нет hardcoded значений - безопасность и гибкость
 # Обязательные переменные будут проверены при старте приложения

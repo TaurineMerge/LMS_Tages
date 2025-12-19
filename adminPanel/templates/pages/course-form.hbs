@@ -1,0 +1,123 @@
+<!-- templates/pages/course-form.hbs -->
+<div class="form-container">
+    <div class="form-header">
+        <nav class="breadcrumb">
+            <a href="/admin/categories">Категории</a>
+            <span class="breadcrumb__separator">/</span>
+            <a href="/admin/categories/{{categoryID}}/courses">{{categoryName}}</a>
+            <span class="breadcrumb__separator">/</span>
+            <span>
+                {{#if course}}
+                    Редактировать
+                {{else}}
+                    Новый курс
+                {{/if}}
+            </span>
+        </nav>
+        <h1 class="form-header__title">
+            {{#if course}}
+                Редактировать курс
+            {{else}}
+                Новый курс
+            {{/if}}
+        </h1>
+        <a href="/admin/categories/{{categoryID}}/courses" class="form-header__back">← Назад к списку</a>
+    </div>
+
+    {{#if error}}
+        <div class="alert alert--error">
+            {{error}}
+        </div>
+    {{/if}}
+
+    <form method="POST" 
+          action="{{#if course}}/admin/categories/{{categoryID}}/courses/{{course.ID}}/update{{else}}/admin/categories/{{categoryID}}/courses/create{{/if}}" 
+          class="form">
+        
+        <div class="form__group">
+            <label for="title" class="form__label">
+                Название курса <span class="form__required">*</span>
+            </label>
+            <input 
+                type="text" 
+                id="title" 
+                name="title" 
+                class="form__input" 
+                value="{{#if course}}{{course.Title}}{{/if}}"
+                placeholder="Введите название курса"
+                required
+                autofocus
+            />
+            <p class="form__hint">Краткое и понятное название курса</p>
+        </div>
+
+        <div class="form__group">
+            <label for="description" class="form__label">
+                Описание курса
+            </label>
+            <textarea 
+                id="description" 
+                name="description" 
+                class="form__textarea" 
+                placeholder="Введите описание курса"
+            >{{#if course}}{{course.Description}}{{/if}}</textarea>
+            <p class="form__hint">Подробное описание того, что студент узнает в этом курсе</p>
+        </div>
+
+        <div class="form__group">
+            <label for="level" class="form__label">
+                Уровень сложности <span class="form__required">*</span>
+            </label>
+            <select id="level" name="level" class="form__select" required>
+                <option value="easy" {{#if course}}{{#if (eq course.Level "easy")}}selected{{/if}}{{/if}}>Легкий</option>
+                <option value="medium" {{#if course}}{{#if (eq course.Level "medium")}}selected{{/if}}{{else}}selected{{/if}}>Средний</option>
+                <option value="hard" {{#if course}}{{#if (eq course.Level "hard")}}selected{{/if}}{{/if}}>Сложный</option>
+            </select>
+            <p class="form__hint">Выберите уровень сложности курса</p>
+        </div>
+
+        <div class="form__group">
+            <label class="form__label form__label--checkbox">
+                <input 
+                    type="checkbox" 
+                    name="visible" 
+                    class="form__checkbox" 
+                    {{#if course}}
+                        {{#if course.Visible}}checked{{/if}}
+                    {{else}}
+                        checked
+                    {{/if}}
+                />
+                <span>Курс виден студентам</span>
+            </label>
+            <p class="form__hint">Снимите галочку, чтобы скрыть курс от студентов</p>
+        </div>
+
+        {{#if course}}
+            <div class="form__info">
+                <p class="form__info-item">
+                    <strong>ID:</strong> {{course.ID}}
+                </p>
+                <p class="form__info-item">
+                    <strong>Создан:</strong> {{course.CreatedAt}}
+                </p>
+                <p class="form__info-item">
+                    <strong>Обновлен:</strong> {{course.UpdatedAt}}
+                </p>
+            </div>
+        {{/if}}
+
+        <div class="form__actions">
+            <button type="submit" class="button button--primary">
+                {{#if course}}
+                    Сохранить изменения
+                {{else}}
+                    Создать курс
+                {{/if}}
+            </button>
+            <a href="/admin/categories/{{categoryID}}/courses" class="button button--secondary">
+                Отмена
+            </a>
+        </div>
+    </form>
+</div>
