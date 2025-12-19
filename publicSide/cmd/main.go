@@ -39,6 +39,7 @@ func main() {
 		config.WithPortFromEnv(),
 		config.WithTracingFromEnv(),
 		config.WithLogLevelFromEnv(),
+		config.WithDevFromEnv(), // Add Dev mode configuration
 	)
 	if err != nil {
 		// Use a temporary logger for this initial error, as the main one is not yet set up
@@ -61,6 +62,8 @@ func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
 	slog.SetDefault(logger)
 
+	slog.Info("Application starting", "DEV_MODE", cfg.Dev)
+
 	// Initialize Tracer
 	tp, err := tracing.InitTracer(cfg)
 	if err != nil {
@@ -81,7 +84,7 @@ func main() {
 	defer dbPool.Close()
 	slog.Info("Database connection pool established")
 
-	engine := template.NewEngine()
+	engine := template.NewEngine(cfg) // Pass cfg to NewEngine
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: middleware.GlobalErrorHandler,
@@ -97,6 +100,14 @@ func main() {
 
 	app.Use(otelfiber.Middleware())
 	app.Use(middleware.RequestResponseLogger())
+
+	// Conditional no-cache middleware for development
+	if cfg.Dev {
+		app.Use(func(c *fiber.Ctx) error {
+			c.Set("Cache-Control", "no-cache, no-store, must-revalidate")
+			return c.Next()
+		})
+	}
 
 	app.Static("/doc", "./doc/swagger")
 	app.Static("/static", "./static")

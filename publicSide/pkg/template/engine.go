@@ -6,16 +6,17 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/config"
 	"github.com/gofiber/template/handlebars/v2"
 )
 
 // NewEngine creates a new Handlebars template engine with custom helpers.
-func NewEngine() *handlebars.Engine {
+func NewEngine(cfg *config.Config) *handlebars.Engine {
 	engine := handlebars.New("./templates", ".hbs")
 
-	// Reload should be enabled for Docker as files are mounted
-	engine.Reload(true)
-	engine.Debug(true)
+	// Reload and Debug should be enabled based on development mode
+	engine.Reload(cfg.Dev)
+	engine.Debug(cfg.Dev)
 
 	// Register custom helper for truncating text
 	engine.AddFunc("truncate", func(text string, length int) string {

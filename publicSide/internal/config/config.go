@@ -28,6 +28,8 @@ type Config struct {
 	OTELCollectorEndpoint string
 	// LogLevel is the level for application logging (e.g., DEBUG, INFO, WARN, ERROR).
 	LogLevel string
+	// Dev indicates whether the application is running in development mode.
+	Dev bool
 }
 
 // Option defines a function that configures a Config object.
@@ -135,6 +137,18 @@ func WithTracingFromEnv() Option {
 func WithLogLevelFromEnv() Option {
 	return func(cfg *Config) error {
 		cfg.LogLevel = getOptionalEnv("LOG_LEVEL", "INFO")
+		return nil
+	}
+}
+
+// WithDevFromEnv configures the Dev mode from the DEV environment variable.
+func WithDevFromEnv() Option {
+	return func(cfg *Config) error {
+		var err error
+		cfg.Dev, err = getOptionalEnvAsBool("DEV", false)
+		if err != nil {
+			return err
+		}
 		return nil
 	}
 }
