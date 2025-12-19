@@ -1,0 +1,15 @@
+<form id="testForm" method="POST" action="/testing/web/tests/save">
+    {{#unless isNew}}
+    <input type="hidden" name="testId" value="{{test.id}}">
+    {{/unless}}
+    
+    <div class="card">
+        <h2>Основная информация</h2>
+        {{> partials/name-test}}
+    </div>
+    
+    <div class="card">
+        <h2>Вопросы теста</h2>
+        {{> partials/test-builder-questions}}
+    </div>
+</form>

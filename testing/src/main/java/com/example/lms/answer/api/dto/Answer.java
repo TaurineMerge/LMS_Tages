@@ -70,7 +70,7 @@ public class Answer {
 	 * @param score      балл за ответ
 	 * @param order      порядковый номер ответа
 	 */
-	public Answer(UUID id, String text, UUID questionId, Integer score, Integer order) {
+	public Answer(UUID id, String text, UUID questionId, Integer score) {
 		this.id = id;
 		this.text = text;
 		this.questionId = questionId;
@@ -117,13 +117,13 @@ public class Answer {
 		this.score = score;
 	}
 
-	/** @return порядковый номер ответа */
-	public Integer getOrder() {
+	/* /** @return порядковый номер ответа */
+	/* public Integer getOrder() {
 		return order;
-	}
+	} */
 
-	/** @param order новый порядковый номер ответа */
-	public void setOrder(Integer order) {
+	// /** @param order новый порядковый номер ответа */
+	/* public void setOrder(Integer order) {
 		this.order = order;
-	}
+	} */ 
 }

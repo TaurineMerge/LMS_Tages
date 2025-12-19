@@ -1,0 +1,15 @@
+<div class="answer-group">
+    <input type="text" 
+           name="question[{{questionIndex}}][answers][{{answerIndex}}][text]" 
+           placeholder="Текст ответа {{add answerIndex 1}}" 
+           value="{{#if answer}}{{answer.text}}{{/if}}" 
+           required>
+    <label>
+        <input type="radio" 
+               name="question[{{questionIndex}}][correct]" 
+               value="{{answerIndex}}"
+               {{#if answer}}{{#if answer.isCorrect}}checked{{/if}}{{/if}} 
+               required>
+        Правильный ответ
+    </label>
+</div>

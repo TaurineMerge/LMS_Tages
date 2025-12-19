@@ -1,0 +1,10 @@
+<div class="footer-buttons">
+    <button type="submit" form="testForm" class="btn-success">
+        {{#if isNew}}Создать тест{{else}}Сохранить изменения{{/if}}
+    </button>
+    {{#unless isNew}}
+    <button type="button" class="btn-secondary" onclick="window.location.href='/testing/web/tests/{{test.id}}/preview'">
+        Предпросмотр
+    </button>
+    {{/unless}}
+</div>

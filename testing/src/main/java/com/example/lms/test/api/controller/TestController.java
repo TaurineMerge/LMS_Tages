@@ -1,18 +1,17 @@
 package com.example.lms.test.api.controller;
 
-import com.example.lms.test.api.dto.Test;
-import com.example.lms.test.domain.service.TestService;
-import com.github.jknack.handlebars.Handlebars;
-import com.github.jknack.handlebars.Template;
-
-import com.example.lms.tracing.SimpleTracer;
-
-import io.javalin.http.Context;
-
 import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.example.lms.test.api.dto.Test;
+import com.example.lms.test.domain.service.TestService;
+import com.example.lms.tracing.SimpleTracer;
+import com.github.jknack.handlebars.Handlebars;
+import com.github.jknack.handlebars.Template;
+
+import io.javalin.http.Context;
 
 /**
  * Контроллер для управления тестами.

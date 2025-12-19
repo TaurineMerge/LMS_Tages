@@ -24,6 +24,10 @@ public class TestService {
 
     /** Репозиторий тестов (слой работы с базой данных). */
     private final TestRepositoryInterface repository;
+    
+    /** Временный UUID для тестов без курса. */
+    private static final UUID TEMP_COURSE_ID = 
+        UUID.fromString("11111111-1111-1111-1111-111111111111");
 
     /**
      * Создаёт сервис тестов.
@@ -48,9 +52,22 @@ public class TestService {
      * @return доменная модель теста
      */
     private TestModel toModel(Test dto) {
+        UUID courseUuid = TEMP_COURSE_ID; // Дефолтное значение
+        
+        // Если courseId передан и валиден, используем его
+        if (dto.getCourseId() != null && !dto.getCourseId().trim().isEmpty()) {
+            try {
+                courseUuid = UUID.fromString(dto.getCourseId());
+            } catch (IllegalArgumentException e) {
+                // Если невалидный UUID, используем временный
+                // Можно добавить логгирование: logger.warn("Invalid courseId: {}, using temp UUID", dto.getCourseId());
+                courseUuid = TEMP_COURSE_ID;
+            }
+        }
+        
         return new TestModel(
-                dto.getId() != null ? UUID.fromString(dto.getId().toString()) : null,
-                dto.getCourseId() != null ? UUID.fromString(dto.getCourseId().toString()) : null,
+                dto.getId() != null ? UUID.fromString(dto.getId()) : null,
+                courseUuid, // Всегда будет значение (TEMP_COURSE_ID или переданный)
                 dto.getTitle(),
                 dto.getMin_point(),
                 dto.getDescription());
@@ -62,14 +79,23 @@ public class TestService {
 
     /**
      * Преобразует доменную модель теста в DTO для API.
+     * <p>
+     * Если courseId равен временному UUID, возвращаем null в DTO
+     * для обратной совместимости с API.
      *
      * @param model доменная модель теста
      * @return DTO, отправляемый наружу
      */
     private Test toDto(TestModel model) {
+        // Если courseId равен временному UUID, возвращаем null
+        String courseId = null;
+        if (model.getCourseId() != null && !model.getCourseId().equals(TEMP_COURSE_ID)) {
+            courseId = model.getCourseId().toString();
+        }
+        
         return new Test(
                 model.getId() != null ? model.getId().toString() : null,
-                model.getCourseId() != null ? model.getCourseId().toString() : null,
+                courseId, // null для временного курса
                 model.getTitle(),
                 model.getMinPoint(),
                 model.getDescription());
@@ -138,5 +164,28 @@ public class TestService {
     public boolean deleteTest(String id) {
         UUID uuid = UUID.fromString(id);
         return repository.deleteById(uuid);
+    }
+    
+    // ---------------------------------------------------------------------
+    // ДОПОЛНИТЕЛЬНЫЕ МЕТОДЫ (опционально)
+    // ---------------------------------------------------------------------
+    
+    /**
+     * Проверяет, является ли UUID временным courseId.
+     *
+     * @param courseId UUID для проверки
+     * @return true если это временный UUID, false если реальный курс
+     */
+    public boolean isTempCourseId(UUID courseId) {
+        return TEMP_COURSE_ID.equals(courseId);
+    }
+    
+    /**
+     * Возвращает временный UUID для тестов без курса.
+     *
+     * @return временный UUID
+     */
+    public static UUID getTempCourseId() {
+        return TEMP_COURSE_ID;
     }
 }

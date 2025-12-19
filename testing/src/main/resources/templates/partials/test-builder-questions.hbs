@@ -1,0 +1,11 @@
+<div id="questions-container">
+    {{#if questions}}
+        {{#each questions}}
+        {{> partials/test-builder-question question=this questionIndex=@index}}
+        {{/each}}
+    {{else}}
+        {{> partials/test-builder-question question=null questionIndex=0}}
+    {{/if}}
+</div>
+
+<button type="button" id="add-question-btn">+ Добавить вопрос</button>

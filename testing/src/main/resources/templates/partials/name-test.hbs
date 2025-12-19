@@ -1,0 +1,14 @@
+<div class="form-group">
+                    <label for="title">Название теста *</label>
+                    <input type="text" id="title" name="title" value="{{test.title}}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="min_point">Минимальный балл *</label>
+                    <input type="number" id="min_point" name="min_point" value="{{test.minPoint}}" min="0" max="100" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Описание</label>
+                    <textarea id="description" name="description">{{test.description}}</textarea>
+                </div>

@@ -12,26 +12,28 @@ import com.example.lms.answer.domain.service.AnswerService;
 import com.example.lms.answer.infrastructure.repositories.AnswerRepository;
 import com.example.lms.config.DatabaseConfig;
 import com.example.lms.config.HandlebarsConfig;
-import com.example.lms.question.api.controller.QuestionController;
-import com.example.lms.question.api.router.QuestionRouter;
-import com.example.lms.question.domain.service.QuestionService;
-import com.example.lms.question.infrastructure.repositories.QuestionRepository;
 import com.example.lms.content.api.controller.ContentController;
 import com.example.lms.content.api.router.ContentRouter;
 import com.example.lms.content.domain.service.ContentService;
 import com.example.lms.content.infrastructure.repositories.ContentRepository;
+import com.example.lms.draft.api.controller.DraftController;
+import com.example.lms.draft.api.router.DraftRouter;
+import com.example.lms.draft.domain.service.DraftService;
+import com.example.lms.draft.infrastructure.repositories.DraftRepository;
+import com.example.lms.question.api.controller.QuestionController;
+import com.example.lms.question.api.router.QuestionRouter;
+import com.example.lms.question.domain.service.QuestionService;
+import com.example.lms.question.infrastructure.repositories.QuestionRepository;
 import com.example.lms.test.api.controller.TestController;
 import com.example.lms.test.api.router.TestRouter;
 import com.example.lms.test.domain.service.TestService;
 import com.example.lms.test.infrastructure.repositories.TestRepository;
+import com.example.lms.test.web.controller.TestFormController;
+import com.example.lms.test.web.router.TestWebRouter;
 import com.example.lms.test_attempt.api.controller.TestAttemptController;
 import com.example.lms.test_attempt.api.router.TestAttemptRouter;
 import com.example.lms.test_attempt.domain.service.TestAttemptService;
 import com.example.lms.test_attempt.infrastructure.repositories.TestAttemptRepository;
-import com.example.lms.draft.domain.service.DraftService;
-import com.example.lms.draft.infrastructure.repositories.DraftRepository;
-import com.example.lms.draft.api.controller.DraftController;
-import com.example.lms.draft.api.router.DraftRouter;
 import com.github.jknack.handlebars.Handlebars;
 
 import io.github.cdimascio.dotenv.Dotenv;
@@ -93,6 +95,7 @@ public class Main {
 		TestAttemptController testAttemptController = new TestAttemptController(testAttemptService);
 		DraftController draftController = new DraftController(draftService);
 		ContentController contentController = new ContentController(contentService, handlebars);
+		TestFormController testWebController = new TestFormController(testService, questionService, answerService, handlebars);
 
 		// ---------------------------------------------------------------
 		// 3. Создание и запуск Javalin HTTP-сервера
@@ -128,6 +131,8 @@ public class Main {
 			config.router.apiBuilder(() -> {
 				TestRouter.register(testController);
 				AnswerRouter.register(answerController);
+				// Веб-маршруты конструктора тестов
+				TestWebRouter.register(testWebController);
 
 				// Swagger UI
 				get("/swagger", ctx -> {
