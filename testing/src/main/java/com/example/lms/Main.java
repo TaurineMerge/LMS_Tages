@@ -36,6 +36,7 @@ import com.github.jknack.handlebars.Handlebars;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import io.javalin.Javalin;
+import io.javalin.json.JavalinJackson;
 import static io.javalin.apibuilder.ApiBuilder.get;
 import io.javalin.http.staticfiles.Location;
 
@@ -98,6 +99,9 @@ public class Main {
 		// 3. Создание и запуск Javalin HTTP-сервера
 		// ---------------------------------------------------------------
 		Javalin app = Javalin.create(config -> {
+			// Используем JavalinJackson по умолчанию (без кастомного ObjectMapper)
+			config.jsonMapper(new JavalinJackson());
+			
 			// Добавляем логирование запросов для отладки
 			config.requestLogger.http((ctx, executionTimeMs) -> {
 				logger.info("{} {} - {}ms", ctx.method(), ctx.path(), executionTimeMs);
@@ -128,6 +132,10 @@ public class Main {
 			config.router.apiBuilder(() -> {
 				TestRouter.register(testController);
 				AnswerRouter.register(answerController);
+				QuestionRouter.register(questionController);
+				TestAttemptRouter.register(testAttemptController);
+				DraftRouter.register(draftController);
+				ContentRouter.register(contentController);
 
 				// Swagger UI
 				get("/swagger", ctx -> {
@@ -208,10 +216,6 @@ public class Main {
 
 				// Health check endpoint
 				get("/health", ctx -> ctx.result("OK"));
-				DraftRouter.register(draftController);
-				QuestionRouter.register(questionController);
-				TestAttemptRouter.register(testAttemptController);
-				ContentRouter.register(contentController);
 			});
 		}).start("0.0.0.0", APP_PORT);
 

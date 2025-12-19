@@ -35,6 +35,8 @@ CREATE TABLE IF NOT EXISTS testing.test_attempt_b (
     point INTEGER,
     certificate_id UUID,
     attempt_version JSON,
+    attempt_snapshot VARCHAR(256),
+    completed BOOLEAN,
     UNIQUE(student_id, test_id, date_of_attempt),
     CONSTRAINT fk_attempt_test FOREIGN KEY (test_id) REFERENCES testing.test_d(id)
 );

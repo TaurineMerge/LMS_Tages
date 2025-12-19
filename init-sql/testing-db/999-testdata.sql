@@ -1,20 +1,12 @@
 -- ============================================================
--- SEED для схемы testing (UUID генерятся автоматически)
+-- SEED для схемы testing
 -- PostgreSQL
 -- ============================================================
 
--- 1) Включаем генерацию UUID (если ещё не включено)
+-- 1) Включаем генерацию UUID
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
--- 2) Делаем автогенерацию UUID для id-колонок (если вдруг не настроено)
-ALTER TABLE IF EXISTS testing.test_d        ALTER COLUMN id SET DEFAULT gen_random_uuid();
-ALTER TABLE IF EXISTS testing.question_d    ALTER COLUMN id SET DEFAULT gen_random_uuid();
-ALTER TABLE IF EXISTS testing.answer_d      ALTER COLUMN id SET DEFAULT gen_random_uuid();
-ALTER TABLE IF EXISTS testing.test_attempt_b ALTER COLUMN id SET DEFAULT gen_random_uuid();
-ALTER TABLE IF EXISTS testing.draft_b       ALTER COLUMN id SET DEFAULT gen_random_uuid();
-ALTER TABLE IF EXISTS testing.content_d     ALTER COLUMN id SET DEFAULT gen_random_uuid();
-
--- 3) Чистим таблицы перед заполнением (чтобы не было дублей и конфликтов)
+-- 2) Чистим таблицы перед заполнением
 TRUNCATE TABLE
   testing.content_d,
   testing.test_attempt_b,
@@ -24,7 +16,7 @@ TRUNCATE TABLE
   testing.test_d
 CASCADE;
 
--- 4) Заполняем тестовыми данными
+-- 3) Заполняем тестовыми данными
 DO $$
 DECLARE
   -- tests
@@ -47,6 +39,10 @@ DECLARE
   -- students
   s1 UUID := gen_random_uuid();
   s2 UUID := gen_random_uuid();
+
+  -- certificates
+  cert1 UUID := gen_random_uuid();
+  cert2 UUID := gen_random_uuid();
 
 BEGIN
   -- -----------------------------
@@ -160,8 +156,7 @@ BEGIN
   SELECT id INTO q6_any FROM testing.answer_d WHERE question_id = q6 ORDER BY id LIMIT 1;
 
   -- -----------------------------
-  -- CONTENT (у тебя и question_id и answer_id NOT NULL)
-  -- type_of_content: TRUE = "контент вопроса", FALSE = "контент ответа" (пример)
+  -- CONTENT
   -- -----------------------------
   INSERT INTO testing.content_d ("order", content, type_of_content, question_id, answer_id) VALUES
     (1, 'Подсказка: перенеси число вправо и приведи подобные.', TRUE,  q1, q1_any),
@@ -170,31 +165,103 @@ BEGIN
 
   -- -----------------------------
   -- TEST ATTEMPTS
-  -- attempt_version заполним JSON-ом с выбранными ответами
+  -- attempt_version: JSON с выбранными ответами и метаданными
+  -- attempt_snapshot: JSON с состоянием теста на момент прохождения
+  -- completed: флаг завершения
   -- -----------------------------
-  INSERT INTO testing.test_attempt_b (student_id, test_id, date_of_attempt, point, certificate_id, attempt_version)
+  INSERT INTO testing.test_attempt_b 
+    (student_id, test_id, date_of_attempt, point, certificate_id, 
+     attempt_version, attempt_snapshot, completed)
   VALUES
-    (s1, t_alg, DATE '2025-12-18', 3, NULL,
-      json_build_object('answers', json_build_array(
-        json_build_object('question', q1, 'answer', q1_ok),
-        json_build_object('question', q2, 'answer', q2_ok),
-        json_build_object('question', q3, 'answer', q3_ok)
-      ))
+    -- Студент 1: успешно прошел алгебру
+    (s1, t_alg, DATE '2025-12-18', 3, cert1,
+      json_build_object(
+        'version', '1.0',
+        'answers', json_build_array(
+          json_build_object('question_id', q1, 'answer_id', q1_ok, 'time_spent', 30),
+          json_build_object('question_id', q2, 'answer_id', q2_ok, 'time_spent', 20),
+          json_build_object('question_id', q3, 'answer_id', q3_ok, 'time_spent', 25)
+        ),
+        'started_at', '2025-12-18T10:00:00Z',
+        'finished_at', '2025-12-18T10:01:15Z'
+      ),
+      '{"test_id": "' || t_alg::text || '", "questions_count": 3, "max_score": 3}',
+      TRUE
     ),
-    (s2, t_geo, DATE '2025-12-18', 2, NULL,
-      json_build_object('answers', json_build_array(
-        json_build_object('question', q4, 'answer', q4_ok),
-        json_build_object('question', q5, 'answer', q5_ok),
-        json_build_object('question', q6, 'answer', q6_any) -- намеренно ошибочный/любой
-      ))
+    
+    -- Студент 2: не завершил геометрию
+    (s2, t_geo, NULL, NULL, NULL,
+      json_build_object(
+        'version', '1.0',
+        'answers', json_build_array(
+          json_build_object('question_id', q4, 'answer_id', q4_ok, 'time_spent', 45)
+        ),
+        'started_at', '2025-12-18T11:30:00Z',
+        'current_question', 2
+      ),
+      '{"test_id": "' || t_geo::text || '", "questions_count": 3, "completed_questions": 1}',
+      FALSE
+    ),
+    
+    -- Студент 1: пытается пройти геометрию второй раз
+    (s1, t_geo, DATE '2025-12-19', 1, NULL,
+      json_build_object(
+        'version', '1.0',
+        'answers', json_build_array(
+          json_build_object('question_id', q4, 'answer_id', q4_ok, 'time_spent', 40),
+          json_build_object('question_id', q5, 'answer_id', q6_any, 'time_spent', 35),
+          json_build_object('question_id', q6, 'answer_id', q6_any, 'time_spent', 30)
+        ),
+        'started_at', '2025-12-19T09:15:00Z',
+        'finished_at', '2025-12-19T09:16:45Z'
+      ),
+      '{"test_id": "' || t_geo::text || '", "questions_count": 3, "max_score": 3}',
+      TRUE
+    ),
+    
+    -- Студент 2: успешно прошел алгебру позже
+    (s2, t_alg, DATE '2025-12-19', 2, cert2,
+      json_build_object(
+        'version', '1.0',
+        'answers', json_build_array(
+          json_build_object('question_id', q1, 'answer_id', q1_ok, 'time_spent', 35),
+          json_build_object('question_id', q2, 'answer_id', q2_ok, 'time_spent', 25),
+          json_build_object('question_id', q3, 'answer_id', q1_any, 'time_spent', 40)
+        ),
+        'started_at', '2025-12-19T14:20:00Z',
+        'finished_at', '2025-12-19T14:21:40Z'
+      ),
+      '{"test_id": "' || t_alg::text || '", "questions_count": 3, "max_score": 3}',
+      TRUE
     );
 
 END $$;
 
--- Быстрые проверки
--- SELECT * FROM testing.test_d;
--- SELECT * FROM testing.draft_b;
--- SELECT * FROM testing.question_d ORDER BY test_id, "order";
--- SELECT * FROM testing.answer_d;
--- SELECT * FROM testing.test_attempt_b;
--- SELECT * FROM testing.content_d;
+-- Проверка данных
+SELECT 'test_d' as table_name, COUNT(*) as row_count FROM testing.test_d
+UNION ALL
+SELECT 'question_d', COUNT(*) FROM testing.question_d
+UNION ALL
+SELECT 'answer_d', COUNT(*) FROM testing.answer_d
+UNION ALL
+SELECT 'test_attempt_b', COUNT(*) FROM testing.test_attempt_b
+UNION ALL
+SELECT 'draft_b', COUNT(*) FROM testing.draft_b
+UNION ALL
+SELECT 'content_d', COUNT(*) FROM testing.content_d
+ORDER BY table_name;
+
+-- Просмотр попыток
+SELECT 
+  ta.id,
+  ta.student_id,
+  t.title as test_title,
+  ta.date_of_attempt,
+  ta.point,
+  ta.certificate_id is not null as has_certificate,
+  ta.completed,
+  jsonb_pretty(ta.attempt_version::jsonb) as attempt_version,
+  ta.attempt_snapshot
+FROM testing.test_attempt_b ta
+JOIN testing.test_d t ON ta.test_id = t.id
+ORDER BY ta.date_of_attempt;
