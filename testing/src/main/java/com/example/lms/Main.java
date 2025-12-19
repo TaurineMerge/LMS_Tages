@@ -13,6 +13,7 @@ import com.example.lms.answer.infrastructure.repositories.AnswerRepository;
 import com.example.lms.config.DatabaseConfig;
 import com.example.lms.config.HandlebarsConfig;
 import com.example.lms.question.api.controller.QuestionController;
+import com.example.lms.question.api.router.QuestionRouter;
 import com.example.lms.question.domain.service.QuestionService;
 import com.example.lms.question.infrastructure.repositories.QuestionRepository;
 import com.example.lms.test.api.controller.TestController;
@@ -20,6 +21,7 @@ import com.example.lms.test.api.router.TestRouter;
 import com.example.lms.test.domain.service.TestService;
 import com.example.lms.test.infrastructure.repositories.TestRepository;
 import com.example.lms.test_attempt.api.controller.TestAttemptController;
+import com.example.lms.test_attempt.api.router.TestAttemptRouter;
 import com.example.lms.test_attempt.domain.service.TestAttemptService;
 import com.example.lms.test_attempt.infrastructure.repositories.TestAttemptRepository;
 import com.example.lms.draft.domain.service.DraftService;
@@ -27,6 +29,8 @@ import com.example.lms.draft.infrastructure.repositories.DraftRepository;
 import com.example.lms.draft.api.controller.DraftController;
 import com.example.lms.draft.api.router.DraftRouter;
 import com.github.jknack.handlebars.Handlebars;
+import com.example.lms.ui.UiRouter;
+import com.example.lms.ui.UiTestController;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import io.javalin.Javalin;
@@ -85,6 +89,9 @@ public class Main {
 		TestAttemptController testAttemptController = new TestAttemptController(testAttemptService);
 		DraftController draftController = new DraftController(draftService);
 
+		// UI controller (ВАЖНО: добавили testAttemptService)
+		var uiTestController = new UiTestController(testService, questionService, answerService, testAttemptService);
+
 		// ---------------------------------------------------------------
 		// 3. Создание и запуск Javalin HTTP-сервера
 		// ---------------------------------------------------------------
@@ -119,6 +126,11 @@ public class Main {
 			config.router.apiBuilder(() -> {
 				TestRouter.register(testController);
 				AnswerRouter.register(answerController);
+				QuestionRouter.register(questionController);
+				TestAttemptRouter.register(testAttemptController);
+
+				// UI маршруты
+				UiRouter.register(uiTestController);
 
 				// Swagger UI
 				get("/swagger", ctx -> {
@@ -199,6 +211,7 @@ public class Main {
 
 				// Health check endpoint
 				get("/health", ctx -> ctx.result("OK"));
+
 				DraftRouter.register(draftController);
 			});
 		}).start("0.0.0.0", APP_PORT);

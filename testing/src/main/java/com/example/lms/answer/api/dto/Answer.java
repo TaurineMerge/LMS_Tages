@@ -48,14 +48,6 @@ public class Answer {
 	private Integer score;
 
 	/**
-	 * Порядковый номер ответа в тесте.
-	 * <p>
-	 * Значение not null.
-	 * </p>
-	 */
-	private Integer order;
-
-	/**
 	 * Пустой конструктор для сериализации/десериализации.
 	 */
 	public Answer() {
@@ -70,7 +62,7 @@ public class Answer {
 	 * @param score      балл за ответ
 	 * @param order      порядковый номер ответа
 	 */
-	public Answer(UUID id, String text, UUID questionId, Integer score, Integer order) {
+	public Answer(UUID id, String text, UUID questionId, Integer score) {
 		this.id = id;
 		this.text = text;
 		this.questionId = questionId;
@@ -115,15 +107,5 @@ public class Answer {
 	/** @param score новый балл за ответ */
 	public void setScore(Integer score) {
 		this.score = score;
-	}
-
-	/** @return порядковый номер ответа */
-	public Integer getOrder() {
-		return order;
-	}
-
-	/** @param order новый порядковый номер ответа */
-	public void setOrder(Integer order) {
-		this.order = order;
 	}
 }

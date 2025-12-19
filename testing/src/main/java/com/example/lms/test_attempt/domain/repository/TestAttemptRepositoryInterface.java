@@ -77,4 +77,21 @@ public interface TestAttemptRepositoryInterface {
 	 * Найти все незавершённые попытки (где point IS NULL).
 	 */
 	List<TestAttemptModel> findIncompleteAttempts();
+
+
+		/**
+	 * Получить attempt_version (JSON) по уникальной связке
+	 * (student_id, test_id, date_of_attempt).
+	 *
+	 * @return JSON строка attempt_version, если попытка за эту дату есть
+	 */
+	Optional<String> findAttemptVersion(UUID studentId, UUID testId, LocalDate date);
+
+	/**
+	 * Создать или обновить строку попытки за дату и сохранить attempt_version.
+	 * Основано на UNIQUE(student_id, test_id, date_of_attempt).
+	 *
+	 * @param attemptVersionJson валидный JSON (например {"answers":{...}})
+	 */
+	void upsertAttemptVersion(UUID studentId, UUID testId, LocalDate date, String attemptVersionJson);
 }

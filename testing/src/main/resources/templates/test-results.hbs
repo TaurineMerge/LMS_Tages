@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Результаты — {{test.title}}</title>
+  <style>
+    :root{--bg:#fff;--text:#0b0b0b;--muted:#5f5f5f;--border:#e6e6e6;--orange:#ff6a00;--weak:rgba(255,106,0,.10);--shadow:0 8px 22px rgba(0,0,0,.08);--r:16px;}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    .wrap{max-width:980px;margin:0 auto;padding:28px 18px 60px}
+    .head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+    h1{margin:0;font-size:22px;letter-spacing:-.01em}
+    .muted{color:var(--muted);line-height:1.55}
+    .chip{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--border);border-radius:999px;background:#fff;font-size:13px}
+    .dot{width:8px;height:8px;border-radius:999px;background:var(--orange)}
+    .card{border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);padding:16px;background:#fff;margin:14px 0}
+    .score{display:flex;gap:12px;flex-wrap:wrap;align-items:baseline}
+    .big{font-size:34px;font-weight:900;letter-spacing:-.02em}
+    .status{padding:8px 12px;border-radius:999px;border:1px solid rgba(255,106,0,.45);background:var(--weak);font-weight:800}
+    .status.fail{border-color:#ccc;background:#f6f6f6;color:#333}
+    .btn-outline{padding:11px 16px;border-radius:12px;border:1px solid rgba(255,106,0,.85);background:transparent;color:var(--text);cursor:pointer;font-weight:900;text-decoration:none}
+    .table{width:100%;border-collapse:separate;border-spacing:0;margin-top:8px;overflow:hidden;border:1px solid var(--border);border-radius:14px}
+    .table th,.table td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+    .table th{background:#fafafa;text-align:left;font-size:13px;color:#333}
+    .table tr:last-child td{border-bottom:none}
+    .pill{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid var(--border);font-size:12px;color:#333;background:#fff}
+    .pill.ok{border-color:rgba(255,106,0,.45);background:var(--weak)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <div class="head">
+      <div>
+        <h1>Результаты</h1>
+        <div class="muted">{{test.title}}</div>
+      </div>
+
+      <a class="btn-outline" href="/ui/tests/{{test.id}}/take">Вернуться к вопросам</a>
+    </div>
+
+    <div class="card">
+      <div class="score">
+        <div>
+          <div class="muted">Набрано</div>
+          <div class="big">{{points}}</div>
+        </div>
+
+        <div>
+          <div class="muted">Максимум</div>
+          <div class="big">{{maxPossible}}</div>
+        </div>
+
+        <div>
+          <div class="muted">Ответы</div>
+          <div class="big">{{answeredCount}} / {{totalQuestions}}</div>
+        </div>
+
+        {{#if minPoint}}
+          <div class="chip"><span class="dot"></span>Проходной: <b>{{minPoint}}</b></div>
+          {{#if passed}}
+            <div class="status">Пройден</div>
+          {{else}}
+            <div class="status fail">Не пройден</div>
+          {{/if}}
+        {{/if}}
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:900; margin-bottom:8px;">По вопросам</div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width:80px;">№</th>
+            <th>Вопрос</th>
+            <th style="width:260px;">Ответ</th>
+            <th style="width:150px;">Баллы</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each rows}}
+            <tr>
+              <td><span class="pill {{#if answered}}ok{{/if}}">{{#if answered}}Отвечено{{else}}Пусто{{/if}}</span></td>
+              <td>{{text}}</td>
+              <td>{{#if answered}}{{selectedText}}{{else}}—{{/if}}</td>
+              <td><b>{{earned}}</b> / {{maxPoints}}</td>
+            </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</body>
+</html>
