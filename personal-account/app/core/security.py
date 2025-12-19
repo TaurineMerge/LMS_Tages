@@ -123,7 +123,7 @@ _jwt_validator = JWTValidator(
 )
 
 
-@traced("security.get_current_user", record_result=False)
+@traced("security.get_current_user", record_result=True, record_args=True)
 async def get_current_user(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
@@ -144,18 +144,21 @@ async def get_current_user(
     # Prefer Authorization header if present
     if credentials and credentials.credentials:
         token = credentials.credentials
+        logger.info("Token found in Authorization header")
 
     # Fallback to HttpOnly cookie set by the callback endpoint
     if not token:
         cookie_token = request.cookies.get("access_token")
         if cookie_token:
             token = cookie_token
+            logger.info("Token found in access_token cookie")
 
     if not token:
+        logger.warning("No token found in header or cookie")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated", headers={"WWW-Authenticate": "Bearer"}
         )
-
+    logger.info("Validating token...")
     return await _jwt_validator.validate_token(token)
 
 

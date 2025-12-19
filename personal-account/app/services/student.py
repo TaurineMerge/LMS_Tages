@@ -2,10 +2,18 @@
 
 from uuid import UUID
 
+# FastAPI
+from fastapi import HTTPException
+from fastapi.concurrency import run_in_threadpool
+
+from app.database import execute, fetch_one
+
+# App modules
 from app.exceptions import conflict_error, not_found_error
 from app.repositories.student import student_repository
 from app.schemas.common import paginated_response
 from app.schemas.student import student_create, student_response, student_update
+from app.services.keycloak import keycloak_service
 from app.telemetry import traced
 
 
@@ -32,6 +40,16 @@ class student_service:
 
         return student_response(**student)
 
+    # @traced()
+    # async def get_student_by_email(self, email: str) -> student_response:
+    #     """Get student by email."""
+    #     student = await self.repository.get_by_email(email)
+
+    #     if not student:
+    #         raise not_found_error("Student", email)
+
+    #     return student_response(**student)
+
     @traced()
     async def create_student(self, data: student_create) -> student_response:
         """Create a new student."""
@@ -47,23 +65,58 @@ class student_service:
         return student_response(**student)
 
     @traced()
-    async def update_student(self, student_id: UUID, data: student_update) -> student_response:
-        """Update student by ID."""
-        # Check if student exists
-        existing = await self.repository.get_by_id(student_id)
-        if not existing:
-            raise not_found_error("Student", str(student_id))
+    async def update_student(self, student_id: UUID, data: student_update):
+        """Update student in both Keycloak and DB atomically."""
+        # Получаем старые данные Keycloak, чтобы откатить при ошибке в БД
+        old_keycloak_data = await run_in_threadpool(keycloak_service.get_user_data, str(student_id))
 
-        # Check for email conflict if email is being updated
-        if data.email and await self.repository.email_exists(data.email, student_id):
-            raise conflict_error(f"Email '{data.email}' is already in use")
+        # Открываем транзакцию через вашу систему
+        from app.database import _engine
 
-        student = await self.repository.update(student_id, data.model_dump(exclude_unset=True))
+        if _engine is None:
+            raise RuntimeError("Database engine is not initialized")
 
-        if not student:
-            raise Exception("Failed to update student")
+        async with _engine.begin() as conn:  # ← ваша транзакция
+            try:
+                # 1. Обновляем Keycloak
+                keycloak_payload = {}
+                if data.name is not None:
+                    keycloak_payload["firstName"] = data.name
+                if data.surname is not None:
+                    keycloak_payload["lastName"] = data.surname
+                if data.email is not None:
+                    keycloak_payload["email"] = data.email
+                if data.username is not None:
+                    keycloak_payload["username"] = data.username
 
-        return student_response(**student)
+                await run_in_threadpool(keycloak_service.update_user_data, str(student_id), keycloak_payload)
+
+                # 2. Проверяем конфликты в БД (например, email)
+                if data.email:
+                    # Замените на вашу проверку (например, через репозиторий)
+                    existing = await self.repository.email_exists(data.email, student_id, conn=conn)
+                    if existing:
+                        raise conflict_error(f"Email '{data.email}' is already in use")
+
+                # 3. Обновляем БД
+                student = await self.repository.update(student_id, data.model_dump(exclude_unset=True), conn=conn)
+
+                if not student:
+                    raise Exception("Failed to update student in DB")
+
+                # conn.commit() — автоматически вызывается при выходе из `async with _engine.begin()`
+
+            except Exception as e:
+                # conn.rollback() — автоматически вызывается при выходе из `async with` при ошибке
+
+                # Пытаемся откатить изменения в Keycloak
+                try:
+                    await run_in_threadpool(keycloak_service.update_user_data, str(student_id), old_keycloak_data)
+                except Exception as ke:
+                    print(f"Failed to rollback Keycloak changes: {ke}")
+                    raise HTTPException(status_code=500, detail="Rollback failed for Keycloak.")
+
+                raise e  # пробрасываем ошибку дальше
 
     @traced()
     async def delete_student(self, student_id: UUID) -> bool:

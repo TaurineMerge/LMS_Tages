@@ -7,25 +7,36 @@
 {% block content %}
 <div class="profile">
     <div class="profile__container">
-        <form class="form profile__form"> 
+        <form class="form profile__form" method="post" action="/account/profile"> 
         <label for="form__input--name" class="form__label name">
             <p>Имя:</p>
-            <input class="form__input" type="text" id="form__input--name" name="name" placeholder="Имя" value="{{user.firstName}}"/>
+            <input class="form__input" type="text" id="form__input--name" name="name" placeholder="Имя" value="{{user.name}}"/>
         </label>
         <label for="form__input--surname" class="form__label surname">
             <p>Фамилия:</p>
-            <input class="form__input" type="text" id="form__input--surname" name="surname" placeholder="Фамилия" value="{{user.lastName}}"//>
+            <input class="form__input" type="text" id="form__input--surname" name="surname" placeholder="Фамилия" value="{{user.surname}}"/>
         </label>
         <label for="form__input--username" class="form__label username">
             <p>Username:</p>
-            <input class="form__input" type="text" id="form__input--username" name="username" placeholder="Username" value="{{user.email}}"//>
+            <input class="form__input" type="text" id="form__input--username" name="username" placeholder="Username" value="{{user.username}}"/>
         </label>
         <label for="form__input--email" class="form__label">
             <p>Эл. адрес:</p>
-            <input class="form__input" type="email" id="form__input--email" name="email" placeholder="Эл. адрес" value="{{user.username}}"//>
+            <input class="form__input" type="email" id="form__input--email" name="email" placeholder="Эл. адрес" value="{{user.email}}"/>
         </label>
         <button type="submit" class="button button--primary">Сохранить изменения</button>
     </form>
+    {% if errors %}
+    <div style="color: red;">
+        {% for error in errors %}
+            <p>{{ error.loc | join(': ') }}: {{ error.msg }}</p>
+        {% endfor %}
+    </div>
+{% endif %}
+
+{% if success %}
+    <div style="color: green;">Profile updated successfully!</div>
+{% endif %}
     <div class="profile__actions">
         <div class="profile__password">
         <p>Сброс пароля</p>
@@ -43,5 +54,7 @@
 
 {% block extra_js %}
 <script>
+
+
 </script>
 {% endblock %}

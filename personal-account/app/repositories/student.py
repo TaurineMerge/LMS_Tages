@@ -39,7 +39,7 @@ class student_repository(base_repository):
         return await execute_returning(q.STUDENT_INSERT, params)
 
     @traced()
-    async def update(self, student_id: UUID, data: dict[str, Any]) -> dict[str, Any] | None:
+    async def update(self, student_id: UUID, data: dict[str, Any], conn=None) -> dict[str, Any] | None:
         """Update student by ID."""
         # Filter out None values to only update provided fields
         update_data = {k: v for k, v in data.items() if v is not None}
@@ -88,7 +88,7 @@ class student_repository(base_repository):
         return students, total
 
     @traced()
-    async def email_exists(self, email: str, exclude_id: UUID | None = None) -> bool:
+    async def email_exists(self, email: str, exclude_id: UUID | None = None, conn=None) -> bool:
         """Check if email already exists."""
         if exclude_id:
             exclude_clause = "AND id != :exclude_id"

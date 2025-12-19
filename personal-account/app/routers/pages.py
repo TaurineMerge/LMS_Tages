@@ -1,8 +1,10 @@
 """Frontend pages router with Jinja2 templates."""
 
 import logging
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import (
     HTMLResponse,
     RedirectResponse,
@@ -12,7 +14,39 @@ from opentelemetry import trace
 
 from app.config import get_settings
 from app.core.security import TokenPayload, get_current_user
+from app.schemas.student import student_update
+from app.services.keycloak import keycloak_service
+from app.services.student import student_service
 from app.telemetry import traced
+
+logger = logging.getLogger(__name__)
+
+
+def form_data_to_student_update(
+    name: str = Form(None),
+    surname: str = Form(None),
+    email: str = Form(None),
+    username: str = Form(None),
+) -> student_update:
+    logger.info(f"📥 Form data received: name={name}, surname={surname}, email={email}, username={username}")
+
+    # Создаем словарь только с непустыми и не None значениями
+    data_dict = {}
+
+    # Проверяем, что значение не None и не пустая строка
+    if name is not None and name.strip() != "":
+        data_dict["name"] = name.strip()
+    if surname is not None and surname.strip() != "":
+        data_dict["surname"] = surname.strip()
+    if email is not None and email.strip() != "":
+        data_dict["email"] = email.strip()
+    if username is not None and username.strip() != "":
+        data_dict["username"] = username.strip()
+
+    logger.info(f"📦 Creating student_update with: {data_dict}")
+
+    return student_update(**data_dict)
+
 
 settings = get_settings()
 templates = Jinja2Templates(directory="templates")
@@ -130,18 +164,87 @@ async def dashboard_page(request: Request):
 @router.get("/profile", response_class=HTMLResponse)
 @traced("pages.profile")
 async def profile_page(request: Request, user: TokenPayload = Depends(get_current_user)):
-    """Render profile page."""
-    # Подготовим данные для шаблона
-    user_data = {
-        "firstName": user.given_name or "",
-        "lastName": user.family_name or "",
-        "email": user.email or "",
-        "username": user.preferred_username or "",
-    }
-    return _render_template_safe(
+    # Получаем актуальные данные из Keycloak, а не из токена
+    keycloak_data = await run_in_threadpool(keycloak_service.get_user_data, user.sub)
+    logger.info(f"GET /profile: Retrieved fresh Keycloak data: {keycloak_data}")
+
+    return templates.TemplateResponse(
         "profile.hbs",
-        {"request": request, "active_page": "profile", "user": user_data, **get_keycloak_urls()},
+        {
+            "request": request,
+            "active_page": "profile",
+            "user": keycloak_data,  # всегда свежие данные из Keycloak
+            "success": request.query_params.get("success"),
+            **get_keycloak_urls(),
+        },
     )
+
+
+@router.post("/profile", response_class=HTMLResponse)
+@traced("pages.update_profile")
+async def update_profile_form(
+    request: Request,
+    data: student_update = Depends(form_data_to_student_update),
+    user: TokenPayload = Depends(get_current_user),
+):
+    try:
+        # Логируем, что пользователь успешно аутентифицирован
+        logger.info(f"User authenticated: {user.sub}, email: {user.email}")
+
+        # Логируем полученные данные из формы
+        logger.info(f"Received form data: {data.model_dump()}")
+
+        # Правильно формируем payload для Keycloak
+        keycloak_payload = {}
+        if data.name is not None:
+            keycloak_payload["firstName"] = data.name
+        if data.surname is not None:
+            keycloak_payload["lastName"] = data.surname
+        if data.email is not None:
+            keycloak_payload["email"] = data.email
+        if data.username is not None:  # ✅ Добавлено!
+            keycloak_payload["username"] = data.username  # ✅ Добавлено!
+
+        logger.info(f"📦 Keycloak payload prepared: {keycloak_payload}")
+        logger.info(f"📡 About to update Keycloak user: {user.sub}")
+
+        await run_in_threadpool(keycloak_service.update_user_data, user.sub, keycloak_payload)
+
+        logger.info("✅ Keycloak updated successfully")
+
+        # Проверим, что данные действительно обновились
+        updated_data = await run_in_threadpool(keycloak_service.get_user_data, user.sub)
+        logger.info(f"🔍 Verified updated data: {updated_data}")
+
+        # Редиректим на GET /profile
+        return RedirectResponse(url="/account/profile?success=true", status_code=303)
+
+    except Exception as e:
+        logger.error(f"💥 ERROR in update_profile_form: {e}", exc_info=True)
+        user_info = data.model_dump(exclude_unset=True)
+        return templates.TemplateResponse(
+            "profile.hbs",
+            {
+                "request": request,
+                "user": user_info,
+                "active_page": "profile",
+                "errors": [{"loc": ["server"], "msg": f"Failed to update profile: {e!s}"}],
+                **get_keycloak_urls(),
+            },
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error in update_profile_form: {e}", exc_info=True)
+        user_info = data.model_dump(exclude_unset=True)
+        return templates.TemplateResponse(
+            "profile.hbs",
+            {
+                "request": request,
+                "user": user_info,
+                "active_page": "profile",
+                "errors": [{"loc": ["server"], "msg": f"Failed to update profile: {e!s}"}],
+                **get_keycloak_urls(),
+            },
+        )
 
 
 @router.get("/certificates", response_class=HTMLResponse)
