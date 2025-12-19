@@ -24,7 +24,7 @@
                         <ul class="categories-grid__courses">
                             {{#each Courses}}
                                 <li class="categories-grid__course-item">
-                                    {{Title}}
+                                    <a href="/categories/{{../ID}}/courses/{{ID}}" class="categories-grid__course-link">{{Title}}</a>
                                 </li>
                             {{/each}}
                         </ul>
@@ -35,7 +35,7 @@
                     {{/if}}
 
                     {{#if HasMoreCourses}}
-                        <a href="/categories/category_{{ID}}/courses" class="categories-grid__more-link">
+                        <a href="/categories/{{ID}}/courses" class="categories-grid__more-link">
                             Показать ещё
                         </a>
                     {{/if}}
