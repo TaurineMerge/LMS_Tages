@@ -33,6 +33,8 @@ import com.example.lms.draft.infrastructure.repositories.DraftRepository;
 import com.example.lms.draft.api.controller.DraftController;
 import com.example.lms.draft.api.router.DraftRouter;
 import com.github.jknack.handlebars.Handlebars;
+import com.example.lms.ui.UiRouter;
+import com.example.lms.ui.UiTestController;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import io.javalin.Javalin;
@@ -95,6 +97,9 @@ public class Main {
 		DraftController draftController = new DraftController(draftService);
 		ContentController contentController = new ContentController(contentService, handlebars);
 
+		// UI controller (ВАЖНО: добавили testAttemptService)
+		var uiTestController = new UiTestController(testService, questionService, answerService, testAttemptService);
+
 		// ---------------------------------------------------------------
 		// 3. Создание и запуск Javalin HTTP-сервера
 		// ---------------------------------------------------------------
@@ -136,6 +141,9 @@ public class Main {
 				TestAttemptRouter.register(testAttemptController);
 				DraftRouter.register(draftController);
 				ContentRouter.register(contentController);
+
+				// UI маршруты
+				UiRouter.register(uiTestController);
 
 				// Swagger UI
 				get("/swagger", ctx -> {

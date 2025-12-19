@@ -36,8 +36,7 @@ public class AnswerService {
                 dto.getId(),
                 dto.getQuestionId(),
                 dto.getText(),
-                dto.getScore() != null ? dto.getScore() : 0,
-                dto.getOrder() != null ? dto.getOrder() : 0);
+                dto.getScore() != null ? dto.getScore() : 0);
     }
 
     /**
@@ -51,8 +50,7 @@ public class AnswerService {
                 model.getId(),
                 model.getText(),
                 model.getQuestionId(),
-                model.getScore(),
-                model.getOrder());
+                model.getScore());
     }
 
     /**
@@ -124,9 +122,6 @@ public class AnswerService {
         if (answer.getScore() == null) {
             throw new IllegalArgumentException("Балл за ответ обязателен");
         }
-        if (answer.getOrder() == null) {
-            throw new IllegalArgumentException("Порядковый номер ответа обязателен");
-        }
 
         // Проверяем уникальность ответа для вопроса
         if (repository.existsByQuestionIdAndText(answer.getQuestionId(), answer.getText())) {
@@ -166,9 +161,6 @@ public class AnswerService {
         }
         if (answer.getScore() == null) {
             throw new IllegalArgumentException("Балл за ответ обязателен");
-        }
-        if (answer.getOrder() == null) {
-            throw new IllegalArgumentException("Порядковый номер ответа обязателен");
         }
 
         // Обновляем модель

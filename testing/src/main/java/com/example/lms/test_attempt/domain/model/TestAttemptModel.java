@@ -59,6 +59,14 @@ public class TestAttemptModel {
     // ---------------------- КОНСТРУКТОРЫ ----------------------
 
     /**
+     * 
+     */
+    public TestAttemptModel(UUID studentId, UUID testId) {
+        this.studentId = Objects.requireNonNull(studentId, "Student ID cannot be null");
+        this.testId = Objects.requireNonNull(testId, "Test ID cannot be null");
+    }
+
+    /**
      * Конструктор для создания новой попытки теста.
      */
     public TestAttemptModel(UUID studentId, UUID testId, LocalDate dateOfAttempt, 
