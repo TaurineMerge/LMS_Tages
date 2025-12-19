@@ -30,6 +30,8 @@ erDiagram
         int point
         uuid certificate_id
         json attempt_version
+        varchar attempt_snapshot
+        boolen completed
     }
 
 
