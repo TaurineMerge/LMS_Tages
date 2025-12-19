@@ -26,14 +26,7 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /root/
 
 # Копируем бинарник из этапа сборки
-COPY --from=builder /app/main .
-
-# Копируем необходимые директории для фронтенда
-COPY --from=builder /app/templates ./templates
-COPY --from=builder /app/static ./static
-
-# Копируем директорию с документацией Swagger
-COPY --from=builder /app/doc ./doc
+COPY --from=builder /app .
 
 # Открываем порт 3000
 EXPOSE 3000

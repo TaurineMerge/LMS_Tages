@@ -3,33 +3,40 @@ package service
 
 import (
 	"context"
+	"math"
 	"strings"
 	"unicode/utf8"
 
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/dto/response"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/api/v1/dto/response"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/repository"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apperrors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 )
 
 // CourseService defines the interface for course business logic.
 type CourseService interface {
-	GetCoursesByCategoryID(ctx context.Context, categoryID string, page, limit int) ([]response.CourseDTO, *response.Pagination, error)
+	GetCoursesByCategoryID(ctx context.Context, categoryID string, page, limit int, level, sortBy string) ([]response.CourseDTO, response.Pagination, error)
+	GetCourseByID(ctx context.Context, categoryID, courseID string) (response.CourseDTO, error)
 	GetCategoryByID(ctx context.Context, categoryID string) (*response.CategoryDTO, error)
 }
 
 type courseService struct {
-	repo repository.CourseRepository
+	repo         repository.CourseRepository
+	categoryRepo repository.CategoryRepository
 }
 
 // NewCourseService creates a new instance of the course service.
-func NewCourseService(repo repository.CourseRepository) CourseService {
-	return &courseService{repo: repo}
+func NewCourseService(repo repository.CourseRepository, categoryRepo repository.CategoryRepository) CourseService {
+	return &courseService{
+		repo:         repo,
+		categoryRepo: categoryRepo,
+	}
 }
 
-// GetCoursesByCategoryID retrieves paginated courses for a category and converts them to DTOs.
-func (s *courseService) GetCoursesByCategoryID(ctx context.Context, categoryID string, page, limit int) ([]response.CourseDTO, *response.Pagination, error) {
+// GetCoursesByCategoryID retrieves paginated courses for a category with filters and converts them to DTOs.
+func (s *courseService) GetCoursesByCategoryID(ctx context.Context, categoryID string, page, limit int, level, sortBy string) ([]response.CourseDTO, response.Pagination, error) {
 	tracer := otel.Tracer("service")
 	ctx, span := tracer.Start(ctx, "courseService.GetCoursesByCategoryID")
 	defer span.End()
@@ -38,7 +45,18 @@ func (s *courseService) GetCoursesByCategoryID(ctx context.Context, categoryID s
 		attribute.String("category_id", categoryID),
 		attribute.Int("page", page),
 		attribute.Int("limit", limit),
+		attribute.String("level", level),
+		attribute.String("sort_by", sortBy),
 	)
+
+	// Validate that category exists
+	_, err := s.categoryRepo.GetByID(ctx, categoryID)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return nil, response.Pagination{}, apperrors.NewNotFound("Category")
+		}
+		return nil, response.Pagination{}, err
+	}
 
 	// Validate pagination parameters
 	if page < 1 {
@@ -48,9 +66,9 @@ func (s *courseService) GetCoursesByCategoryID(ctx context.Context, categoryID s
 		limit = 28 // Default limit
 	}
 
-	courses, total, err := s.repo.GetCoursesByCategoryID(ctx, categoryID, page, limit)
+	courses, total, err := s.repo.GetCoursesByCategoryID(ctx, categoryID, page, limit, level, sortBy)
 	if err != nil {
-		return nil, nil, err
+		return nil, response.Pagination{}, err
 	}
 
 	courseDTOs := make([]response.CourseDTO, 0, len(courses))
@@ -59,12 +77,9 @@ func (s *courseService) GetCoursesByCategoryID(ctx context.Context, categoryID s
 	}
 
 	// Calculate total pages
-	pages := total / limit
-	if total%limit > 0 {
-		pages++
-	}
+	pages := int(math.Ceil(float64(total) / float64(limit)))
 
-	pagination := &response.Pagination{
+	pagination := response.Pagination{
 		Page:  page,
 		Limit: limit,
 		Total: total,
@@ -72,27 +87,6 @@ func (s *courseService) GetCoursesByCategoryID(ctx context.Context, categoryID s
 	}
 
 	return courseDTOs, pagination, nil
-}
-
-// GetCategoryByID retrieves a category by ID and converts it to a DTO.
-func (s *courseService) GetCategoryByID(ctx context.Context, categoryID string) (*response.CategoryDTO, error) {
-	tracer := otel.Tracer("service")
-	ctx, span := tracer.Start(ctx, "courseService.GetCategoryByID")
-	defer span.End()
-
-	span.SetAttributes(attribute.String("category_id", categoryID))
-
-	category, err := s.repo.GetCategoryByID(ctx, categoryID)
-	if err != nil {
-		return nil, err
-	}
-
-	return &response.CategoryDTO{
-		ID:        category.ID,
-		Title:     category.Title,
-		CreatedAt: category.CreatedAt,
-		UpdatedAt: category.UpdatedAt,
-	}, nil
 }
 
 // mapCourseToDTO converts a domain Course to a CourseDTO.
@@ -139,4 +133,59 @@ func TruncateDescription(text string, maxChars int) string {
 	}
 
 	return truncated + "..."
+}
+
+// GetCategoryByID retrieves a category by ID and converts it to a DTO.
+func (s *courseService) GetCategoryByID(ctx context.Context, categoryID string) (*response.CategoryDTO, error) {
+	tracer := otel.Tracer("service")
+	ctx, span := tracer.Start(ctx, "courseService.GetCategoryByID")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("category_id", categoryID))
+
+	category, err := s.categoryRepo.GetByID(ctx, categoryID)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return nil, apperrors.NewNotFound("Category")
+		}
+		return nil, err
+	}
+
+	return &response.CategoryDTO{
+		ID:        category.ID,
+		Title:     category.Title,
+		CreatedAt: category.CreatedAt,
+		UpdatedAt: category.UpdatedAt,
+	}, nil
+}
+
+// GetCourseByID retrieves a single course by ID and converts it to DTO.
+func (s *courseService) GetCourseByID(ctx context.Context, categoryID, courseID string) (response.CourseDTO, error) {
+	tracer := otel.Tracer("service")
+	ctx, span := tracer.Start(ctx, "courseService.GetCourseByID")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("category_id", categoryID),
+		attribute.String("course_id", courseID),
+	)
+
+	// Validate that category exists
+	_, err := s.categoryRepo.GetByID(ctx, categoryID)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return response.CourseDTO{}, apperrors.NewNotFound("Category")
+		}
+		return response.CourseDTO{}, err
+	}
+
+	course, err := s.repo.GetCourseByID(ctx, categoryID, courseID)
+	if err != nil {
+		if strings.Contains(err.Error(), "no rows") {
+			return response.CourseDTO{}, apperrors.NewNotFound("Course")
+		}
+		return response.CourseDTO{}, err
+	}
+
+	return s.mapCourseToDTO(course), nil
 }

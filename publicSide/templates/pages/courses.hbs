@@ -10,40 +10,41 @@
 </div>
 
 <div class="courses">
-    {{#if Courses}}
-        <div class="courses__header">
-            <h2 class="courses__subtitle">Доступные курсы ({{Pagination.Total}})</h2>
+    <div class="courses__header">
+        <h2 class="courses__subtitle">
+            {{#if Courses}}
+                Доступные курсы ({{Pagination.Total}})
+            {{else}}
+                Нет доступных курсов
+            {{/if}}
+        </h2>
+        <div class="courses__filters">
+            <form method="GET" action="/categories/{{CategoryID}}/courses" class="filters-form">
+                <div class="filter-group">
+                    <label for="level-filter">Сложность:</label>
+                    <select name="level" id="level-filter" onchange="this.form.submit()">
+                        <option value="all" {{#if (streq Level "all")}}selected{{/if}}>Все уровни</option>
+                        <option value="easy" {{#if (streq Level "easy")}}selected{{/if}}>Легкий</option>
+                        <option value="medium" {{#if (streq Level "medium")}}selected{{/if}}>Средний</option>
+                        <option value="hard" {{#if (streq Level "hard")}}selected{{/if}}>Сложный</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="sort-filter">Сортировка:</label>
+                    <select name="sort_by" id="sort-filter" onchange="this.form.submit()">
+                        <option value="updated_desc" {{#if (streq SortBy "updated_desc")}}selected{{/if}}>Сначала новые</option>
+                        <option value="updated_asc" {{#if (streq SortBy "updated_asc")}}selected{{/if}}>Сначала старые</option>
+                    </select>
+                </div>
+                <input type="hidden" name="page" value="{{CurrentPage}}">
+            </form>
         </div>
-        
+    </div>
+
+    {{#if Courses}}
         <div class="courses__grid">
             {{#each Courses}}
-                <div class="course-card">
-                    <div class="course-card__image">📖</div>
-                    <div class="course-card__content">
-                        <div class="course-card__meta">
-                            {{#if LevelRu}}
-                            <span class="course-card__level course-card__level--{{#if (streq Level "easy")}}easy{{else}}{{#if (streq Level "hard")}}hard{{else}}medium{{/if}}{{/if}}">
-                                {{LevelRu}}
-                            </span>
-                            {{/if}}
-                        </div>
-                        <h3 class="course-card__title">{{Title}}</h3>
-                        <p class="course-card__description">{{#if Description}}{{truncate Description 150}}{{else}}Описание курса отсутствует.{{/if}}</p>
-                        <div class="course-card__stats">
-                            <div class="course-card__stat">
-                                <span>📚</span>
-                                <span>10 уроков</span>
-                            </div>
-                            <div class="course-card__stat">
-                                <span>⏱️</span>
-                                <span>20 часов</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="course-card__footer">
-                        <a href="/categories/{{../CategoryID}}/courses/{{ID}}" class="button button--primary">Подробнее</a>
-                    </div>
-                </div>
+                {{> partials/course-card}}
             {{/each}}
         </div>
 
@@ -51,21 +52,21 @@
         {{#if (gt Pagination.Pages 1)}}
         <div class="pagination">
             {{#if (gt CurrentPage 1)}}
-                <a href="/categories/{{CategoryID}}/courses?page={{subtract CurrentPage 1}}" class="pagination__btn">← Назад</a>
+                <a href="/categories/{{CategoryID}}/courses?page={{subtract CurrentPage 1}}&level={{Level}}&sort_by={{SortBy}}" class="pagination__btn">← Назад</a>
             {{/if}}
 
             <div class="pagination__pages">
                 {{#each (range 1 Pagination.Pages)}}
                     {{#if (eq this ../CurrentPage)}}
-                        <a href="/categories/{{../CategoryID}}/courses?page={{this}}" class="pagination__page pagination__page--active">{{this}}</a>
+                        <a href="/categories/{{../CategoryID}}/courses?page={{this}}&level={{../Level}}&sort_by={{../SortBy}}" class="pagination__page pagination__page--active">{{this}}</a>
                     {{else}}
-                        <a href="/categories/{{../CategoryID}}/courses?page={{this}}" class="pagination__page">{{this}}</a>
+                        <a href="/categories/{{../CategoryID}}/courses?page={{this}}&level={{../Level}}&sort_by={{../SortBy}}" class="pagination__page">{{this}}</a>
                     {{/if}}
                 {{/each}}
             </div>
 
             {{#if (lt CurrentPage Pagination.Pages)}}
-                <a href="/categories/{{CategoryID}}/courses?page={{add CurrentPage 1}}" class="pagination__btn">Вперёд →</a>
+                <a href="/categories/{{CategoryID}}/courses?page={{add CurrentPage 1}}&level={{Level}}&sort_by={{SortBy}}" class="pagination__btn">Вперёд →</a>
             {{/if}}
         </div>
         {{/if}}

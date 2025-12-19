@@ -3,6 +3,7 @@ package template
 
 import (
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/gofiber/template/handlebars/v2"
@@ -12,8 +13,9 @@ import (
 func NewEngine() *handlebars.Engine {
 	engine := handlebars.New("./templates", ".hbs")
 
-	// Enable reload in development
+	// Reload should be enabled for Docker as files are mounted
 	engine.Reload(true)
+	engine.Debug(true)
 
 	// Register custom helper for truncating text
 	engine.AddFunc("truncate", func(text string, length int) string {
@@ -37,6 +39,10 @@ func NewEngine() *handlebars.Engine {
 		}
 
 		return truncated + "..."
+	})
+
+	engine.AddFunc("eqs", func(a, b string) bool {
+		return a == b
 	})
 
 	// Register custom helper for equality comparison
@@ -76,6 +82,11 @@ func NewEngine() *handlebars.Engine {
 			result = append(result, i)
 		}
 		return result
+	})
+
+	// Register helper for date formatting
+	engine.AddFunc("formatDate", func(t time.Time) string {
+		return t.Format("02.01.2006")
 	})
 
 	return engine

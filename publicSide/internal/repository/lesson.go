@@ -14,12 +14,27 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+const (
+	DirectionNext     = "next"
+	DirectionPrevious = "previous"
+)
+
+// LessonChunkOptions defines the options for fetching a chunk of lessons.
+type LessonChunkOptions struct {
+	PivotValue interface{} // The value of the pivot lesson's sorted field. Optional.
+	OrderBy    string      // The column to sort by (e.g., "created_at").
+	Direction  string      // "next" or "previous".
+	Limit      int
+}
+
 // LessonRepository defines the interface for database operations on lessons.
 type LessonRepository interface {
 	// GetAllByCourseID retrieves a paginated list of lessons for a specific course and category, with sorting capabilities.
 	GetAllByCourseID(ctx context.Context, categoryID, courseID string, page, limit int, sort string) ([]domain.Lesson, int, error)
 	// GetByID retrieves a single lesson by its ID, scoped to a course and category.
 	GetByID(ctx context.Context, categoryID, courseID, lessonID string) (domain.Lesson, error)
+	// GetLessonsChunk retrieves a flexible chunk of lessons based on the provided options.
+	GetLessonsChunk(ctx context.Context, courseID string, options LessonChunkOptions) ([]domain.Lesson, error)
 }
 
 type lessonRepository struct {
@@ -52,6 +67,20 @@ func (r *lessonRepository) scanLesson(row scanner) (domain.Lesson, error) {
 	)
 	return lesson, err
 }
+
+func (r *lessonRepository) scanLessons(rows pgx.Rows) ([]domain.Lesson, error) {
+	var lessons []domain.Lesson
+	defer rows.Close()
+	for rows.Next() {
+		lesson, err := r.scanLesson(rows)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan lesson: %w", err)
+		}
+		lessons = append(lessons, lesson)
+	}
+	return lessons, nil
+}
+
 
 func (r *lessonRepository) GetAllByCourseID(ctx context.Context, categoryID, courseID string, page, limit int, sort string) ([]domain.Lesson, int, error) {
 	countBuilder := r.psql.Select("COUNT(l.id)").
@@ -100,17 +129,11 @@ func (r *lessonRepository) GetAllByCourseID(ctx context.Context, categoryID, cou
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get lessons by course: %w", err)
 	}
-	defer rows.Close()
 
-	var lessons []domain.Lesson
-	for rows.Next() {
-		lesson, err := r.scanLesson(rows)
-		if err != nil {
-			return nil, 0, fmt.Errorf("failed to scan lesson: %w", err)
-		}
-		lessons = append(lessons, lesson)
+	lessons, err := r.scanLessons(rows)
+	if err != nil {
+		return nil, 0, err
 	}
-
 	return lessons, total, nil
 }
 
@@ -141,6 +164,58 @@ func (r *lessonRepository) GetByID(ctx context.Context, categoryID, courseID, le
 
 	return lesson, nil
 }
+
+func (r *lessonRepository) GetLessonsChunk(ctx context.Context, courseID string, options LessonChunkOptions) ([]domain.Lesson, error) {
+	if !r.isValidOrderBy(options.OrderBy) {
+		return nil, fmt.Errorf("invalid order by field: %s", options.OrderBy)
+	}
+
+	queryBuilder := r.psql.Select("l.id", "l.title", "l.course_id", "l.content", "l.created_at", "l.updated_at").
+		From(lessonsTable + " AS l").
+		Where(squirrel.Eq{"l.course_id": courseID})
+
+	// Add pivot condition if a pivot value is provided
+	if options.PivotValue != nil {
+		column := fmt.Sprintf("l.%s", options.OrderBy)
+		if options.Direction == DirectionNext {
+			queryBuilder = queryBuilder.Where(squirrel.Gt{column: options.PivotValue})
+		} else {
+			queryBuilder = queryBuilder.Where(squirrel.Lt{column: options.PivotValue})
+		}
+	}
+
+	// Apply ordering based on direction
+	if options.Direction == DirectionNext {
+		queryBuilder = queryBuilder.OrderBy(fmt.Sprintf("l.%s ASC", options.OrderBy))
+	} else {
+		queryBuilder = queryBuilder.OrderBy(fmt.Sprintf("l.%s DESC", options.OrderBy))
+	}
+
+	queryBuilder = queryBuilder.Limit(uint64(options.Limit))
+
+	query, args, err := queryBuilder.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build lessons chunk query: %w", err)
+	}
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get lessons chunk: %w", err)
+	}
+
+	return r.scanLessons(rows)
+}
+
+
+func (r *lessonRepository) isValidOrderBy(field string) bool {
+	switch field {
+	case "created_at", "title", "updated_at": // Add other allowed fields here
+		return true
+	default:
+		return false
+	}
+}
+
 
 func (r *lessonRepository) applySorting(builder squirrel.SelectBuilder, sort string) squirrel.SelectBuilder {
 	if sort == "" {

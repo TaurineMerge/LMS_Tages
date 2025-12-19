@@ -59,24 +59,3 @@ func NewInternal() error {
 		Message:    "An unexpected internal error occurred",
 	}
 }
-
-// NewDatabaseError creates a new 500 Internal Server Error for database operations.
-// The actual error is logged but a generic message is returned to the user.
-func NewDatabaseError(message string, err error) error {
-	// In a production environment, you would log the actual error here
-	// For now, we'll just return a generic error to the user
-	return &AppError{
-		HTTPStatus: 500,
-		Code:       "DATABASE_ERROR",
-		Message:    message,
-	}
-}
-
-// NewNotFoundError creates a new 404 Not Found error with a custom message.
-func NewNotFoundError(message string) error {
-	return &AppError{
-		HTTPStatus: 404,
-		Code:       "NOT_FOUND",
-		Message:    message,
-	}
-}

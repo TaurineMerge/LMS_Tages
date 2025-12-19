@@ -1,0 +1,15 @@
+<aside class="course-sidebar">
+    <nav>
+        <h3 class="course-sidebar__title">Course Content</h3>
+        <ul class="course-sidebar__list">
+            {{#each allLessons}}
+                <li>
+                    <a href="/categories/{{../categoryID}}/courses/{{this.CourseID}}/lessons/{{this.ID}}" 
+                       class="course-sidebar__link {{#if (eqs this.ID ../lesson.ID)}}course-sidebar__link--active{{/if}}">
+                        {{this.Title}}
+                    </a>
+                </li>
+            {{/each}}
+        </ul>
+    </nav>
+</aside>

@@ -1,0 +1,53 @@
+<!-- templates/pages/categories.hbs -->
+
+<section class="category-courses">
+    <header class="page-header">
+        <div class="page-header__breadcrumbs">
+            <a href="/">Главная</a>
+            <span class="page-header__separator">/</span>
+            <span>Категории</span>
+        </div>
+        <h1 class="page-header__title">Категории курсов</h1>
+    </header>
+
+    {{#if categories}}
+        <div class="categories-grid">
+            {{#each categories}}
+                <section class="categories-grid__column">
+                    <h2 class="categories-grid__title">{{Title}}</h2>
+
+                    {{#if TotalCourses}}
+                        <div class="categories-grid__count">{{TotalCourses}} курсов</div>
+                    {{/if}}
+
+                    {{#if Courses}}
+                        <ul class="categories-grid__courses">
+                            {{#each Courses}}
+                                <li class="categories-grid__course-item">
+                                    <a href="/categories/{{../ID}}/courses/{{ID}}" class="categories-grid__course-link">{{Title}}</a>
+                                </li>
+                            {{/each}}
+                        </ul>
+                    {{else}}
+                        <div class="categories-grid__empty">
+                            В этой категории пока нет доступных курсов.
+                        </div>
+                    {{/if}}
+
+                    {{#if HasMoreCourses}}
+                        <a href="/categories/{{ID}}/courses" class="categories-grid__more-link">
+                            Показать ещё
+                        </a>
+                    {{/if}}
+                </section>
+            {{/each}}
+        </div>
+    {{else}}
+        <div class="empty-state">
+            <p class="empty-state__text">
+                Пока нет ни одной категории. Создайте категории через Swagger admin, и они появятся здесь автоматически.
+            </p>
+        </div>
+    {{/if}}
+</section>
+

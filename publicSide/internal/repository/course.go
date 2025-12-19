@@ -5,9 +5,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
-	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apperrors"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -16,21 +15,40 @@ import (
 
 // CourseRepository defines the interface for course data operations.
 type CourseRepository interface {
-	GetCoursesByCategoryID(ctx context.Context, categoryID string, page, limit int) ([]domain.Course, int, error)
-	GetCategoryByID(ctx context.Context, categoryID string) (*domain.Category, error)
+	GetCoursesByCategoryID(ctx context.Context, categoryID string, page, limit int, level, sortBy string) ([]domain.Course, int, error)
+	GetCourseByID(ctx context.Context, categoryID, courseID string) (domain.Course, error)
 }
 
 type courseRepository struct {
-	db *pgxpool.Pool
+	db   *pgxpool.Pool
+	psql squirrel.StatementBuilderType
 }
 
 // NewCourseRepository creates a new instance of the course repository.
 func NewCourseRepository(db *pgxpool.Pool) CourseRepository {
-	return &courseRepository{db: db}
+	return &courseRepository{
+		db:   db,
+		psql: squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
+	}
 }
 
-// GetCoursesByCategoryID retrieves paginated public courses for a given category.
-func (r *courseRepository) GetCoursesByCategoryID(ctx context.Context, categoryID string, page, limit int) ([]domain.Course, int, error) {
+func (r *courseRepository) scanCourse(row scanner) (domain.Course, error) {
+	var course domain.Course
+	err := row.Scan(
+		&course.ID,
+		&course.Title,
+		&course.Description,
+		&course.Level,
+		&course.CategoryID,
+		&course.Visibility,
+		&course.CreatedAt,
+		&course.UpdatedAt,
+	)
+	return course, err
+}
+
+// GetCoursesByCategoryID retrieves paginated public courses for a given category with optional filters and sorting.
+func (r *courseRepository) GetCoursesByCategoryID(ctx context.Context, categoryID string, page, limit int, level, sortBy string) ([]domain.Course, int, error) {
 	tracer := otel.Tracer("repository")
 	ctx, span := tracer.Start(ctx, "courseRepository.GetCoursesByCategoryID")
 	defer span.End()
@@ -39,21 +57,36 @@ func (r *courseRepository) GetCoursesByCategoryID(ctx context.Context, categoryI
 		attribute.String("category_id", categoryID),
 		attribute.Int("page", page),
 		attribute.Int("limit", limit),
+		attribute.String("level", level),
+		attribute.String("sort_by", sortBy),
 	)
 
-	// Count total courses
-	countQuery := `
-		SELECT COUNT(*)
-		FROM knowledge_base.course_b
-		WHERE category_id = $1 AND visibility = 'public'
-	`
+	// Count total public courses with filters
+	countQuery := r.psql.Select("COUNT(*)").
+		From(courseTable).
+		Where(squirrel.Eq{
+			"category_id": categoryID,
+			"visibility":  "public",
+		})
+
+	// Apply level filter if specified
+	if level != "" && level != "all" {
+		countQuery = countQuery.Where(squirrel.Eq{"level": level})
+	}
+
+	countSql, countArgs, err := countQuery.ToSql()
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "Failed to build count query")
+		return nil, 0, fmt.Errorf("failed to build count query for courses: %w", err)
+	}
 
 	var total int
-	err := r.db.QueryRow(ctx, countQuery, categoryID).Scan(&total)
+	err = r.db.QueryRow(ctx, countSql, countArgs...).Scan(&total)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "Failed to count courses")
-		return nil, 0, apperrors.NewDatabaseError("Failed to count courses", err)
+		return nil, 0, fmt.Errorf("failed to count courses: %w", err)
 	}
 
 	if total == 0 {
@@ -63,40 +96,62 @@ func (r *courseRepository) GetCoursesByCategoryID(ctx context.Context, categoryI
 	// Calculate offset
 	offset := (page - 1) * limit
 
-	// Get paginated courses
-	query := `
-		SELECT id, title, description, level, category_id, visibility, created_at, updated_at
-		FROM knowledge_base.course_b
-		WHERE category_id = $1 AND visibility = 'public'
-		ORDER BY created_at DESC
-		LIMIT $2 OFFSET $3
-	`
+	// Get paginated courses with filters
+	queryBuilder := r.psql.Select("id", "title", "description", "level", "category_id", "visibility", "created_at", "updated_at").
+		From(courseTable).
+		Where(squirrel.Eq{
+			"category_id": categoryID,
+			"visibility":  "public",
+		})
 
-	rows, err := r.db.Query(ctx, query, categoryID, limit, offset)
+	// Apply level filter if specified
+	if level != "" && level != "all" {
+		queryBuilder = queryBuilder.Where(squirrel.Eq{"level": level})
+	}
+
+	// Determine sort order
+	orderBy := "updated_at DESC"
+	switch sortBy {
+	case "updated_asc":
+		orderBy = "updated_at ASC"
+	case "updated_desc":
+		orderBy = "updated_at DESC"
+	case "created_asc":
+		orderBy = "created_at ASC"
+	case "created_desc":
+		orderBy = "created_at DESC"
+	default:
+		// Default to updated_at DESC
+		orderBy = "updated_at DESC"
+	}
+
+	queryBuilder = queryBuilder.
+		OrderBy(orderBy).
+		Limit(uint64(limit)).
+		Offset(uint64(offset))
+
+	query, args, err := queryBuilder.ToSql()
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "Failed to build query")
+		return nil, 0, fmt.Errorf("failed to build get courses query: %w", err)
+	}
+
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "Failed to query courses")
-		return nil, 0, apperrors.NewDatabaseError("Failed to retrieve courses", err)
+		return nil, 0, fmt.Errorf("failed to retrieve courses: %w", err)
 	}
 	defer rows.Close()
 
 	var courses []domain.Course
 	for rows.Next() {
-		var course domain.Course
-		err := rows.Scan(
-			&course.ID,
-			&course.Title,
-			&course.Description,
-			&course.Level,
-			&course.CategoryID,
-			&course.Visibility,
-			&course.CreatedAt,
-			&course.UpdatedAt,
-		)
+		course, err := r.scanCourse(rows)
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "Failed to scan course")
-			return nil, 0, apperrors.NewDatabaseError("Failed to scan course", err)
+			return nil, 0, fmt.Errorf("failed to scan course: %w", err)
 		}
 		courses = append(courses, course)
 	}
@@ -104,44 +159,46 @@ func (r *courseRepository) GetCoursesByCategoryID(ctx context.Context, categoryI
 	if err := rows.Err(); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "Error iterating courses")
-		return nil, 0, apperrors.NewDatabaseError("Error iterating courses", err)
+		return nil, 0, fmt.Errorf("error iterating courses: %w", err)
 	}
 
 	span.SetAttributes(attribute.Int("courses_count", len(courses)))
 	return courses, total, nil
 }
 
-// GetCategoryByID retrieves a category by its ID.
-func (r *courseRepository) GetCategoryByID(ctx context.Context, categoryID string) (*domain.Category, error) {
+// GetCourseByID retrieves a single public course by its ID within a specific category.
+func (r *courseRepository) GetCourseByID(ctx context.Context, categoryID, courseID string) (domain.Course, error) {
 	tracer := otel.Tracer("repository")
-	ctx, span := tracer.Start(ctx, "courseRepository.GetCategoryByID")
+	ctx, span := tracer.Start(ctx, "courseRepository.GetCourseByID")
 	defer span.End()
 
-	span.SetAttributes(attribute.String("category_id", categoryID))
-
-	query := `
-		SELECT id, title, created_at, updated_at
-		FROM knowledge_base.category_d
-		WHERE id = $1
-	`
-
-	var category domain.Category
-	err := r.db.QueryRow(ctx, query, categoryID).Scan(
-		&category.ID,
-		&category.Title,
-		&category.CreatedAt,
-		&category.UpdatedAt,
+	span.SetAttributes(
+		attribute.String("category_id", categoryID),
+		attribute.String("course_id", courseID),
 	)
 
+	queryBuilder := r.psql.Select("id", "title", "description", "level", "category_id", "visibility", "created_at", "updated_at").
+		From(courseTable).
+		Where(squirrel.Eq{
+			"id":          courseID,
+			"category_id": categoryID,
+			"visibility":  "public",
+		})
+
+	query, args, err := queryBuilder.ToSql()
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			span.SetStatus(codes.Error, "Category not found")
-			return nil, apperrors.NewNotFoundError(fmt.Sprintf("Category with ID %s not found", categoryID))
-		}
 		span.RecordError(err)
-		span.SetStatus(codes.Error, "Failed to query category")
-		return nil, apperrors.NewDatabaseError("Failed to retrieve category", err)
+		span.SetStatus(codes.Error, "Failed to build query")
+		return domain.Course{}, fmt.Errorf("failed to build get course by id query: %w", err)
 	}
 
-	return &category, nil
+	row := r.db.QueryRow(ctx, query, args...)
+	course, err := r.scanCourse(row)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "Failed to scan course")
+		return domain.Course{}, fmt.Errorf("failed to get course by id: %w", err)
+	}
+
+	return course, nil
 }
