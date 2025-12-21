@@ -1,6 +1,8 @@
 package web
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"github.com/gofiber/fiber/v2"
+)
 
 type HomeHandler struct{}
 
@@ -14,5 +16,6 @@ func (h *HomeHandler) RenderHome(c *fiber.Ctx) error {
 	return c.Render("pages/home", fiber.Map{
 		"title":   "Home",
 		"courses": nil,
+		"user": c.Locals("user"),
 	}, "layouts/main")
 }

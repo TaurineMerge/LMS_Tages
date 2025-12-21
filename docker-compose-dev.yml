@@ -25,9 +25,9 @@ services:
     image: postgres:15
     container_name: keycloak-db
     environment:
-      POSTGRES_DB: keycloaks
-      POSTGRES_USER: keycloaks
-      POSTGRES_PASSWORD: keycloaks
+      POSTGRES_DB: ${KEYCLOAK_DB_NAME}
+      POSTGRES_USER: ${KEYCLOAK_DB_USER}
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
     volumes:
       - keycloak_data:/var/lib/postgresql/data
     networks:
@@ -44,28 +44,28 @@ services:
     container_name: keycloak
     environment:
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloaks
-      KC_DB_USERNAME: keycloaks
-      KC_DB_PASSWORD: keycloaks
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/${KEYCLOAK_DB_NAME}
+      KC_DB_USERNAME: ${KEYCLOAK_DB_USER}
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_USER}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_PASSWORD}
       KC_HEALTH_ENABLED: true
       KC_METRICS_ENABLED: true
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
-      KC_PROXY: "reencrypt"
+      KC_PROXY: "edge"
       KC_HOSTNAME: "localhost"
-      KC_HOSTNAME_PORT: "80"
+      KC_HOSTNAME_PORT: "8080"
       KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
       KC_HTTP_RELATIVE_PATH: "/auth"
-      KC_BASE_URL: "http://localhost/auth"
+      KC_BASE_URL: "http://keycloak:8080/auth"
     command:
       - start-dev
       - --http-port=8080
       - --import-realm
       - --hostname-strict-https=false
       - --http-relative-path=/auth
-      - --hostname-admin-url=http://localhost/auth
+      - --hostname-admin-url=http://localhost:8080/auth
     ports:
       - "8080:8080"
     volumes:
@@ -118,6 +118,11 @@ services:
       DB_HOST: ${APP_DB_HOST}
       DB_PORT: ${APP_DB_INTERNAL_PORT}
       OTEL_EXPORTER_OTLP_ENDPOINT: "otel-collector:4317"
+      # OIDC variables for container-to-container communication
+      OIDC_CLIENT_ID: "student-client"
+      OIDC_CLIENT_SECRET: "STUDENT_SECRET"
+      OIDC_ISSUER_URL: "http://keycloak:8080/auth/realms/student"
+      OIDC_REDIRECT_URL: "http://localhost/auth/callback"
     ports:
       - "3000:3000"
     networks:
@@ -126,7 +131,7 @@ services:
       app-db:
         condition: service_healthy
       keycloak:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
 
   admin-panel:

@@ -19,11 +19,13 @@ import (
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/database"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/template"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/tracing"
+	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/gofiber/contrib/otelfiber/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/swagger"
 	"github.com/joho/godotenv"
+	"golang.org/x/oauth2"
 )
 
 func main() {
@@ -40,6 +42,7 @@ func main() {
 		config.WithTracingFromEnv(),
 		config.WithLogLevelFromEnv(),
 		config.WithDevFromEnv(), // Add Dev mode configuration
+		config.WithOIDCFromEnv(), // Add OIDC configuration
 	)
 	if err != nil {
 		// Use a temporary logger for this initial error, as the main one is not yet set up
@@ -63,6 +66,25 @@ func main() {
 	slog.SetDefault(logger)
 
 	slog.Info("Application starting", "DEV_MODE", cfg.Dev)
+
+	// Initialize OIDC Provider
+	provider, err := oidc.NewProvider(context.Background(), cfg.OIDCIssuerURL)
+	if err != nil {
+		slog.Error("Failed to initialize OIDC provider", "error", err)
+		os.Exit(1)
+	}
+
+	// Configure OAuth2
+	oauth2Config := &oauth2.Config{
+		ClientID:     cfg.OIDCClientID,
+		ClientSecret: cfg.OIDCClientSecret,
+		RedirectURL:  cfg.OIDCRedirectURL,
+		Endpoint:     provider.Endpoint(),
+		Scopes:       []string{oidc.ScopeOpenID, "profile", "email"},
+	}
+
+	authHandler := web.NewAuthHandler(provider, oauth2Config)
+	authMiddleware := web.NewAuthMiddleware(provider, cfg.OIDCClientID)
 
 	// Initialize Tracer
 	tp, err := tracing.InitTracer(cfg)
@@ -145,10 +167,18 @@ func main() {
 	apiLessonHandler.RegisterRoutes(courseIdRouter)
 
 	// Web
-	app.Get("/", homeHandler.RenderHome)
-	app.Get("/categories", categoryPageHandler.RenderCategories)
+	webRouter := app.Group("/")
+	webRouter.Use(authMiddleware.WithUser)
 
-	webCategoriesRouter := app.Group("/categories")
+	webRouter.Get("/", homeHandler.RenderHome)
+
+	// Auth
+	webRouter.Get("/login", authHandler.Login)
+	webRouter.Get("/logout", authHandler.Logout)
+	webRouter.Get("/auth/callback", authHandler.Callback)
+
+	webCategoriesRouter := webRouter.Group("/categories")
+	webRouter.Get("/categories", categoryPageHandler.RenderCategories)
 
 	webCoursesRouter := webCategoriesRouter.Group("/:" + apiconst.PathVariableCategoryID + "/courses")
 	webCoursesRouter.Get("/", coursesHandler.RenderCourses)
