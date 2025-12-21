@@ -1,68 +1,83 @@
 <!-- templates/pages/category-form.hbs -->
-<div class="form-container">
-    <div class="form-header">
-        <h1 class="form-header__title">
-            {{#if category}}
-                Редактировать категорию
-            {{else}}
-                Новая категория
-            {{/if}}
-        </h1>
-        <a href="/admin/categories" class="form-header__back">← Назад к списку</a>
-    </div>
-
-    {{#if error}}
-        <div class="alert alert--error">
-            {{error}}
-        </div>
-    {{/if}}
-
-    <form method="POST" 
-          action="{{#if category}}/admin/categories/{{category.ID}}/update{{else}}/admin/categories/create{{/if}}" 
-          class="form">
-        
-        <div class="form__group">
-            <label for="title" class="form__label">
-                Название категории <span class="form__required">*</span>
-            </label>
-            <input 
-                type="text" 
-                id="title" 
-                name="title" 
-                class="form__input" 
-                value="{{#if category}}{{category.Title}}{{/if}}"
-                placeholder="Введите название категории"
-                required
-                autofocus
-            />
-            <p class="form__hint">Краткое и понятное название категории</p>
-        </div>
-
-        {{#if category}}
-            <div class="form__info">
-                <p class="form__info-item">
-                    <strong>ID:</strong> {{category.ID}}
-                </p>
-                <p class="form__info-item">
-                    <strong>Создано:</strong> {{category.CreatedAt}}
-                </p>
-                <p class="form__info-item">
-                    <strong>Обновлено:</strong> {{category.UpdatedAt}}
-                </p>
+<div class="admin-page admin-page--full">
+    <!-- Основной контент -->
+    <main class="admin-content admin-content--full admin-content--centered">
+        {{#if error}}
+            <div class="notification notification--error">
+                <span class="notification__icon">⚠️</span>
+                <span class="notification__text">{{error}}</span>
             </div>
         {{/if}}
 
-        <div class="form__actions">
-            <button type="submit" class="button button--primary">
-                {{#if category}}
-                    Сохранить изменения
-                {{else}}
-                    Создать категорию
-                {{/if}}
-            </button>
-            <a href="/admin/categories" class="button button--secondary">
-                Отмена
-            </a>
+        <div class="form-card">
+            <div class="form-card__header">
+                <nav class="form-breadcrumb">
+                    <a href="/admin/categories" class="form-breadcrumb__link">← Категории</a>
+                </nav>
+                <h1 class="form-card__title">
+                    {{#if category}}✏️ Редактировать категорию{{else}}📁 Новая категория{{/if}}
+                </h1>
+                <p class="form-card__subtitle">
+                    {{#if category}}Измените данные категории{{else}}Создайте новый раздел для курсов{{/if}}
+                </p>
+            </div>
+
+            {{#if category}}
+            <div class="form-info-bar">
+                <div class="form-info-bar__item">
+                    <span class="form-info-bar__label">ID:</span>
+                    <span class="form-info-bar__value">{{category.ID}}</span>
+                </div>
+                <div class="form-info-bar__item">
+                    <span class="form-info-bar__label">Создано:</span>
+                    <span class="form-info-bar__value">{{category.CreatedAt}}</span>
+                </div>
+                <div class="form-info-bar__item">
+                    <span class="form-info-bar__label">Обновлено:</span>
+                    <span class="form-info-bar__value">{{category.UpdatedAt}}</span>
+                </div>
+            </div>
+            {{/if}}
+
+            <form method="POST" 
+                  action="{{#if category}}/admin/categories/{{category.ID}}/update{{else}}/admin/categories/create{{/if}}" 
+                  class="modern-form">
+                
+                <div class="form-section">
+                    <div class="form-field">
+                        <label for="title" class="form-field__label">
+                            <span class="form-field__label-icon">📝</span>
+                            Название категории
+                            <span class="form-field__required">*</span>
+                        </label>
+                        <div class="form-field__input-wrapper">
+                            <input 
+                                type="text" 
+                                id="title" 
+                                name="title" 
+                                class="form-field__input" 
+                                value="{{#if category}}{{category.Title}}{{/if}}"
+                                placeholder="Например: Программирование"
+                                required
+                                autofocus
+                            />
+                            <span class="form-field__input-icon">✓</span>
+                        </div>
+                        <p class="form-field__hint">Краткое и понятное название для группировки курсов</p>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <a href="/admin/categories" class="btn btn--secondary">
+                        <span class="btn__icon">✕</span>
+                        Отмена
+                    </a>
+                    <button type="submit" class="btn btn--primary">
+                        <span class="btn__icon">{{#if category}}💾{{else}}＋{{/if}}</span>
+                        {{#if category}}Сохранить изменения{{else}}Создать категорию{{/if}}
+                    </button>
+                </div>
+            </form>
         </div>
-    </form>
+    </main>
 </div>

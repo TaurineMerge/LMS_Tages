@@ -53,8 +53,9 @@ func (h *CategoryWebHandler) RenderCategoriesEditor(c *fiber.Ctx) error {
 	}
 
 	return c.Render("pages/categories-editor", fiber.Map{
-		"title":      "Редактор категорий",
-		"categories": categoryViews,
+		"title":           "Редактор категорий",
+		"categories":      categoryViews,
+		"categoriesCount": len(categoryViews),
 	}, "layouts/main")
 }
 

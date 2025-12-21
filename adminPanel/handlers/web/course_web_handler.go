@@ -14,9 +14,24 @@ type CourseView struct {
 	Title       string
 	Description string
 	Level       string
+	LevelRu     string
 	Visible     bool
 	CreatedAt   string
 	UpdatedAt   string
+}
+
+// levelToRussian преобразует уровень сложности в русский текст
+func levelToRussian(level string) string {
+	switch level {
+	case "easy":
+		return "Лёгкий"
+	case "medium":
+		return "Средний"
+	case "hard":
+		return "Сложный"
+	default:
+		return level
+	}
 }
 
 // CourseWebHandler обрабатывает веб-страницы для управления курсами
@@ -38,6 +53,10 @@ func (h *CourseWebHandler) RenderCoursesEditor(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	categoryID := c.Params("category_id")
 
+	// Получаем параметры фильтрации
+	levelFilter := c.Query("level", "all")
+	visibilityFilter := c.Query("visibility", "all")
+
 	// Получаем категорию
 	category, err := h.categoryService.GetCategory(ctx, categoryID)
 	if err != nil {
@@ -51,6 +70,14 @@ func (h *CourseWebHandler) RenderCoursesEditor(c *fiber.Ctx) error {
 	filter := request.CourseFilter{
 		CategoryID: categoryID,
 	}
+	// Применяем фильтр по уровню
+	if levelFilter != "all" {
+		filter.Level = levelFilter
+	}
+	// Применяем фильтр по видимости
+	if visibilityFilter != "all" {
+		filter.Visibility = visibilityFilter
+	}
 
 	coursesResp, err := h.courseService.GetCourses(ctx, filter)
 	if err != nil {
@@ -62,6 +89,14 @@ func (h *CourseWebHandler) RenderCoursesEditor(c *fiber.Ctx) error {
 		}, "layouts/main")
 	}
 
+	// Получаем общее количество курсов без фильтров для отображения total
+	totalFilter := request.CourseFilter{CategoryID: categoryID}
+	totalResp, _ := h.courseService.GetCourses(ctx, totalFilter)
+	totalCount := 0
+	if totalResp != nil {
+		totalCount = len(totalResp.Data.Items)
+	}
+
 	// Преобразуем в CourseView
 	courseViews := make([]CourseView, 0, len(coursesResp.Data.Items))
 	for _, course := range coursesResp.Data.Items {
@@ -71,6 +106,7 @@ func (h *CourseWebHandler) RenderCoursesEditor(c *fiber.Ctx) error {
 			Title:       course.Title,
 			Description: course.Description,
 			Level:       course.Level,
+			LevelRu:     levelToRussian(course.Level),
 			Visible:     course.Visibility == "public",
 			CreatedAt:   formatDateTime(course.CreatedAt),
 			UpdatedAt:   formatDateTime(course.UpdatedAt),
@@ -78,10 +114,13 @@ func (h *CourseWebHandler) RenderCoursesEditor(c *fiber.Ctx) error {
 	}
 
 	return c.Render("pages/courses-editor", fiber.Map{
-		"title":        "Курсы категории: " + category.Title,
-		"categoryID":   categoryID,
-		"categoryName": category.Title,
-		"courses":      courseViews,
+		"title":            "Курсы категории: " + category.Title,
+		"categoryID":       categoryID,
+		"categoryName":     category.Title,
+		"courses":          courseViews,
+		"coursesCount":     totalCount,
+		"levelFilter":      levelFilter,
+		"visibilityFilter": visibilityFilter,
 	}, "layouts/main")
 }
 

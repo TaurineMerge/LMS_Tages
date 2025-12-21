@@ -13,6 +13,7 @@ type LessonView struct {
 	ID        string
 	CourseID  string
 	Title     string
+	Number    int
 	CreatedAt string
 	UpdatedAt string
 }
@@ -83,11 +84,12 @@ func (h *LessonWebHandler) RenderLessonsEditor(c *fiber.Ctx) error {
 
 	// Преобразуем в LessonView
 	lessonViews := make([]LessonView, 0, len(lessonsResp.Data.Items))
-	for _, lesson := range lessonsResp.Data.Items {
+	for i, lesson := range lessonsResp.Data.Items {
 		lessonViews = append(lessonViews, LessonView{
 			ID:        lesson.ID,
 			CourseID:  lesson.CourseID,
 			Title:     lesson.Title,
+			Number:    i + 1,
 			CreatedAt: formatDateTime(lesson.CreatedAt),
 			UpdatedAt: formatDateTime(lesson.UpdatedAt),
 		})
@@ -100,6 +102,7 @@ func (h *LessonWebHandler) RenderLessonsEditor(c *fiber.Ctx) error {
 		"courseID":     courseID,
 		"courseName":   course.Data.Title,
 		"lessons":      lessonViews,
+		"lessonsCount": len(lessonViews),
 	}, "layouts/main")
 }
 
@@ -289,11 +292,11 @@ func (h *LessonWebHandler) UpdateLesson(c *fiber.Ctx) error {
 		Content: nil,
 	}
 
-	_, err := h.lessonService.UpdateLesson(ctx, courseID, lessonID, input)
+	_, err := h.lessonService.UpdateLesson(ctx, lessonID, courseID, input)
 	if err != nil {
 		category, _ := h.categoryService.GetCategory(ctx, categoryID)
 		course, _ := h.courseService.GetCourse(ctx, categoryID, courseID)
-		lesson, _ := h.lessonService.GetLesson(ctx, courseID, lessonID)
+		lesson, _ := h.lessonService.GetLesson(ctx, lessonID, courseID)
 
 		var lessonView *LessonView
 		if lesson != nil {
@@ -328,7 +331,7 @@ func (h *LessonWebHandler) DeleteLesson(c *fiber.Ctx) error {
 	courseID := c.Params("course_id")
 	lessonID := c.Params("lesson_id")
 
-	err := h.lessonService.DeleteLesson(ctx, courseID, lessonID)
+	err := h.lessonService.DeleteLesson(ctx, lessonID, courseID)
 	if err != nil {
 		// Можно добавить flash-сообщение об ошибке
 		return c.Redirect("/admin/categories/" + categoryID + "/courses/" + courseID + "/lessons")

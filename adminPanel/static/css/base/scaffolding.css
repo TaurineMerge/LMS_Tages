@@ -10,6 +10,8 @@ body {
 .wrapper {
     width: 100%;
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Main Content */
@@ -17,6 +19,14 @@ body {
     max-width: 1800px;
     margin: 0 auto;
     padding: 2.5rem 2rem;
+    flex: 1;
+}
+
+/* Admin-specific main (full width, no padding for grid layout) */
+.main--admin {
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
 }
 
 /* Responsive */
