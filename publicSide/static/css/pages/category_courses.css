@@ -23,6 +23,15 @@
     font-weight: 600;
     color: var(--gray-900);
     margin: 0 0 0.25rem;
+    transition: color 0.2s ease;
+}
+
+.categories-grid__title-link {
+    text-decoration: none;
+}
+
+.categories-grid__title-link:hover .categories-grid__title {
+    color: var(--orange-500);
 }
 
 .categories-grid__count {
@@ -111,5 +120,3 @@
         padding: 1.5rem;
     }
 }
-
-

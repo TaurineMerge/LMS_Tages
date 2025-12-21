@@ -1,13 +1,4 @@
-<div class="page-header">
-    <div class="page-header__breadcrumbs">
-        <a href="/">Главная</a>
-        <span class="page-header__separator">/</span>
-        <a href="/categories">Категории</a>
-        <span class="page-header__separator">/</span>
-        <span>{{CategoryTitle}}</span>
-    </div>
-    <h1 class="page-header__title">{{CategoryTitle}}</h1>
-</div>
+{{> partials/page_header PageHeader}}
 
 <div class="courses">
     <div class="courses__header">
@@ -44,7 +35,7 @@
     {{#if Courses}}
         <div class="courses__grid">
             {{#each Courses}}
-                {{> partials/course-card}}
+                {{> partials/course-card CategoryID=../CategoryID}}
             {{/each}}
         </div>
 
@@ -52,21 +43,21 @@
         {{#if (gt Pagination.Pages 1)}}
         <div class="pagination">
             {{#if (gt CurrentPage 1)}}
-                <a href="/categories/{{CategoryID}}/courses?page={{subtract CurrentPage 1}}&level={{Level}}&sort_by={{SortBy}}" class="pagination__btn">← Назад</a>
+                <a href="/categories/{{../CategoryID}}/courses?page={{subtract CurrentPage 1}}&level={{../Level}}&sort_by={{../SortBy}}" class="pagination__btn">← Назад</a>
             {{/if}}
 
             <div class="pagination__pages">
                 {{#each (range 1 Pagination.Pages)}}
                     {{#if (eq this ../CurrentPage)}}
-                        <a href="/categories/{{../CategoryID}}/courses?page={{this}}&level={{../Level}}&sort_by={{../SortBy}}" class="pagination__page pagination__page--active">{{this}}</a>
+                        <a href="/categories/{{../../CategoryID}}/courses?page={{this}}&level={{../../Level}}&sort_by={{../../SortBy}}" class="pagination__page pagination__page--active">{{this}}</a>
                     {{else}}
-                        <a href="/categories/{{../CategoryID}}/courses?page={{this}}&level={{../Level}}&sort_by={{../SortBy}}" class="pagination__page">{{this}}</a>
+                        <a href="/categories/{{../../CategoryID}}/courses?page={{this}}&level={{../../Level}}&sort_by={{../../SortBy}}" class="pagination__page">{{this}}</a>
                     {{/if}}
                 {{/each}}
             </div>
 
             {{#if (lt CurrentPage Pagination.Pages)}}
-                <a href="/categories/{{CategoryID}}/courses?page={{add CurrentPage 1}}&level={{Level}}&sort_by={{SortBy}}" class="pagination__btn">Вперёд →</a>
+                <a href="/categories/{{../CategoryID}}/courses?page={{add CurrentPage 1}}&level={{../Level}}&sort_by={{../SortBy}}" class="pagination__btn">Вперёд →</a>
             {{/if}}
         </div>
         {{/if}}

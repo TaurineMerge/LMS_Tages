@@ -1,30 +1,25 @@
 <!-- templates/pages/categories.hbs -->
 
+{{> partials/page_header PageHeader}}
 <section class="category-courses">
-    <header class="page-header">
-        <div class="page-header__breadcrumbs">
-            <a href="/">Главная</a>
-            <span class="page-header__separator">/</span>
-            <span>Категории</span>
-        </div>
-        <h1 class="page-header__title">Категории курсов</h1>
-    </header>
 
-    {{#if categories}}
+    {{#if Categories}}
         <div class="categories-grid">
-            {{#each categories}}
+            {{#each Categories}}
                 <section class="categories-grid__column">
-                    <h2 class="categories-grid__title">{{Title}}</h2>
+                    <a href="/categories/{{this.ID}}/courses" class="categories-grid__title-link">
+                        <h2 class="categories-grid__title">{{this.Title}}</h2>
+                    </a>
 
-                    {{#if TotalCourses}}
-                        <div class="categories-grid__count">{{TotalCourses}} курсов</div>
+                    {{#if this.TotalCourses}}
+                        <div class="categories-grid__count">{{this.TotalCourses}} курсов</div>
                     {{/if}}
 
-                    {{#if Courses}}
+                    {{#if this.Courses}}
                         <ul class="categories-grid__courses">
-                            {{#each Courses}}
+                            {{#each this.Courses}}
                                 <li class="categories-grid__course-item">
-                                    <a href="/categories/{{../ID}}/courses/{{ID}}" class="categories-grid__course-link">{{Title}}</a>
+                                    <a href="/categories/{{../this.ID}}/courses/{{this.ID}}" class="categories-grid__course-link">{{this.Title}}</a>
                                 </li>
                             {{/each}}
                         </ul>
@@ -34,8 +29,8 @@
                         </div>
                     {{/if}}
 
-                    {{#if HasMoreCourses}}
-                        <a href="/categories/{{ID}}/courses" class="categories-grid__more-link">
+                    {{#if this.HasMoreCourses}}
+                        <a href="/categories/{{this.ID}}/courses" class="categories-grid__more-link">
                             Показать ещё
                         </a>
                     {{/if}}
@@ -50,4 +45,3 @@
         </div>
     {{/if}}
 </section>
-

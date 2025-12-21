@@ -1,15 +1,4 @@
-<div class="page-header">
-    <div class="page-header__breadcrumbs">
-        <a href="/">Главная</a>
-        <span class="page-header__separator">/</span>
-        <a href="/categories">Категории</a>
-        <span class="page-header__separator">/</span>
-        <a href="/categories/{{CategoryID}}/courses">{{CategoryTitle}}</a>
-        <span class="page-header__separator">/</span>
-        <span>{{Course.Title}}</span>
-    </div>
-    <h1 class="page-header__title">{{Course.Title}}</h1>
-</div>
+{{> partials/page_header PageHeader}}
 
 <div class="course-page">
     <div class="course-page__main">

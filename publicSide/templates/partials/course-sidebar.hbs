@@ -2,10 +2,10 @@
     <nav>
         <h3 class="course-sidebar__title">Course Content</h3>
         <ul class="course-sidebar__list">
-            {{#each allLessons}}
+            {{#each AllLessons}}
                 <li>
-                    <a href="/categories/{{../categoryID}}/courses/{{this.CourseID}}/lessons/{{this.ID}}" 
-                       class="course-sidebar__link {{#if (eqs this.ID ../lesson.ID)}}course-sidebar__link--active{{/if}}">
+                    <a href="/categories/{{../Category.ID}}/courses/{{this.CourseID}}/lessons/{{this.ID}}" 
+                       class="course-sidebar__link {{#if (eqs this.ID ../Lesson.ID)}}course-sidebar__link--active{{/if}}">
                         {{this.Title}}
                     </a>
                 </li>
