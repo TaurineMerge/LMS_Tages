@@ -4,6 +4,43 @@
  */
 
 class WYSIWYGEditor {
+        wrapSelectionWithSpan(styleObj) {
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return;
+            const range = selection.getRangeAt(0);
+            // Собираем все текстовые узлы в выделении
+            const walker = document.createTreeWalker(
+                range.commonAncestorContainer,
+                NodeFilter.SHOW_TEXT,
+                {
+                    acceptNode: (node) => {
+                        if (!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+                        const nodeRange = document.createRange();
+                        nodeRange.selectNodeContents(node);
+                        return (range.compareBoundaryPoints(Range.END_TO_START, nodeRange) < 0 &&
+                                range.compareBoundaryPoints(Range.START_TO_END, nodeRange) > 0)
+                            ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+                    }
+                },
+                false
+            );
+            const textNodes = [];
+            let currentNode;
+            while ((currentNode = walker.nextNode())) {
+                textNodes.push(currentNode);
+            }
+            textNodes.forEach(node => {
+                // Если уже есть span с такими стилями — просто дополняем стиль
+                if (node.parentNode.nodeName === 'SPAN') {
+                    Object.assign(node.parentNode.style, styleObj);
+                } else {
+                    const span = document.createElement('span');
+                    Object.assign(span.style, styleObj);
+                    node.parentNode.replaceChild(span, node);
+                    span.appendChild(node);
+                }
+            });
+        }
     constructor(editorId, toolbarId) {
         this.editor = document.getElementById(editorId);
         this.toolbar = document.getElementById(toolbarId);
@@ -287,16 +324,9 @@ class WYSIWYGEditor {
                 if (item.action === 'formatBlock') {
                     document.execCommand('formatBlock', false, item.value);
                 } else if (item.action === 'fontName') {
-                    document.execCommand('fontName', false, item.value);
+                    this.wrapSelectionWithSpan({ fontFamily: item.value });
                 } else if (item.action === 'fontSize') {
-                    // Для размеров в px используем inline style
-                    const selection = window.getSelection();
-                    if (selection.rangeCount > 0) {
-                        const range = selection.getRangeAt(0);
-                        const span = document.createElement('span');
-                        span.style.fontSize = item.value;
-                        range.surroundContents(span);
-                    }
+                    this.wrapSelectionWithSpan({ fontSize: item.value });
                 }
                 this.updateHiddenInput();
                 dropdownList.classList.remove('show');
