@@ -181,9 +181,7 @@ class WYSIWYGEditor {
                     { label: '40px', value: '40px', action: 'fontSize' },
                 ]
             },
-            { type: 'separator' },
-            { type: 'button', id: 'textColor', icon: '🖍', title: 'Цвет текста', action: 'textColor', colorPicker: true },
-            { type: 'button', id: 'bgColor', icon: '🎨', title: 'Цвет фона', action: 'bgColor', colorPicker: true },
+            // ...existing code...
             { type: 'separator' },
             { type: 'button', id: 'ul', command: 'insertUnorderedList', icon: '•', title: 'Маркированный список' },
             { type: 'button', id: 'ol', command: 'insertOrderedList', icon: '1.', title: 'Нумерованный список' },
@@ -541,25 +539,14 @@ class WYSIWYGEditor {
     }
     
     toggleSourceCode() {
-        if (this.editor.contentEditable === 'true') {
-            // Сохраняем оригинальный HTML и показываем код
+        if (!this.editor.classList.contains('source-code-mode')) {
+            // Включаем режим исходного кода
             const html = this.editor.innerHTML;
-            this.originalHTML = html; // Сохраняем для восстановления
+            this.originalHTML = html;
             const formattedHtml = this.formatHTML(html);
-            
-            // Создаем элемент для отображения кода
             this.editor.textContent = formattedHtml;
             this.editor.contentEditable = 'false';
             this.editor.classList.add('source-code-mode');
-        } else {
-            // Возвращаемся к визуальному режиму
-            if (this.originalHTML) {
-                this.editor.innerHTML = this.originalHTML;
-                this.originalHTML = null;
-            }
-            this.editor.contentEditable = 'true';
-            this.editor.classList.remove('source-code-mode');
-            this.setupExistingImages();
         }
     }
     
@@ -612,15 +599,15 @@ class WYSIWYGEditor {
     }
     
     showPreview() {
-        // Переключаем режим предпросмотра прямо в редакторе
-        if (this.editor.classList.contains('preview-mode')) {
-            // Выходим из режима предпросмотра
-            this.editor.classList.remove('preview-mode');
-            this.editor.contentEditable = true;
-        } else {
-            // Входим в режим предпросмотра
-            this.editor.classList.add('preview-mode');
-            this.editor.contentEditable = false;
+        // Если сейчас исходный код — выходим из него и возвращаем визуальный режим
+        if (this.editor.classList.contains('source-code-mode')) {
+            if (this.originalHTML) {
+                this.editor.innerHTML = this.originalHTML;
+                this.originalHTML = null;
+            }
+            this.editor.contentEditable = 'true';
+            this.editor.classList.remove('source-code-mode');
+            this.setupExistingImages();
         }
     }
     
@@ -717,22 +704,6 @@ class WYSIWYGEditor {
         }
         
         this.updateHiddenInput();
-    }
-    
-    changeTextColor() {
-        const color = prompt('Введите цвет (название или #hex):', '#000000');
-        if (color) {
-            document.execCommand('foreColor', false, color);
-            this.updateHiddenInput();
-        }
-    }
-    
-    changeBackgroundColor() {
-        const color = prompt('Введите цвет фона (название или #hex):', '#ffff00');
-        if (color) {
-            document.execCommand('hiliteColor', false, color);
-            this.updateHiddenInput();
-        }
     }
 }
 
