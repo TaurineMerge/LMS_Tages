@@ -15,23 +15,30 @@ type WebRouter struct {
 	CategoryPageHandler *web.CategoryHandler
 	CoursesHandler      *web.CoursesHandler
 	WebLessonHandler    *web.LessonHandler
+	AuthHandler         *web.AuthHandler
+	AuthMiddleware      *web.AuthMiddleware
 }
 
 // Setup регистрирует все маршруты для веб-интерфейса.
-func (r *WebRouter) Setup(app *fiber.App) {
+func (r *WebRouter) Setup(webRouter *fiber.App) {
 	// Middleware для no-cache в режиме разработки.
 	if r.Config.Dev {
-		app.Use(middleware.NoCache())
+		webRouter.Use(middleware.NoCache())
 	}
 
-	// Статические файлы
-	app.Static("/doc", "./doc/swagger")
-	app.Static("/static", "./static")
+	webRouter.Static("/static", "./static")
+
+	webRouter.Use(r.AuthMiddleware.WithUser)
+
+	// Auth
+	webRouter.Get("/login", r.AuthHandler.Login)
+	webRouter.Get("/logout", r.AuthHandler.Logout)
+	webRouter.Get("/auth/callback", r.AuthHandler.Callback)
 
 	// Регистрация маршрутов с использованием полных путей из пакета routing
-	app.Get(routing.RouteHome, r.HomeHandler.RenderHome)
-	app.Get(routing.RouteCategories, r.CategoryPageHandler.RenderCategories)
-	app.Get(routing.RouteCourses, r.CoursesHandler.RenderCourses)
-	app.Get(routing.RouteCourse, r.CoursesHandler.RenderCoursePage)
-	app.Get(routing.RouteLesson, r.WebLessonHandler.RenderLesson)
+	webRouter.Get(routing.RouteHome, r.HomeHandler.RenderHome)
+	webRouter.Get(routing.RouteCategories, r.CategoryPageHandler.RenderCategories)
+	webRouter.Get(routing.RouteCourses, r.CoursesHandler.RenderCourses)
+	webRouter.Get(routing.RouteCourse, r.CoursesHandler.RenderCoursePage)
+	webRouter.Get(routing.RouteLesson, r.WebLessonHandler.RenderLesson)
 }

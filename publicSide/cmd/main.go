@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -18,11 +19,13 @@ import (
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/logger"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/template"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/tracing"
+	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/gofiber/contrib/otelfiber/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/joho/godotenv"
+	"golang.org/x/oauth2"
 )
 
 func main() {
@@ -38,7 +41,8 @@ func main() {
 		config.WithPortFromEnv(),
 		config.WithTracingFromEnv(),
 		config.WithLogLevelFromEnv(),
-		config.WithDevFromEnv(),
+		config.WithDevFromEnv(),  // Add Dev mode configuration
+		config.WithOIDCFromEnv(), // Add OIDC configuration
 	)
 	if err != nil {
 		slog.Error("Failed to initialize config", "error", err)
@@ -57,12 +61,32 @@ func main() {
 	}
 	defer tracer.Close()
 
+	// Initialize OIDC Provider
+	provider, err := oidc.NewProvider(context.Background(), cfg.OIDC.IssuerURL)
+	if err != nil {
+		slog.Error("Failed to initialize OIDC provider", "error", err)
+		os.Exit(1)
+	}
+
+	// Configure OAuth2
+	oauth2Config := &oauth2.Config{
+		ClientID:     cfg.OIDC.ClientID,
+		ClientSecret: cfg.OIDC.ClientSecret,
+		RedirectURL:  cfg.OIDC.RedirectURL,
+		Endpoint:     provider.Endpoint(),
+		Scopes:       []string{oidc.ScopeOpenID, "profile", "email"},
+	}
+
+	authHandler := web.NewAuthHandler(provider, oauth2Config)
+	authMiddleware := web.NewAuthMiddleware(provider, cfg.OIDC.ClientID)
+
 	// 5. Initialize Database
 	dbPool, err := database.NewConnection(&cfg.Database)
 	if err != nil {
 		slog.Error("Failed to connect to database", "error", err)
 		os.Exit(1)
 	}
+
 	defer dbPool.Close()
 	slog.Info("Database connection pool established")
 
@@ -78,7 +102,7 @@ func main() {
 	// 7. Initialize Fiber App and Global Middleware
 	engine := template.NewEngine(&cfg.App)
 	app := fiber.New(fiber.Config{
-		Views: engine,
+		Views:        engine,
 		ErrorHandler: middleware.CommonErrorHandler,
 	})
 
@@ -99,6 +123,8 @@ func main() {
 		CategoryPageHandler: web.NewCategoryHandler(categoryService, courseService),
 		CoursesHandler:      web.NewCoursesHandler(courseService, lessonService),
 		WebLessonHandler:    web.NewLessonHandler(lessonService, courseService),
+		AuthHandler:         authHandler,
+		AuthMiddleware:      authMiddleware,
 	}
 	webRouter.Setup(app)
 

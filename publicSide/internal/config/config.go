@@ -17,6 +17,7 @@ type (
 		CORS     CORSConfig
 		Otel     OtelConfig
 		Log      LogConfig
+		OIDC     OIDCConfig
 	}
 
 	// AppConfig holds general application settings.
@@ -52,8 +53,15 @@ type (
 	LogConfig struct {
 		Level string
 	}
-)
 
+	// OIDCConfig holds OIDC-specific settings for authentication.
+	OIDCConfig struct {
+		ClientID     string
+		ClientSecret string
+		IssuerURL    string
+		RedirectURL  string
+	}
+)
 
 // Option defines a function that configures a Config object.
 type Option func(*Config) error
@@ -70,6 +78,31 @@ func New(opts ...Option) (*Config, error) {
 
 	return cfg, nil
 }
+
+// WithOIDCFromEnv configures OIDC settings from environment variables.
+func WithOIDCFromEnv() Option {
+	return func(cfg *Config) error {
+		var err error
+		cfg.OIDC.ClientID, err = getRequiredEnv("OIDC_CLIENT_ID")
+		if err != nil {
+			return err
+		}
+		cfg.OIDC.ClientSecret, err = getRequiredEnv("OIDC_CLIENT_SECRET")
+		if err != nil {
+			return err
+		}
+		cfg.OIDC.IssuerURL, err = getRequiredEnv("OIDC_ISSUER_URL")
+		if err != nil {
+			return err
+		}
+		cfg.OIDC.RedirectURL, err = getRequiredEnv("OIDC_REDIRECT_URL")
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+}
+
 
 // WithDBFromEnv configures the database settings from environment variables.
 func WithDBFromEnv() Option {

@@ -13,8 +13,6 @@ services:
     depends_on:
       keycloak:
         condition: service_healthy
-      public-side:
-        condition: service_started
       admin-panel:
         condition: service_started
       personal-account:
@@ -22,6 +20,8 @@ services:
       testing:
         condition: service_started
       jaeger:
+        condition: service_started
+      public-side:
         condition: service_started
       otel-collector:
         condition: service_started
@@ -63,7 +63,6 @@ services:
       KC_HOSTNAME_STRICT_HTTPS: "false"
       KC_PROXY: "reencrypt"
       KC_HOSTNAME: "localhost"
-      KC_HOSTNAME_PORT: "80"
       KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
       KC_HTTP_RELATIVE_PATH: "/auth"
       KC_BASE_URL: "http://localhost/auth"
@@ -124,14 +123,20 @@ services:
       DB_HOST: ${APP_DB_HOST}
       DB_PORT: ${APP_DB_INTERNAL_PORT}
       OTEL_EXPORTER_OTLP_ENDPOINT: "otel-collector:4317"
+      OIDC_CLIENT_ID: "teacher-client"
+      OIDC_CLIENT_SECRET: "TEACHER_SECRET"
+      OIDC_ISSUER_URL: "http://localhost/auth/realms/teacher"
+      OIDC_REDIRECT_URL: "http://localhost/auth/callback"
     ports: []
+    extra_hosts:
+      - "localhost:host-gateway"
     networks:
       - app-network
     depends_on:
       app-db:
         condition: service_healthy
       keycloak:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
 
   admin-panel:
@@ -147,7 +152,7 @@ services:
       DB_PORT: ${APP_DB_INTERNAL_PORT}
       DATABASE_POOL_MIN_SIZE: "5"
       DATABASE_POOL_MAX_SIZE: "20"
-      KEYCLOAK_ISSUER_URL: "http://keycloak:8080/auth/realms/teacher"
+      KEYCLOAK_ISSUER_URL: "http://keycloak/auth/realms/teacher"
       KEYCLOAK_CLIENT_ID: "teacher-client"
       KEYCLOAK_CLIENT_SECRET: "TEACHER_SECRET"
       KEYCLOAK_APP_NAME: "LMS Admin Application"
