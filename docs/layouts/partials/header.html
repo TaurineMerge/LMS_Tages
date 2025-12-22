@@ -1,0 +1,28 @@
+<header class="site-header">
+    <div class="header-container">
+        <div class="logo">
+            <a href="/" class="logo-link">
+                <span class="logo-icon">📚</span>
+                <span class="logo-text">LMS Docs</span>
+            </a>
+        </div>
+        
+        <nav class="main-nav">
+            <ul class="nav-list">
+                {{ range .Site.Menus.main }}
+                <li class="nav-item {{ if eq $.RelPermalink .URL }}active{{ end }}">
+                    <a href="{{ .URL }}" class="nav-link">
+                        {{ .Name }}
+                    </a>
+                </li>
+                {{ end }}
+            </ul>
+        </nav>
+        
+        <button class="mobile-menu-toggle" aria-label="Открыть меню">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </div>
+</header>

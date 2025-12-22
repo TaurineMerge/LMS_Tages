@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Документация системы управления обучением (LMS)">
+    
+    <title>
+        
+            ER-диаграмма для схемы knowledge_base в knowledge_base_db | LMS Documentation
+        
+    </title>
+    
+    
+    
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose'
+        });
+    </script>
+    
+    
+    
+    <link rel="stylesheet" href="/css/custom.css">
+    
+    
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+    <div class="site-wrapper">
+        
+        <header class="site-header">
+    <div class="header-container">
+        <div class="logo">
+            <a href="/" class="logo-link">
+                <span class="logo-icon">📚</span>
+                <span class="logo-text">LMS Docs</span>
+            </a>
+        </div>
+        
+        <nav class="main-nav">
+            <ul class="nav-list">
+                
+                <li class="nav-item ">
+                    <a href="/" class="nav-link">
+                        Главная
+                    </a>
+                </li>
+                
+                <li class="nav-item ">
+                    <a href="/public/" class="nav-link">
+                        Public
+                    </a>
+                </li>
+                
+                <li class="nav-item ">
+                    <a href="/admin/" class="nav-link">
+                        Admin
+                    </a>
+                </li>
+                
+                <li class="nav-item ">
+                    <a href="/test/" class="nav-link">
+                        Test
+                    </a>
+                </li>
+                
+                <li class="nav-item ">
+                    <a href="/account/" class="nav-link">
+                        ЛК
+                    </a>
+                </li>
+                
+            </ul>
+        </nav>
+        
+        <button class="mobile-menu-toggle" aria-label="Открыть меню">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </div>
+</header>
+        
+        
+        <main class="main-content">
+            
+<div class="page-content">
+    <div class="breadcrumbs">
+        <a href="/">Главная</a> 
+        
+            
+                → <a href="/public/">Public</a>
+            
+            
+            → ER-диаграмма для схемы knowledge_base в knowledge_base_db
+        
+    </div>
+    
+    <h1>ER-диаграмма для схемы knowledge_base в knowledge_base_db</h1>
+    
+    <div class="content">
+        <div class="mermaid">
+    
+
+erDiagram
+    category_d {
+        UUID id PK "not null, default gen_random_uuid()"
+        VARCHAR(255) title "not null"
+        TIMESTAMP created_at "not null, default NOW()"
+        TIMESTAMP updated_at "not null, default NOW()"
+    }
+    course_b {
+        UUID id PK "not null, default gen_random_uuid()"
+        VARCHAR(255) title "not null"
+        TEXT description
+        VARCHAR(20) level "not null, check: ['hard', 'medium', 'easy']"
+        UUID category_id FK "not null"
+        VARCHAR(20) visibility "not null, check: ['draft', 'public'], default 'draft'"
+        TIMESTAMP created_at "not null, default NOW()"
+        TIMESTAMP updated_at "not null, default NOW()"
+    }
+    lesson_d {
+        UUID id PK "not null, default gen_random_uuid()"
+        VARCHAR(255) title "not null"
+        UUID course_id FK "not null"
+        JSONB content "not null, default []"
+        TIMESTAMP created_at "not null, default NOW()"
+        TIMESTAMP updated_at "not null, default NOW()"
+    }
+    category_d ||--o{ course_b : "contains"
+    course_b   ||--o{ lesson_d : "contains"
+
+
+</div>
+
+    </div>
+    
+    
+    
+    <div class="section-links">
+        <h3>Разделы Public:</h3>
+        <div class="section-grid">
+            <a href="/public/documentation" class="section-card">
+                <span class="icon">📄</span>
+                <span class="title">Документация</span>
+                <span class="desc">Документация микросервиса</span>
+            </a>
+            
+            <a href="/public/diagrams/" class="section-card">
+                <span class="icon">📈</span>
+                <span class="title">Диаграммы процессов</span>
+                <span class="desc">Flowchart, Sequence, User Journey</span>
+            </a>
+        </div>
+    </div>
+    
+    
+    <div class="navigation">
+        
+        <a href="//localhost:1313/public/diagrams/flowchart/" class="nav-prev">← </a>
+        
+        
+        
+        <a href="/public/" class="nav-home">↑ К разделу Public</a>
+        
+        
+        
+    </div>
+</div>
+
+        </main>
+        
+        
+        <footer class="site-footer">
+    <div class="footer-container">
+        <div class="footer-content">
+            <p>LMS Documentation • Обновлено: <span id="update-date">19.1215.151511</span></p>
+            <p class="footer-copyright">© 151511 LMS Project. Все права защищены.</p>
+        </div>
+    </div>
+</footer>
+    </div>
+    
+    
+    <script>
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const updateDateElement = document.getElementById('update-date');
+            if (updateDateElement) {
+                const now = new Date();
+                const formattedDate = now.toLocaleDateString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+                updateDateElement.textContent = formattedDate;
+            }
+        });
+    </script>
+</body>
+</html>

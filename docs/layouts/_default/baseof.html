@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{{ .Site.Params.description }}">
+    
+    <title>
+        {{ if .IsHome }}
+            {{ .Site.Title }}
+        {{ else }}
+            {{ .Title }} | {{ .Site.Title }}
+        {{ end }}
+    </title>
+
+    
+    <!-- Подключение Mermaid.js для диаграмм -->
+    {{ if or (.HasShortcode "mermaid") (in .Content "class=\"mermaid\"") }}
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose'
+        });
+    </script>
+    {{ end }}
+    
+    <!-- Подключение CSS -->
+    <link rel="stylesheet" href="{{ "css/custom.css" | relURL }}">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ "favicon.ico" | relURL }}">
+</head>
+<body>
+    <div class="site-wrapper">
+        <!-- Хедер -->
+        {{ partial "header.html" . }}
+        
+        <!-- Основной контент -->
+        <main class="main-content">
+            {{ block "main" . }}{{ end }}
+        </main>
+        
+        <!-- Футер -->
+        {{ partial "footer.html" . }}
+    </div>
+    
+    <!-- Скрипты -->
+    <script>
+        // Обновление даты в футере
+        document.addEventListener('DOMContentLoaded', function() {
+            const updateDateElement = document.getElementById('update-date');
+            if (updateDateElement) {
+                const now = new Date();
+                const formattedDate = now.toLocaleDateString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+                updateDateElement.textContent = formattedDate;
+            }
+        });
+    </script>
+</body>
+</html>

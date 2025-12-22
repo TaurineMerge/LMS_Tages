@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Документация системы управления обучением (LMS)">
+    
+    <title>
+        
+            Sequence-диаграмма архитектуры LMS | LMS Documentation
+        
+    </title>
+    
+    
+    
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose'
+        });
+    </script>
+    
+    
+    
+    <link rel="stylesheet" href="/css/custom.css">
+    
+    
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+    <div class="site-wrapper">
+        
+        <header class="site-header">
+    <div class="header-container">
+        <div class="logo">
+            <a href="/" class="logo-link">
+                <span class="logo-icon">📚</span>
+                <span class="logo-text">LMS Docs</span>
+            </a>
+        </div>
+        
+        <nav class="main-nav">
+            <ul class="nav-list">
+                
+                <li class="nav-item ">
+                    <a href="/" class="nav-link">
+                        Главная
+                    </a>
+                </li>
+                
+                <li class="nav-item ">
+                    <a href="/public/" class="nav-link">
+                        Public
+                    </a>
+                </li>
+                
+                <li class="nav-item ">
+                    <a href="/admin/" class="nav-link">
+                        Admin
+                    </a>
+                </li>
+                
+                <li class="nav-item ">
+                    <a href="/test/" class="nav-link">
+                        Test
+                    </a>
+                </li>
+                
+                <li class="nav-item ">
+                    <a href="/account/" class="nav-link">
+                        ЛК
+                    </a>
+                </li>
+                
+            </ul>
+        </nav>
+        
+        <button class="mobile-menu-toggle" aria-label="Открыть меню">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </div>
+</header>
+        
+        
+        <main class="main-content">
+            
+<div class="page-content">
+    <div class="breadcrumbs">
+        <a href="/">Главная</a> 
+        
+            
+                → <a href="/account/">Account</a>
+            
+            
+            → Sequence-диаграмма архитектуры LMS
+        
+    </div>
+    
+    <h1>Sequence-диаграмма архитектуры LMS</h1>
+    
+    <div class="content">
+        <h2 id="диаграмма-прохождения-теста-и-получения-сертификата">Диаграмма прохождения теста и получения сертификата</h2>
+<div class="mermaid">
+    
+
+sequenceDiagram
+    participant Student as Студент
+    participant PA as Personal Account
+    participant TS as Testing System
+    participant DB as DB (testing_schema)
+
+    Note over Student, DB: Предварительно: Студент аутентифицирован через Keycloak, имеет валидный JWT токен
+    
+    Student->>PA: POST /api/personal/tests/{id}/start (с JWT в заголовке)
+    Note right of PA: PA уже имеет user_id из JWT<br/>или проверяет через Keycloak
+    
+    PA->>TS: Перенаправление запроса с user_id и test_id
+    TS->>DB: Создание test_attempt_b (student_id, test_id, status='in_progress')
+    DB-->>TS: attempt_id
+    TS-->>Student: Тест начат, вопросы
+    
+    loop Ответы на вопросы
+        Student->>TS: POST /api/tests/attempt/{id}/answer (с JWT)
+        TS->>DB: Сохранение ответа в attempt_version (JSON)
+    end
+
+    Student->>TS: POST /api/tests/attempt/{id}/finish
+    TS->>DB: Расчет балла, проверка min_point
+    DB-->>TS: Результат проверки (points, min_point)
+    
+    alt Балл >= min_point
+        TS->>DB: Создание certificate_b
+        DB-->>TS: certificate_id
+        TS->>DB: Обновление test_attempt_b (status='passed', point, certificate_id)
+        TS-->>Student: Успех + данные сертификата
+    else Балл < min_point
+        TS->>DB: Обновление test_attempt_b (status='failed', point)
+        TS-->>Student: Тест не пройден + рекомендации для повторения
+    end
+
+
+</div>
+
+    </div>
+    
+    
+    
+    <div class="section-links">
+        <h3>Разделы Account:</h3>
+        <div class="section-grid">
+            <a href="/account/documentation" class="section-card">
+                <span class="icon">📄</span>
+                <span class="title">Документация</span>
+                <span class="desc">Документация микросервиса</span>
+            </a>
+            
+            <a href="/account/diagrams/" class="section-card">
+                <span class="icon">📈</span>
+                <span class="title">Диаграммы процессов</span>
+                <span class="desc">Flowchart, Sequence, User Journey</span>
+            </a>
+        </div>
+    </div>
+    
+    
+    <div class="navigation">
+        
+        <a href="//localhost:1313/account/diagrams/user-journey/" class="nav-prev">← </a>
+        
+        
+        
+        <a href="/account/" class="nav-home">↑ К разделу Account</a>
+        
+        
+        
+        <a href="//localhost:1313/account/diagrams/flowchart/" class="nav-next">Flowchart-диаграмма архитектуры LMS →</a>
+        
+    </div>
+</div>
+
+        </main>
+        
+        
+        <footer class="site-footer">
+    <div class="footer-container">
+        <div class="footer-content">
+            <p>LMS Documentation • Обновлено: <span id="update-date">18.1215.15151</span></p>
+            <p class="footer-copyright">© 15151 LMS Project. Все права защищены.</p>
+        </div>
+    </div>
+</footer>
+    </div>
+    
+    
+    <script>
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const updateDateElement = document.getElementById('update-date');
+            if (updateDateElement) {
+                const now = new Date();
+                const formattedDate = now.toLocaleDateString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+                updateDateElement.textContent = formattedDate;
+            }
+        });
+    </script>
+</body>
+</html>
