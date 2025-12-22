@@ -1,14 +1,21 @@
 /* Variables */
 :root {
-    --gray-25: #FAFBFC;
-    --gray-50: #F5F7FA;
-    --gray-100: #E5E7EB;
-    --gray-500: #8C94A3;
-    --gray-900: #1D2026;
-    --lavender-100: #EBEBFF;
-    --orange-100: #FFEEE8;
-    --orange-500: #FF6636;
-    
-    --font-family: 'Inter', sans-serif;
-    --border-radius: 0.5rem;
+    --main-text-color: #2d2d2d;
+    --main-background-color: #fff;
+    /* --main-background-blurred-color: hsla(0, 0%, 100%, 0.9098);
+    --main-background-color-secondary: #fff;
+    --main-background-blurred-color-secondary: hsla(0, 0%, 100%, 0.9098);
+    --select-background-color: #fafafa; */
+    --accent-color-hover: #fa7125;
+    --accent-color-active: #e76e2c;
+    --accent-color: #f65700;
+    --card-border-color: #bdbdbd;
+    --border-color: #989898;
+    --hover-shadow: 0 0 78px rgba(85, 85, 85, 0.05), 0 0 15px rgba(85, 85, 85, 0.06), 0 0 5px rgba(85, 85, 85, 0.02);
+    --button-text-color: #fff;
+    --error-color: #e6332a;
+    overflow-y: scroll;
+    font-family: "Gotham", system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;
+
+    --transition-duration: 0.2s;
 }
