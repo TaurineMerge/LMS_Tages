@@ -4,18 +4,20 @@ import (
 	"adminPanel/handlers/dto/request"
 	"adminPanel/models"
 	"adminPanel/services"
+	"log"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 // LessonView представляет урок для отображения
 type LessonView struct {
-	ID        string
-	CourseID  string
-	Title     string
-	Number    int
-	CreatedAt string
-	UpdatedAt string
+	ID          string
+	CourseID    string
+	Title       string
+	HTMLContent string
+	Number      int
+	CreatedAt   string
+	UpdatedAt   string
 }
 
 // LessonWebHandler обрабатывает веб-страницы для управления уроками
@@ -85,6 +87,7 @@ func (h *LessonWebHandler) RenderLessonsEditor(c *fiber.Ctx) error {
 	// Преобразуем в LessonView
 	lessonViews := make([]LessonView, 0, len(lessonsResp.Data.Items))
 	for i, lesson := range lessonsResp.Data.Items {
+		log.Printf("[DEBUG] Lesson #%d: ID=%s, Title=%s", i+1, lesson.ID, lesson.Title)
 		lessonViews = append(lessonViews, LessonView{
 			ID:        lesson.ID,
 			CourseID:  lesson.CourseID,
@@ -182,11 +185,12 @@ func (h *LessonWebHandler) RenderEditLessonForm(c *fiber.Ctx) error {
 	}
 
 	lessonView := LessonView{
-		ID:        lesson.Data.ID,
-		CourseID:  lesson.Data.CourseID,
-		Title:     lesson.Data.Title,
-		CreatedAt: formatDateTime(lesson.Data.CreatedAt),
-		UpdatedAt: formatDateTime(lesson.Data.UpdatedAt),
+		ID:          lesson.Data.ID,
+		CourseID:    lesson.Data.CourseID,
+		Title:       lesson.Data.Title,
+		HTMLContent: lesson.Data.HTMLContent,
+		CreatedAt:   formatDateTime(lesson.Data.CreatedAt),
+		UpdatedAt:   formatDateTime(lesson.Data.UpdatedAt),
 	}
 
 	return c.Render("pages/lesson-form", fiber.Map{
@@ -207,6 +211,10 @@ func (h *LessonWebHandler) CreateLesson(c *fiber.Ctx) error {
 
 	// Получаем данные из формы
 	title := c.FormValue("title")
+	htmlContent := c.FormValue("html_content")
+
+	// Логирование для отладки
+	log.Printf("[DEBUG] CreateLesson: title=%s, html_content length=%d", title, len(htmlContent))
 
 	// Валидация
 	if title == "" {
@@ -225,8 +233,9 @@ func (h *LessonWebHandler) CreateLesson(c *fiber.Ctx) error {
 
 	// Создаем урок
 	input := request.LessonCreate{
-		Title:   title,
-		Content: nil,
+		Title:       title,
+		HTMLContent: htmlContent,
+		Content:     nil,
 	}
 
 	_, err := h.lessonService.CreateLesson(ctx, courseID, input)
@@ -257,6 +266,11 @@ func (h *LessonWebHandler) UpdateLesson(c *fiber.Ctx) error {
 
 	// Получаем данные из формы
 	title := c.FormValue("title")
+	htmlContent := c.FormValue("html_content")
+
+	// Логирование для отладки
+	log.Printf("[DEBUG] UpdateLesson: lessonID=%s, title=%s, html_content length=%d", lessonID, title, len(htmlContent))
+	log.Printf("[DEBUG] HTML content first 100 chars: %s", htmlContent[:min(100, len(htmlContent))])
 
 	// Валидация
 	if title == "" {
@@ -267,11 +281,12 @@ func (h *LessonWebHandler) UpdateLesson(c *fiber.Ctx) error {
 		var lessonView *LessonView
 		if lesson != nil {
 			lessonView = &LessonView{
-				ID:        lesson.Data.ID,
-				CourseID:  lesson.Data.CourseID,
-				Title:     lesson.Data.Title,
-				CreatedAt: formatDateTime(lesson.Data.CreatedAt),
-				UpdatedAt: formatDateTime(lesson.Data.UpdatedAt),
+				ID:          lesson.Data.ID,
+				CourseID:    lesson.Data.CourseID,
+				Title:       lesson.Data.Title,
+				HTMLContent: lesson.Data.HTMLContent,
+				CreatedAt:   formatDateTime(lesson.Data.CreatedAt),
+				UpdatedAt:   formatDateTime(lesson.Data.UpdatedAt),
 			}
 		}
 
@@ -288,8 +303,9 @@ func (h *LessonWebHandler) UpdateLesson(c *fiber.Ctx) error {
 
 	// Обновляем урок
 	input := request.LessonUpdate{
-		Title:   title,
-		Content: nil,
+		Title:       title,
+		HTMLContent: htmlContent,
+		Content:     nil,
 	}
 
 	_, err := h.lessonService.UpdateLesson(ctx, lessonID, courseID, input)

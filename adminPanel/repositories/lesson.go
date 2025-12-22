@@ -37,7 +37,7 @@ func (r *LessonRepository) GetAllByCourseID(ctx context.Context, courseID string
 	}
 
 	query := fmt.Sprintf(`
-		SELECT id, title, course_id, created_at, updated_at
+		SELECT id, title, course_id, html_content, created_at, updated_at
 		FROM knowledge_base.lesson_d
 		WHERE course_id = $1
 		ORDER BY %s %s
@@ -53,8 +53,12 @@ func (r *LessonRepository) GetAllByCourseID(ctx context.Context, courseID string
 	var lessons []models.Lesson
 	for rows.Next() {
 		var lesson models.Lesson
-		if err := rows.Scan(&lesson.ID, &lesson.Title, &lesson.CourseID, &lesson.CreatedAt, &lesson.UpdatedAt); err != nil {
+		var htmlContent *string
+		if err := rows.Scan(&lesson.ID, &lesson.Title, &lesson.CourseID, &htmlContent, &lesson.CreatedAt, &lesson.UpdatedAt); err != nil {
 			return nil, err
+		}
+		if htmlContent != nil {
+			lesson.HTMLContent = *htmlContent
 		}
 		lessons = append(lessons, lesson)
 	}
@@ -75,19 +79,24 @@ func (r *LessonRepository) CountByCourseID(ctx context.Context, courseID string)
 
 // GetByID получает урок по его уникальному идентификатору
 func (r *LessonRepository) GetByID(ctx context.Context, lessonID string) (*models.LessonDetailed, error) {
-	query := `SELECT id, title, course_id, created_at, updated_at, content FROM knowledge_base.lesson_d WHERE id = $1`
+	query := `SELECT id, title, course_id, html_content, created_at, updated_at, content FROM knowledge_base.lesson_d WHERE id = $1`
 
 	row := r.db.Pool.QueryRow(ctx, query, lessonID)
 
 	var lesson models.LessonDetailed
 	var contentBytes []byte
+	var htmlContent *string
 
-	err := row.Scan(&lesson.ID, &lesson.Title, &lesson.CourseID, &lesson.CreatedAt, &lesson.UpdatedAt, &contentBytes)
+	err := row.Scan(&lesson.ID, &lesson.Title, &lesson.CourseID, &htmlContent, &lesson.CreatedAt, &lesson.UpdatedAt, &contentBytes)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 		return nil, err
+	}
+
+	if htmlContent != nil {
+		lesson.HTMLContent = *htmlContent
 	}
 
 	if contentBytes != nil {
@@ -107,19 +116,24 @@ func (r *LessonRepository) Create(ctx context.Context, courseID string, lesson r
 	}
 
 	query := `
-		INSERT INTO knowledge_base.lesson_d (title, course_id, content)
-		VALUES ($1, $2, $3)
-		RETURNING id, title, course_id, created_at, updated_at, content
+		INSERT INTO knowledge_base.lesson_d (title, course_id, html_content, content)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id, title, course_id, html_content, created_at, updated_at, content
 	`
 
-	row := r.db.Pool.QueryRow(ctx, query, lesson.Title, courseID, contentJSON)
+	row := r.db.Pool.QueryRow(ctx, query, lesson.Title, courseID, lesson.HTMLContent, contentJSON)
 
 	var newLesson models.LessonDetailed
 	var contentBytes []byte
+	var htmlContent *string
 
-	err = row.Scan(&newLesson.ID, &newLesson.Title, &newLesson.CourseID, &newLesson.CreatedAt, &newLesson.UpdatedAt, &contentBytes)
+	err = row.Scan(&newLesson.ID, &newLesson.Title, &newLesson.CourseID, &htmlContent, &newLesson.CreatedAt, &newLesson.UpdatedAt, &contentBytes)
 	if err != nil {
 		return nil, err
+	}
+
+	if htmlContent != nil {
+		newLesson.HTMLContent = *htmlContent
 	}
 
 	if contentBytes != nil {
@@ -146,19 +160,25 @@ func (r *LessonRepository) Update(ctx context.Context, lessonID string, lesson r
 		UPDATE knowledge_base.lesson_d 
 		SET 
 			title = COALESCE(NULLIF($1, ''), title),
-			content = COALESCE($2, content),
+			html_content = $2,
+			content = COALESCE($3, content),
 			updated_at = NOW()
-		WHERE id = $3
-		RETURNING id, title, course_id, created_at, updated_at, content
+		WHERE id = $4
+		RETURNING id, title, course_id, html_content, created_at, updated_at, content
 	`
-	row := r.db.Pool.QueryRow(ctx, query, lesson.Title, contentJSON, lessonID)
+	row := r.db.Pool.QueryRow(ctx, query, lesson.Title, lesson.HTMLContent, contentJSON, lessonID)
 
 	var updatedLesson models.LessonDetailed
 	var contentBytes []byte
+	var htmlContent *string
 
-	err := row.Scan(&updatedLesson.ID, &updatedLesson.Title, &updatedLesson.CourseID, &updatedLesson.CreatedAt, &updatedLesson.UpdatedAt, &contentBytes)
+	err := row.Scan(&updatedLesson.ID, &updatedLesson.Title, &updatedLesson.CourseID, &htmlContent, &updatedLesson.CreatedAt, &updatedLesson.UpdatedAt, &contentBytes)
 	if err != nil {
 		return nil, err
+	}
+
+	if htmlContent != nil {
+		updatedLesson.HTMLContent = *htmlContent
 	}
 
 	if contentBytes != nil {

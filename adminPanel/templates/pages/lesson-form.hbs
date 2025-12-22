@@ -1,7 +1,7 @@
 <!-- templates/pages/lesson-form.hbs -->
 <div class="admin-page admin-page--full">
     <!-- Основной контент -->
-    <main class="admin-content admin-content--full admin-content--centered">
+    <main class="admin-content admin-content--full">
         {{#if error}}
             <div class="notification notification--error">
                 <span class="notification__icon">⚠️</span>
@@ -68,6 +68,20 @@
                             <span class="form-field__input-icon">✓</span>
                         </div>
                         <p class="form-field__hint">Краткое и понятное название урока</p>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="lesson-content-editor" class="form-field__label">
+                            <span class="form-field__label-icon">📄</span>
+                            Содержание урока
+                        </label>
+                        <p class="form-field__hint" style="margin-bottom: 12px;">
+                            Используйте панель инструментов для форматирования текста, добавления изображений и списков
+                        </p>
+                        <div class="wysiwyg-editor">
+                            <div id="wysiwyg-toolbar" class="wysiwyg-toolbar"></div>
+                            <div id="lesson-content-editor" class="wysiwyg-editor__content">{{#if lesson}}{{{lesson.HTMLContent}}}{{/if}}</div>
+                        </div>
                     </div>
                 </div>
 

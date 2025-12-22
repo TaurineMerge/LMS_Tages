@@ -111,6 +111,10 @@ func (s *LessonService) GetLesson(ctx context.Context, lessonID, courseID string
 		return nil, exceptions.NotFoundError("Lesson", lessonID)
 	}
 
+	// DEBUG: Логируем загруженный урок
+	fmt.Printf("[DEBUG] GetLesson: lessonID=%s, courseID=%s, title=%s, html_content length=%d\n",
+		lessonID, courseID, lesson.Title, len(lesson.HTMLContent))
+
 	return &response.LessonResponse{
 		Status: "success",
 		Data:   *lesson,
