@@ -4,6 +4,7 @@ package tracing
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/config"
 	"go.opentelemetry.io/otel"
@@ -16,9 +17,11 @@ import (
 	"google.golang.org/grpc"
 )
 
-// InitTracer initializes and registers a new OpenTelemetry tracer provider.
-// It configures an OTLP exporter to send traces to a collector (e.g., Jaeger via OTel Collector).
-func InitTracer(cfg *config.OtelConfig) (*sdktrace.TracerProvider, error) {
+type Tracer struct {
+	traceProvider *sdktrace.TracerProvider
+}
+
+func New(cfg *config.OtelConfig) (*Tracer, error) {
 	ctx := context.Background()
 
 	// Create a new resource with service name and version attributes.
@@ -53,5 +56,13 @@ func InitTracer(cfg *config.OtelConfig) (*sdktrace.TracerProvider, error) {
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
-	return tp, nil
+	return &Tracer{
+		traceProvider: tp,
+	}, nil
+}
+
+func (t *Tracer) Close() {
+	if err := t.traceProvider.Shutdown(context.Background()); err != nil {
+		slog.Error("Error shutting down tracer provider", "error", err)
+	}
 }

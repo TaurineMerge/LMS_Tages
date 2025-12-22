@@ -3,7 +3,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -50,16 +49,12 @@ func main() {
 	slog.Info("Application starting", "DEV_MODE", cfg.App.Dev)
 
 	// 4. Initialize Tracer
-	tp, err := tracing.InitTracer(&cfg.Otel)
+	tracer, err := tracing.New(&cfg.Otel)
 	if err != nil {
 		slog.Error("Failed to initialize tracer", "error", err)
 		os.Exit(1)
 	}
-	defer func() {
-		if err := tp.Shutdown(context.Background()); err != nil {
-			slog.Error("Error shutting down tracer provider", "error", err)
-		}
-	}()
+	defer tracer.Close()
 
 	// 5. Initialize Database
 	dbPool, err := database.NewConnection(&cfg.Database)
