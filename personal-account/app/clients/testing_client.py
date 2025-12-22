@@ -73,7 +73,7 @@ class TestingClient:
         contract_manager: ContractManager | None = None,
         repo: Any | None = None,
     ) -> None:
-        self.base_url = settings.TESTING_BASE_URL
+        self.base_url = settings.testing_base_url
         self.timeout = timeout_seconds
         self.contract_manager = contract_manager or ContractManager()
         self.repo = repo or integration_repository

@@ -89,6 +89,13 @@ class Settings(BaseSettings):
     TESTING_BASE_URL: str = "http://testing:8085"
 
     @property
+    def testing_base_url(self) -> str:
+        """Get testing service URL based on environment."""
+        if self.ENVIRONMENT == "local":
+            return "http://localhost:8085"
+        return self.TESTING_BASE_URL
+
+    @property
     def database_url(self) -> str:
         """Construct database URL."""
         return (

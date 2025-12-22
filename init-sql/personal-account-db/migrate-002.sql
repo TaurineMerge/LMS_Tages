@@ -145,7 +145,10 @@ CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
+    RETURN NEW;…/Work/tages-practice ❯ pyenv shell 3.11.6
+
+…/Work/tages-practice ❯  /usr/bin/env /home/wildberries/.pyenv/versions/3.11.6/bin/python /home/wildberries/.vscode/extensions/ms-python.debugpy-2025.18.0-linux-x64/bundled/libs/debugpy/adapter/../../debugpy/launcher 43585 -- /home/wildberries/Work/tages-practice/LMS_Tages/personal-account/main.py 
+
 END;
 $$ LANGUAGE plpgsql;
 
