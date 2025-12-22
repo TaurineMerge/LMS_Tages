@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"strings"
 
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/config"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/api/v1"
@@ -17,6 +16,7 @@ import (
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/router"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/service"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/database"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/logger"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/template"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/tracing"
 	"github.com/gofiber/contrib/otelfiber/v2"
@@ -46,24 +46,11 @@ func main() {
 	}
 
 	// 3. Initialize Logger
-	var level slog.Level
-	switch strings.ToUpper(cfg.LogLevel) {
-	case "DEBUG":
-		level = slog.LevelDebug
-	case "WARN":
-		level = slog.LevelWarn
-	case "ERROR":
-		level = slog.LevelError
-	default:
-		level = slog.LevelInfo
-	}
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
-	slog.SetDefault(logger)
-
-	slog.Info("Application starting", "DEV_MODE", cfg.Dev)
+	slog.SetDefault(logger.Setup(cfg.Log.Level))
+	slog.Info("Application starting", "DEV_MODE", cfg.App.Dev)
 
 	// 4. Initialize Tracer
-	tp, err := tracing.InitTracer(cfg)
+	tp, err := tracing.InitTracer(&cfg.Otel)
 	if err != nil {
 		slog.Error("Failed to initialize tracer", "error", err)
 		os.Exit(1)
@@ -75,7 +62,7 @@ func main() {
 	}()
 
 	// 5. Initialize Database
-	dbPool, err := database.NewConnection(cfg)
+	dbPool, err := database.NewConnection(&cfg.Database)
 	if err != nil {
 		slog.Error("Failed to connect to database", "error", err)
 		os.Exit(1)
@@ -93,24 +80,24 @@ func main() {
 	courseService := service.NewCourseService(courseRepo, categoryRepo)
 
 	// 7. Initialize Fiber App and Global Middleware
-	engine := template.NewEngine(cfg)
+	engine := template.NewEngine(&cfg.App)
 	app := fiber.New(fiber.Config{
 		ErrorHandler: middleware.GlobalErrorHandler,
 		Views:        engine,
 	})
 
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     cfg.CORSAllowedOrigins,
-		AllowMethods:     cfg.CORSAllowedMethods,
-		AllowHeaders:     cfg.CORSAllowedHeaders,
-		AllowCredentials: cfg.CORSAllowCredentials,
+		AllowOrigins:     cfg.CORS.AllowedOrigins,
+		AllowMethods:     cfg.CORS.AllowedMethods,
+		AllowHeaders:     cfg.CORS.AllowedHeaders,
+		AllowCredentials: cfg.CORS.AllowCredentials,
 	}))
 	app.Use(otelfiber.Middleware())
 	app.Use(middleware.RequestResponseLogger())
 
 	// 8. Setup Routes
 	webRouter := &router.WebRouter{
-		Config:              cfg,
+		Config:              &cfg.App,
 		HomeHandler:         web.NewHomeHandler(),
 		CategoryPageHandler: web.NewCategoryHandler(categoryService, courseService),
 		CoursesHandler:      web.NewCoursesHandler(courseService, lessonService),
@@ -126,8 +113,8 @@ func main() {
 	apiRouter.Setup(app)
 
 	// 9. Start Server
-	slog.Info("Starting server", "address", cfg.Port)
-	if err := app.Listen(fmt.Sprintf(":%s", cfg.Port)); err != nil {
+	slog.Info("Starting server", "address", cfg.Server.Port)
+	if err := app.Listen(fmt.Sprintf(":%s", cfg.Server.Port)); err != nil {
 		slog.Error("Server failed to start", "error", err)
 		os.Exit(1)
 	}

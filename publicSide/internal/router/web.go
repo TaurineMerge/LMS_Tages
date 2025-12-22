@@ -9,7 +9,7 @@ import (
 
 // WebRouter инкапсулирует зависимости и логику для регистрации веб-маршрутов.
 type WebRouter struct {
-	Config              *config.Config
+	Config              *config.AppConfig
 	HomeHandler         *web.HomeHandler
 	CategoryPageHandler *web.CategoryHandler
 	CoursesHandler      *web.CoursesHandler

@@ -18,13 +18,13 @@ import (
 
 // InitTracer initializes and registers a new OpenTelemetry tracer provider.
 // It configures an OTLP exporter to send traces to a collector (e.g., Jaeger via OTel Collector).
-func InitTracer(cfg *config.Config) (*sdktrace.TracerProvider, error) {
+func InitTracer(cfg *config.OtelConfig) (*sdktrace.TracerProvider, error) {
 	ctx := context.Background()
 
 	// Create a new resource with service name and version attributes.
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
-			semconv.ServiceName(cfg.OTELServiceName),
+			semconv.ServiceName(cfg.ServiceName),
 		),
 	)
 	if err != nil {
@@ -36,7 +36,7 @@ func InitTracer(cfg *config.Config) (*sdktrace.TracerProvider, error) {
 	// For local development, an insecure connection is typically used.
 	traceExporter, err := otlptrace.New(ctx, otlptracegrpc.NewClient(
 		otlptracegrpc.WithInsecure(),
-		otlptracegrpc.WithEndpoint(cfg.OTELCollectorEndpoint),
+		otlptracegrpc.WithEndpoint(cfg.CollectorEndpoint),
 		otlptracegrpc.WithDialOption(grpc.WithBlock()),
 	))
 	if err != nil {

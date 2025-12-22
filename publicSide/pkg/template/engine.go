@@ -11,7 +11,7 @@ import (
 )
 
 // NewEngine creates a new Handlebars template engine with custom helpers.
-func NewEngine(cfg *config.Config) *handlebars.Engine {
+func NewEngine(cfg *config.AppConfig) *handlebars.Engine {
 	engine := handlebars.New("./templates", ".hbs")
 
 	// Reload and Debug should be enabled based on development mode

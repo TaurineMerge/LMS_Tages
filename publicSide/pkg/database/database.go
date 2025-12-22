@@ -13,9 +13,9 @@ import (
 // NewConnection creates a new, instrumented database connection pool.
 // It injects an OpenTelemetry tracer into the pgxpool config to automatically
 // trace all SQL queries.
-func NewConnection(cfg *config.Config) (*pgxpool.Pool, error) {
+func NewConnection(cfg *config.DatabaseConfig) (*pgxpool.Pool, error) {
 	// Parse the config from the database URL
-	poolConfig, err := pgxpool.ParseConfig(cfg.DatabaseURL)
+	poolConfig, err := pgxpool.ParseConfig(cfg.URL)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse database URL: %w", err)
 	}
