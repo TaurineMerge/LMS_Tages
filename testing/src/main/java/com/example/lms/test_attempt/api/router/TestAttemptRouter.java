@@ -69,14 +69,16 @@ public class TestAttemptRouter {
             path("/{id}", () -> {
                 // Просмотр попытки
                 get(withRealm(Set.of(TEACHER_REALM, STUDENT_REALM), testAttemptController::getTestAttemptById));
-                
+
                 // Редактирование и удаление
                 put(withRealm(TEACHER_REALM, testAttemptController::updateTestAttempt));
                 delete(withRealm(TEACHER_REALM, testAttemptController::deleteTestAttempt));
-                
+
                 // Специальные операции
-                post("/complete", withRealm(Set.of(TEACHER_REALM, STUDENT_REALM), testAttemptController::completeTestAttempt));
-                put("/snapshot", withRealm(Set.of(TEACHER_REALM, STUDENT_REALM), testAttemptController::updateSnapshot));
+                post("/complete",
+                        withRealm(Set.of(TEACHER_REALM, STUDENT_REALM), testAttemptController::completeTestAttempt));
+                put("/snapshot",
+                        withRealm(Set.of(TEACHER_REALM, STUDENT_REALM), testAttemptController::updateSnapshot));
             });
 
             // Поиск по студенту и тесту
