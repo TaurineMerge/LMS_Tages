@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"adminPanel/database"
-	"adminPanel/models"
+	"adminPanel/handlers/dto/request"
 )
 
 // CourseRepository - репозиторий для работы с курсами в базе данных
@@ -39,7 +39,7 @@ func NewCourseRepository(db *database.Database) *CourseRepository {
 // Возвращает:
 //   - map[string]interface{}: созданный объект курса
 //   - error: ошибка выполнения (если есть)
-func (r *CourseRepository) Create(ctx context.Context, course models.CourseCreate) (map[string]interface{}, error) {
+func (r *CourseRepository) Create(ctx context.Context, course request.CourseCreate) (map[string]interface{}, error) {
 	query := `
 		INSERT INTO knowledge_base.course_b 
 		(id, title, description, level, category_id, visibility, created_at, updated_at)
@@ -69,7 +69,7 @@ func (r *CourseRepository) Create(ctx context.Context, course models.CourseCreat
 // Возвращает:
 //   - map[string]interface{}: обновленный объект курса
 //   - error: ошибка выполнения (если есть)
-func (r *CourseRepository) Update(ctx context.Context, id string, course models.CourseUpdate) (map[string]interface{}, error) {
+func (r *CourseRepository) Update(ctx context.Context, id string, course request.CourseUpdate) (map[string]interface{}, error) {
 	query := `
 		UPDATE knowledge_base.course_b 
 		SET title = COALESCE($1, title),
@@ -105,7 +105,7 @@ func (r *CourseRepository) Update(ctx context.Context, id string, course models.
 //   - []map[string]interface{}: список курсов
 //   - int: общее количество курсов
 //   - error: ошибка выполнения (если есть)
-func (r *CourseRepository) GetFiltered(ctx context.Context, filter models.CourseFilter) ([]map[string]interface{}, int, error) {
+func (r *CourseRepository) GetFiltered(ctx context.Context, filter request.CourseFilter) ([]map[string]interface{}, int, error) {
 	// Строим WHERE условия
 	var conditions []string
 	var params []interface{}

@@ -1,0 +1,150 @@
+<!-- templates/pages/course-form.hbs -->
+<div class="admin-page admin-page--full">
+    <!-- Основной контент -->
+    <main class="admin-content admin-content--full admin-content--centered">
+        {{#if error}}
+            <div class="notification notification--error">
+                <span class="notification__icon">⚠️</span>
+                <span class="notification__text">{{error}}</span>
+            </div>
+        {{/if}}
+
+        <div class="form-card">
+            <div class="form-card__header">
+                <nav class="form-breadcrumb">
+                    <a href="/admin/categories" class="form-breadcrumb__link">📂 Категории</a>
+                    <span class="form-breadcrumb__separator">›</span>
+                    <a href="/admin/categories/{{categoryID}}/courses" class="form-breadcrumb__link">{{categoryName}}</a>
+                    <span class="form-breadcrumb__separator">›</span>
+                    <span>{{#if course}}Редактирование{{else}}Новый курс{{/if}}</span>
+                </nav>
+                <h1 class="form-card__title">
+                    {{#if course}}✏️ Редактировать курс{{else}}📚 Новый курс{{/if}}
+                </h1>
+                <p class="form-card__subtitle">Заполните информацию о курсе</p>
+            </div>
+
+            {{#if course}}
+            <div class="form-info-bar">
+                <div class="form-info-bar__item">
+                    <span class="form-info-bar__label">ID:</span>
+                    <span class="form-info-bar__value">{{course.ID}}</span>
+                </div>
+                <div class="form-info-bar__item">
+                    <span class="form-info-bar__label">Создан:</span>
+                    <span class="form-info-bar__value">{{course.CreatedAt}}</span>
+                </div>
+                <div class="form-info-bar__item">
+                    <span class="form-info-bar__label">Обновлен:</span>
+                    <span class="form-info-bar__value">{{course.UpdatedAt}}</span>
+                </div>
+            </div>
+            {{/if}}
+
+            <form method="POST" 
+                  action="{{#if course}}/admin/categories/{{categoryID}}/courses/{{course.ID}}/update{{else}}/admin/categories/{{categoryID}}/courses/create{{/if}}" 
+                  class="modern-form">
+                
+                <div class="form-section">
+                    <h3 class="form-section__title">
+                        <span class="form-section__icon">📋</span>
+                        Основная информация
+                    </h3>
+
+                    <div class="form-field">
+                        <label for="title" class="form-field__label">
+                            <span class="form-field__label-icon">📝</span>
+                            Название курса
+                            <span class="form-field__required">*</span>
+                        </label>
+                        <div class="form-field__input-wrapper">
+                            <input 
+                                type="text" 
+                                id="title" 
+                                name="title" 
+                                class="form-field__input" 
+                                value="{{#if course}}{{course.Title}}{{/if}}"
+                                placeholder="Например: Введение в Python"
+                                required
+                                autofocus
+                            />
+                            <span class="form-field__input-icon">✓</span>
+                        </div>
+                        <p class="form-field__hint">Краткое и понятное название курса</p>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="description" class="form-field__label">
+                            <span class="form-field__label-icon">📄</span>
+                            Описание курса
+                        </label>
+                        <textarea 
+                            id="description" 
+                            name="description" 
+                            class="form-field__textarea" 
+                            placeholder="Опишите содержание курса, чему студенты научатся..."
+                        >{{#if course}}{{course.Description}}{{/if}}</textarea>
+                        <p class="form-field__hint">Подробное описание для студентов</p>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3 class="form-section__title">
+                        <span class="form-section__icon">⚙️</span>
+                        Настройки курса
+                    </h3>
+
+                    <div class="form-row">
+                        <div class="form-field form-field--half">
+                            <label for="level" class="form-field__label">
+                                <span class="form-field__label-icon">📊</span>
+                                Уровень сложности
+                                <span class="form-field__required">*</span>
+                            </label>
+                            <div class="form-field__select-wrapper">
+                                <select id="level" name="level" class="form-field__select" required>
+                                    <option value="easy" {{#if course}}{{#if (eq course.Level "easy")}}selected{{/if}}{{/if}}>🟢 Легкий</option>
+                                    <option value="medium" {{#if course}}{{#if (eq course.Level "medium")}}selected{{/if}}{{else}}selected{{/if}}>🟡 Средний</option>
+                                    <option value="hard" {{#if course}}{{#if (eq course.Level "hard")}}selected{{/if}}{{/if}}>🔴 Сложный</option>
+                                </select>
+                                <span class="form-field__select-arrow">▼</span>
+                            </div>
+                        </div>
+
+                        <div class="form-field form-field--half">
+                            <label class="form-field__label">
+                                <span class="form-field__label-icon">👁️</span>
+                                Видимость
+                            </label>
+                            <label class="toggle-switch">
+                                <input 
+                                    type="checkbox" 
+                                    name="visible" 
+                                    class="toggle-switch__input" 
+                                    {{#if course}}
+                                        {{#if course.Visible}}checked{{/if}}
+                                    {{else}}
+                                        checked
+                                    {{/if}}
+                                />
+                                <span class="toggle-switch__slider"></span>
+                                <span class="toggle-switch__label">Виден студентам</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <a href="/admin/categories/{{categoryID}}/courses" class="btn btn--secondary">
+                        <span class="btn__icon">✕</span>
+                        Отмена
+                    </a>
+                    <button type="submit" class="btn btn--primary">
+                        <span class="btn__icon">{{#if course}}💾{{else}}＋{{/if}}</span>
+                        {{#if course}}Сохранить изменения{{else}}Создать курс{{/if}}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>

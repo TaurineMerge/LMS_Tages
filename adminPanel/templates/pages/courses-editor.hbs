@@ -1,0 +1,148 @@
+<!-- templates/pages/courses-editor.hbs -->
+<div class="admin-page admin-page--full">
+    <!-- Основной контент -->
+    <main class="admin-content admin-content--full">
+        {{#if error}}
+            <div class="notification notification--error">
+                <span class="notification__icon">⚠️</span>
+                <span class="notification__text">{{error}}</span>
+            </div>
+        {{/if}}
+
+        {{#if success}}
+            <div class="notification notification--success">
+                <span class="notification__icon">✓</span>
+                <span class="notification__text">{{success}}</span>
+            </div>
+        {{/if}}
+
+        <nav class="top-breadcrumb">
+            <a href="/admin/categories" class="top-breadcrumb__link">📂 Категории</a>
+            <span class="top-breadcrumb__separator">›</span>
+            <span class="top-breadcrumb__current">{{categoryName}}</span>
+        </nav>
+
+        <div class="content-header content-header--with-actions">
+            <div class="content-header__text">
+                <h1 class="content-title">📚 Курсы: {{categoryName}}</h1>
+                <p class="content-description">Управление курсами категории • {{coursesCount}} курсов</p>
+            </div>
+            <div class="content-header__actions">
+                <a href="/admin/categories" class="btn btn--secondary">
+                    <span class="btn__icon">←</span>
+                    Назад
+                </a>
+                <a href="/admin/categories/{{categoryID}}/courses/new" class="btn btn--primary">
+                    <span class="btn__icon">＋</span>
+                    Новый курс
+                </a>
+            </div>
+        </div>
+
+        <!-- Фильтры -->
+        <div class="admin-filters">
+            <form method="GET" action="/admin/categories/{{categoryID}}/courses" class="admin-filters__form">
+                <div class="admin-filters__group">
+                    <label class="admin-filters__label">Сложность:</label>
+                    <select name="level" class="admin-filters__select" onchange="this.form.submit()">
+                        <option value="all" {{#if (eq levelFilter "all")}}selected{{/if}}>Все уровни</option>
+                        <option value="easy" {{#if (eq levelFilter "easy")}}selected{{/if}}>Лёгкий</option>
+                        <option value="medium" {{#if (eq levelFilter "medium")}}selected{{/if}}>Средний</option>
+                        <option value="hard" {{#if (eq levelFilter "hard")}}selected{{/if}}>Сложный</option>
+                    </select>
+                </div>
+                <div class="admin-filters__group">
+                    <label class="admin-filters__label">Видимость:</label>
+                    <select name="visibility" class="admin-filters__select" onchange="this.form.submit()">
+                        <option value="all" {{#if (eq visibilityFilter "all")}}selected{{/if}}>Все</option>
+                        <option value="public" {{#if (eq visibilityFilter "public")}}selected{{/if}}>👁️ Видимые</option>
+                        <option value="draft" {{#if (eq visibilityFilter "draft")}}selected{{/if}}>🙈 Скрытые</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+
+        {{#if courses}}
+            <div class="entity-grid">
+                {{#each courses}}
+                    <article class="entity-card entity-card--course">
+                        <div class="entity-card__header">
+                            <div class="entity-card__badges">
+                                <span class="badge badge--level badge--{{Level}}">{{LevelRu}}</span>
+                                {{#if Visible}}
+                                    <span class="badge badge--visible">👁️ Виден</span>
+                                {{else}}
+                                    <span class="badge badge--hidden">🙈 Скрыт</span>
+                                {{/if}}
+                            </div>
+                            <div class="entity-card__menu">
+                                <input type="checkbox" id="menu-course-{{ID}}" class="entity-card__menu-toggle">
+                                <label for="menu-course-{{ID}}" class="entity-card__menu-btn" title="Действия">⋮</label>
+                                <div class="entity-card__menu-dropdown">
+                                    <a href="/admin/categories/{{CategoryID}}/courses/{{ID}}/lessons" class="entity-card__menu-item">
+                                        <span>📝</span> Уроки
+                                    </a>
+                                    <a href="/admin/categories/{{CategoryID}}/courses/{{ID}}" class="entity-card__menu-item">
+                                        <span>✏️</span> Редактировать
+                                    </a>
+                                    <form method="POST" action="/admin/categories/{{CategoryID}}/courses/{{ID}}/delete" class="entity-card__menu-form">
+                                        <button type="submit" class="entity-card__menu-item entity-card__menu-item--danger">
+                                            <span>🗑️</span> Удалить
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="entity-card__body">
+                            <h3 class="entity-card__title">{{Title}}</h3>
+                            {{#if Description}}
+                                <p class="entity-card__description">{{Description}}</p>
+                            {{/if}}
+                            <div class="entity-card__meta">
+                                <span class="entity-card__meta-item">
+                                    <span class="meta-icon">🕐</span>
+                                    {{UpdatedAt}}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="entity-card__footer">
+                            <a href="/admin/categories/{{CategoryID}}/courses/{{ID}}/lessons" class="entity-card__action-btn">
+                                <span>Управление уроками</span>
+                                <span class="entity-card__arrow">→</span>
+                            </a>
+                        </div>
+                    </article>
+                {{/each}}
+
+                <!-- Карточка добавления -->
+                <a href="/admin/categories/{{categoryID}}/courses/new" class="entity-card entity-card--add">
+                    <div class="entity-card__add-content">
+                        <span class="entity-card__add-icon">＋</span>
+                        <span class="entity-card__add-text">Добавить курс</span>
+                    </div>
+                </a>
+            </div>
+        {{else}}
+            <div class="empty-state-modern">
+                <div class="empty-state-modern__illustration">
+                    <div class="empty-state-modern__circle"></div>
+                    <div class="empty-state-modern__icon">📚</div>
+                </div>
+                <h2 class="empty-state-modern__title">Курсы не найдены</h2>
+                <p class="empty-state-modern__text">Нет курсов, соответствующих выбранным фильтрам</p>
+                <div class="empty-state-modern__actions">
+                    <a href="/admin/categories/{{categoryID}}/courses" class="btn btn--secondary">
+                        <span class="btn__icon">↻</span>
+                        Сбросить фильтры
+                    </a>
+                    <a href="/admin/categories/{{categoryID}}/courses/new" class="btn btn--primary btn--lg">
+                        <span class="btn__icon">＋</span>
+                        Создать курс
+                    </a>
+                </div>
+            </div>
+        {{/if}}
+    </main>
+</div>

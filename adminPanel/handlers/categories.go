@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"adminPanel/exceptions"
+	"adminPanel/handlers/dto/request"
+	"adminPanel/handlers/dto/response"
 	"adminPanel/middleware"
 	"adminPanel/models"
 	"adminPanel/services"
@@ -52,9 +54,9 @@ func (h *CategoryHandler) RegisterRoutes(router fiber.Router) {
 	categories := router.Group("/categories")
 
 	categories.Get("/", h.getCategories)
-	categories.Post("/", h.createCategory)
+	categories.Post("/", middleware.ValidateJSONSchema("category-create.json"), h.createCategory)
 	categories.Get("/:category_id", h.getCategory)
-	categories.Put("/:category_id", h.updateCategory)
+	categories.Put("/:category_id", middleware.ValidateJSONSchema("category-update.json"), h.updateCategory)
 	categories.Delete("/:category_id", h.deleteCategory)
 }
 
@@ -80,28 +82,28 @@ func (h *CategoryHandler) getCategories(c *fiber.Ctx) error {
 	categories, err := h.categoryService.GetCategories(ctx)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
-			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
+			return c.Status(appErr.StatusCode).JSON(response.ErrorResponse{
 				Status: "error",
-				Error: models.ErrorDetails{
+				Error: response.ErrorDetails{
 					Code:    appErr.Code,
 					Message: appErr.Message,
 				},
 			})
 		}
-		return c.Status(500).JSON(models.ErrorResponse{
+		return c.Status(500).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "SERVER_ERROR",
 				Message: "Internal server error",
 			},
 		})
 	}
 
-	response := models.PaginatedCategoriesResponse{
+	resp := response.PaginatedCategoriesResponse{
 		Status: "success",
 	}
-	response.Data.Items = categories
-	response.Data.Pagination = models.Pagination{
+	resp.Data.Items = categories
+	resp.Data.Pagination = models.Pagination{
 		Total: len(categories),
 		Page:  1,
 		Limit: len(categories),
@@ -114,7 +116,7 @@ func (h *CategoryHandler) getCategories(c *fiber.Ctx) error {
 			attribute.String("response.status", "success"),
 		))
 
-	return c.JSON(response)
+	return c.JSON(resp)
 }
 
 // getCategory обрабатывает GET /categories/:id
@@ -139,9 +141,9 @@ func (h *CategoryHandler) getCategory(c *fiber.Ctx) error {
 	id := c.Params("category_id")
 
 	if !isValidUUID(id) {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "INVALID_UUID",
 				Message: "Invalid category ID format",
 			},
@@ -151,17 +153,17 @@ func (h *CategoryHandler) getCategory(c *fiber.Ctx) error {
 	category, err := h.categoryService.GetCategory(ctx, id)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
-			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
+			return c.Status(appErr.StatusCode).JSON(response.ErrorResponse{
 				Status: "error",
-				Error: models.ErrorDetails{
+				Error: response.ErrorDetails{
 					Code:    appErr.Code,
 					Message: appErr.Message,
 				},
 			})
 		}
-		return c.Status(500).JSON(models.ErrorResponse{
+		return c.Status(500).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "SERVER_ERROR",
 				Message: "Internal server error",
 			},
@@ -175,7 +177,7 @@ func (h *CategoryHandler) getCategory(c *fiber.Ctx) error {
 			attribute.String("response.status", "success"),
 		))
 
-	return c.JSON(models.CategoryResponse{
+	return c.JSON(response.CategoryResponse{
 		Status: "success",
 		Data:   *category,
 	})
@@ -183,7 +185,7 @@ func (h *CategoryHandler) getCategory(c *fiber.Ctx) error {
 
 // createCategory обрабатывает POST /categories
 //
-// Создает новую категорию с валидацией данных.
+// Создает новую категорию с валидацией данных через JSON Schema.
 //
 // Параметры:
 //   - c: контекст Fiber
@@ -199,7 +201,7 @@ func (h *CategoryHandler) createCategory(c *fiber.Ctx) error {
 			attribute.String("http.path", c.Path()),
 		))
 
-	var input models.CategoryCreate
+	var input request.CategoryCreate
 
 	if len(c.Body()) > 0 {
 		body := c.Body()
@@ -213,49 +215,32 @@ func (h *CategoryHandler) createCategory(c *fiber.Ctx) error {
 			))
 	}
 
+	// JSON Schema валидация уже выполнена middleware
+	// Парсим тело запроса в структуру
 	if err := c.BodyParser(&input); err != nil {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
-				Code:    "VALIDATION_ERROR",
+			Error: response.ErrorDetails{
+				Code:    "INVALID_JSON",
 				Message: "Invalid request body",
 			},
-		})
-	}
-
-	if validationErrors, err := middleware.ValidateStruct(&input); err != nil {
-		return c.Status(500).JSON(models.ErrorResponse{
-			Status: "error",
-			Error: models.ErrorDetails{
-				Code:    "SERVER_ERROR",
-				Message: "Validation error",
-			},
-		})
-	} else if len(validationErrors) > 0 {
-		return c.Status(422).JSON(models.ValidationErrorResponse{
-			Status: "error",
-			Error: models.ErrorDetails{
-				Code:    "VALIDATION_ERROR",
-				Message: "Validation failed",
-			},
-			Errors: validationErrors,
 		})
 	}
 
 	category, err := h.categoryService.CreateCategory(ctx, input)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
-			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
+			return c.Status(appErr.StatusCode).JSON(response.ErrorResponse{
 				Status: "error",
-				Error: models.ErrorDetails{
+				Error: response.ErrorDetails{
 					Code:    appErr.Code,
 					Message: appErr.Message,
 				},
 			})
 		}
-		return c.Status(500).JSON(models.ErrorResponse{
+		return c.Status(500).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "SERVER_ERROR",
 				Message: "Internal server error",
 			},
@@ -269,7 +254,7 @@ func (h *CategoryHandler) createCategory(c *fiber.Ctx) error {
 			attribute.String("response.status", "success"),
 		))
 
-	return c.Status(201).JSON(models.CategoryResponse{
+	return c.Status(201).JSON(response.CategoryResponse{
 		Status: "success",
 		Data:   *category,
 	})
@@ -277,7 +262,7 @@ func (h *CategoryHandler) createCategory(c *fiber.Ctx) error {
 
 // updateCategory обрабатывает PUT /categories/:id
 //
-// Обновляет существующую категорию с валидацией данных.
+// Обновляет существующую категорию с валидацией данных через JSON Schema.
 //
 // Параметры:
 //   - c: контекст Fiber
@@ -286,7 +271,6 @@ func (h *CategoryHandler) createCategory(c *fiber.Ctx) error {
 //   - error: ошибка выполнения (если есть)
 func (h *CategoryHandler) updateCategory(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	// Логируем вызов метода
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent("handler.updateCategory.start",
 		trace.WithAttributes(
@@ -298,16 +282,16 @@ func (h *CategoryHandler) updateCategory(c *fiber.Ctx) error {
 	id := c.Params("category_id")
 
 	if !isValidUUID(id) {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "INVALID_UUID",
 				Message: "Invalid category ID format",
 			},
 		})
 	}
 
-	var input models.CategoryUpdate
+	var input request.CategoryUpdate
 
 	if len(c.Body()) > 0 {
 		body := c.Body()
@@ -321,49 +305,32 @@ func (h *CategoryHandler) updateCategory(c *fiber.Ctx) error {
 			))
 	}
 
+	// JSON Schema валидация уже выполнена middleware
+	// Парсим тело запроса в структуру
 	if err := c.BodyParser(&input); err != nil {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
-				Code:    "VALIDATION_ERROR",
+			Error: response.ErrorDetails{
+				Code:    "INVALID_JSON",
 				Message: "Invalid request body",
 			},
-		})
-	}
-
-	if validationErrors, err := middleware.ValidateStruct(&input); err != nil {
-		return c.Status(500).JSON(models.ErrorResponse{
-			Status: "error",
-			Error: models.ErrorDetails{
-				Code:    "SERVER_ERROR",
-				Message: "Validation error",
-			},
-		})
-	} else if len(validationErrors) > 0 {
-		return c.Status(422).JSON(models.ValidationErrorResponse{
-			Status: "error",
-			Error: models.ErrorDetails{
-				Code:    "VALIDATION_ERROR",
-				Message: "Validation failed",
-			},
-			Errors: validationErrors,
 		})
 	}
 
 	category, err := h.categoryService.UpdateCategory(ctx, id, input)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
-			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
+			return c.Status(appErr.StatusCode).JSON(response.ErrorResponse{
 				Status: "error",
-				Error: models.ErrorDetails{
+				Error: response.ErrorDetails{
 					Code:    appErr.Code,
 					Message: appErr.Message,
 				},
 			})
 		}
-		return c.Status(500).JSON(models.ErrorResponse{
+		return c.Status(500).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "SERVER_ERROR",
 				Message: "Internal server error",
 			},
@@ -377,7 +344,7 @@ func (h *CategoryHandler) updateCategory(c *fiber.Ctx) error {
 			attribute.String("response.status", "success"),
 		))
 
-	return c.JSON(models.CategoryResponse{
+	return c.JSON(response.CategoryResponse{
 		Status: "success",
 		Data:   *category,
 	})
@@ -406,9 +373,9 @@ func (h *CategoryHandler) deleteCategory(c *fiber.Ctx) error {
 	id := c.Params("category_id")
 
 	if !isValidUUID(id) {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "INVALID_UUID",
 				Message: "Invalid category ID format",
 			},
@@ -418,17 +385,17 @@ func (h *CategoryHandler) deleteCategory(c *fiber.Ctx) error {
 	err := h.categoryService.DeleteCategory(ctx, id)
 	if err != nil {
 		if appErr, ok := err.(*exceptions.AppError); ok {
-			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
+			return c.Status(appErr.StatusCode).JSON(response.ErrorResponse{
 				Status: "error",
-				Error: models.ErrorDetails{
+				Error: response.ErrorDetails{
 					Code:    appErr.Code,
 					Message: appErr.Message,
 				},
 			})
 		}
-		return c.Status(500).JSON(models.ErrorResponse{
+		return c.Status(500).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "SERVER_ERROR",
 				Message: "Internal server error",
 			},

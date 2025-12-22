@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"adminPanel/exceptions"
+	"adminPanel/handlers/dto/request"
+	"adminPanel/handlers/dto/response"
 	"adminPanel/models"
 	"adminPanel/repositories"
 
@@ -64,9 +66,9 @@ func NewCourseService(
 //   - filter: фильтр для поиска курсов
 //
 // Возвращает:
-//   - *models.PaginatedCoursesResponse: ответ с курсами и пагинацией
+//   - *response.PaginatedCoursesResponse: ответ с курсами и пагинацией
 //   - error: ошибка выполнения (если есть)
-func (s *CourseService) GetCourses(ctx context.Context, filter models.CourseFilter) (*models.PaginatedCoursesResponse, error) {
+func (s *CourseService) GetCourses(ctx context.Context, filter request.CourseFilter) (*response.PaginatedCoursesResponse, error) {
 	ctx, span := courseTracer.Start(ctx, "CourseService.GetCourses")
 	span.SetAttributes(
 		attribute.String("filter.level", filter.Level),
@@ -123,7 +125,7 @@ func (s *CourseService) GetCourses(ctx context.Context, filter models.CourseFilt
 		pages = 1
 	}
 
-	return &models.PaginatedCoursesResponse{
+	return &response.PaginatedCoursesResponse{
 		Status: "success",
 		Data: struct {
 			Items      []models.Course   `json:"items"`
@@ -150,9 +152,9 @@ func (s *CourseService) GetCourses(ctx context.Context, filter models.CourseFilt
 //   - id: уникальный идентификатор курса
 //
 // Возвращает:
-//   - *models.CourseResponse: ответ с курсом
+//   - *response.CourseResponse: ответ с курсом
 //   - error: ошибка выполнения (если есть)
-func (s *CourseService) GetCourse(ctx context.Context, categoryID, id string) (*models.CourseResponse, error) {
+func (s *CourseService) GetCourse(ctx context.Context, categoryID, id string) (*response.CourseResponse, error) {
 	ctx, span := courseTracer.Start(ctx, "CourseService.GetCourse")
 	span.SetAttributes(attribute.String("course.id", id))
 	defer span.End()
@@ -172,7 +174,7 @@ func (s *CourseService) GetCourse(ctx context.Context, categoryID, id string) (*
 		return nil, exceptions.NotFoundError("Course", id)
 	}
 
-	course := &models.CourseResponse{
+	course := &response.CourseResponse{
 		Status: "success",
 		Data: models.Course{
 			BaseModel: models.BaseModel{
@@ -200,9 +202,9 @@ func (s *CourseService) GetCourse(ctx context.Context, categoryID, id string) (*
 //   - input: данные для создания курса
 //
 // Возвращает:
-//   - *models.CourseResponse: ответ с созданным курсом
+//   - *response.CourseResponse: ответ с созданным курсом
 //   - error: ошибка выполнения (если есть)
-func (s *CourseService) CreateCourse(ctx context.Context, input models.CourseCreate) (*models.CourseResponse, error) {
+func (s *CourseService) CreateCourse(ctx context.Context, input request.CourseCreate) (*response.CourseResponse, error) {
 	ctx, span := courseTracer.Start(ctx, "CourseService.CreateCourse")
 	span.SetAttributes(
 		attribute.String("course.category_id", input.CategoryID),
@@ -237,7 +239,7 @@ func (s *CourseService) CreateCourse(ctx context.Context, input models.CourseCre
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to create course: %v", err))
 	}
 
-	course := &models.CourseResponse{
+	course := &response.CourseResponse{
 		Status: "success",
 		Data: models.Course{
 			BaseModel: models.BaseModel{
@@ -267,9 +269,9 @@ func (s *CourseService) CreateCourse(ctx context.Context, input models.CourseCre
 //   - input: данные для обновления курса
 //
 // Возвращает:
-//   - *models.CourseResponse: ответ с обновленным курсом
+//   - *response.CourseResponse: ответ с обновленным курсом
 //   - error: ошибка выполнения (если есть)
-func (s *CourseService) UpdateCourse(ctx context.Context, categoryID, id string, input models.CourseUpdate) (*models.CourseResponse, error) {
+func (s *CourseService) UpdateCourse(ctx context.Context, categoryID, id string, input request.CourseUpdate) (*response.CourseResponse, error) {
 	ctx, span := courseTracer.Start(ctx, "CourseService.UpdateCourse")
 	span.SetAttributes(
 		attribute.String("course.id", id),
@@ -300,7 +302,7 @@ func (s *CourseService) UpdateCourse(ctx context.Context, categoryID, id string,
 		return nil, exceptions.InternalError(fmt.Sprintf("Failed to update course: %v", err))
 	}
 
-	course := &models.CourseResponse{
+	course := &response.CourseResponse{
 		Status: "success",
 		Data: models.Course{
 			BaseModel: models.BaseModel{

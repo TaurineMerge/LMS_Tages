@@ -6,7 +6,7 @@ import (
 	"context"
 
 	"adminPanel/database"
-	"adminPanel/models"
+	"adminPanel/handlers/dto/response"
 
 	"github.com/gofiber/fiber/v2"
 	"go.opentelemetry.io/otel/attribute"
@@ -58,7 +58,7 @@ func (h *HealthHandler) HealthCheck(c *fiber.Ctx) error {
 			attribute.String("http.path", c.Path()),
 		))
 
-	return c.JSON(models.HealthResponse{
+	return c.JSON(response.HealthResponse{
 		Status:  "healthy",
 		Version: "1.0.0",
 	})
@@ -88,14 +88,14 @@ func (h *HealthHandler) DBHealthCheck(c *fiber.Ctx) error {
 	err := h.db.Pool.Ping(ctx)
 
 	if err != nil {
-		return c.Status(503).JSON(models.HealthResponse{
+		return c.Status(503).JSON(response.HealthResponse{
 			Status:   "unhealthy",
 			Database: "disconnected",
 			Version:  "1.0.0",
 		})
 	}
 
-	return c.JSON(models.HealthResponse{
+	return c.JSON(response.HealthResponse{
 		Status:   "healthy",
 		Database: "connected",
 		Version:  "1.0.0",
