@@ -36,7 +36,7 @@ public class Answer {
 	 * FK на QUESTION_D, not null.
 	 * </p>
 	 */
-	@JsonProperty("question_id")
+	@JsonProperty("questionId")
 	private UUID questionId;
 
 	/**
@@ -60,7 +60,6 @@ public class Answer {
 	 * @param text       текст ответа
 	 * @param questionId идентификатор связанного вопроса
 	 * @param score      балл за ответ
-	 * @param order      порядковый номер ответа
 	 */
 	public Answer(UUID id, String text, UUID questionId, Integer score) {
 		this.id = id;

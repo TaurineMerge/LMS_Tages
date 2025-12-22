@@ -65,7 +65,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/Test"
+              "$ref": "#/definitions/TestCreate"
             }
           }
         ],
@@ -96,7 +96,9 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
           }
         ],
         "responses": {
@@ -127,14 +129,16 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
           },
           {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/Test"
+              "$ref": "#/definitions/TestUpdate"
             }
           }
         ],
@@ -163,7 +167,9 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
           }
         ],
         "responses": {
@@ -187,19 +193,20 @@
         ],
         "parameters": [
           {
-            "name": "userId",
+            "name": "student_id",
             "in": "query",
-            "type": "string"
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "description": "Фильтр по ID студента (UUID)"
           },
           {
-            "name": "testId",
+            "name": "test_id",
             "in": "query",
-            "type": "string"
-          },
-          {
-            "name": "status",
-            "in": "query",
-            "type": "string"
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "description": "Фильтр по ID теста (UUID)"
           }
         ],
         "responses": {
@@ -231,7 +238,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/TestAttempt"
+              "$ref": "#/definitions/TestAttemptCreate"
             }
           }
         ],
@@ -262,8 +269,9 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
           }
         ],
         "responses": {
@@ -291,8 +299,9 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
           }
         ],
         "responses": {
@@ -320,7 +329,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/Answer"
+              "$ref": "#/definitions/AnswerCreate"
             }
           }
         ],
@@ -351,7 +360,9 @@
             "name": "questionId",
             "in": "query",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
           }
         ],
         "responses": {
@@ -382,7 +393,9 @@
             "name": "questionId",
             "in": "query",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
           }
         ],
         "responses": {
@@ -409,7 +422,9 @@
             "name": "questionId",
             "in": "query",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
           }
         ],
         "responses": {
@@ -442,7 +457,9 @@
             "name": "questionId",
             "in": "query",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
           }
         ],
         "responses": {
@@ -472,7 +489,9 @@
             "name": "questionId",
             "in": "query",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
           }
         ],
         "responses": {
@@ -502,7 +521,9 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
           }
         ],
         "responses": {
@@ -530,14 +551,16 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
           },
           {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/Answer"
+              "$ref": "#/definitions/AnswerUpdate"
             }
           }
         ],
@@ -547,31 +570,6 @@
             "schema": {
               "$ref": "#/definitions/Answer"
             }
-          },
-          "401": {
-            "description": "Не авторизован"
-          }
-        }
-      },
-      "delete": {
-        "tags": ["Answers"],
-        "summary": "Удалить ответ",
-        "security": [
-          {
-            "keycloak": ["openid"]
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Ответ удален"
           },
           "401": {
             "description": "Не авторизован"
@@ -593,7 +591,9 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
           }
         ],
         "responses": {
@@ -616,7 +616,63 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Идентификатор теста"
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор теста (UUID v4, генерируется автоматически)",
+          "readOnly": true
+        },
+        "courseId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор курса (UUID v4)"
+        },
+        "title": {
+          "type": "string",
+          "description": "Название теста"
+        },
+        "min_point": {
+          "type": "integer",
+          "description": "Минимальный балл"
+        },
+        "description": {
+          "type": "string",
+          "description": "Описание теста"
+        }
+      }
+    },
+    "TestCreate": {
+      "type": "object",
+      "required": ["courseId", "title", "min_point"],
+      "properties": {
+        "courseId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор курса (UUID v4)"
+        },
+        "title": {
+          "type": "string",
+          "description": "Название теста"
+        },
+        "min_point": {
+          "type": "integer",
+          "description": "Минимальный балл"
+        },
+        "description": {
+          "type": "string",
+          "description": "Описание теста"
+        }
+      }
+    },
+    "TestUpdate": {
+      "type": "object",
+      "properties": {
+        "courseId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор курса (UUID v4)"
         },
         "title": {
           "type": "string",
@@ -636,22 +692,107 @@
       "type": "object",
       "properties": {
         "id": {
-          "type": "integer",
-          "format": "int64",
-          "description": "Идентификатор попытки"
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор попытки (UUID v4, генерируется автоматически)",
+          "readOnly": true
+        },
+        "student_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор студента (UUID v4)"
+        },
+        "test_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор теста (UUID v4)"
         },
         "date_of_attempt": {
           "type": "string",
-          "format": "date",
-          "description": "Дата попытки"
+          "format": "date-time",
+          "description": "Дата и время попытки (генерируется автоматически)"
         },
         "point": {
           "type": "integer",
           "description": "Набранные баллы"
         },
-        "result": {
+        "certificate_id": {
           "type": "string",
-          "description": "Результат"
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор сертификата (UUID v4)"
+        },
+        "attempt_version": {
+          "type": "string",
+          "description": "Версия теста на момент попытки"
+        },
+        "attempt_snapshot": {
+          "type": "string",
+          "description": "Ссылка на снимок теста в хранилище"
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Был ли завершен тест"
+        }
+      }
+    },
+    "TestAttemptCreate": {
+      "type": "object",
+      "required": ["student_id", "test_id"],
+      "properties": {
+        "student_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор студента (UUID v4)"
+        },
+        "test_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор теста (UUID v4)"
+        }
+      }
+    },
+    "TestAttemptUpdate": {
+      "type": "object",
+      "properties": {
+        "student_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор студента (UUID v4)"
+        },
+        "test_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор теста (UUID v4)"
+        },
+        "point": {
+          "type": "integer",
+          "description": "Набранные баллы"
+        },
+        "certificate_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор сертификата (UUID v4)"
+        },
+        "attempt_version": {
+          "type": "string",
+          "description": "Версия теста на момент попытки"
+        },
+        "attempt_snapshot": {
+          "type": "string",
+          "description": "Ссылка на снимок теста в хранилище"
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Был ли завершен тест"
         }
       }
     },
@@ -660,7 +801,10 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Идентификатор ответа"
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор ответа (UUID v4, генерируется автоматически)",
+          "readOnly": true
         },
         "text": {
           "type": "string",
@@ -668,15 +812,52 @@
         },
         "questionId": {
           "type": "string",
-          "description": "Идентификатор вопроса"
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор вопроса (UUID v4)"
         },
         "score": {
           "type": "integer",
           "description": "Балл за ответ"
+        }
+      }
+    },
+    "AnswerCreate": {
+      "type": "object",
+      "required": ["text", "questionId", "score"],
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Текст ответа"
         },
-        "order": {
+        "questionId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор вопроса (UUID v4)"
+        },
+        "score": {
           "type": "integer",
-          "description": "Порядок ответа"
+          "description": "Балл за ответ"
+        }
+      }
+    },
+    "AnswerUpdate": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Текст ответа"
+        },
+        "questionId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор вопроса (UUID v4)"
+        },
+        "score": {
+          "type": "integer",
+          "description": "Балл за ответ"
         }
       }
     }

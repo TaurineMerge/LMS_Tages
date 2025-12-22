@@ -13,7 +13,6 @@ import java.util.UUID;
  * - question_id: UUID — идентификатор вопроса (FK → question_d.id)
  * - text: String — текст ответа
  * - score: int — количество баллов за ответ (0 — неверный, >0 — верный)
- * - order: int — порядок ответа
  */
 public class AnswerModel {
 
@@ -36,7 +35,7 @@ public class AnswerModel {
      * @param text       текст ответа
      * @param score      количество баллов
      */
-    public AnswerModel(UUID questionId, String text, Integer score, Integer order) {
+    public AnswerModel(UUID questionId, String text, Integer score) {
         this.questionId = Objects.requireNonNull(questionId, "Question ID не может быть null");
         this.text = Objects.requireNonNull(text, "Текст ответа не может быть null");
         this.score = Objects.requireNonNull(score, "Score не может быть null");
@@ -49,7 +48,6 @@ public class AnswerModel {
      * @param questionId идентификатор вопроса
      * @param text       текст ответа
      * @param score      количество баллов
-     * @param order      порядковый номер
      */
     public AnswerModel(UUID id, UUID questionId, String text, Integer score) {
         this.id = id;

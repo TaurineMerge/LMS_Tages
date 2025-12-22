@@ -27,7 +27,7 @@ public class AnswerRepository implements AnswerRepositoryInterface {
     // SQL запросы для таблицы answer_d
     private static final String INSERT_SQL = """
             INSERT INTO testing.answer_d (question_id, text, score)
-            VALUES (?, ?, ?, ?)
+            VALUES (?, ?, ?)
             RETURNING id
             """;
 

@@ -8,15 +8,10 @@
       "maxLength": 500,
       "description": "Текст ответа"
     },
-    "question_id": {
+    "questionId": {
       "type": "string",
       "format": "uuid",
       "description": "ID вопроса"
-    },
-    "order": {
-      "type": "integer",
-      "minimum": 0,
-      "description": "Порядок отображения"
     },
     "score": {
       "type": "integer",
@@ -24,6 +19,6 @@
       "description": "Баллы за ответ"
     }
   },
-  "required": ["text", "order", "question_id", "score"],
+  "required": ["text", "questionId", "score"],
   "additionalProperties": false
 }
