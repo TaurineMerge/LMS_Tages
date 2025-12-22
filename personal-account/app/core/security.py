@@ -54,9 +54,9 @@ _jwt_service = JwtService(keycloak_url=settings.KEYCLOAK_SERVER_URL, realm=setti
 class JWTValidator:
     """Validate JWT tokens using Keycloak JWKS."""
 
-    def __init__(self, keycloak_url: str, realm: str, client_id: str):
+    def __init__(self, keycloak_server_url: str, realm: str, client_id: str):
         self.client_id = client_id
-        self.issuer = f"{keycloak_url.rstrip('/')}/realms/{realm}"
+        self.issuer = f"{keycloak_server_url.rstrip('/')}/realms/{realm}"
 
     @traced("jwt_validator.validate_token", record_args=True, record_result=True)
     async def validate_token(self, token: str) -> TokenPayload:
@@ -111,7 +111,7 @@ class JWTValidator:
 
 # Создаём singleton validator
 _jwt_validator = JWTValidator(
-    keycloak_url=settings.KEYCLOAK_SERVER_URL,
+    keycloak_server_url=settings.KEYCLOAK_SERVER_URL,
     realm=settings.KEYCLOAK_REALM,
     client_id=settings.KEYCLOAK_CLIENT_ID,
 )

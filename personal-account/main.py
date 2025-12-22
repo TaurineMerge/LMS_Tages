@@ -119,7 +119,7 @@ API для личного кабинета системы онлайн обра�
     """,
     version="1.0.0",
     lifespan=lifespan,
-    root_path="/account",  # Базовый путь приложения за nginx
+    root_path=settings.root_path,  # Базовый путь приложения за nginx
     docs_url="/docs-swagger",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
@@ -143,12 +143,10 @@ def custom_openapi():
         routes=app.routes,
     )
     # Add server with base path so Swagger UI sends requests to correct URLs
-    openapi_schema["servers"] = [
-        {
-            "url": "/account",
-            "description": "Personal Account API (behind nginx proxy)",
-        }
-    ]
+    # Для local окружения используем пустой путь, для prod - /account
+    server_url = "" if settings.ENVIRONMENT == "local" else "/account"
+    server_desc = "Personal Account API (local)" if settings.ENVIRONMENT == "local" else "Personal Account API (nginx)"
+    openapi_schema["servers"] = [{"url": server_url, "description": server_desc}]
     openapi_schema["components"]["securitySchemes"] = {
         "OAuth2PasswordBearer": oauth2_scheme,
         "BearerAuth": {

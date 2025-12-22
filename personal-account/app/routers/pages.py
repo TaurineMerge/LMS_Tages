@@ -1,6 +1,7 @@
 """Frontend pages router with Jinja2 templates."""
 
 import logging
+from uuid import UUID
 
 from fastapi import APIRouter, Request
 from fastapi.responses import (
@@ -11,6 +12,8 @@ from fastapi.templating import Jinja2Templates
 from opentelemetry import trace
 
 from app.config import get_settings
+from app.core.security import JWTValidator
+from app.services import stats_service
 from app.telemetry import traced
 
 settings = get_settings()
@@ -20,8 +23,15 @@ router = APIRouter(tags=["Pages"])
 
 logger = logging.getLogger(__name__)
 
+# JWT validator for token decoding
+jwt_validator = JWTValidator(
+    keycloak_server_url=settings.KEYCLOAK_SERVER_URL,
+    realm=settings.KEYCLOAK_REALM,
+    client_id=settings.KEYCLOAK_CLIENT_ID,
+)
 
-def _render_template_safe(template_name: str, context: dict):
+
+def _render_template_safe(template_name: str, context: dict, request: Request):
     """Render a Jinja2 template and attach telemetry/logging on exception.
 
     This helper records exceptions on the current span and logs the error
@@ -30,7 +40,9 @@ def _render_template_safe(template_name: str, context: dict):
     """
     try:
         # TemplateResponse will be returned to FastAPI and rendered by Starlette
-        resp = templates.TemplateResponse(template_name, context)
+        context["prefix"] = settings.url_prefix  # Динамический prefix из settings
+
+        resp = templates.TemplateResponse(template_name, {"request": request, **context})
         # Add trace headers to response (best-effort)
         try:
             span = trace.get_current_span()
@@ -105,7 +117,7 @@ async def root_page(request: Request):
     token = request.cookies.get("access_token")
 
     if token:
-        return RedirectResponse(url="/dashboard")  # Full path with /account prefix
+        return RedirectResponse(url="/account/dashboard")  # Full path with /account prefix
 
     return _render_template_safe("index.hbs", {"request": request, **get_keycloak_urls()})
 
@@ -163,10 +175,55 @@ async def statistics_page(request: Request):
 
     This page displays aggregated user statistics loaded from Redis cache.
     """
+    # Get token from cookie
+    access_token = request.cookies.get("access_token")
+    if not access_token:
+        # Redirect to login if not authenticated
+        return RedirectResponse(url="/api/v1/auth/login", status_code=302)
+
+    # Decode token to get user info
+    try:
+        token_payload = await jwt_validator.validate_token(access_token)
+        student_id = token_payload.sub
+    except Exception:
+        # Token invalid, redirect to login
+        return RedirectResponse(url="/api/v1/auth/login", status_code=302)
+
+    # Fetch stats from backend
+    try:
+        stats = await stats_service.get_user_statistics(UUID(student_id))
+    except Exception as e:
+        logger.error(f"Failed to fetch stats for user {student_id}: {e}")
+        stats = {}
+
     return _render_template_safe(
         "statistics.hbs",
-        {"request": request, "active_page": "statistics", **get_keycloak_urls()},
+        {
+            "request": request,
+            "active_page": "statistics",
+            "stats": stats,
+            "student_id": student_id,
+            **get_keycloak_urls(),
+        },
     )
+
+
+@router.post("/statistics/refresh")
+@traced("pages.statistics_refresh")
+async def statistics_refresh(request: Request):
+    """Refresh statistics and redirect back."""
+    access_token = request.cookies.get("access_token")
+    if not access_token:
+        return RedirectResponse(url="/api/v1/auth/login", status_code=302)
+
+    try:
+        token_payload = await jwt_validator.validate_token(access_token)
+        student_id = token_payload.sub
+        await stats_service.refresh_user_statistics(UUID(student_id))
+    except Exception as e:
+        logger.error(f"Failed to refresh stats: {e}")
+
+    return RedirectResponse(url="/statistics", status_code=303)
 
 
 @router.get("/register", response_class=HTMLResponse)

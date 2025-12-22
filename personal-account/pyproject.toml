@@ -94,3 +94,12 @@ line-ending = "auto"
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry]
+name = "personal-account"
+version = "0.1.0"
+description = ""
+package-mode = false  # Добавлено: отключает установку проекта как пакета, используем только для зависимостей
+
+
