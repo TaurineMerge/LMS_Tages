@@ -6,7 +6,7 @@ import (
 	"errors"
 	"log/slog"
 
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/api/v1/dto/response"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/dto/response"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apperrors"
 	"github.com/gofiber/fiber/v2"
 )

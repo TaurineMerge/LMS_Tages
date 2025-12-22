@@ -3,8 +3,8 @@
 package v1
 
 import (
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/api/v1/dto/request"
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/api/v1/dto/response"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/dto/request"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/dto/response"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/service"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/routing"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apperrors"
@@ -21,8 +21,6 @@ type LessonHandler struct {
 func NewLessonHandler(s service.LessonService) *LessonHandler {
 	return &LessonHandler{service: s}
 }
-
-
 
 // GetLessonsByCourseID handles the request to get a paginated list of lessons for a course.
 func (h *LessonHandler) GetLessonsByCourseID(c *fiber.Ctx) error {

@@ -1,0 +1,13 @@
+<nav class="lesson-page__navigation">
+    {{#if PrevLesson.Ref}}
+        <a href="{{PrevLesson.Ref}}" class="lesson-page__navigation-button lesson-page__navigation-button--prev lesson-page__navigation-button--prev button button--glass">
+            <span class="lesson-page__navigation-text">Предыдущий урок</span>
+        </a>
+    {{/if}}
+    
+    {{#if NextLesson.Ref}}
+        <a href="{{NextLesson.Ref}}" class="lesson-page__navigation-button lesson-page__navigation-button--next button button--glass">
+            <span class="lesson-page__navigation-text">Следующий урок</span>
+        </a>
+    {{/if}}
+</nav>

@@ -3,8 +3,8 @@
 package v1
 
 import (
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/api/v1/dto/request"
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/api/v1/dto/response"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/dto/request"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/dto/response"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/service"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/routing"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apperrors"

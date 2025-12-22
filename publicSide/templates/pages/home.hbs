@@ -1,3 +1,4 @@
+{{#with Context}}
 <section class="home">
     <header class="home__header">
         <h1 class="home__header-title">
@@ -57,17 +58,17 @@
                 пройденным тестам</li>
         </ul>
     </section>
-    {{#if categories}}
+    {{#if Categories}}
         <section class="home__random-categories">
-            <h2 class="home__random-categories-title">Подборка случайных
-                категорий</h2>
+            <h2 class="home__random-categories-title">Подборка категорий:</h2>
             <ul class="home__random-categories-list">
-                {{#each categories}}
+                {{#each Categories}}
                 <li class="home__random-categories-item">
-
+                    {{> partials/category-card this}}
                 </li>
                 {{/each}}
             </ul>
         </section>
     {{/if}}
 </section>
+{{/with}}

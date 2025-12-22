@@ -3,9 +3,10 @@ package web
 import (
 	"log/slog"
 
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/web/breadcrumbs"
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/web/viewmodel"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/service"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/viewmodel"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apperrors"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/routing"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -13,145 +14,133 @@ import (
 
 // CoursesHandler handles web requests for the courses page.
 type CoursesHandler struct {
-	courseService service.CourseService
-	lessonService service.LessonService
+	courseService   service.CourseService
+	categoryService service.CategoryService
+	lessonService   service.LessonService
 }
 
 // NewCoursesHandler creates a new instance of CoursesHandler.
-func NewCoursesHandler(courseService service.CourseService, lessonService service.LessonService) *CoursesHandler {
+func NewCoursesHandler(courseService service.CourseService, categoryService service.CategoryService, lessonService service.LessonService) *CoursesHandler {
 	return &CoursesHandler{
-		courseService: courseService,
-		lessonService: lessonService,
+		courseService:   courseService,
+		categoryService: categoryService,
+		lessonService:   lessonService,
 	}
 }
 
-
-
 // RenderCourses renders the courses page with filters and sorting.
 func (h *CoursesHandler) RenderCourses(c *fiber.Ctx) error {
-	vm, err := h.buildCoursesPageViewModel(c)
+	categoryID := c.Params(routing.PathVariableCategoryID)
+	if _, err := uuid.Parse(categoryID); err != nil {
+		return apperrors.NewInvalidUUID(routing.PathVariableCategoryID)
+	}
+	page := c.QueryInt("page", 1)
+	level := c.Query("level", "all")
+	sortBy := c.Query("sort_by", "updated_at")
+	limit := c.QueryInt("limit", 28)
+
+	categoryDTO, err := h.categoryService.GetByID(c.UserContext(), categoryID)
 	if err != nil {
 		return err
 	}
-	return c.Render("pages/courses", vm, "layouts/main")
+
+	coursesDTOs, coursesPagination, err := h.courseService.GetCoursesByCategoryID(
+		c.UserContext(), categoryID, page, limit, level, sortBy,
+	)
+	if err != nil {
+		return err
+	}
+
+	lessonAmounts := make([]int, 0, len(coursesDTOs))
+	for _, course := range coursesDTOs {
+		_, pag, err := h.lessonService.GetAllByCourseID(c.UserContext(), categoryID, course.ID, 1, 1, "")
+		if err != nil {
+			return err
+		}
+		lessonAmounts = append(lessonAmounts, pag.Total)
+	}
+
+	vm := viewmodel.NewCoursesPageViewModel(
+		categoryDTO,
+		coursesDTOs,
+		coursesPagination,
+		lessonAmounts,
+		level,
+		sortBy,
+	)
+
+	vm.Courses = russifyCoursesLevel(vm.Courses)
+
+	return c.Render("pages/courses", fiber.Map{
+		"Header":  viewmodel.NewHeader(),
+		"User":    viewmodel.NewUserViewModel(c.Locals(domain.UserContextKey).(domain.UserClaims)),
+		"Main":    viewmodel.NewMain("Courses"),
+		"Context": vm,
+	}, "layouts/main")
 }
 
 // RenderCoursePage renders the individual course page with course details.
 func (h *CoursesHandler) RenderCoursePage(c *fiber.Ctx) error {
-	vm, err := h.buildCoursePageViewModel(c)
+	categoryID := c.Params(routing.PathVariableCategoryID)
+	if _, err := uuid.Parse(categoryID); err != nil {
+		return err
+	}
+	courseID := c.Params(routing.PathVariableCourseID)
+	if _, err := uuid.Parse(courseID); err != nil {
+		return err
+	}
+
+	categoryDTO, err := h.categoryService.GetByID(c.UserContext(), categoryID)
 	if err != nil {
 		return err
 	}
-	return c.Render("pages/course", vm, "layouts/main")
-}
-
-func (h *CoursesHandler) buildCoursesPageViewModel(c *fiber.Ctx) (viewmodel.CoursesPageViewModel, error) {
-	vm := viewmodel.CoursesPageViewModel{}
-	categoryID := c.Params(routing.PathVariableCategoryID)
-	if _, err := uuid.Parse(categoryID); err != nil {
-		// This should be handled by a validation middleware ideally
-		return vm, err
-	}
-	vm.CategoryID = categoryID
-
-	// Parse query parameters
-	vm.CurrentPage = c.QueryInt("page", 1)
-	vm.Level = c.Query("level", "all")
-	vm.SortBy = c.Query("sort_by", "updated_desc")
-	limit := c.QueryInt("limit", 28)
-
-	// Get category information
-	category, err := h.courseService.GetCategoryByID(c.UserContext(), categoryID)
+	courseDTO, err := h.courseService.GetCourseByID(c.UserContext(), categoryID, courseID)
 	if err != nil {
-		return vm, err
+		return err
 	}
-	vm.CategoryTitle = category.Title
-
-	// Build breadcrumbs
-	vm.PageHeader = viewmodel.PageHeaderViewModel{
-		Title:       category.Title,
-		Breadcrumbs: breadcrumbs.ForCoursesPage(*category),
+	lessonsDTOs, _, err := h.lessonService.GetAllByCourseID(c.UserContext(), categoryID, courseID, 1, 10, "created_at")
+	if err != nil {
+		slog.Error("Failed to get first 10 lessons for course page", "courseId", courseID, "error", err)
+		return err
 	}
 
-	// Get courses
-	courses, pagination, err := h.courseService.GetCoursesByCategoryID(
-		c.UserContext(), categoryID, vm.CurrentPage, limit, vm.Level, vm.SortBy,
+	vm := viewmodel.NewCoursePageViewModel(
+		categoryDTO,
+		courseDTO,
+		lessonsDTOs,
 	)
-	if err != nil {
-		return vm, err
-	}
-	vm.Pagination = pagination
 
-	// Transform courses to view model
-	vm.Courses = make([]viewmodel.CourseView, len(courses))
-	for i, course := range courses {
-		levelRu := "Средний"
-		switch course.Level {
-		case "easy":
-			levelRu = "Легкий"
-		case "hard":
-			levelRu = "Сложный"
-		}
-		vm.Courses[i] = viewmodel.CourseView{
-			ID:          course.ID,
-			Title:       course.Title,
-			Description: course.Description,
-			Level:       course.Level,
-			LevelRu:     levelRu,
-		}
-	}
+	russifyCourseDetailLevel(vm.Course)
 
-	return vm, nil
+	return c.Render("pages/course", fiber.Map{
+		"Header":  viewmodel.NewHeader(),
+		"User":    viewmodel.NewUserViewModel(c.Locals(domain.UserContextKey).(domain.UserClaims)),
+		"Main":    viewmodel.NewMain("Course"),
+		"Context": vm,
+	}, "layouts/main")
 }
 
-func (h *CoursesHandler) buildCoursePageViewModel(c *fiber.Ctx) (viewmodel.CoursePageViewModel, error) {
-	vm := viewmodel.CoursePageViewModel{}
-	categoryID := c.Params(routing.PathVariableCategoryID)
-	courseID := c.Params(routing.PathVariableCourseID)
-
-	if _, err := uuid.Parse(categoryID); err != nil {
-		return vm, err
-	}
-	if _, err := uuid.Parse(courseID); err != nil {
-		return vm, err
-	}
-	vm.CategoryID = categoryID
-
-	// Get category and course info
-	category, err := h.courseService.GetCategoryByID(c.UserContext(), categoryID)
-	if err != nil {
-		return vm, err
-	}
-	vm.CategoryTitle = category.Title
-
-	course, err := h.courseService.GetCourseByID(c.UserContext(), categoryID, courseID)
-	if err != nil {
-		return vm, err
-	}
-	vm.Course = course
-
-	// Build breadcrumbs
-	vm.PageHeader = viewmodel.PageHeaderViewModel{
-		Title:       course.Title,
-		Breadcrumbs: breadcrumbs.ForCoursePage(*category, course),
+func getLevelRussification(level string) string {
+	enLvlToRu := map[string]string{
+		"all":    "Все уровни",
+		"easy":   "Легкий",
+		"medium": "Средний",
+		"hard":   "Сложный",
 	}
 
-	// Localized level
-	vm.LevelRu = "Средний"
-	switch course.Level {
-	case "easy":
-		vm.LevelRu = "Легкий"
-	case "hard":
-		vm.LevelRu = "Сложный"
+	if ru, ok := enLvlToRu[level]; ok {
+		return ru
 	}
+	return level
+}
 
-	// First lesson ID
-	lessons, _, err := h.lessonService.GetAllByCourseID(c.UserContext(), categoryID, courseID, 1, 1, "created_at")
-	if err != nil {
-		slog.Warn("Failed to get first lesson for course page", "courseId", courseID, "error", err)
-	} else if len(lessons) > 0 {
-		vm.FirstLessonID = lessons[0].ID
+func russifyCoursesLevel(courses []viewmodel.CourseViewModel) []viewmodel.CourseViewModel {
+	for i := range courses {
+		courses[i].LevelRu = getLevelRussification(courses[i].Level)
 	}
+	return courses
+}
 
-	return vm, nil
+func russifyCourseDetailLevel(course *viewmodel.CourseDetailViewModel) {
+	course.LevelRu = getLevelRussification(course.Level)
 }

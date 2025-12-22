@@ -119,10 +119,10 @@ func main() {
 	// 8. Setup Routes
 	webRouter := &router.WebRouter{
 		Config:              &cfg.App,
-		HomeHandler:         web.NewHomeHandler(),
+		HomeHandler:         web.NewHomeHandler(categoryService, courseService),
 		CategoryPageHandler: web.NewCategoryHandler(categoryService, courseService),
-		CoursesHandler:      web.NewCoursesHandler(courseService, lessonService),
-		WebLessonHandler:    web.NewLessonHandler(lessonService, courseService),
+		CoursesHandler:      web.NewCoursesHandler(courseService, categoryService, lessonService),
+		WebLessonHandler:    web.NewLessonHandler(lessonService, courseService, categoryService),
 		AuthHandler:         authHandler,
 		AuthMiddleware:      authMiddleware,
 	}

@@ -4,12 +4,11 @@ package web
 import (
 	"context"
 
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/web/viewmodel"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/gofiber/fiber/v2"
-)
 
-const UserContextKey = "user"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
+)
 
 // AuthMiddleware contains dependencies for auth middleware.
 type AuthMiddleware struct {
@@ -31,9 +30,9 @@ func NewAuthMiddleware(provider *oidc.Provider, clientID string) *AuthMiddleware
 // and anonymous users (e.g., the header).
 func (m *AuthMiddleware) WithUser(c *fiber.Ctx) error {
 	// Set a default empty user
-	c.Locals(UserContextKey, viewmodel.UserClaims{})
+	c.Locals(domain.UserContextKey, domain.UserClaims{})
 
-	rawIDToken := c.Cookies("session_token")
+	rawIDToken := c.Cookies(domain.SessionTokenCookie)
 	if rawIDToken == "" {
 		return c.Next() // No token, just continue
 	}
@@ -47,14 +46,14 @@ func (m *AuthMiddleware) WithUser(c *fiber.Ctx) error {
 		return c.Next()
 	}
 
-	var claims viewmodel.UserClaims
+	var claims domain.UserClaims
 	if err := idToken.Claims(&claims); err != nil {
 		// Claims are malformed, continue as anonymous
 		return c.Next()
 	}
 
 	// Token is valid, populate locals
-	c.Locals(UserContextKey, claims)
+	c.Locals(domain.UserContextKey, claims)
 
 	return c.Next()
 }

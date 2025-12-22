@@ -5,6 +5,8 @@ import (
 	"errors"
 	"log/slog"
 
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/viewmodel"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apperrors"
 	"github.com/gofiber/fiber/v2"
 )
@@ -21,6 +23,9 @@ func WebErrorHandler(c *fiber.Ctx, err error) error {
 	}
 
 	return c.Status(appErr.HTTPStatus).Render("pages/error", fiber.Map{
+		"Header": viewmodel.NewHeader(),
+		"User":   viewmodel.NewUserViewModel(c.Locals(domain.UserContextKey).(domain.UserClaims)),
+		"Main":   viewmodel.NewMain("Home"),
 		"Title":   "Error",
 		"HTTPStatus":    appErr.HTTPStatus,
 		"Message": appErr.Message,

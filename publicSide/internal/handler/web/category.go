@@ -1,87 +1,68 @@
 package web
 
 import (
-	"context"
+	"fmt"
+	"log/slog"
 
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/web/breadcrumbs"
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/web/viewmodel"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/dto/request"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/dto/response"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/service"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/viewmodel"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apperrors"
 	"github.com/gofiber/fiber/v2"
 )
 
 // CategoryHandler - обработчик для страниц категорий.
 type CategoryHandler struct {
-	categoryService service.CategoryService
-	courseService   service.CourseService
+	categoriesService service.CategoryService
+	coursesService    service.CourseService
 }
 
 // NewCategoryHandler создает новый экземпляр CategoryHandler.
-func NewCategoryHandler(categoryService service.CategoryService, courseService service.CourseService) *CategoryHandler {
+func NewCategoryHandler(categoriesService service.CategoryService, coursesService service.CourseService) *CategoryHandler {
 	return &CategoryHandler{
-		categoryService: categoryService,
-		courseService:   courseService,
+		categoriesService: categoriesService,
+		coursesService:    coursesService,
 	}
 }
-
-
 
 // RenderCategories отображает страницу категорий.
 func (h *CategoryHandler) RenderCategories(c *fiber.Ctx) error {
-	vm, err := h.buildCategoriesPageViewModel(c.UserContext())
+	const (
+		PAGE         = 1
+		LIMIT        = 10
+		COURSE_LIMIT = 5
+	)
+	var query request.PaginationQuery
+	if err := c.QueryParser(&query); err != nil {
+		return apperrors.NewInvalidRequest("Wrong query parameters")
+	}
+	ctx := c.UserContext()
+
+	categoriesDTOs, pagination, err := h.categoriesService.GetAllNotEmpty(ctx, PAGE, LIMIT)
 	if err != nil {
-		return err
+		slog.Error("Failed to get categories for home page", "error", err)
+		categoriesDTOs = []response.CategoryDTO{}
 	}
-
-	return c.Render("pages/categories", vm, "layouts/main")
-}
-
-func (h *CategoryHandler) buildCategoriesPageViewModel(ctx context.Context) (viewmodel.CategoriesPageViewModel, error) {
-	vm := viewmodel.CategoriesPageViewModel{
-		PageHeader: viewmodel.PageHeaderViewModel{
-			Title:       "Категории курсов",
-			Breadcrumbs: breadcrumbs.ForCategoriesPage(),
-		},
-	}
-
-	// Получаем список всех категорий (ограничим 100, чтобы не перегружать страницу).
-	const categoriesPage = 1
-	const categoriesLimit = 100
-	categoryDTOs, _, err := h.categoryService.GetAll(ctx, categoriesPage, categoriesLimit)
-	if err != nil {
-		return viewmodel.CategoriesPageViewModel{}, err
-	}
-
-	categories := make([]viewmodel.CategoryView, 0, len(categoryDTOs))
-
-	// Для каждой категории подтягиваем до 10 публичных курсов.
-	const coursesPage = 1
-	const coursesLimit = 10
-	for _, cat := range categoryDTOs {
-		catView := viewmodel.CategoryView{
-			ID:    cat.ID,
-			Title: cat.Title,
-		}
-
-		courses, pagination, err := h.courseService.GetCoursesByCategoryID(ctx, cat.ID, coursesPage, coursesLimit, "", "")
+	categories := make([]viewmodel.CategoryViewModel, 0, len(categoriesDTOs))
+	for _, cat := range categoriesDTOs {
+		coursesDTOs, coursesPagination, err := h.coursesService.GetCoursesByCategoryID(ctx, cat.ID, 1, COURSE_LIMIT, "", "")
 		if err != nil {
-			return viewmodel.CategoriesPageViewModel{}, err
+			slog.Error("Failed to get courses for category", "categoryID", cat.ID, "error", err)
+			coursesDTOs = []response.CourseDTO{}
+			coursesPagination = response.Pagination{}
 		}
-
-		catView.TotalCourses = pagination.Total
-
-		courseViews := make([]viewmodel.CategoryCourseView, 0, len(courses))
-		for _, course := range courses {
-			courseViews = append(courseViews, viewmodel.CategoryCourseView{
-				ID:    course.ID,
-				Title: course.Title,
-			})
-		}
-		catView.Courses = courseViews
-		catView.HasMoreCourses = pagination.Total > len(courseViews)
-
-		categories = append(categories, catView)
+		categories = append(categories, viewmodel.NewCategoryViewModel(cat, coursesDTOs, coursesPagination, COURSE_LIMIT))
 	}
-	vm.Categories = categories
-
-	return vm, nil
+	vm := viewmodel.NewCategoriesPageViewMode(categories, pagination)
+	if len(vm.Categories) == 0 {
+		return apperrors.NewNotFound(fmt.Sprintf("Page %d", query.Page))
+	}
+	return c.Render("pages/categories", fiber.Map{
+		"Header":  viewmodel.NewHeader(),
+		"User":    viewmodel.NewUserViewModel(c.Locals(domain.UserContextKey).(domain.UserClaims)),
+		"Main":    viewmodel.NewMain("Categories"),
+		"Context": vm,
+	}, "layouts/main")
 }

@@ -1,34 +1,23 @@
-{{! Используем новый partial для заголовка, передавая ему соответствующую часть ViewModel }}
-{{> partials/page_header}}
+{{#with Context}}
+{{> partials/page-header PageHeader}}
 
-<div class="lesson-page-layout">
-    {{! Сайдбар теперь тоже получает всю ViewModel, чтобы иметь доступ ко всем данным }}
-    {{> partials/course-sidebar . }}
-    <div class="lesson-page-content">
-        <article class="lesson-content">
-            {{#each Lesson.Content}}
-                {{#if (eqs this.ContentType "text")}}
-                    <div class="content-block content-block--text">
-                        <p>{{{this.Data}}}</p>
-                    </div>
-                {{/if}}
-                {{#if (eqs this.ContentType "image")}}
-                    <div class="content-block content-block--image">
-                        <img src="{{this.URL}}" alt="{{this.Alt}}">
-                    </div>
-                {{/if}}
-            {{/each}}
-        </article>
-
-        <div class="lesson-navigation">
-            {{#if PrevLesson.ID}}
-                <a href="/categories/{{Course.CategoryID}}/courses/{{Course.ID}}/lessons/{{PrevLesson.ID}}" class="button button--primary lesson__button">Previous Lesson</a>
+<section class="lesson-page">
+    <div class="lesson-page__content">
+        <aside class="lesson-page__lessons-panel lessons-preview">
+            <div class="lessons-preview__header">
+                <span class="lessons-preview__count">Уроки в курсе:</span>
+            </div>
+        
+            {{#if Lessons}}
+                {{> partials/lessons-preview Lesson=Lesson Lessons=Lessons showButton=false}}
             {{/if}}
-
-            {{#if NextLesson.ID}}
-                <a href="/categories/{{Course.CategoryID}}/courses/{{Course.ID}}/lessons/{{NextLesson.ID}}" class="button button--primary lesson__button" style="margin-left: auto;">Next Lesson</a>
-            {{/if}}
-        </div>
+        </aside>
+        <main class="lesson-page__main">
+            <article class="lesson-page__article">
+                {{{Lesson.Content}}}
+            </article>
+            {{> partials/lesson-navigation . }}
+        </main>
     </div>
-</div>
-
+</section>
+{{/with}}

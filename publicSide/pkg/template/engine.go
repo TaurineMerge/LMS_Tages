@@ -7,6 +7,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/config"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/viewmodel"
 	"github.com/gofiber/template/handlebars/v2"
 )
 
@@ -42,13 +43,13 @@ func NewEngine(cfg *config.AppConfig) *handlebars.Engine {
 		return truncated + "..."
 	})
 
-	engine.AddFunc("eqs", func(a, b string) bool {
-		return a == b
-	})
-
 	// Register custom helper for equality comparison
 	engine.AddFunc("eq", func(a, b int) bool {
 		return a == b
+	})
+
+	engine.AddFunc("neq", func(a, b int) bool {
+		return a != b
 	})
 
 	// Register custom helper for string equality comparison
@@ -85,9 +86,20 @@ func NewEngine(cfg *config.AppConfig) *handlebars.Engine {
 		return result
 	})
 
+	engine.AddFunc("len", func(s string) int {
+		return utf8.RuneCountInString(s)
+	})
+
 	// Register helper for date formatting
 	engine.AddFunc("formatDate", func(t time.Time) string {
 		return t.Format("02.01.2006")
+	})
+
+	engine.AddFunc("firstLessonRef", func(slice []viewmodel.LessonViewModel) string {
+		if len(slice) == 0 {
+			return "#"
+		}
+		return slice[0].Ref
 	})
 
 	return engine

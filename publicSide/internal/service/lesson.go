@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/api/v1/dto/response"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/dto/response"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/repository"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apperrors"
 	"go.opentelemetry.io/otel"

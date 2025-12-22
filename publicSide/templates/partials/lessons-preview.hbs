@@ -1,0 +1,29 @@
+{{#if Lessons}}
+    <ol class="lessons-preview__list">
+        {{#each Lessons}}
+            <li class="lessons-preview__item">
+                <a
+                {{#if (streq Lesson.Ref this.Ref)}} 
+                    href="#"
+                {{else}}
+                    href="{{this.Ref}}"
+                {{/if}}
+                class="lessons-preview__link link
+                {{#if (streq Lesson.Ref this.Ref)}}lessons-preview__link--active{{/if}}
+                ">
+                    {{this.Title}}
+                </a>
+            </li>
+        {{/each}}
+    </ol>
+    {{#if showButton}}
+    <div class="lessons-preview__actions">
+        <a href="{{firstLessonRef Course.Lessons}}" class="button">Перейти к
+            урокам</a>
+    </div>
+    {{/if}}
+{{else}}
+    <div class="lessons-preview__empty">
+        <p>В этом курсе пока нет уроков.</p>
+    </div>
+{{/if}}

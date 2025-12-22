@@ -1,4 +1,5 @@
-{{> partials/page_header PageHeader}}
+{{#with Context}}
+{{> partials/page-header PageHeader}}
 
 <div class="courses">
     <div class="courses__header">
@@ -10,7 +11,7 @@
             {{/if}}
         </h2>
         <div class="courses__filters">
-            <form method="GET" action="/categories/{{CategoryID}}/courses" class="filters-form">
+            <form method="GET" action="{{Pagination.BaseUrl}}" class="filters-form">
                 <div class="filter-group">
                     <label for="level-filter">Сложность:</label>
                     <select name="level" id="level-filter" onchange="this.form.submit()">
@@ -23,11 +24,12 @@
                 <div class="filter-group">
                     <label for="sort-filter">Сортировка:</label>
                     <select name="sort_by" id="sort-filter" onchange="this.form.submit()">
-                        <option value="updated_desc" {{#if (streq SortBy "updated_desc")}}selected{{/if}}>Сначала новые</option>
-                        <option value="updated_asc" {{#if (streq SortBy "updated_asc")}}selected{{/if}}>Сначала старые</option>
+                        <option value="-updated_at" {{#if (streq SortBy "-updated_at")}}selected{{/if}}>Сначала новые</option>
+                        <option value="updated_at" {{#if (streq SortBy "updated_at")}}selected{{/if}}>Сначала старые</option>
                     </select>
                 </div>
-                <input type="hidden" name="page" value="{{CurrentPage}}">
+                <input type="hidden" name="page" value="1">
+                <input type="hidden" name="limit" value="{{Pagination.Limit}}">
             </form>
         </div>
     </div>
@@ -35,33 +37,13 @@
     {{#if Courses}}
         <div class="courses__grid">
             {{#each Courses}}
-                {{> partials/course-card CategoryID=../CategoryID}}
+                {{> partials/course-card this}}
             {{/each}}
         </div>
 
-        {{#if Pagination}}
-        {{#if (gt Pagination.Pages 1)}}
-        <div class="pagination">
-            {{#if (gt CurrentPage 1)}}
-                <a href="/categories/{{../CategoryID}}/courses?page={{subtract CurrentPage 1}}&level={{../Level}}&sort_by={{../SortBy}}" class="pagination__btn">← Назад</a>
-            {{/if}}
-
-            <div class="pagination__pages">
-                {{#each (range 1 Pagination.Pages)}}
-                    {{#if (eq this ../CurrentPage)}}
-                        <a href="/categories/{{../../CategoryID}}/courses?page={{this}}&level={{../../Level}}&sort_by={{../../SortBy}}" class="pagination__page pagination__page--active">{{this}}</a>
-                    {{else}}
-                        <a href="/categories/{{../../CategoryID}}/courses?page={{this}}&level={{../../Level}}&sort_by={{../../SortBy}}" class="pagination__page">{{this}}</a>
-                    {{/if}}
-                {{/each}}
-            </div>
-
-            {{#if (lt CurrentPage Pagination.Pages)}}
-                <a href="/categories/{{../CategoryID}}/courses?page={{add CurrentPage 1}}&level={{../Level}}&sort_by={{../SortBy}}" class="pagination__btn">Вперёд →</a>
-            {{/if}}
+        <div class="courses__pagination">
+            {{> partials/pagination Pagination }}
         </div>
-        {{/if}}
-        {{/if}}
     {{else}}
         <div class="empty-state">
             <div class="empty-state__icon">📭</div>
@@ -70,3 +52,4 @@
         </div>
     {{/if}}
 </div>
+{{/with}}
