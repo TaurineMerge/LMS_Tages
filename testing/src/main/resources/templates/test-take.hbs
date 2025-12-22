@@ -219,7 +219,8 @@
         <label class="btn-outline" for="finishToggle">Продолжить тест</label>
 
         <!-- завершить -->
-        <form method="post" action="/ui/tests/{{test.id}}/finish" style="margin:0;">
+        <!-- ИСПРАВЛЕНО: Добавлен префикс /testing -->
+        <form method="post" action="/testing/ui/tests/{{test.id}}/finish" style="margin:0;">
           <input type="hidden" name="student_id" value="{{student_id}}" />
           <input type="hidden" name="force" value="true" />
           <button type="submit" class="{{#if allAnswered}}btn{{else}}btn-danger{{/if}}">
@@ -230,7 +231,7 @@
     </div>
   </div>
 
-  <!-- TOPBAR (без плашки “Сессия”) -->
+  <!-- TOPBAR (без плашки "Сессия") -->
   <div class="topbar">
     <div class="topbar-inner">
       <div class="top-left">
@@ -267,7 +268,8 @@
 
             <p class="qtext">{{text_of_question}}</p>
 
-            <form method="post" action="/ui/tests/{{../test.id}}/questions/{{id}}/answer">
+            <!-- ИСПРАВЛЕНО: Добавлен префикс /testing -->
+            <form method="post" action="/testing/ui/tests/{{../test.id}}/questions/{{id}}/answer">
               <div class="answers">
                 {{#each answers}}
                   <label class="answer {{#if disabled}}disabled{{/if}} {{#if selected}}selected{{/if}}">
@@ -302,5 +304,16 @@
 <footer class="footer">
   {{> footer}}
 </footer>
+
+<script>
+  // Отладка для проверки путей
+  console.log('Текущий URL:', window.location.href);
+  console.log('Тест ID:', '{{test.id}}');
+  
+  // Логируем все action форм
+  document.querySelectorAll('form').forEach(form => {
+    console.log('Форма action:', form.action);
+  });
+</script>
 </body>
 </html>

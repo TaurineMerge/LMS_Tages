@@ -225,7 +225,7 @@ public class UiTestController {
         }
 
         // якорь — чтобы не скроллило в начало
-        ctx.redirect("/ui/tests/" + testId + "/take#q_" + questionId);
+        ctx.redirect("/testing/ui/tests/" + testId + "/take#q_" + questionId);
     }
 
     // =========================================================
@@ -326,7 +326,7 @@ public class UiTestController {
 
         if (missingCount > 0 && !force) {
             // если пришли без force — отправляем на confirm-страницу
-            ctx.redirect("/ui/tests/" + testIdUuid + "/finish");
+            ctx.redirect("testing/ui/tests/" + testIdUuid + "/finish");
             return;
         }
 
@@ -383,7 +383,7 @@ public class UiTestController {
         }
 
         // кладем результаты в cookie? не нужно — просто редирект на results (там пересчитаем)
-        ctx.redirect("/ui/tests/" + testIdUuid + "/results");
+        ctx.redirect("/testing/ui/tests/" + testIdUuid + "/results");
     }
 
     /**
