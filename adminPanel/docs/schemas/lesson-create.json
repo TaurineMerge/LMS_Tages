@@ -17,7 +17,7 @@
             "items": {
                 "type": "object",
                 "properties": {
-                    "type": {
+                    "content_type": {
                         "type": "string",
                         "description": "Тип контента"
                     },
@@ -25,7 +25,7 @@
                         "description": "Данные контента"
                     }
                 },
-                "required": ["type", "data"]
+                "required": ["content_type", "data"]
             }
         }
     },
