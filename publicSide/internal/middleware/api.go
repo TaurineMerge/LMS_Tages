@@ -27,11 +27,12 @@ func APIErrorHandler(c *fiber.Ctx, err error) error {
 
 	// This is an unhandled, unexpected error
 	slog.Error("Unhandled API error", "error", err) // Log the unexpected error
-	return c.Status(fiber.StatusInternalServerError).JSON(response.ErrorResponse{
+	appErr = apperrors.NewInternal().(*apperrors.AppError)
+	return c.Status(appErr.HTTPStatus).JSON(response.ErrorResponse{
 		Status: response.StatusError,
 		Error: response.ErrorDetail{
-			Code:    "INTERNAL_SERVER_ERROR",
-			Message: "An unexpected internal error occurred",
+			Code:    appErr.Code,
+			Message: appErr.Message,
 		},
 	})
 }
