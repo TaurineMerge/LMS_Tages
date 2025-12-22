@@ -240,6 +240,30 @@ services:
       - app-network
     restart: unless-stopped
 
+  minio:
+    build: ./minio
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET_CERTIFICATES: ${MINIO_BUCKET_CERTIFICATES:-certificates}
+      MINIO_BUCKET_SNAPSHOTS: ${MINIO_BUCKET_SNAPSHOTS:-snapshots}
+      MINIO_BUCKET_IMAGES: ${MINIO_BUCKET_IMAGES:-images}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - app-network
+    restart: unless-stopped
+
 networks:
   keycloak-network:
     driver: bridge
@@ -251,4 +275,6 @@ volumes:
   keycloak_data:
     driver: local
   app_data:
+    driver: local
+  minio_data:
     driver: local
