@@ -10,8 +10,8 @@ import (
 
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/config"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/api/v1"
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/api/v1/middleware"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/web"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/middleware"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/repository"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/router"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/service"
@@ -70,7 +70,7 @@ func main() {
 	defer dbPool.Close()
 	slog.Info("Database connection pool established")
 
-	// 6. Initialize Services and Handlers
+	// 6. Initialize Services
 	lessonRepo := repository.NewLessonRepository(dbPool)
 	categoryRepo := repository.NewCategoryRepository(dbPool)
 	courseRepo := repository.NewCourseRepository(dbPool)
@@ -82,8 +82,8 @@ func main() {
 	// 7. Initialize Fiber App and Global Middleware
 	engine := template.NewEngine(&cfg.App)
 	app := fiber.New(fiber.Config{
-		ErrorHandler: middleware.GlobalErrorHandler,
-		Views:        engine,
+		Views: engine,
+		ErrorHandler: middleware.CommonErrorHandler,
 	})
 
 	app.Use(cors.New(cors.Config{

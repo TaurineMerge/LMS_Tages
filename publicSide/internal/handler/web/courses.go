@@ -31,12 +31,7 @@ func NewCoursesHandler(courseService service.CourseService, lessonService servic
 func (h *CoursesHandler) RenderCourses(c *fiber.Ctx) error {
 	vm, err := h.buildCoursesPageViewModel(c)
 	if err != nil {
-		slog.Error("Failed to build courses page view model", "error", err)
-		// Render a generic error page, or let the global error handler manage it
-		return c.Status(fiber.StatusInternalServerError).Render("pages/error", fiber.Map{
-			"title":   "Error",
-			"message": "Could not load the courses page.",
-		}, "layouts/main")
+		return err
 	}
 	return c.Render("pages/courses", vm, "layouts/main")
 }
@@ -45,11 +40,7 @@ func (h *CoursesHandler) RenderCourses(c *fiber.Ctx) error {
 func (h *CoursesHandler) RenderCoursePage(c *fiber.Ctx) error {
 	vm, err := h.buildCoursePageViewModel(c)
 	if err != nil {
-		slog.Error("Failed to build course page view model", "error", err)
-		return c.Status(fiber.StatusInternalServerError).Render("pages/error", fiber.Map{
-			"title":   "Error",
-			"message": "Could not load the course page.",
-		}, "layouts/main")
+		return err
 	}
 	return c.Render("pages/course", vm, "layouts/main")
 }

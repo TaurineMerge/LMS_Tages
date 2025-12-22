@@ -3,6 +3,7 @@ package router
 import (
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/config"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/web"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/middleware"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/routing"
 	"github.com/gofiber/fiber/v2"
 )
@@ -20,10 +21,7 @@ type WebRouter struct {
 func (r *WebRouter) Setup(app *fiber.App) {
 	// Middleware для no-cache в режиме разработки.
 	if r.Config.Dev {
-		app.Use(func(c *fiber.Ctx) error {
-			c.Set("Cache-Control", "no-cache, no-store, must-revalidate")
-			return c.Next()
-		})
+		app.Use(middleware.NoCache())
 	}
 
 	// Статические файлы

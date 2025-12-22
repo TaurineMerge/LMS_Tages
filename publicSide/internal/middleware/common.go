@@ -4,6 +4,7 @@ package middleware
 
 import (
 	"log/slog"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"go.opentelemetry.io/otel/attribute"
@@ -50,4 +51,11 @@ func RequestResponseLogger() fiber.Handler {
 
 		return err
 	}
+}
+
+func CommonErrorHandler(c *fiber.Ctx, err error) error {
+	if strings.HasPrefix(c.Path(), "/api") {
+		return APIErrorHandler(c, err)
+	}
+	return WebErrorHandler(c, err)
 }
