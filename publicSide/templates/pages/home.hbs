@@ -1,29 +1,73 @@
-<!-- templates/layouts/pages/home.hbs -->
+<section class="home">
+    <header class="home__header">
+        <h1 class="home__header-title">
+            Добро пожаловать в
+            <span class="accent">LMS Tages!</span>
+        </h1>
+        <p class="home__header-description">
+            Платформа, созданная
+            <span class="accent">стажерами</span>
+            для
+            <span class="accent">стажеров</span>
+        </p>
+    </header>
+    <section class="home__abilities">
+        <h2 class="home__abilities-title">Здесь ты можешь:</h2>
+        <ul class="home__abilities-list">
+            <li class="home__abilities-item">Изучать курсы из интересующих тебя
+                категорий</li>
+            <li class="home__abilities-item">Проходить уроки как в свободном
+                режиме, так и с авторизацией</li>
+            <li class="home__abilities-item">Сдавать итоговые тесты и получать
+                именные сертификаты</li>
+            <li class="home__abilities-item">Выбирать свой темп обучения и
+                приоритеты</li>
+        </ul>
+    </section>
+    <section class="home__teachers">
+        <h2 class="home__teachers-title">Откуда берутся курсы и тесты?</h2>
+        <p class="home__teachers-description">
+            Наша платформа открыта не только для учеников, но и для
+            преподавателей! После создания аккаунта для тебя в качестве учителя,
+            ты сможешь:
+            <ul class="home__teachers-list">
+                <li class="home__teachers-item">Создавать и редактировать
+                    категории, курсы, уроки и тесты</li>
+                <li class="home__teachers-item">Работать с черновиками —
+                    публиковать материалы, когда они готовы</li>
+                <li class="home__teachers-item">Управлять контентом для учеников
+                    и гостей системы</li>
+            </ul>
+        </p>
+    </section>
+    <section class="home__personal-account">
+        <h2 class="home__personal-account-title">Личный кабинет предоставляет:</h2>
+        <ul class="home__personal-account-list">
+            <li class="home__personal-account-item">Коллекцию всех полученных
+                сертификатов</li>
+            <li class="home__personal-account-item">Статистику по каждому курсу</li>
+            <li class="home__personal-account-item">Количество попыток
+                тестирования</li>
+            <li class="home__personal-account-item">Процент успешных/неуспешных
+                попыток</li>
+            <li class="home__personal-account-item">Средний балл по всем
+                попыткам</li>
+            <li class="home__personal-account-item">Дата последней попытки</li>
+            <li class="home__personal-account-item">Общую статистику по всем
+                пройденным тестам</li>
+        </ul>
+    </section>
+    {{#if categories}}
+        <section class="home__random-categories">
+            <h2 class="home__random-categories-title">Подборка случайных
+                категорий</h2>
+            <ul class="home__random-categories-list">
+                {{#each categories}}
+                <li class="home__random-categories-item">
 
-<section class="welcome-section">
-    <div class="welcome-hero">
-        <div class="welcome-icon">
-            <i class="fas fa-graduation-cap fa-5x"></i>
-        </div>
-        
-        <h1 class="welcome-heading"> dfdfdfdfв LMS Tages!</h1>
-        
-        <div class="welcome-text">
-            <p class="welcome-paragraph">
-                Подробная информация о нашей системе появится тут позже
-            </p>
-            <p class="welcome-thank-you">
-                Благодарим за понимание!
-            </p>
-        </div>
-        
-        <div class="welcome-divider">
-            <i class="fas fa-ellipsis-h fa-2x"></i>
-        </div>
-        
-        <div class="welcome-info">
-            <p><i class="fas fa-cogs"></i> Система в разработке</p>
-            <p><i class="fas fa-clock"></i> Скоро здесь будет много интересного</p>
-        </div>
-    </div>
+                </li>
+                {{/each}}
+            </ul>
+        </section>
+    {{/if}}
 </section>

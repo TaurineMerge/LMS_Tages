@@ -13,6 +13,12 @@ const (
 // --- Route Definitions (for Fiber's app.Group and app.Get patterns) ---
 const (
 	RouteHome = "/"
+	RouteLogin = "/login"
+	RouteLogout = "/logout"
+	RouteAuthCallback = "/auth/callback"
+	RouteReg = "/reg"
+
+	RouteProfile = "account/profile"
 
 	RouteAPIV1 = "/api/v1"
 

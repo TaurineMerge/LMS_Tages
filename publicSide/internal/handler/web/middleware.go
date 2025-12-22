@@ -4,19 +4,12 @@ package web
 import (
 	"context"
 
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/web/viewmodel"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/gofiber/fiber/v2"
 )
 
 const UserContextKey = "user"
-
-// UserClaims holds the information extracted from the ID token.
-type UserClaims struct {
-	ID       string `json:"sub"`
-	Email    string `json:"email"`
-	Name     string `json:"name"`
-	Username string `json:"preferred_username"`
-}
 
 // AuthMiddleware contains dependencies for auth middleware.
 type AuthMiddleware struct {
@@ -38,7 +31,7 @@ func NewAuthMiddleware(provider *oidc.Provider, clientID string) *AuthMiddleware
 // and anonymous users (e.g., the header).
 func (m *AuthMiddleware) WithUser(c *fiber.Ctx) error {
 	// Set a default empty user
-	c.Locals(UserContextKey, UserClaims{})
+	c.Locals(UserContextKey, viewmodel.UserClaims{})
 
 	rawIDToken := c.Cookies("session_token")
 	if rawIDToken == "" {
@@ -54,7 +47,7 @@ func (m *AuthMiddleware) WithUser(c *fiber.Ctx) error {
 		return c.Next()
 	}
 
-	var claims UserClaims
+	var claims viewmodel.UserClaims
 	if err := idToken.Claims(&claims); err != nil {
 		// Claims are malformed, continue as anonymous
 		return c.Next()

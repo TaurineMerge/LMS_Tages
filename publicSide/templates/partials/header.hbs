@@ -1,20 +1,31 @@
 <header class="header">
-    <div class="header__container">
-        <a href="/" class="header__logo">
-            LMS Tages
-        </a>
-        <nav>
-            <ul class="header__nav">
-                <li><a href="/" class="header__nav-link">Главная</a></li>
-                <li><a href="/categories" class="header__nav-link">Категории</a></li>
-                {{#if user.ID}}
-                    <li><a href="/profile" class="header__nav-link">Профиль ({{user.Username}})</a></li>
-                    <li><a href="/logout" class="header__nav-link">Выход</a></li>
-                {{else}}
-                    <li><a href="#" class="header__nav-link">Регистрация</a></li>
-                    <li><a href="/login" class="header__nav-link">Вход</a></li>
-                {{/if}}
-            </ul>
-        </nav>
+    <a href="/" class="header__logo">
+        <img
+            src="static/icons/logo.svg"
+            alt="Tages logo"
+            width="100"
+            height="100"
+        />
+    </a>
+
+    <nav class="header__nav">
+        <ul>
+            <li><a href="{{header.HomeRoute}}">Главная</a></li>
+            <li><a href="{{header.CategoriesRoute}}">Категории</a></li>
+        </ul>
+    </nav>
+
+    <div class="header__spacer"></div>
+
+    <div class="header__user-nav">
+        <ul>
+            {{#if user.ID}}
+                <li><a href="{{header.ProfileRoute}}">Профиль ({{user.Username}})</a></li>
+                <li><a href="{{header.LogoutRoute}}">Выход</a></li>
+            {{else}}
+                <li><a href="{{header.RegRoute}}">Регистрация</a></li>
+                <li><a href="{{header.LoginRoute}}">Вход</a></li>
+            {{/if}}
+        </ul>
     </div>
 </header>
