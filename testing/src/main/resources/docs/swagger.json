@@ -608,6 +608,744 @@
           }
         }
       }
+    },
+    "/contents": {
+      "get": {
+        "tags": ["Content"],
+        "summary": "Получить список элементов контента",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список элементов контента",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Content"
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизован"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Content"],
+        "summary": "Создать элемент контента",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ContentCreate"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Элемент контента создан",
+            "schema": {
+              "$ref": "#/definitions/Content"
+            }
+          },
+          "400": {
+            "description": "Неверные данные"
+          },
+          "401": {
+            "description": "Не авторизован"
+          }
+        }
+      }
+    },
+    "/contents/search": {
+      "get": {
+        "tags": ["Content"],
+        "summary": "Поиск элементов контента по содержимому",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "content",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "Строка для поиска в содержимом"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Результаты поиска",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Content"
+              }
+            }
+          },
+          "400": {
+            "description": "Параметр content обязателен"
+          },
+          "401": {
+            "description": "Не авторизован"
+          }
+        }
+      }
+    },
+    "/contents/type": {
+      "get": {
+        "tags": ["Content"],
+        "summary": "Фильтрация элементов контента по типу",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "type": "string",
+            "enum": ["true", "false"],
+            "description": "Тип контента (true/false)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Отфильтрованные элементы контента",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Content"
+              }
+            }
+          },
+          "400": {
+            "description": "Неверный параметр type"
+          },
+          "401": {
+            "description": "Не авторизован"
+          }
+        }
+      }
+    },
+    "/contents/{id}": {
+      "get": {
+        "tags": ["Content"],
+        "summary": "Получить элемент контента по ID",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Элемент контента найден",
+            "schema": {
+              "$ref": "#/definitions/Content"
+            }
+          },
+          "401": {
+            "description": "Не авторизован"
+          },
+          "404": {
+            "description": "Элемент контента не найден"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Content"],
+        "summary": "Обновить элемент контента",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ContentUpdate"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Элемент контента обновлен",
+            "schema": {
+              "$ref": "#/definitions/Content"
+            }
+          },
+          "400": {
+            "description": "Неверные данные"
+          },
+          "401": {
+            "description": "Не авторизован"
+          },
+          "404": {
+            "description": "Элемент контента не найден"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Content"],
+        "summary": "Удалить элемент контента",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Элемент контента удален"
+          },
+          "401": {
+            "description": "Не авторизован"
+          },
+          "404": {
+            "description": "Элемент контента не найден"
+          }
+        }
+      }
+    },
+    "/contents/question/{questionId}": {
+      "get": {
+        "tags": ["Content"],
+        "summary": "Получить элементы контента по ID вопроса",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "questionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список элементов контента",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Content"
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизован"
+          }
+        }
+      }
+    },
+    "/contents/answer/{answerId}": {
+      "get": {
+        "tags": ["Content"],
+        "summary": "Получить элементы контента по ID ответа",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "answerId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список элементов контента",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Content"
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизован"
+          }
+        }
+      }
+    },
+    "/contents/validate/{id}": {
+      "get": {
+        "tags": ["Content"],
+        "summary": "Проверить существование элемента контента",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Результат проверки",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "exists": {
+                  "type": "boolean",
+                  "description": "Существует ли элемент контента"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизован"
+          }
+        }
+      }
+    },
+    "/content/health": {
+      "get": {
+        "tags": ["Content"],
+        "summary": "Проверка здоровья сервиса контента",
+        "description": "Эндпоинт для проверки доступности сервиса контента (без аутентификации)",
+        "responses": {
+          "200": {
+            "description": "Сервис работает",
+            "schema": {
+              "type": "string",
+              "example": "OK"
+            }
+          }
+        }
+      }
+    },
+    "/drafts": {
+      "get": {
+        "tags": ["Drafts"],
+        "summary": "Получить список черновиков тестов",
+        "description": "Возвращает список всех черновиков тестов в формате JSON",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список черновиков",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Draft"
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизован"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Drafts"],
+        "summary": "Создать новый черновик теста",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/DraftCreate"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Черновик создан",
+            "schema": {
+              "$ref": "#/definitions/Draft"
+            }
+          },
+          "400": {
+            "description": "Неверные данные"
+          },
+          "401": {
+            "description": "Не авторизован"
+          }
+        }
+      }
+    },
+    "/drafts/{id}": {
+      "get": {
+        "tags": ["Drafts"],
+        "summary": "Получить черновик по ID",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Черновик найден",
+            "schema": {
+              "$ref": "#/definitions/Draft"
+            }
+          },
+          "400": {
+            "description": "Неверный формат ID"
+          },
+          "401": {
+            "description": "Не авторизован"
+          },
+          "404": {
+            "description": "Черновик не найден"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Drafts"],
+        "summary": "Обновить черновик",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/DraftUpdate"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Черновик обновлен",
+            "schema": {
+              "$ref": "#/definitions/Draft"
+            }
+          },
+          "400": {
+            "description": "Неверные данные"
+          },
+          "401": {
+            "description": "Не авторизован"
+          },
+          "404": {
+            "description": "Черновик не найден"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Drafts"],
+        "summary": "Удалить черновик",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Результат удаления",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "deleted": {
+                  "type": "boolean",
+                  "description": "Был ли удален черновик"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверный формат ID"
+          },
+          "401": {
+            "description": "Не авторизован"
+          }
+        }
+      }
+    },
+    "/drafts/test/{testId}": {
+      "get": {
+        "tags": ["Drafts"],
+        "summary": "Получить черновик по ID теста",
+        "description": "Найти черновик, связанный с конкретным тестом",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "testId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Черновик найден",
+            "schema": {
+              "$ref": "#/definitions/Draft"
+            }
+          },
+          "400": {
+            "description": "Неверный формат testId"
+          },
+          "401": {
+            "description": "Не авторизован"
+          },
+          "404": {
+            "description": "Черновик не найден"
+          }
+        }
+      }
+    },
+    "/questions": {
+      "get": {
+        "tags": ["Questions"],
+        "summary": "Получить список вопросов",
+        "description": "Возвращает список всех вопросов. Если передан параметр testId, возвращает вопросы только для указанного теста.",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "testId",
+            "in": "query",
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "description": "Фильтр по ID теста (UUID)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список вопросов",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Question"
+              }
+            }
+          },
+          "400": {
+            "description": "Неверный формат UUID"
+          },
+          "401": {
+            "description": "Не авторизован"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Questions"],
+        "summary": "Создать новый вопрос",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/QuestionCreate"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Вопрос создан",
+            "schema": {
+              "$ref": "#/definitions/Question"
+            }
+          },
+          "400": {
+            "description": "Неверные данные"
+          },
+          "401": {
+            "description": "Не авторизован"
+          }
+        }
+      }
+    },
+    "/questions/{id}": {
+      "get": {
+        "tags": ["Questions"],
+        "summary": "Получить вопрос по ID",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Вопрос найден",
+            "schema": {
+              "$ref": "#/definitions/Question"
+            }
+          },
+          "400": {
+            "description": "Неверный формат ID"
+          },
+          "401": {
+            "description": "Не авторизован"
+          },
+          "404": {
+            "description": "Вопрос не найден"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Questions"],
+        "summary": "Обновить вопрос",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/QuestionUpdate"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Вопрос обновлен",
+            "schema": {
+              "$ref": "#/definitions/Question"
+            }
+          },
+          "400": {
+            "description": "Неверные данные"
+          },
+          "401": {
+            "description": "Не авторизован"
+          },
+          "404": {
+            "description": "Вопрос не найден"
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -858,6 +1596,247 @@
         "score": {
           "type": "integer",
           "description": "Балл за ответ"
+        }
+      }
+    },
+    "Content": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор элемента контента (UUID v4, генерируется автоматически)",
+          "readOnly": true
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Порядковый номер элемента контента (должен быть неотрицательным)"
+        },
+        "content": {
+          "type": "string",
+          "description": "Содержимое элемента контента"
+        },
+        "typeOfContent": {
+          "type": "boolean",
+          "description": "Тип контента"
+        },
+        "questionId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор вопроса (UUID v4)"
+        },
+        "answerId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор ответа (UUID v4)"
+        }
+      }
+    },
+    "ContentCreate": {
+      "type": "object",
+      "required": ["order", "content"],
+      "properties": {
+        "order": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Порядковый номер элемента контента (должен быть неотрицательным)"
+        },
+        "content": {
+          "type": "string",
+          "description": "Содержимое элемента контента (обязательное поле)"
+        },
+        "typeOfContent": {
+          "type": "boolean",
+          "description": "Тип контента"
+        },
+        "questionId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор вопроса (UUID v4)"
+        },
+        "answerId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор ответа (UUID v4)"
+        }
+      }
+    },
+    "ContentUpdate": {
+      "type": "object",
+      "properties": {
+        "order": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Порядковый номер элемента контента (должен быть неотрицательным)"
+        },
+        "content": {
+          "type": "string",
+          "description": "Содержимое элемента контента"
+        },
+        "typeOfContent": {
+          "type": "boolean",
+          "description": "Тип контента"
+        },
+        "questionId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор вопроса (UUID v4)"
+        },
+        "answerId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор ответа (UUID v4)"
+        }
+      }
+    },
+    "Draft": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор черновика (UUID v4, генерируется автоматически)",
+          "readOnly": true
+        },
+        "title": {
+          "type": "string",
+          "description": "Название черновика"
+        },
+        "min_point": {
+          "type": "integer",
+          "description": "Минимальный проходной балл"
+        },
+        "description": {
+          "type": "string",
+          "description": "Описание черновика"
+        },
+        "test_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор теста, к которому относится черновик (UUID v4)"
+        }
+      }
+    },
+    "DraftCreate": {
+      "type": "object",
+      "required": ["title", "test_id"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Название черновика"
+        },
+        "min_point": {
+          "type": "integer",
+          "description": "Минимальный проходной балл"
+        },
+        "description": {
+          "type": "string",
+          "description": "Описание черновика"
+        },
+        "test_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор теста, к которому относится черновик (UUID v4)"
+        }
+      }
+    },
+    "DraftUpdate": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Название черновика"
+        },
+        "min_point": {
+          "type": "integer",
+          "description": "Минимальный проходной балл"
+        },
+        "description": {
+          "type": "string",
+          "description": "Описание черновика"
+        },
+        "test_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор теста, к которому относится черновик (UUID v4)"
+        }
+      }
+    },
+    "Question": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор вопроса (UUID v4, генерируется автоматически)",
+          "readOnly": true
+        },
+        "testId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор теста (UUID v4)"
+        },
+        "textOfQuestion": {
+          "type": "string",
+          "description": "Текст вопроса"
+        },
+        "order": {
+          "type": "integer",
+          "description": "Порядковый номер вопроса в тесте"
+        }
+      }
+    },
+    "QuestionCreate": {
+      "type": "object",
+      "required": ["testId", "textOfQuestion"],
+      "properties": {
+        "testId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор теста (UUID v4)"
+        },
+        "textOfQuestion": {
+          "type": "string",
+          "description": "Текст вопроса"
+        },
+        "order": {
+          "type": "integer",
+          "description": "Порядковый номер вопроса в тесте"
+        }
+      }
+    },
+    "QuestionUpdate": {
+      "type": "object",
+      "required": ["testId", "textOfQuestion"],
+      "properties": {
+        "testId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор теста (UUID v4)"
+        },
+        "textOfQuestion": {
+          "type": "string",
+          "description": "Текст вопроса"
+        },
+        "order": {
+          "type": "integer",
+          "description": "Порядковый номер вопроса в тесте"
         }
       }
     }
