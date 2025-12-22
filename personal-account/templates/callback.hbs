@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Авторизация...</title>
-    <link href="/account/static/css/main.css" rel="stylesheet"/>
+    <link href="{{ prefix }}/static/css/main.css" rel="stylesheet"/>
 </head>
 <body>
     <div class="callback-card" id="callbackCard">
@@ -20,7 +20,7 @@
             <p class="bi bi-x-circle error-icon"></p>
             <h4 class="mt-3">Ошибка авторизации</h4>
             <p class="text-muted" id="errorMessage">Что-то пошло не так</p>
-            <a href="/account/login" class="btn btn-primary mt-3">
+            <a href="{{ prefix }}/login" class="btn btn-primary mt-3">
                 <p class="bi bi-arrow-left me-2"></p>Вернуться к входу
             </a>
         </div>
@@ -62,7 +62,7 @@
             
             try {
                 // Exchange code for token
-                const response = await fetch(`/account/api/v1/auth/callback?code=${encodeURIComponent(code)}`, {
+                const response = await fetch(`{{ prefix }}/api/v1/auth/callback?code=${encodeURIComponent(code)}`, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json'
@@ -87,7 +87,7 @@
                     
                     // Redirect to dashboard
                     setTimeout(() => {
-                        window.location.href = '/account/dashboard';
+                        window.location.href = '{{ prefix }}/dashboard';
                     }, 1500);
                 } else {
                     throw new Error(data.detail || data.error || 'Ошибка обмена кода');

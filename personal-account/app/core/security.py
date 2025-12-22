@@ -111,7 +111,7 @@ class JWTValidator:
 
 # Создаём singleton validator
 _jwt_validator = JWTValidator(
-    keycloak_server_url=settings.KEYCLOAK_SERVER_URL,
+    keycloak_server_url=settings.KEYCLOAK_PUBLIC_URL,  # Используем PUBLIC_URL для issuer
     realm=settings.KEYCLOAK_REALM,
     client_id=settings.KEYCLOAK_CLIENT_ID,
 )

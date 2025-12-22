@@ -25,24 +25,29 @@ logger = logging.getLogger(__name__)
 
 # JWT validator for token decoding
 jwt_validator = JWTValidator(
-    keycloak_server_url=settings.KEYCLOAK_SERVER_URL,
+    keycloak_server_url=settings.KEYCLOAK_PUBLIC_URL,  # Используем PUBLIC_URL для issuer
     realm=settings.KEYCLOAK_REALM,
     client_id=settings.KEYCLOAK_CLIENT_ID,
 )
 
 
-def _render_template_safe(template_name: str, context: dict, request: Request):
+def _render_template_safe(template_name: str, context: dict):
     """Render a Jinja2 template and attach telemetry/logging on exception.
 
     This helper records exceptions on the current span and logs the error
     with trace/span identifiers so failures in template rendering are visible
     in logs and traces.
     """
+    request = context.get("request")
+    if not request:
+        logger.error("Request object missing in template context for %s", template_name)
+        raise ValueError("Request object is required for TemplateResponse")
+
     try:
         # TemplateResponse will be returned to FastAPI and rendered by Starlette
         context["prefix"] = settings.url_prefix  # Динамический prefix из settings
 
-        resp = templates.TemplateResponse(template_name, {"request": request, **context})
+        resp = templates.TemplateResponse(template_name, context)
         # Add trace headers to response (best-effort)
         try:
             span = trace.get_current_span()
@@ -117,7 +122,7 @@ async def root_page(request: Request):
     token = request.cookies.get("access_token")
 
     if token:
-        return RedirectResponse(url="/account/dashboard")  # Full path with /account prefix
+        return RedirectResponse(url=f"{settings.url_prefix}/dashboard")
 
     return _render_template_safe("index.hbs", {"request": request, **get_keycloak_urls()})
 
