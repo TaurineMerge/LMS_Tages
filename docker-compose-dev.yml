@@ -55,7 +55,6 @@ services:
       KC_HOSTNAME_STRICT_HTTPS: "false"
       KC_PROXY: "edge"
       KC_HOSTNAME: "localhost"
-      KC_HOSTNAME_PORT: "8080"
       KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
       KC_HTTP_RELATIVE_PATH: "/auth"
       KC_BASE_URL: "http://keycloak:8080/auth"
@@ -119,12 +118,14 @@ services:
       DB_PORT: ${APP_DB_INTERNAL_PORT}
       OTEL_EXPORTER_OTLP_ENDPOINT: "otel-collector:4317"
       # OIDC variables for container-to-container communication
-      OIDC_CLIENT_ID: "student-client"
-      OIDC_CLIENT_SECRET: "STUDENT_SECRET"
-      OIDC_ISSUER_URL: "http://keycloak:8080/auth/realms/student"
+      OIDC_CLIENT_ID: "teacher-client"
+      OIDC_CLIENT_SECRET: "TEACHER_SECRET"
+      OIDC_ISSUER_URL: "http://localhost/auth/realms/teacher"
       OIDC_REDIRECT_URL: "http://localhost/auth/callback"
     ports:
       - "3000:3000"
+    extra_hosts:
+      - "localhost:host-gateway"
     networks:
       - app-network
     depends_on:
@@ -149,7 +150,7 @@ services:
       DATABASE_POOL_MIN_SIZE: "5"
       DATABASE_POOL_MAX_SIZE: "20"
       # Keycloak
-      KEYCLOAK_ISSUER_URL: "http://keycloak:8080/auth/realms/teacher"
+      KEYCLOAK_ISSUER_URL: "http://keycloak/auth/realms/teacher"
       KEYCLOAK_CLIENT_ID: "teacher-client"
       KEYCLOAK_CLIENT_SECRET: "TEACHER_SECRET"
       KEYCLOAK_APP_NAME: "LMS Admin Application"

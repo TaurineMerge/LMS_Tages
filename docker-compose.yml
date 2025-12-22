@@ -136,7 +136,7 @@ services:
       app-db:
         condition: service_healthy
       keycloak:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
 
   admin-panel:
