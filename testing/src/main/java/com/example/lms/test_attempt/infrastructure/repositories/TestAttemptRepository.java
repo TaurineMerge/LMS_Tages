@@ -22,19 +22,8 @@ import java.util.UUID;
 
 /**
  * Репозиторий для работы с попытками тестов в базе данных.
- * Реализует {@link TestAttemptRepositoryInterface}.
  *
  * Таблица: testing.test_attempt_b
- * Колонки:
- *  - id UUID (PK)
- *  - student_id UUID
- *  - test_id UUID
- *  - date_of_attempt DATE
- *  - point INTEGER
- *  - certificate_id UUID
- *  - attempt_version JSON
- *  - attempt_snapshot VARCHAR(256)
- *  - completed BOOLEAN
  */
 public class TestAttemptRepository implements TestAttemptRepositoryInterface {
 
@@ -124,20 +113,17 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
             ORDER BY date_of_attempt DESC NULLS LAST
             """;
 
-    // --- UI: attempt_version ---
-    private static final String SELECT_ATTEMPT_VERSION = """
+    // --- UI: attempt_version by attemptId ---
+    private static final String SELECT_ATTEMPT_VERSION_BY_ID = """
             SELECT attempt_version
             FROM testing.test_attempt_b
-            WHERE student_id = ? AND test_id = ? AND date_of_attempt = ?
+            WHERE id = ?
             """;
 
-    private static final String UPSERT_ATTEMPT_VERSION = """
-            INSERT INTO testing.test_attempt_b
-                (id, student_id, test_id, date_of_attempt, point, certificate_id, attempt_version, attempt_snapshot, completed)
-            VALUES
-                (?, ?, ?, ?, NULL, NULL, CAST(? AS json), NULL, FALSE)
-            ON CONFLICT (student_id, test_id, date_of_attempt)
-            DO UPDATE SET attempt_version = EXCLUDED.attempt_version
+    private static final String UPDATE_ATTEMPT_VERSION_BY_ID = """
+            UPDATE testing.test_attempt_b
+            SET attempt_version = CAST(? AS json)
+            WHERE id = ?
             """;
 
     public TestAttemptRepository(DatabaseConfig dbConfig) {
@@ -153,66 +139,66 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
     // ---------------------------------------------------------------------
 
     @Override
-    public TestAttemptModel save(TestAttemptModel testAttempt) {
-        testAttempt.validate();
+public TestAttemptModel save(TestAttemptModel testAttempt) {
+    testAttempt.validate();
 
-        try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(INSERT_SQL)) {
+    try (Connection conn = getConnection();
+         PreparedStatement stmt = conn.prepareStatement(INSERT_SQL)) {
 
-            stmt.setObject(1, testAttempt.getStudentId());
-            stmt.setObject(2, testAttempt.getTestId());
+        stmt.setObject(1, testAttempt.getStudentId());
+        stmt.setObject(2, testAttempt.getTestId());
 
-            if (testAttempt.getDateOfAttempt() != null) {
-                stmt.setDate(3, Date.valueOf(testAttempt.getDateOfAttempt()));
-            } else {
-                stmt.setNull(3, Types.DATE);
-            }
-
-            if (testAttempt.getPoint() != null) {
-                stmt.setInt(4, testAttempt.getPoint());
-            } else {
-                stmt.setNull(4, Types.INTEGER);
-            }
-
-            if (testAttempt.getCertificateId() != null) {
-                stmt.setObject(5, testAttempt.getCertificateId());
-            } else {
-                stmt.setNull(5, Types.OTHER);
-            }
-
-            if (testAttempt.getAttemptVersion() != null && !testAttempt.getAttemptVersion().isBlank()) {
-                stmt.setObject(6, testAttempt.getAttemptVersion(), Types.OTHER);
-            } else {
-                stmt.setNull(6, Types.OTHER);
-            }
-
-            if (testAttempt.getAttemptSnapshot() != null) {
-                stmt.setString(7, testAttempt.getAttemptSnapshot());
-            } else {
-                stmt.setNull(7, Types.VARCHAR);
-            }
-
-            if (testAttempt.getCompleted() != null) {
-                stmt.setBoolean(8, testAttempt.getCompleted());
-            } else {
-                stmt.setNull(8, Types.BOOLEAN);
-            }
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    UUID id = rs.getObject("id", UUID.class);
-                    testAttempt.setId(id);
-                    return testAttempt;
-                }
-            }
-
-            throw new RuntimeException("Не удалось сохранить попытку теста");
-
-        } catch (SQLException e) {
-            logger.error("Ошибка БД при сохранении попытки", e);
-            throw new RuntimeException("Ошибка базы данных при сохранении попытки", e);
+        if (testAttempt.getDateOfAttempt() != null) {
+            stmt.setDate(3, Date.valueOf(testAttempt.getDateOfAttempt()));
+        } else {
+            stmt.setNull(3, Types.DATE);
         }
+
+        if (testAttempt.getPoint() != null) {
+            stmt.setInt(4, testAttempt.getPoint());
+        } else {
+            stmt.setNull(4, Types.INTEGER);
+        }
+
+        if (testAttempt.getCertificateId() != null) {
+            stmt.setObject(5, testAttempt.getCertificateId());
+        } else {
+            stmt.setNull(5, Types.OTHER);
+        }
+
+        if (testAttempt.getAttemptVersion() != null && !testAttempt.getAttemptVersion().isBlank()) {
+            stmt.setObject(6, testAttempt.getAttemptVersion(), Types.OTHER);
+        } else {
+            stmt.setNull(6, Types.OTHER);
+        }
+
+        if (testAttempt.getAttemptSnapshot() != null) {
+            stmt.setString(7, testAttempt.getAttemptSnapshot());
+        } else {
+            stmt.setNull(7, Types.VARCHAR);
+        }
+
+        if (testAttempt.getCompleted() != null) {
+            stmt.setBoolean(8, testAttempt.getCompleted());
+        } else {
+            stmt.setNull(8, Types.BOOLEAN);
+        }
+
+        try (ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                UUID id = rs.getObject("id", UUID.class);
+                testAttempt.setId(id);
+                return testAttempt;
+            }
+        }
+
+        throw new RuntimeException("Не удалось сохранить попытку теста");
+
+    } catch (SQLException e) {
+        logger.error("Ошибка БД при сохранении попытки", e);
+        throw new RuntimeException("Ошибка базы данных при сохранении попытки", e);
     }
+}
 
     @Override
     public TestAttemptModel update(TestAttemptModel testAttempt) {
@@ -492,78 +478,56 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
     }
 
     // ---------------------------------------------------------------------
-    // UI: attempt_version
+    // UI: attempt_version by attemptId
     // ---------------------------------------------------------------------
 
     @Override
-    public Optional<String> findAttemptVersion(UUID studentId, UUID testId, String date) {
-        LocalDate parsed = parseDateOrNull(date);
-        if (parsed == null) {
-            return Optional.empty();
-        }
-
+    public Optional<String> findAttemptVersionByAttemptId(UUID attemptId) {
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SELECT_ATTEMPT_VERSION)) {
+             PreparedStatement stmt = conn.prepareStatement(SELECT_ATTEMPT_VERSION_BY_ID)) {
 
-            stmt.setObject(1, studentId);
-            stmt.setObject(2, testId);
-            stmt.setDate(3, Date.valueOf(parsed));
+            stmt.setObject(1, attemptId);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     return Optional.ofNullable(rs.getString("attempt_version"));
                 }
             }
-
             return Optional.empty();
 
         } catch (SQLException e) {
-            logger.error("Ошибка БД при чтении attempt_version (student={}, test={}, date={})",
-                    studentId, testId, date, e);
-            throw new RuntimeException("Ошибка базы данных при поиске attempt_version", e);
+            logger.error("Ошибка БД при чтении attempt_version (attemptId={})", attemptId, e);
+            throw new RuntimeException("Ошибка базы данных при чтении attempt_version", e);
         }
     }
 
     @Override
-    public void upsertAttemptVersion(UUID studentId, UUID testId, String date, String attemptVersionJson) {
-        LocalDate parsed = parseDateOrNull(date);
-        if (parsed == null) {
-            throw new IllegalArgumentException("date_of_attempt is invalid: " + date);
-        }
-
+    public void updateAttemptVersionByAttemptId(UUID attemptId, String attemptVersionJson) {
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(UPSERT_ATTEMPT_VERSION)) {
-
-            stmt.setObject(1, UUID.randomUUID());
-            stmt.setObject(2, studentId);
-            stmt.setObject(3, testId);
-            stmt.setDate(4, Date.valueOf(parsed));
+             PreparedStatement stmt = conn.prepareStatement(UPDATE_ATTEMPT_VERSION_BY_ID)) {
 
             if (attemptVersionJson != null && !attemptVersionJson.isBlank()) {
-                stmt.setObject(5, attemptVersionJson, Types.OTHER);
+                stmt.setObject(1, attemptVersionJson, Types.OTHER);
             } else {
-                stmt.setNull(5, Types.OTHER);
+                stmt.setNull(1, Types.OTHER);
             }
 
-            stmt.executeUpdate();
+            stmt.setObject(2, attemptId);
+
+            int updated = stmt.executeUpdate();
+            if (updated == 0) {
+                throw new RuntimeException("Попытка с ID " + attemptId + " не найдена (нельзя обновить attempt_version)");
+            }
 
         } catch (SQLException e) {
-            logger.error("Ошибка БД при upsert attempt_version (student={}, test={}, date={})",
-                    studentId, testId, date, e);
-            throw new RuntimeException("Ошибка базы данных при сохранении attempt_version", e);
+            logger.error("Ошибка БД при update attempt_version (attemptId={})", attemptId, e);
+            throw new RuntimeException("Ошибка базы данных при обновлении attempt_version", e);
         }
     }
 
-    private LocalDate parseDateOrNull(String date) {
-        if (date == null || date.isBlank()) {
-            return null;
-        }
-        try {
-            return LocalDate.parse(date);
-        } catch (Exception e) {
-            return null;
-        }
-    }
+    // ---------------------------------------------------------------------
+    // mappers
+    // ---------------------------------------------------------------------
 
     private TestAttemptModel mapRowToTestAttempt(ResultSet rs) throws SQLException {
         Date date = rs.getDate("date_of_attempt");

@@ -1,12 +1,10 @@
 -- ============================================================
--- SEED для схемы testing
--- PostgreSQL
+-- SEED v2 для схемы testing (single + multi + edge cases)
+-- Формат attempt_version: attemptNo + answers[{order, questionId, answerId, answerIds}]
 -- ============================================================
 
--- 1) Включаем генерацию UUID
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
--- 2) Чистим таблицы перед заполнением
 TRUNCATE TABLE
   testing.content_d,
   testing.test_attempt_b,
@@ -16,252 +14,231 @@ TRUNCATE TABLE
   testing.test_d
 CASCADE;
 
--- 3) Заполняем тестовыми данными
 DO $$
 DECLARE
   -- tests
-  t_alg UUID;
-  t_geo UUID;
+  t_mixed UUID;
+  t_math  UUID;
 
-  -- questions (algebra)
-  q1 UUID; q2 UUID; q3 UUID;
-  -- questions (geometry)
-  q4 UUID; q5 UUID; q6 UUID;
+  -- questions (mixed)
+  q1 UUID; q2 UUID; q3 UUID; q4 UUID;
 
-  -- correct answers (для attempt_version)
-  q1_ok UUID; q2_ok UUID; q3_ok UUID;
-  q4_ok UUID; q5_ok UUID; q6_ok UUID;
+  -- questions (math)
+  q5 UUID;
 
-  -- any answer (чтобы content_d мог ссылаться, т.к. answer_id NOT NULL)
-  q1_any UUID; q2_any UUID; q3_any UUID;
-  q4_any UUID; q5_any UUID; q6_any UUID;
+  -- answers ids
+  q1_a_ok UUID;
+  q2_a_ok1 UUID; q2_a_ok2 UUID; q2_a_wrong UUID;
+  q3_a_any UUID;
+  q4_a_neg UUID; q4_a_ok UUID;
+  q5_a_ok UUID;
+
+  -- any answer for content links
+  q1_any UUID; q2_any UUID; q3_any UUID; q4_any UUID; q5_any UUID;
 
   -- students
   s1 UUID := gen_random_uuid();
   s2 UUID := gen_random_uuid();
 
-  -- certificates
-  cert1 UUID := gen_random_uuid();
-  cert2 UUID := gen_random_uuid();
-
+  -- attempt ids
+  a1 UUID := gen_random_uuid();
+  a2 UUID := gen_random_uuid();
+  a3 UUID := gen_random_uuid();
 BEGIN
   -- -----------------------------
   -- TESTS
   -- -----------------------------
   INSERT INTO testing.test_d (course_id, title, min_point, description)
-  VALUES (gen_random_uuid(), 'Алгебра: линейные уравнения', 2, 'Тест на базовые линейные уравнения')
-  RETURNING id INTO t_alg;
+  VALUES (gen_random_uuid(), 'MIXED: single + multi + edge cases', 4, 'Проверка интерфейса single/multi и подсчёта баллов')
+  RETURNING id INTO t_mixed;
 
   INSERT INTO testing.test_d (course_id, title, min_point, description)
-  VALUES (gen_random_uuid(), 'Геометрия: треугольники', 3, 'Тест на свойства треугольников')
-  RETURNING id INTO t_geo;
+  VALUES (gen_random_uuid(), 'Math: одно правильное', 1, 'Короткий тест для smoke-check')
+  RETURNING id INTO t_math;
 
-  -- -----------------------------
-  -- DRAFTS
-  -- -----------------------------
+  -- drafts (не обязательно, но пусть будут)
   INSERT INTO testing.draft_b (title, min_point, description, test_id)
-  VALUES ('Черновик: Алгебра (v0)', 2, 'Черновик перед публикацией', t_alg);
+  VALUES ('Draft: MIXED v0', 4, 'Черновик', t_mixed);
 
   INSERT INTO testing.draft_b (title, min_point, description, test_id)
-  VALUES ('Черновик: Геометрия (v0)', 3, 'Черновик перед публикацией', t_geo);
+  VALUES ('Draft: MATH v0', 1, 'Черновик', t_math);
 
   -- -----------------------------
-  -- QUESTIONS (Алгебра)
+  -- QUESTIONS (MIXED)
   -- -----------------------------
+
+  -- Q1 single (1 correct)
   INSERT INTO testing.question_d (test_id, text_of_question, "order")
-  VALUES (t_alg, 'Решите уравнение: 2x + 3 = 7', 1)
+  VALUES (t_mixed, 'Q1 (single): 2 + 2 = ?', 1)
   RETURNING id INTO q1;
 
+  INSERT INTO testing.answer_d (text, question_id, score) VALUES
+    ('3', q1, 0),
+    ('4', q1, 2),   -- правильный (score>0) и сразу 2 балла
+    ('5', q1, 0);
+
+  SELECT id INTO q1_a_ok FROM testing.answer_d WHERE question_id=q1 AND score>0 ORDER BY score DESC LIMIT 1;
+  SELECT id INTO q1_any  FROM testing.answer_d WHERE question_id=q1 ORDER BY id LIMIT 1;
+
+  -- Q2 multi (2 correct)
   INSERT INTO testing.question_d (test_id, text_of_question, "order")
-  VALUES (t_alg, 'Решите уравнение: 5x = 20', 2)
+  VALUES (t_mixed, 'Q2 (multi): выбери простые числа', 2)
   RETURNING id INTO q2;
 
+  INSERT INTO testing.answer_d (text, question_id, score) VALUES
+    ('2', q2, 1),   -- correct
+    ('3', q2, 1),   -- correct
+    ('4', q2, 0),   -- wrong
+    ('9', q2, 0);   -- wrong
+
+  SELECT id INTO q2_a_ok1 FROM testing.answer_d WHERE question_id=q2 AND text='2' LIMIT 1;
+  SELECT id INTO q2_a_ok2 FROM testing.answer_d WHERE question_id=q2 AND text='3' LIMIT 1;
+  SELECT id INTO q2_a_wrong FROM testing.answer_d WHERE question_id=q2 AND text='4' LIMIT 1;
+  SELECT id INTO q2_any   FROM testing.answer_d WHERE question_id=q2 ORDER BY id LIMIT 1;
+
+  -- Q3 trick (0 correct -> UI будет как single, но баллов не даст)
   INSERT INTO testing.question_d (test_id, text_of_question, "order")
-  VALUES (t_alg, 'Решите уравнение: x - 9 = -2', 3)
+  VALUES (t_mixed, 'Q3 (trick): у этого вопроса 0 правильных (все score=0)', 3)
   RETURNING id INTO q3;
 
-  -- ANSWERS for q1 (x=2)
   INSERT INTO testing.answer_d (text, question_id, score) VALUES
-    ('x = 1', q1, 0),
-    ('x = 2', q1, 1),
-    ('x = 3', q1, 0),
-    ('x = 4', q1, 0);
+    ('вариант A', q3, 0),
+    ('вариант B', q3, 0),
+    ('вариант C', q3, 0);
 
-  SELECT id INTO q1_ok  FROM testing.answer_d WHERE question_id = q1 AND score = 1 LIMIT 1;
-  SELECT id INTO q1_any FROM testing.answer_d WHERE question_id = q1 ORDER BY id LIMIT 1;
+  SELECT id INTO q3_a_any FROM testing.answer_d WHERE question_id=q3 ORDER BY id LIMIT 1;
+  SELECT id INTO q3_any   FROM testing.answer_d WHERE question_id=q3 ORDER BY id LIMIT 1;
 
-  -- ANSWERS for q2 (x=4)
-  INSERT INTO testing.answer_d (text, question_id, score) VALUES
-    ('x = 2', q2, 0),
-    ('x = 3', q2, 0),
-    ('x = 4', q2, 1),
-    ('x = 5', q2, 0);
-
-  SELECT id INTO q2_ok  FROM testing.answer_d WHERE question_id = q2 AND score = 1 LIMIT 1;
-  SELECT id INTO q2_any FROM testing.answer_d WHERE question_id = q2 ORDER BY id LIMIT 1;
-
-  -- ANSWERS for q3 (x=7)
-  INSERT INTO testing.answer_d (text, question_id, score) VALUES
-    ('x = 6', q3, 0),
-    ('x = 7', q3, 1),
-    ('x = 8', q3, 0),
-    ('x = 9', q3, 0);
-
-  SELECT id INTO q3_ok  FROM testing.answer_d WHERE question_id = q3 AND score = 1 LIMIT 1;
-  SELECT id INTO q3_any FROM testing.answer_d WHERE question_id = q3 ORDER BY id LIMIT 1;
-
-  -- -----------------------------
-  -- QUESTIONS (Геометрия)
-  -- -----------------------------
+  -- Q4 negative scores (проверка max(0,score))
   INSERT INTO testing.question_d (test_id, text_of_question, "order")
-  VALUES (t_geo, 'Сумма углов треугольника равна…', 1)
+  VALUES (t_mixed, 'Q4 (negative): выбери лучший вариант (есть отрицательные баллы)', 4)
   RETURNING id INTO q4;
 
+  INSERT INTO testing.answer_d (text, question_id, score) VALUES
+    ('плохой вариант (-2)', q4, -2),
+    ('нормальный (0)',      q4, 0),
+    ('лучший (+2)',         q4, 2);
+
+  SELECT id INTO q4_a_neg FROM testing.answer_d WHERE question_id=q4 AND score=-2 LIMIT 1;
+  SELECT id INTO q4_a_ok  FROM testing.answer_d WHERE question_id=q4 AND score=2  LIMIT 1;
+  SELECT id INTO q4_any   FROM testing.answer_d WHERE question_id=q4 ORDER BY id LIMIT 1;
+
+  -- -----------------------------
+  -- QUESTIONS (MATH)
+  -- -----------------------------
   INSERT INTO testing.question_d (test_id, text_of_question, "order")
-  VALUES (t_geo, 'В равнобедренном треугольнике углы при основании…', 2)
+  VALUES (t_math, 'Q5 (single): Реши 5x=20. x=?', 1)
   RETURNING id INTO q5;
 
-  INSERT INTO testing.question_d (test_id, text_of_question, "order")
-  VALUES (t_geo, 'Если два угла треугольника 30° и 60°, то третий угол равен…', 3)
-  RETURNING id INTO q6;
-
-  -- ANSWERS for q4 (180)
   INSERT INTO testing.answer_d (text, question_id, score) VALUES
-    ('90°',  q4, 0),
-    ('120°', q4, 0),
-    ('180°', q4, 1),
-    ('360°', q4, 0);
+    ('2', q5, 0),
+    ('4', q5, 1),
+    ('5', q5, 0);
 
-  SELECT id INTO q4_ok  FROM testing.answer_d WHERE question_id = q4 AND score = 1 LIMIT 1;
-  SELECT id INTO q4_any FROM testing.answer_d WHERE question_id = q4 ORDER BY id LIMIT 1;
-
-  -- ANSWERS for q5 (равны)
-  INSERT INTO testing.answer_d (text, question_id, score) VALUES
-    ('всегда прямые', q5, 0),
-    ('равны',         q5, 1),
-    ('сумма 90°',     q5, 0),
-    ('не определены', q5, 0);
-
-  SELECT id INTO q5_ok  FROM testing.answer_d WHERE question_id = q5 AND score = 1 LIMIT 1;
-  SELECT id INTO q5_any FROM testing.answer_d WHERE question_id = q5 ORDER BY id LIMIT 1;
-
-  -- ANSWERS for q6 (90)
-  INSERT INTO testing.answer_d (text, question_id, score) VALUES
-    ('60°',  q6, 0),
-    ('80°',  q6, 0),
-    ('90°',  q6, 1),
-    ('120°', q6, 0);
-
-  SELECT id INTO q6_ok  FROM testing.answer_d WHERE question_id = q6 AND score = 1 LIMIT 1;
-  SELECT id INTO q6_any FROM testing.answer_d WHERE question_id = q6 ORDER BY id LIMIT 1;
+  SELECT id INTO q5_a_ok FROM testing.answer_d WHERE question_id=q5 AND score>0 LIMIT 1;
+  SELECT id INTO q5_any  FROM testing.answer_d WHERE question_id=q5 ORDER BY id LIMIT 1;
 
   -- -----------------------------
-  -- CONTENT
+  -- CONTENT (для проверки, что контент подтягивается/не ломает страницы)
+  -- type_of_content: трактовку ты сама знаешь; я оставляю как есть (TRUE/FALSE)
   -- -----------------------------
   INSERT INTO testing.content_d ("order", content, type_of_content, question_id, answer_id) VALUES
-    (1, 'Подсказка: перенеси число вправо и приведи подобные.', TRUE,  q1, q1_any),
-    (1, 'Теория: сумма внутренних углов треугольника — 180°.',  TRUE,  q4, q4_any),
-    (2, 'Пояснение: правильный ответ даёт 1 балл.',             FALSE, q1, q1_ok);
+    (1, 'Подсказка: 2+2=4 — базовая арифметика.', TRUE,  q1, q1_any),
+    (1, 'Подсказка: простые числа делятся только на 1 и себя.', TRUE,  q2, q2_any),
+    (1, 'Этот вопрос специально без правильных.', FALSE, q3, q3_any),
+    (1, 'Отрицательные баллы должны игнорироваться при maxPossible (если у тебя так задумано).', TRUE, q4, q4_any);
 
   -- -----------------------------
   -- TEST ATTEMPTS
-  -- attempt_version: JSON с выбранными ответами и метаданными
-  -- attempt_snapshot: JSON с состоянием теста на момент прохождения
-  -- completed: флаг завершения
+  -- attempt_version в НОВОМ формате
   -- -----------------------------
-  INSERT INTO testing.test_attempt_b 
-    (student_id, test_id, date_of_attempt, point, certificate_id, 
-     attempt_version, attempt_snapshot, completed)
+
+  -- Attempt 1: student1 завершил MIXED (выбрал single+multi+trick+best)
+  INSERT INTO testing.test_attempt_b
+    (id, student_id, test_id, date_of_attempt, point, certificate_id, attempt_version, attempt_snapshot, completed)
   VALUES
-    -- Студент 1: успешно прошел алгебру
-    (s1, t_alg, DATE '2025-12-18', 3, cert1,
+    (a1, s1, t_mixed, DATE '2025-12-20', 2+1+1+0+2, NULL,
       json_build_object(
-        'version', '1.0',
+        'attemptNo', 1,
         'answers', json_build_array(
-          json_build_object('question_id', q1, 'answer_id', q1_ok, 'time_spent', 30),
-          json_build_object('question_id', q2, 'answer_id', q2_ok, 'time_spent', 20),
-          json_build_object('question_id', q3, 'answer_id', q3_ok, 'time_spent', 25)
-        ),
-        'started_at', '2025-12-18T10:00:00Z',
-        'finished_at', '2025-12-18T10:01:15Z'
+          json_build_object('order', 1, 'questionId', q1::text, 'answerId', q1_a_ok::text, 'answerIds', json_build_array(q1_a_ok::text)),
+          json_build_object('order', 2, 'questionId', q2::text, 'answerId', NULL,         'answerIds', json_build_array(q2_a_ok1::text, q2_a_ok2::text)),
+          json_build_object('order', 3, 'questionId', q3::text, 'answerId', q3_a_any::text,'answerIds', json_build_array(q3_a_any::text)),
+          json_build_object('order', 4, 'questionId', q4::text, 'answerId', q4_a_ok::text, 'answerIds', json_build_array(q4_a_ok::text))
+        )
       ),
-      '{"test_id": "' || t_alg::text || '", "questions_count": 3, "max_score": 3}',
+      json_build_object(
+        'testId', t_mixed::text,
+        'questionsCount', 4,
+        'note', 'Завершённая попытка для проверки single/multi'
+      )::text,
       TRUE
-    ),
-    
-    -- Студент 2: не завершил геометрию
-    (s2, t_geo, NULL, NULL, NULL,
+    );
+
+  -- Attempt 2: student2 начал MIXED, ответил только на Q2 (multi) и НЕ завершил
+  INSERT INTO testing.test_attempt_b
+    (id, student_id, test_id, date_of_attempt, point, certificate_id, attempt_version, attempt_snapshot, completed)
+  VALUES
+    (a2, s2, t_mixed, NULL, NULL, NULL,
       json_build_object(
-        'version', '1.0',
+        'attemptNo', 1,
         'answers', json_build_array(
-          json_build_object('question_id', q4, 'answer_id', q4_ok, 'time_spent', 45)
-        ),
-        'started_at', '2025-12-18T11:30:00Z',
-        'current_question', 2
+          json_build_object('order', 1, 'questionId', q1::text, 'answerId', NULL, 'answerIds', json_build_array()),
+          json_build_object('order', 2, 'questionId', q2::text, 'answerId', NULL, 'answerIds', json_build_array(q2_a_ok1::text, q2_a_wrong::text)),
+          json_build_object('order', 3, 'questionId', q3::text, 'answerId', NULL, 'answerIds', json_build_array()),
+          json_build_object('order', 4, 'questionId', q4::text, 'answerId', NULL, 'answerIds', json_build_array())
+        )
       ),
-      '{"test_id": "' || t_geo::text || '", "questions_count": 3, "completed_questions": 1}',
+      json_build_object(
+        'testId', t_mixed::text,
+        'questionsCount', 4,
+        'note', 'Незавершённая попытка (для проверки incomplete state)'
+      )::text,
       FALSE
-    ),
-    
-    -- Студент 1: пытается пройти геометрию второй раз
-    (s1, t_geo, DATE '2025-12-19', 1, NULL,
+    );
+
+  -- Attempt 3: student1 завершил MATH (smoke)
+  INSERT INTO testing.test_attempt_b
+    (id, student_id, test_id, date_of_attempt, point, certificate_id, attempt_version, attempt_snapshot, completed)
+  VALUES
+    (a3, s1, t_math, DATE '2025-12-21', 1, NULL,
       json_build_object(
-        'version', '1.0',
+        'attemptNo', 2,
         'answers', json_build_array(
-          json_build_object('question_id', q4, 'answer_id', q4_ok, 'time_spent', 40),
-          json_build_object('question_id', q5, 'answer_id', q6_any, 'time_spent', 35),
-          json_build_object('question_id', q6, 'answer_id', q6_any, 'time_spent', 30)
-        ),
-        'started_at', '2025-12-19T09:15:00Z',
-        'finished_at', '2025-12-19T09:16:45Z'
+          json_build_object('order', 1, 'questionId', q5::text, 'answerId', q5_a_ok::text, 'answerIds', json_build_array(q5_a_ok::text))
+        )
       ),
-      '{"test_id": "' || t_geo::text || '", "questions_count": 3, "max_score": 3}',
-      TRUE
-    ),
-    
-    -- Студент 2: успешно прошел алгебру позже
-    (s2, t_alg, DATE '2025-12-19', 2, cert2,
       json_build_object(
-        'version', '1.0',
-        'answers', json_build_array(
-          json_build_object('question_id', q1, 'answer_id', q1_ok, 'time_spent', 35),
-          json_build_object('question_id', q2, 'answer_id', q2_ok, 'time_spent', 25),
-          json_build_object('question_id', q3, 'answer_id', q1_any, 'time_spent', 40)
-        ),
-        'started_at', '2025-12-19T14:20:00Z',
-        'finished_at', '2025-12-19T14:21:40Z'
-      ),
-      '{"test_id": "' || t_alg::text || '", "questions_count": 3, "max_score": 3}',
+        'testId', t_math::text,
+        'questionsCount', 1,
+        'note', 'Smoke test'
+      )::text,
       TRUE
     );
 
 END $$;
 
--- Проверка данных
+-- Быстрая проверка
 SELECT 'test_d' as table_name, COUNT(*) as row_count FROM testing.test_d
-UNION ALL
-SELECT 'question_d', COUNT(*) FROM testing.question_d
-UNION ALL
-SELECT 'answer_d', COUNT(*) FROM testing.answer_d
-UNION ALL
-SELECT 'test_attempt_b', COUNT(*) FROM testing.test_attempt_b
-UNION ALL
-SELECT 'draft_b', COUNT(*) FROM testing.draft_b
-UNION ALL
-SELECT 'content_d', COUNT(*) FROM testing.content_d
+UNION ALL SELECT 'question_d', COUNT(*) FROM testing.question_d
+UNION ALL SELECT 'answer_d', COUNT(*) FROM testing.answer_d
+UNION ALL SELECT 'test_attempt_b', COUNT(*) FROM testing.test_attempt_b
+UNION ALL SELECT 'draft_b', COUNT(*) FROM testing.draft_b
+UNION ALL SELECT 'content_d', COUNT(*) FROM testing.content_d
 ORDER BY table_name;
 
--- Просмотр попыток
-SELECT 
+-- Список тестов
+SELECT id, title, min_point, description FROM testing.test_d ORDER BY title;
+
+-- Посмотреть attempt_version красиво
+SELECT
   ta.id,
   ta.student_id,
-  t.title as test_title,
+  t.title AS test_title,
   ta.date_of_attempt,
   ta.point,
-  ta.certificate_id is not null as has_certificate,
   ta.completed,
-  jsonb_pretty(ta.attempt_version::jsonb) as attempt_version,
-  ta.attempt_snapshot
+  jsonb_pretty(ta.attempt_version::jsonb) AS attempt_version
 FROM testing.test_attempt_b ta
-JOIN testing.test_d t ON ta.test_id = t.id
-ORDER BY ta.date_of_attempt;
+JOIN testing.test_d t ON t.id = ta.test_id
+ORDER BY ta.date_of_attempt NULLS LAST, t.title;

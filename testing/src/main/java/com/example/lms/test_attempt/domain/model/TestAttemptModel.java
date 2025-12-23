@@ -9,69 +9,36 @@ import java.util.UUID;
  *
  * Представляет попытку прохождения теста студентом и соответствует строке таблицы test_attempt_b.
  *
- * Структура таблицы test_attempt_b:
- *  - id                UUID    (PK, not null)
- *  - student_id        UUID    (not null)
- *  - test_id           UUID    (FK → test_d.id, not null)
- *  - date_of_attempt   DATE    (может быть null)
- *  - point             INTEGER (может быть null)
- *  - certificate_id    UUID    (может быть null)
- *  - attempt_version   JSON    (может быть null)
- *  - attempt_snapshot  VARCHAR(256) (может быть null)
- *  - completed         BOOLEAN (может быть null)
- *  - UNIQUE(student_id, test_id, date_of_attempt)
- *
- * Доменные правила:
- *  - studentId, testId обязательны
- *  - dateOfAttempt может быть null (если попытка еще не начата)
- *  - point >= 0, если указано
- *  - completed по умолчанию false, если не указано
+ * ВАЖНО:
+ * - id = PK
+ * - date_of_attempt НЕ используем как идентификатор попытки (это не PK)
+ * - если в БД стоит UNIQUE(student_id, test_id, date_of_attempt), то автопроставление даты
+ *   при завершении может ломать "несколько попыток в один день".
+ *   Поэтому в completeAttempt() мы НЕ трогаем dateOfAttempt автоматически.
  */
 public class TestAttemptModel {
 
-    /** Уникальный ID попытки (PK). */
     private UUID id;
-
-    /** ID студента, проходящего тест. */
     private UUID studentId;
-
-    /** ID теста, который проходит студент. */
     private UUID testId;
-
-    /** Дата попытки. */
     private LocalDate dateOfAttempt;
-
-    /** Количество набранных баллов (может быть null). */
     private Integer point;
-
-    /** ID сертификата (может быть null). */
     private UUID certificateId;
-
-    /** Версия попытки в формате JSON (метаданные, версия теста). */
     private String attemptVersion;
-
-    /** Снапшот теста на момент прохождения (JSON в виде строки). */
     private String attemptSnapshot;
-
-    /** Флаг завершения попытки. */
     private Boolean completed;
 
     // ---------------------- КОНСТРУКТОРЫ ----------------------
 
-    /**
-     * 
-     */
     public TestAttemptModel(UUID studentId, UUID testId) {
         this.studentId = Objects.requireNonNull(studentId, "Student ID cannot be null");
         this.testId = Objects.requireNonNull(testId, "Test ID cannot be null");
+        this.completed = false;
     }
 
-    /**
-     * Конструктор для создания новой попытки теста.
-     */
-    public TestAttemptModel(UUID studentId, UUID testId, LocalDate dateOfAttempt, 
-                           Integer point, UUID certificateId, String attemptVersion, 
-                           String attemptSnapshot, Boolean completed) {
+    public TestAttemptModel(UUID studentId, UUID testId, LocalDate dateOfAttempt,
+                            Integer point, UUID certificateId, String attemptVersion,
+                            String attemptSnapshot, Boolean completed) {
         this.studentId = Objects.requireNonNull(studentId, "Student ID cannot be null");
         this.testId = Objects.requireNonNull(testId, "Test ID cannot be null");
         this.dateOfAttempt = dateOfAttempt;
@@ -82,12 +49,9 @@ public class TestAttemptModel {
         this.completed = completed != null ? completed : false;
     }
 
-    /**
-     * Конструктор для загрузки попытки из базы данных.
-     */
     public TestAttemptModel(UUID id, UUID studentId, UUID testId, LocalDate dateOfAttempt,
-                           Integer point, UUID certificateId, String attemptVersion,
-                           String attemptSnapshot, Boolean completed) {
+                            Integer point, UUID certificateId, String attemptVersion,
+                            String attemptSnapshot, Boolean completed) {
         this.id = id;
         this.studentId = studentId;
         this.testId = testId;
@@ -111,7 +75,7 @@ public class TestAttemptModel {
     public String getAttemptSnapshot() { return attemptSnapshot; }
     public Boolean getCompleted() { return completed; }
 
-    // ---------------------- SETTERS С ВАЛИДАЦИЕЙ ----------------------
+    // ---------------------- SETTERS ----------------------
 
     public void setId(UUID id) {
         this.id = Objects.requireNonNull(id, "ID cannot be null");
@@ -156,7 +120,9 @@ public class TestAttemptModel {
 
     /**
      * Помечает попытку как завершенную.
-     * @param finalPoint итоговый балл
+     *
+     * ВАЖНО: дату не трогаем автоматически, потому что date_of_attempt не PK и
+     * при UNIQUE(student_id,test_id,date_of_attempt) это может ломать множественные попытки в один день.
      */
     public void completeAttempt(int finalPoint) {
         if (finalPoint < 0) {
@@ -164,21 +130,12 @@ public class TestAttemptModel {
         }
         this.point = finalPoint;
         this.completed = true;
-        if (this.dateOfAttempt == null) {
-            this.dateOfAttempt = LocalDate.now();
-        }
     }
 
-    /**
-     * Обновляет снапшот теста.
-     */
     public void updateSnapshot(String newSnapshot) {
         this.attemptSnapshot = newSnapshot;
     }
 
-    /**
-     * Проверка валидности попытки перед сохранением.
-     */
     public void validate() {
         if (studentId == null) {
             throw new IllegalArgumentException("Student ID cannot be null");
@@ -191,9 +148,6 @@ public class TestAttemptModel {
         }
     }
 
-    /**
-     * Проверяет, является ли попытка успешной (если есть минимальный балл).
-     */
     public boolean isSuccessful(int minPassingPoint) {
         return point != null && point >= minPassingPoint;
     }
@@ -213,9 +167,6 @@ public class TestAttemptModel {
         return Objects.hash(id);
     }
 
-    /**
-     * Укороченное строковое представление попытки.
-     */
     @Override
     public String toString() {
         return "TestAttemptModel{" +

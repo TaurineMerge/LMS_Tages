@@ -20,6 +20,7 @@
     .status{padding:8px 12px;border-radius:999px;border:1px solid rgba(255,106,0,.45);background:var(--weak);font-weight:800}
     .status.fail{border-color:#ccc;background:#f6f6f6;color:#333}
     .btn-outline{padding:11px 16px;border-radius:12px;border:1px solid rgba(255,106,0,.85);background:transparent;color:var(--text);cursor:pointer;font-weight:900;text-decoration:none}
+    .btn{padding:11px 16px;border-radius:12px;border:1px solid var(--text);background:var(--text);color:#fff;cursor:pointer;font-weight:900;text-decoration:none}
     .table{width:100%;border-collapse:separate;border-spacing:0;margin-top:8px;overflow:hidden;border:1px solid var(--border);border-radius:14px}
     .table th,.table td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}
     .table th{background:#fafafa;text-align:left;font-size:13px;color:#333}
@@ -34,10 +35,15 @@
     <div class="head">
       <div>
         <h1>Результаты</h1>
-        <div class="muted">{{test.title}}</div>
+        <div class="muted">{{test.title}} · Попытка <b>{{attempt_no}}</b></div>
       </div>
 
-      <a class="btn-outline" href="/ui/tests/{{test.id}}/take">Вернуться к вопросам</a>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <form method="post" action="/testing/ui/tests/{{test.id}}/retry" style="margin:0;">
+          <input type="hidden" name="student_id" value="{{student_id}}" />
+          <button type="submit" class="btn">Пройти ещё раз</button>
+        </form>
+      </div>
     </div>
 
     <div class="card">
@@ -73,7 +79,7 @@
       <table class="table">
         <thead>
           <tr>
-            <th style="width:80px;">№</th>
+            <th style="width:110px;">Статус</th>
             <th>Вопрос</th>
             <th style="width:260px;">Ответ</th>
             <th style="width:150px;">Баллы</th>

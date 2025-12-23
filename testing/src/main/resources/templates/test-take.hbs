@@ -4,247 +4,105 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{{test.title}}</title>
-
   <style>
     :root{
       --bg:#fff; --text:#0b0b0b; --muted:#5f5f5f; --border:#e6e6e6;
       --orange:#ff6a00; --orange-weak:rgba(255,106,0,.10); --orange-weak-2:rgba(255,106,0,.06);
       --shadow:0 6px 18px rgba(0,0,0,.06); --radius:16px;
+      --danger:#b42318; --danger-weak:rgba(180,35,24,.08);
     }
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial}
-
-    /* ===== TOPBAR ===== */
-    .topbar{
-      position: sticky; top: 0; z-index: 5;
-      background: rgba(255,255,255,.92);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid var(--border);
-      padding: 12px 0;
-      margin-bottom: 14px;
-    }
-    .topbar-inner{
-      display:flex; align-items:center; justify-content:space-between; gap:12px;
-      max-width:980px; margin:0 auto; padding:0 18px;
-    }
-    .top-left{display:flex; flex-direction:column; gap:4px}
+    .topbar{position:sticky;top:0;z-index:5;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:12px 0;margin-bottom:14px;}
+    .topbar-inner{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:980px;margin:0 auto;padding:0 18px;}
+    .top-left{display:flex;flex-direction:column;gap:4px}
     .title{margin:0;font-size:18px;letter-spacing:-.01em}
     .muted{color:var(--muted);font-size:13px}
     .actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-
-    /* buttons */
-    .btn{
-      padding:11px 16px;border-radius:12px;border:1px solid var(--text);
-      background:var(--text);color:#fff;cursor:pointer;font-weight:700;letter-spacing:-.01em;
-      transition:transform .05s ease,opacity .15s ease,background .15s ease,border-color .15s ease
-    }
+    .btn{padding:11px 16px;border-radius:12px;border:1px solid var(--text);background:var(--text);color:#fff;cursor:pointer;font-weight:700;letter-spacing:-.01em;transition:transform .05s ease,opacity .15s ease,background .15s ease,border-color .15s ease}
     .btn:hover{opacity:.94}
     .btn:active{transform:translateY(1px)}
     .btn.pressed{background:transparent;color:var(--text);border-color:rgba(255,106,0,.85);box-shadow:0 0 0 3px rgba(255,106,0,.18);cursor:default;opacity:1}
     .btn:disabled{cursor:default;opacity:.75}
-
-    .btn-outline{
-      padding:11px 16px;border-radius:12px;border:1px solid rgba(255,106,0,.85);
-      background:transparent;color:var(--text);text-decoration:none;font-weight:800;
-      box-shadow:0 0 0 3px rgba(255,106,0,.10);
-      cursor:pointer;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      user-select:none;
-    }
+    .btn-outline{padding:11px 16px;border-radius:12px;border:1px solid rgba(255,106,0,.85);background:transparent;color:var(--text);text-decoration:none;font-weight:800;box-shadow:0 0 0 3px rgba(255,106,0,.10);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;user-select:none;}
     .btn-outline:hover{box-shadow:0 0 0 3px rgba(255,106,0,.16);}
-
-    .btn-danger{
-      padding:11px 16px;border-radius:12px;border:1px solid rgba(255,106,0,.85);
-      background:var(--orange);color:#fff;cursor:pointer;font-weight:900;
-    }
-
-    /* ===== PAGE ===== */
     .container{max-width:980px;margin:0 auto;padding:0 18px 60px}
-
-    .card{
-      background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);
-      padding:16px;margin:14px 0;transition:border-color .15s ease,box-shadow .15s ease,background .15s ease;
-    }
-    .card.answered{
-      border-color: rgba(255,106,0,.55);
-      background: linear-gradient(0deg,var(--orange-weak-2),var(--orange-weak-2)),#fff;
-      box-shadow:0 8px 22px rgba(255,106,0,.12),var(--shadow);
-    }
+    .card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin:14px 0;transition:border-color .15s ease,box-shadow .15s ease,background .15s ease;}
+    .card.answered{border-color:rgba(255,106,0,.55);background:linear-gradient(0deg,var(--orange-weak-2),var(--orange-weak-2)),#fff;box-shadow:0 8px 22px rgba(255,106,0,.12),var(--shadow);}
     .qrow{display:grid;grid-template-columns:112px 1fr;gap:14px;align-items:start}
-    .points{
-      width:112px;padding:12px 10px;border-radius:14px;border:1px solid rgba(255,106,0,.35);
-      background:linear-gradient(0deg,var(--orange-weak),var(--orange-weak));text-align:center;
-    }
+    .points{width:112px;padding:12px 10px;border-radius:14px;border:1px solid rgba(255,106,0,.35);background:linear-gradient(0deg,var(--orange-weak),var(--orange-weak));text-align:center;}
     .points b{display:block;font-size:20px;letter-spacing:-.02em;line-height:1.1}
     .points span{display:block;margin-top:2px;font-size:12px;color:var(--muted)}
     .qtitle{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 8px 0}
     .qtitle h3{margin:0;font-size:16px;letter-spacing:-.01em}
-    .qstatus{font-size:12px;color:var(--muted);padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#fff;white-space:nowrap}
+    .qstatus{font-size:12px;color:var(--muted);padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#fff;white-space:nowrap;display:inline-flex;gap:8px;align-items:center}
     .qstatus.done{border-color:rgba(255,106,0,.45);background:var(--orange-weak);color:#2a2a2a}
+    .qtype{font-size:12px;color:#2a2a2a;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,106,0,.35);background:var(--orange-weak);white-space:nowrap}
     .qtext{margin:0 0 12px 0;line-height:1.6}
     .answers{display:flex;flex-direction:column;gap:8px;margin:0 0 14px 0;padding:0}
-    input[type="radio"]{accent-color:var(--orange);transform:translateY(1px)}
-    .answer{
-      display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;border:1px solid var(--border);
-      background:#fff;transition:border-color .15s ease,background .15s ease;
-    }
+
+    /* Нативные кружочки/квадратики */
+    input{accent-color:var(--orange)}
+    input[type="radio"],input[type="checkbox"]{transform:translateY(1px)}
+
+    .answer{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:#fff;transition:border-color .15s ease,background .15s ease;}
     .answer:hover{border-color:rgba(255,106,0,.35);background:linear-gradient(0deg,var(--orange-weak-2),var(--orange-weak-2)),#fff}
     .answer.selected{border-color:rgba(255,106,0,.65);background:linear-gradient(0deg,var(--orange-weak),var(--orange-weak)),#fff}
     .answer.disabled{opacity:.85}
     .answer-text{line-height:1.5}
 
-    .badge{
-      display:inline-flex;align-items:center;gap:8px;padding:9px 12px;border-radius:999px;
-      border:1px solid rgba(255,106,0,.45);background:var(--orange-weak);font-size:13px;color:#2a2a2a
-    }
+    .badge{display:inline-flex;align-items:center;gap:8px;padding:9px 12px;border-radius:999px;border:1px solid rgba(255,106,0,.45);background:var(--orange-weak);font-size:13px;color:#2a2a2a}
     .badge .check{width:18px;height:18px;border-radius:999px;display:inline-grid;place-items:center;background:var(--orange);color:#fff;font-size:12px;font-weight:900}
 
-    /* ===== MODAL (NO JS) ===== */
-    .modal-toggle{
-      position:absolute;
-      opacity:0;
-      pointer-events:none;
-    }
-    .modal{
-      display:none;
-      position:fixed;
-      inset:0;
-      z-index:999;
-      align-items:center;
-      justify-content:center;
-      padding: 18px;
-    }
-    #finishToggle:checked ~ .modal{
-      display:flex;
-    }
-    .modal-overlay{
-      position:absolute;
-      inset:0;
-      background: rgba(0,0,0,.45);
-      cursor:pointer;
-    }
-    .modal-card{
-      position:relative;
-      width: min(720px, 100%);
-      background:#fff;
-      border-radius: 18px;
-      border: 1px solid var(--border);
-      box-shadow: 0 18px 60px rgba(0,0,0,.20);
-      padding: 18px;
-    }
-    .modal-title{
-      margin:0 0 8px 0;
-      font-size: 18px;
-      letter-spacing: -.01em;
-    }
-    .modal-text{
-      margin:0;
-      color: var(--muted);
-      line-height: 1.55;
-    }
-    .modal-warn{
-      margin-top: 12px;
-      padding: 12px 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,106,0,.45);
-      background: var(--orange-weak);
-      color:#2a2a2a;
-    }
-    .modal-list{
-      margin: 10px 0 0 0;
-      padding-left: 18px;
-    }
-    .modal-actions{
-      display:flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 14px;
-      align-items:center;
-      justify-content:flex-end;
-    }
-    .footer{
-      text-align: center;
-      color: var(--muted);
-      padding: 22px 0 10px;
+    .error{
+      margin:0 0 10px 0;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(180,35,24,.25);
+      background:var(--danger-weak);
+      color:var(--danger);
+      font-weight:800;
+      font-size:13px;
+      line-height:1.45;
     }
 
+    .footer{text-align:center;color:var(--muted);padding:22px 0 10px;}
 
     @media (max-width:640px){
       .qrow{grid-template-columns:1fr}
       .points{width:100%;text-align:left;display:flex;align-items:baseline;justify-content:space-between}
       .points b{font-size:18px}
       .points span{margin-top:0}
-      .modal-actions{justify-content:stretch}
-      .modal-actions > *{flex:1}
     }
   </style>
 </head>
 
 <body>
 
-  <!-- ✅ переключатель модалки (без JS) -->
-  <input id="finishToggle" class="modal-toggle" type="checkbox" />
-
-  <!-- ✅ Модалка завершения -->
-  <div class="modal" aria-hidden="true">
-    <label class="modal-overlay" for="finishToggle" aria-label="Закрыть"></label>
-
-    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="finishTitle">
-      <h3 class="modal-title" id="finishTitle">Завершить прохождение?</h3>
-
-      {{#if allAnswered}}
-        <p class="modal-text">
-          Все ответы сохранены. Можно завершить попытку и открыть страницу результатов.
-        </p>
-      {{else}}
-        <p class="modal-text">
-          У тебя есть вопросы без сохранённого ответа. Если завершить сейчас — они останутся пустыми
-          и в результатах дадут <b>0 баллов</b>.
-        </p>
-
-        <div class="modal-warn">
-          <b>Не отвечено: {{missingCount}}</b>
-          <ul class="modal-list">
-            {{#each missingQuestions}}
-              <li>Вопрос {{order}}</li>
-            {{/each}}
-          </ul>
-        </div>
-      {{/if}}
-
-      <div class="modal-actions">
-        <!-- закрыть модалку -->
-        <label class="btn-outline" for="finishToggle">Продолжить тест</label>
-
-        <!-- завершить -->
-        <!-- ИСПРАВЛЕНО: Добавлен префикс /testing -->
-        <form method="post" action="/testing/ui/tests/{{test.id}}/finish" style="margin:0;">
-          <input type="hidden" name="student_id" value="{{student_id}}" />
-          <input type="hidden" name="force" value="true" />
-          <button type="submit" class="{{#if allAnswered}}btn{{else}}btn-danger{{/if}}">
-            {{#if allAnswered}}Завершить и открыть результаты{{else}}Завершить всё равно{{/if}}
-          </button>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- TOPBAR (без плашки "Сессия") -->
   <div class="topbar">
     <div class="topbar-inner">
       <div class="top-left">
         <div class="title">{{test.title}}</div>
         <div class="muted">
-          Прогресс: <b>{{answeredCount}}</b> / <b>{{totalQuestions}}</b>
+          Попытка: <b>{{attempt_no}}</b> · Прогресс: <b>{{answeredCount}}</b> / <b>{{totalQuestions}}</b>
           {{#if test.min_point}} · Проходной: <b>{{test.min_point}}</b>{{/if}}
+          {{#unless allAnswered}} · Пропущено: <b>{{missingCount}}</b>{{/unless}}
         </div>
       </div>
 
       <div class="actions">
-        <!-- ✅ открывает модалку -->
-        <label class="btn-outline" for="finishToggle">Завершить</label>
+        {{#if allAnswered}}
+          <form method="post" action="/testing/ui/tests/{{test.id}}/finish" style="margin:0;">
+            <input type="hidden" name="attempt_id" value="{{attempt_id}}"/>
+            <input type="hidden" name="student_id" value="{{student_id}}"/>
+            <input type="hidden" name="force" value="true"/>
+            <button class="btn-outline" type="submit">Завершить и посмотреть результаты</button>
+          </form>
+        {{else}}
+          <a class="btn-outline" href="/testing/ui/tests/{{test.id}}/finish?attemptId={{attempt_id}}">
+            Завершить и посмотреть результаты
+          </a>
+        {{/if}}
       </div>
     </div>
   </div>
@@ -261,19 +119,28 @@
           <div>
             <div class="qtitle">
               <h3>Вопрос {{order}}</h3>
-              <div class="qstatus {{#if answered}}done{{/if}}">
-                {{#if answered}}Отвечено{{else}}Не отвечено{{/if}}
+
+              <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <div class="qtype">{{#if multi}}несколько ответов{{else}}1 ответ{{/if}}</div>
+
+                <div class="qstatus {{#if answered}}done{{/if}}">
+                  {{#if answered}}Отвечено{{else}}Не отвечено{{/if}}
+                </div>
               </div>
             </div>
 
             <p class="qtext">{{text_of_question}}</p>
+            {{#if hint}}<div class="muted" style="margin:-6px 0 10px 0;"><b>{{hint}}</b></div>{{/if}}
 
-            <!-- ИСПРАВЛЕНО: Добавлен префикс /testing -->
+            {{#if validationError}}
+              <div class="error">{{validationError}}</div>
+            {{/if}}
+
             <form method="post" action="/testing/ui/tests/{{../test.id}}/questions/{{id}}/answer">
               <div class="answers">
                 {{#each answers}}
                   <label class="answer {{#if disabled}}disabled{{/if}} {{#if selected}}selected{{/if}}">
-                    <input type="radio" name="answer_id" value="{{id}}"
+                    <input type="{{../inputType}}" name="{{../inputName}}" value="{{id}}"
                       {{#if selected}}checked{{/if}}
                       {{#if disabled}}disabled{{/if}} />
                     <span class="answer-text">{{text}}</span>
@@ -282,9 +149,10 @@
               </div>
 
               <input type="hidden" name="student_id" value="{{../student_id}}" />
+              <input type="hidden" name="attempt_id" value="{{../attempt_id}}" />
 
               <div class="actions">
-                <button type="submit" class="{{buttonClass}}" {{#if buttonDisabled}}disabled aria-pressed="true"{{else}}aria-pressed="false"{{/if}}>
+                <button type="submit" class="{{buttonClass}}" {{#if buttonDisabled}}disabled{{/if}}>
                   {{buttonText}}
                 </button>
 
@@ -301,19 +169,9 @@
       </div>
     {{/each}}
   </div>
-<footer class="footer">
-  {{> footer}}
-</footer>
 
-<script>
-  // Отладка для проверки путей
-  console.log('Текущий URL:', window.location.href);
-  console.log('Тест ID:', '{{test.id}}');
-  
-  // Логируем все action форм
-  document.querySelectorAll('form').forEach(form => {
-    console.log('Форма action:', form.action);
-  });
-</script>
+  <footer class="footer">
+    {{> footer}}
+  </footer>
 </body>
 </html>
