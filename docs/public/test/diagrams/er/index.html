@@ -7,12 +7,21 @@
     
     <title>
         
-             | LMS Documentation
+            ER-диаграмма для схемы testing | LMS Documentation
         
     </title>
 
     
     
+    
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose'
+        });
+    </script>
     
     
     
@@ -85,31 +94,100 @@
         <a href="/">Главная</a> 
         
             
-                → <a href="/admin/">Admin</a>
+                → <a href="/test/">Test</a>
             
             
-            → 
+            → ER-диаграмма для схемы testing
         
     </div>
     
-    <h1></h1>
+    <h1>ER-диаграмма для схемы testing</h1>
     
     <div class="content">
-        
+        <div class="mermaid">
+    
+
+erDiagram
+
+    test_d {
+        uuid id PK "not null, unique"
+        uuid course_id FK
+        varchar title
+        integer min_point
+        text description
+    }
+
+    question_d {
+        uuid id PK "not null, unique"
+        uuid test_id FK "not null"
+        text text_of_question
+        int order
+    }
+
+    answer_d {
+        uuid id PK "not null, unique"
+        text text
+        uuid question_id FK "not null"
+        int score "not null"
+    }
+
+    test_attempt_b {
+        uuid id PK "student_id, test_id, date_of_attempt"
+        uuid student_id "not null"
+        uuid test_id "not null"
+        date date_of_attempt
+        int point
+        uuid certificate_id
+        json attempt_version
+        varchar attempt_snapshot
+        boolen completed
+    }
+
+
+    draft_b {
+        uuid id PK "not null, unique"
+        varchar title
+        integer min_point
+        text description
+        uuid test_id "not null"
+    }
+
+
+    content_d {
+        uuid id PK "not null, unique"
+        int order
+        text content
+        boolen type_of_content
+        uuid question_id FK "not null"
+        uuid answer_id FK "not null"
+    }
+
+    %% RELATIONSHIPS
+
+    test_d ||--o{ question_d : "has questions"
+    question_d ||--o{ answer_d : "has answers"
+    test_d ||--o{ test_attempt_b : "has attempts"
+    draft_b o|--o| test_d : "has drafts"
+    content_d }o--o| question_d: "has content"
+    content_d }o--o| answer_d: "has content"
+
+
+</div>
+
     </div>
     
     
     
     <div class="section-links">
-        <h3>Разделы Admin:</h3>
+        <h3>Разделы Test:</h3>
         <div class="section-grid">
-            <a href="/admin/documentation" class="section-card">
+            <a href="/test/documentation" class="section-card">
                 <span class="icon">📄</span>
                 <span class="title">Документация</span>
                 <span class="desc">Документация микросервиса</span>
             </a>
             
-            <a href="/admin/diagrams/" class="section-card">
+            <a href="/test/diagrams/" class="section-card">
                 <span class="icon">📈</span>
                 <span class="title">Диаграммы процессов</span>
                 <span class="desc">Flowchart, Sequence, User Journey</span>
@@ -120,11 +198,15 @@
     
     <div class="navigation">
         
+        <a href="//localhost:1313/test/diagrams/flowchart/" class="nav-prev">← </a>
         
         
-        <a href="/admin/" class="nav-home">↑ К разделу Admin</a>
+        
+        <a href="/test/" class="nav-home">↑ К разделу Test</a>
         
         
+        
+        <a href="//localhost:1313/test/diagrams/sequence/" class="nav-next">Sequence-диаграмма testing →</a>
         
     </div>
 </div>

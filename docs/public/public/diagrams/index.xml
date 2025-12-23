@@ -16,6 +16,13 @@
       <description>&lt;div class=&#34;mermaid&#34;&gt;&#xA;    &#xA;&#xA;erDiagram&#xA;    category_d {&#xA;        UUID id PK &#34;not null, default gen_random_uuid()&#34;&#xA;        VARCHAR(255) title &#34;not null&#34;&#xA;        TIMESTAMP created_at &#34;not null, default NOW()&#34;&#xA;        TIMESTAMP updated_at &#34;not null, default NOW()&#34;&#xA;    }&#xA;    course_b {&#xA;        UUID id PK &#34;not null, default gen_random_uuid()&#34;&#xA;        VARCHAR(255) title &#34;not null&#34;&#xA;        TEXT description&#xA;        VARCHAR(20) level &#34;not null, check: [&#39;hard&#39;, &#39;medium&#39;, &#39;easy&#39;]&#34;&#xA;        UUID category_id FK &#34;not null&#34;&#xA;        VARCHAR(20) visibility &#34;not null, check: [&#39;draft&#39;, &#39;public&#39;], default &#39;draft&#39;&#34;&#xA;        TIMESTAMP created_at &#34;not null, default NOW()&#34;&#xA;        TIMESTAMP updated_at &#34;not null, default NOW()&#34;&#xA;    }&#xA;    lesson_d {&#xA;        UUID id PK &#34;not null, default gen_random_uuid()&#34;&#xA;        VARCHAR(255) title &#34;not null&#34;&#xA;        UUID course_id FK &#34;not null&#34;&#xA;        JSONB content &#34;not null, default []&#34;&#xA;        TIMESTAMP created_at &#34;not null, default NOW()&#34;&#xA;        TIMESTAMP updated_at &#34;not null, default NOW()&#34;&#xA;    }&#xA;    category_d ||--o{ course_b : &#34;contains&#34;&#xA;    course_b   ||--o{ lesson_d : &#34;contains&#34;&#xA;&#xA;&#xA;&lt;/div&gt;</description>
     </item>
     <item>
+      <title>User-journey для публичного сайта и двух разных сценариев</title>
+      <link>//localhost:1313/public/diagrams/user-journey/</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/public/diagrams/user-journey/</guid>
+      <description>&lt;h2 id=&#34;цель-пользователя-ознакомиться-с-курсами-без-обязательств-и-дополнительных-усилий&#34;&gt;Цель пользователя: ознакомиться с курсами без обязательств и дополнительных усилий.&lt;/h2&gt;&#xA;&lt;div class=&#34;mermaid&#34;&gt;&#xA;    &#xA;&#xA;journey&#xA;    title User Journey: Гость без авторизации&#xA;    section Главная страница&#xA;      Чтение инструкции: 5: Пользователь&#xA;      Навигация по header: 5: Пользователь&#xA;    section Категории курсов&#xA;      Просмотр категорий: 5: Пользователь&#xA;      Выбор категории: 4: Пользователь&#xA;    section Курсы&#xA;      Просмотр 5 курсов: 5: Пользователь&#xA;      Показать ещё (опционально): 4: Пользователь&#xA;    section Уроки&#xA;      Выбор курса: 4: Пользователь&#xA;      Просмотр уроков: 5: Пользователь&#xA;      Завершение просмотра: 5: Пользователь&#xA;&#xA;&#xA;&lt;/div&gt;&#xA;&lt;h2 id=&#34;цель-пользователя-получить-официальное-подтверждение-знаний-в-виде-сертификата&#34;&gt;Цель пользователя: Получить официальное подтверждение знаний в виде сертификата&lt;/h2&gt;&#xA;&lt;hr&gt;&#xA;&lt;div class=&#34;mermaid&#34;&gt;&#xA;    &#xA;&#xA;journey&#xA;    title User Journey: Зарегистрированный пользователь&#xA;    section Анонимный доступ&#xA;      Просмотр курсов: 5: Пользователь&#xA;      Принятие решения: 5: Пользователь&#xA;    section Регистрация&#xA;      Нажатие &#34;Регистрация&#34;: 4: Пользователь&#xA;      Заполнение формы: 5: Пользователь&#xA;    section Авторизация&#xA;      Вход в аккаунт: 4: Пользователь&#xA;    section Прохождение курса&#xA;      Выбор курса: 5: Пользователь&#xA;      Изучение уроков: 5: Пользователь&#xA;    section Тестирование&#xA;      Доступ к тесту: 5: Пользователь&#xA;      Прохождение теста: 5: Пользователь&#xA;    section Результат&#xA;      Проверка результатов: 4: Пользователь&#xA;      Получение сертификата: 5: Пользователь&#xA;&#xA;&#xA;&lt;/div&gt;</description>
+    </item>
+    <item>
       <title></title>
       <link>//localhost:1313/public/diagrams/flowchart/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -27,13 +34,6 @@
       <link>//localhost:1313/public/diagrams/sequence/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>//localhost:1313/public/diagrams/sequence/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title></title>
-      <link>//localhost:1313/public/diagrams/user-journey/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>//localhost:1313/public/diagrams/user-journey/</guid>
       <description></description>
     </item>
   </channel>

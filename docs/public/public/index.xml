@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Public микросервис on LMS Documentation</title>
+    <title>Public модуль on LMS Documentation</title>
     <link>//localhost:1313/public/</link>
-    <description>Recent content in Public микросервис on LMS Documentation</description>
+    <description>Recent content in Public модуль on LMS Documentation</description>
     <generator>Hugo</generator>
     <language>ru-ru</language>
     <lastBuildDate>Mon, 01 Jan 0001 00:00:00 +0000</lastBuildDate>

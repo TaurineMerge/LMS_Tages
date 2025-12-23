@@ -7,11 +7,21 @@
     
     <title>
         
-             | LMS Documentation
+            User-journey для публичного сайта и двух разных сценариев | LMS Documentation
         
     </title>
+
     
     
+    
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose'
+        });
+    </script>
     
     
     
@@ -87,14 +97,63 @@
                 → <a href="/public/">Public</a>
             
             
-            → 
+            → User-journey для публичного сайта и двух разных сценариев
         
     </div>
     
-    <h1></h1>
+    <h1>User-journey для публичного сайта и двух разных сценариев</h1>
     
     <div class="content">
-        
+        <h2 id="цель-пользователя-ознакомиться-с-курсами-без-обязательств-и-дополнительных-усилий">Цель пользователя: ознакомиться с курсами без обязательств и дополнительных усилий.</h2>
+<div class="mermaid">
+    
+
+journey
+    title User Journey: Гость без авторизации
+    section Главная страница
+      Чтение инструкции: 5: Пользователь
+      Навигация по header: 5: Пользователь
+    section Категории курсов
+      Просмотр категорий: 5: Пользователь
+      Выбор категории: 4: Пользователь
+    section Курсы
+      Просмотр 5 курсов: 5: Пользователь
+      Показать ещё (опционально): 4: Пользователь
+    section Уроки
+      Выбор курса: 4: Пользователь
+      Просмотр уроков: 5: Пользователь
+      Завершение просмотра: 5: Пользователь
+
+
+</div>
+<h2 id="цель-пользователя-получить-официальное-подтверждение-знаний-в-виде-сертификата">Цель пользователя: Получить официальное подтверждение знаний в виде сертификата</h2>
+<hr>
+<div class="mermaid">
+    
+
+journey
+    title User Journey: Зарегистрированный пользователь
+    section Анонимный доступ
+      Просмотр курсов: 5: Пользователь
+      Принятие решения: 5: Пользователь
+    section Регистрация
+      Нажатие "Регистрация": 4: Пользователь
+      Заполнение формы: 5: Пользователь
+    section Авторизация
+      Вход в аккаунт: 4: Пользователь
+    section Прохождение курса
+      Выбор курса: 5: Пользователь
+      Изучение уроков: 5: Пользователь
+    section Тестирование
+      Доступ к тесту: 5: Пользователь
+      Прохождение теста: 5: Пользователь
+    section Результат
+      Проверка результатов: 4: Пользователь
+      Получение сертификата: 5: Пользователь
+
+
+</div>
+
     </div>
     
     
@@ -119,13 +178,15 @@
     
     <div class="navigation">
         
+        <a href="//localhost:1313/public/diagrams/flowchart/" class="nav-prev">← </a>
+        
         
         
         <a href="/public/" class="nav-home">↑ К разделу Public</a>
         
         
         
-        <a href="//localhost:1313/public/diagrams/sequence/" class="nav-next"> →</a>
+        <a href="//localhost:1313/public/diagrams/er/" class="nav-next">ER-диаграмма для схемы knowledge_base в knowledge_base_db →</a>
         
     </div>
 </div>
@@ -136,8 +197,8 @@
         <footer class="site-footer">
     <div class="footer-container">
         <div class="footer-content">
-            <p>LMS Documentation • Обновлено: <span id="update-date">19.1215.151511</span></p>
-            <p class="footer-copyright">© 151511 LMS Project. Все права защищены.</p>
+            <p>LMS Documentation • Обновлено: <span id="update-date">11.1223.23234</span></p>
+            <p class="footer-copyright">© 23234 LMS Project. Все права защищены.</p>
         </div>
     </div>
 </footer>

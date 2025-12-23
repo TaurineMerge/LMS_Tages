@@ -2,10 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>//localhost:1313/test/</loc>
-    <lastmod>2025-12-15T00:00:00+00:00</lastmod>
+    <loc>//localhost:1313/test/diagrams/sequence/</loc>
+    <lastmod>2025-12-22T00:00:00+00:00</lastmod>
   </url><url>
     <loc>//localhost:1313/account/</loc>
+    <lastmod>2025-12-15T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>//localhost:1313/admin/</loc>
     <lastmod>2025-12-15T00:00:00+00:00</lastmod>
   </url><url>
     <loc>//localhost:1313/c4-diagram/</loc>
@@ -14,10 +17,31 @@
     <loc>//localhost:1313/er-diagram/</loc>
     <lastmod>2025-12-15T00:00:00+00:00</lastmod>
   </url><url>
+    <loc>//localhost:1313/admin/diagrams/er/</loc>
+    <lastmod>2025-12-15T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>//localhost:1313/public/diagrams/er/</loc>
+    <lastmod>2025-12-15T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>//localhost:1313/test/diagrams/er/</loc>
+    <lastmod>2025-12-15T00:00:00+00:00</lastmod>
+  </url><url>
     <loc>//localhost:1313/account/diagrams/flowchart/</loc>
     <lastmod>2025-12-15T00:00:00+00:00</lastmod>
   </url><url>
     <loc>//localhost:1313/public/</loc>
+    <lastmod>2025-12-15T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>//localhost:1313/account/diagrams/sequence/</loc>
+    <lastmod>2025-12-15T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>//localhost:1313/admin/diagrams/sequence/</loc>
+    <lastmod>2025-12-15T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>//localhost:1313/test/</loc>
+    <lastmod>2025-12-15T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>//localhost:1313/public/diagrams/user-journey/</loc>
     <lastmod>2025-12-15T00:00:00+00:00</lastmod>
   </url><url>
     <loc>//localhost:1313/</loc>
@@ -26,25 +50,20 @@
     <loc>//localhost:1313/account/diagrams/</loc>
     <lastmod>2025-12-15T00:00:00+00:00</lastmod>
   </url><url>
+    <loc>//localhost:1313/admin/diagrams/</loc>
+    <lastmod>2025-12-15T00:00:00+00:00</lastmod>
+  </url><url>
     <loc>//localhost:1313/public/diagrams/</loc>
     <lastmod>2025-12-15T00:00:00+00:00</lastmod>
   </url><url>
     <loc>//localhost:1313/test/diagrams/</loc>
     <lastmod>2025-12-15T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>//localhost:1313/account/diagrams/sequence/</loc>
-  </url><url>
     <loc>//localhost:1313/account/diagrams/user-journey/</loc>
   </url><url>
     <loc>//localhost:1313/account/documentation/</loc>
   </url><url>
-    <loc>//localhost:1313/admin/</loc>
-  </url><url>
-    <loc>//localhost:1313/admin/diagrams/</loc>
-  </url><url>
     <loc>//localhost:1313/admin/diagrams/flowchart/</loc>
-  </url><url>
-    <loc>//localhost:1313/admin/diagrams/sequence/</loc>
   </url><url>
     <loc>//localhost:1313/admin/diagrams/user-journey/</loc>
   </url><url>
@@ -56,13 +75,9 @@
   </url><url>
     <loc>//localhost:1313/public/diagrams/sequence/</loc>
   </url><url>
-    <loc>//localhost:1313/public/diagrams/user-journey/</loc>
-  </url><url>
     <loc>//localhost:1313/public/documentation/</loc>
   </url><url>
     <loc>//localhost:1313/test/diagrams/flowchart/</loc>
-  </url><url>
-    <loc>//localhost:1313/test/diagrams/sequence/</loc>
   </url><url>
     <loc>//localhost:1313/test/diagrams/user-journey/</loc>
   </url><url>

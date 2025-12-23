@@ -6,20 +6,27 @@
     <description>Recent content in Диаграммы процессов Test модуля on LMS Documentation</description>
     <generator>Hugo</generator>
     <language>ru-ru</language>
-    <lastBuildDate>Mon, 01 Jan 0001 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Mon, 22 Dec 2025 00:00:00 +0000</lastBuildDate>
     <atom:link href="//localhost:1313/test/diagrams/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Sequence-диаграмма testing</title>
+      <link>//localhost:1313/test/diagrams/sequence/</link>
+      <pubDate>Mon, 22 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/test/diagrams/sequence/</guid>
+      <description>&lt;div class=&#34;mermaid&#34;&gt;&#xA;    &#xA;&#xA;sequenceDiagram&#xA;    actor User as Пользователь&#xA;    participant Nginx as Nginx&#xA;    participant Keycloak as Keycloak&#xA;    participant Router as Router&#xA;    participant Auth as JwtHandler&#xA;    participant Controller as Controller&#xA;    participant Service as Service&#xA;    participant Repository as Repository&#xA;    participant DB as Database&#xA;&#xA;    Note over User,Keycloak: Этап 1: Аутентификация&#xA;    User-&gt;&gt;Keycloak: 1. Отправка учетных данных&#xA;    Keycloak--&gt;&gt;User: 2. Получение JWT токена&#xA;&#xA;    Note over User,DB: Этап 2: Обработка эндпоинтов&#xA;    User-&gt;&gt;Nginx: 3. HTTP запрос + JWT в заголовке&#xA;    Nginx-&gt;&gt;Router: 4. Проксирование на бэкенд&#xA;&#xA;    Router-&gt;&gt;Auth: 5. Проверка JWT (локально с кэшем)&#xA;    alt Токен невалидный&#xA;        Auth--&gt;&gt;Router: 401 Unauthorized&#xA;        Router--&gt;&gt;Nginx: HTTP 401&#xA;        Nginx--&gt;&gt;User: Доступ запрещен&#xA;    else Токен валидный&#xA;        Auth--&gt;&gt;Router: Claims (userId, roles, …)&#xA;&#xA;        Router-&gt;&gt;Controller: 6. Вызов обработчика&#xA;        Note right of Controller: Парсинг JSON → Request DTO&lt;br/&gt;Валидация входных данных&#xA;&#xA;        Controller-&gt;&gt;Service: 7. Вызов бизнес-логики&#xA;        Note right of Service: Маппинг DTO → Domain Model&lt;br/&gt;Применение бизнес-правил&#xA;&#xA;        Service-&gt;&gt;Repository: 8. Запрос данных из БД&#xA;        Repository-&gt;&gt;DB: 9. SQL запрос&#xA;&#xA;        alt Ошибка БД&#xA;            DB--&gt;&gt;Repository: Ошибка соединения/запроса&#xA;            Repository--&gt;&gt;Service: Ошибка работы с БД&#xA;            Service--&gt;&gt;Controller: Ошибка бизнес-логики&#xA;            Controller--&gt;&gt;Router: HTTP 500&#xA;            Router--&gt;&gt;Nginx: Internal Server Error&#xA;            Nginx--&gt;&gt;User: Ошибка сервера&#xA;        else Успешный запрос&#xA;            DB--&gt;&gt;Repository: 10. Результат запроса&#xA;            Repository--&gt;&gt;Service: 11. Domain Model&#xA;&#xA;            Note right of Service: Дополнительная обработка&lt;br/&gt;Агрегация данных&#xA;&#xA;            Service-&gt;&gt;Repository: 12. Сохранение изменений (если нужно)&#xA;            Repository-&gt;&gt;DB: 13. UPDATE/INSERT запрос&#xA;            DB--&gt;&gt;Repository: 14. Успешно сохранено&#xA;            Repository--&gt;&gt;Service: 15. Обновленная модель&#xA;&#xA;            Note right of Service: Маппинг Model → Response DTO&lt;br/&gt;Подготовка ответа&#xA;&#xA;            Service--&gt;&gt;Controller: 16. Response DTO&#xA;            Note right of Controller: Сериализация DTO → JSON&#xA;            Controller--&gt;&gt;Router: 17. HTTP 200 + JSON/HTML&#xA;            Router--&gt;&gt;Nginx: 18. HTTP Response&#xA;            Nginx--&gt;&gt;User: 19. Успешный ответ&#xA;        end&#xA;    end&#xA;&#xA;&lt;/div&gt;</description>
+    </item>
+    <item>
+      <title>ER-диаграмма для схемы testing</title>
+      <link>//localhost:1313/test/diagrams/er/</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/test/diagrams/er/</guid>
+      <description>&lt;div class=&#34;mermaid&#34;&gt;&#xA;    &#xA;&#xA;erDiagram&#xA;&#xA;    test_d {&#xA;        uuid id PK &#34;not null, unique&#34;&#xA;        uuid course_id FK&#xA;        varchar title&#xA;        integer min_point&#xA;        text description&#xA;    }&#xA;&#xA;    question_d {&#xA;        uuid id PK &#34;not null, unique&#34;&#xA;        uuid test_id FK &#34;not null&#34;&#xA;        text text_of_question&#xA;        int order&#xA;    }&#xA;&#xA;    answer_d {&#xA;        uuid id PK &#34;not null, unique&#34;&#xA;        text text&#xA;        uuid question_id FK &#34;not null&#34;&#xA;        int score &#34;not null&#34;&#xA;    }&#xA;&#xA;    test_attempt_b {&#xA;        uuid id PK &#34;student_id, test_id, date_of_attempt&#34;&#xA;        uuid student_id &#34;not null&#34;&#xA;        uuid test_id &#34;not null&#34;&#xA;        date date_of_attempt&#xA;        int point&#xA;        uuid certificate_id&#xA;        json attempt_version&#xA;        varchar attempt_snapshot&#xA;        boolen completed&#xA;    }&#xA;&#xA;&#xA;    draft_b {&#xA;        uuid id PK &#34;not null, unique&#34;&#xA;        varchar title&#xA;        integer min_point&#xA;        text description&#xA;        uuid test_id &#34;not null&#34;&#xA;    }&#xA;&#xA;&#xA;    content_d {&#xA;        uuid id PK &#34;not null, unique&#34;&#xA;        int order&#xA;        text content&#xA;        boolen type_of_content&#xA;        uuid question_id FK &#34;not null&#34;&#xA;        uuid answer_id FK &#34;not null&#34;&#xA;    }&#xA;&#xA;    %% RELATIONSHIPS&#xA;&#xA;    test_d ||--o{ question_d : &#34;has questions&#34;&#xA;    question_d ||--o{ answer_d : &#34;has answers&#34;&#xA;    test_d ||--o{ test_attempt_b : &#34;has attempts&#34;&#xA;    draft_b o|--o| test_d : &#34;has drafts&#34;&#xA;    content_d }o--o| question_d: &#34;has content&#34;&#xA;    content_d }o--o| answer_d: &#34;has content&#34;&#xA;&#xA;&#xA;&lt;/div&gt;</description>
+    </item>
     <item>
       <title></title>
       <link>//localhost:1313/test/diagrams/flowchart/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>//localhost:1313/test/diagrams/flowchart/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title></title>
-      <link>//localhost:1313/test/diagrams/sequence/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>//localhost:1313/test/diagrams/sequence/</guid>
       <description></description>
     </item>
     <item>
