@@ -150,4 +150,18 @@ public class TestService {
         UUID uuid = UUID.fromString(course_id);
         return repository.existsByCourseId(uuid);
     }
+
+    /**
+     * Получает все тесты по ID курса.
+     *
+     * @param courseId строковый UUID курса
+     * @return список тестов в формате DTO
+     */
+    public List<Test> getTestsByCourseId(String courseId) {
+        UUID uuid = UUID.fromString(courseId);
+        List<TestModel> models = repository.findByCourseId(uuid);
+        return models.stream()
+                .map(this::toDto)
+                .toList();
+    }
 }

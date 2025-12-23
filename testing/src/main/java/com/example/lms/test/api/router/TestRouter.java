@@ -58,7 +58,7 @@ public class TestRouter {
 			applyStandardBeforeMiddleware(logger);
 
 			// Список и создание тестов
-			get(withRealm(TEACHER_REALM, testController::getTests));
+			get(withRealm(READ_ACCESS_REALMS, testController::getTests));
 			post(withRealm(TEACHER_REALM, testController::createTest));
 
 			path("/{id}", () -> {
@@ -71,6 +71,11 @@ public class TestRouter {
 			});
 
 			path("/by-course", () -> {
+				// Получить тест по ID курса
+				path("/{courseId}", () -> {
+					get(withRealm(READ_ACCESS_REALMS, testController::getTestByCourseId));
+				});
+
 				path("/validate/{courseId}", () -> {
 					// Проверка существования теста по id курса - для всех
 					get(withRealm(READ_ACCESS_REALMS, testController::existsByCourseId));

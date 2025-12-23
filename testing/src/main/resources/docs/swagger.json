@@ -33,18 +33,49 @@
       "get": {
         "tags": ["Tests"],
         "summary": "Получить список тестов",
-        "description": "Возвращает HTML-страницу со списком тестов (для преподавателей)",
+        "description": "Возвращает список тестов. Поддерживает фильтрацию по courseId через query parameter.",
         "security": [
           {
             "keycloak": ["openid"]
           }
         ],
+        "parameters": [
+          {
+            "name": "courseId",
+            "in": "query",
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "description": "Идентификатор курса для фильтрации тестов (UUID v4)"
+          }
+        ],
         "responses": {
           "200": {
-            "description": "HTML-страница",
+            "description": "Успешный ответ со списком тестов",
             "schema": {
-              "type": "string"
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Test"
+                  }
+                },
+                "courseId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                  "description": "ID курса"
+                },
+                "status": {
+                  "type": "string",
+                  "description": "Статус операции"
+                }
+              }
             }
+          },
+          "400": {
+            "description": "Неверный формат UUID"
           },
           "401": {
             "description": "Не авторизован"
@@ -221,6 +252,49 @@
           },
           "500": {
             "description": "Внутренняя ошибка сервера"
+          }
+        }
+      }
+    },
+    "/tests/by-course/{courseId}": {
+      "get": {
+        "tags": ["Tests"],
+        "summary": "Получить тесты по ID курса",
+        "description": "Возвращает список тестов для указанного курса",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "courseId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "description": "Идентификатор курса (UUID v4)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список тестов курса",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Test"
+              }
+            }
+          },
+          "400": {
+            "description": "Неверный формат UUID"
+          },
+          "401": {
+            "description": "Не авторизован"
+          },
+          "404": {
+            "description": "Тесты не найдены"
           }
         }
       }

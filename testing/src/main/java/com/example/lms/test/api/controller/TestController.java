@@ -10,6 +10,7 @@ import com.example.lms.tracing.SimpleTracer;
 import io.javalin.http.Context;
 
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,23 +68,36 @@ public class TestController {
 
 	/**
 	 * Обработчик GET /tests.
-	 * <p>
-	 * Возвращает HTML-страницу со списком тестов, используя шаблон
-	 * {@code /templates/test-list.hbs}.
-	 * <p>
-	 * Если при компиляции или применении шаблона возникает ошибка —
-	 * клиенту возвращается статус 500.
+	 * 
+	 * Поддерживает query parameter: courseId для фильтрации тестов по курсу.
 	 *
 	 * @param ctx контекст HTTP-запроса
 	 */
 	public void getTests(Context ctx) {
 		SimpleTracer.runWithSpan("getTests", () -> {
-			List<Test> tests = testService.getAllTests();
-			Map<String, Object> model = new HashMap<>();
-			model.put("tests", tests);
-			model.put("title", "Список тестов");
+			String courseId = ctx.queryParam("courseId");
+			List<Test> tests;
+			String status = "success"; // Переименовал success в status для ясности
+			
+			if (courseId != null && !courseId.trim().isEmpty()) {
+				// Фильтрация по courseId
+				tests = testService.getTestsByCourseId(courseId);
+			} else {
+				// Все тесты
+				tests = testService.getAllTests();
+			}
+			
+			// Проверяем, есть ли тесты
+			if (tests == null || tests.isEmpty()) {
+				status = "error";
+			}
+			
+			Map<String, Object> response = new HashMap<>();
+			response.put("data", tests != null ? tests : new ArrayList<>());
+			response.put("courseId", courseId);
+			response.put("status", status);
 
-			renderTemplate(ctx, "layouts/test-list", model);
+			ctx.json(response);
 		});
 	}
 
@@ -170,6 +184,21 @@ public class TestController {
 			String course_id = ctx.pathParam("courseId");
 			boolean exist = testService.existsByCourseId(course_id);
 			ctx.json(Map.of("exists", exist));
+		});
+	}
+
+	/**
+	 * Обработчик GET /tests/by-course/{courseId}.
+	 * <p>
+	 * Возвращает тест по идентификатору курса.
+	 *
+	 * @param ctx HTTP-контекст
+	 */
+	public void getTestByCourseId(Context ctx) {
+		SimpleTracer.runWithSpan("getTestByCourseId", () -> {
+			String courseId = ctx.pathParam("courseId");
+			List<Test> tests = testService.getTestsByCourseId(courseId);
+			ctx.json(tests);
 		});
 	}
 }
