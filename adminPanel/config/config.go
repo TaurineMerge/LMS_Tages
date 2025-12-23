@@ -135,18 +135,25 @@ type MinioConfig struct {
 	PublicURL string // Публичный URL для доступа к изображениям через nginx
 }
 
+// TestModuleConfig содержит настройки для внешнего модуля тестов
+type TestModuleConfig struct {
+	BaseURL string // Базовый URL модуля тестов
+	Enabled bool   // Включен ли модуль тестов
+}
+
 // Settings является главным контейнером конфигурации приложения.
 //
 // Объединяет все подсекции конфигурации и предоставляет методы
 // валидации и доступа к значениям конфигурации.
 type Settings struct {
-	Database DatabaseConfig
-	OTel     OTelConfig
-	Keycloak KeycloakConfig
-	CORS     CORSConfig
-	Server   ServerConfig
-	Debug    bool
-	Minio    MinioConfig // <--- добавлено
+	Database   DatabaseConfig
+	OTel       OTelConfig
+	Keycloak   KeycloakConfig
+	CORS       CORSConfig
+	Server     ServerConfig
+	Debug      bool
+	Minio      MinioConfig
+	TestModule TestModuleConfig
 }
 
 // Validate проверяет обязательные параметры конфигурации
@@ -185,13 +192,14 @@ func (s *Settings) Validate() error {
 //   - *Settings: указатель на структуру конфигурации
 func NewSettings() *Settings {
 	return &Settings{
-		Database: loadDatabaseConfig(),
-		OTel:     loadOTelConfig(),
-		Keycloak: loadKeycloakConfig(),
-		CORS:     loadCORSConfig(),
-		Server:   loadServerConfig(),
-		Debug:    getEnvAsBool("DEBUG", false),
-		Minio:    loadMinioConfig(), // <--- добавлено
+		Database:   loadDatabaseConfig(),
+		OTel:       loadOTelConfig(),
+		Keycloak:   loadKeycloakConfig(),
+		CORS:       loadCORSConfig(),
+		Server:     loadServerConfig(),
+		Debug:      getEnvAsBool("DEBUG", false),
+		Minio:      loadMinioConfig(),
+		TestModule: loadTestModuleConfig(),
 	}
 }
 
@@ -404,6 +412,13 @@ func loadMinioConfig() MinioConfig {
 		Bucket:    getEnv("MINIO_BUCKET", "snapshots"),
 		UseSSL:    getEnvAsBool("MINIO_USE_SSL", false),
 		PublicURL: getEnv("MINIO_PUBLIC_URL", "http://localhost:9000"),
+	}
+}
+
+func loadTestModuleConfig() TestModuleConfig {
+	return TestModuleConfig{
+		BaseURL: getEnv("TEST_MODULE_BASE_URL", "http://localhost:8080"),
+		Enabled: getEnvAsBool("TEST_MODULE_ENABLED", false),
 	}
 }
 

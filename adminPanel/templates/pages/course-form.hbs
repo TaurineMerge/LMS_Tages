@@ -134,6 +134,35 @@
                     </div>
                 </div>
 
+                <div class="form-section">
+                    <h3 class="form-section__title">
+                        <span class="form-section__icon">📝</span>
+                        Тесты курса
+                    </h3>
+
+                    <div class="form-field">
+                        <p class="form-field__hint">Управляйте тестами для этого курса через внешний модуль тестов.</p>
+                        <div class="form-actions form-actions--inline">
+                            <a href="/test/create?courseId={{#if course}}{{course.ID}}{{/if}}" class="btn btn--secondary">
+                                <span class="btn__icon">＋</span>
+                                Создать тест
+                            </a>
+                            {{#if course.tests.draft}}
+                            <a href="/test/edit/draft?testId={{course.tests.draft.ID}}" class="btn btn--secondary">
+                                <span class="btn__icon">✏️</span>
+                                Редактировать черновик
+                            </a>
+                            {{/if}}
+                            {{#if course.tests.published}}
+                            <a href="/test/edit/published?testId={{course.tests.published.ID}}" class="btn btn--secondary">
+                                <span class="btn__icon">✏️</span>
+                                Редактировать опубликованный тест
+                            </a>
+                            {{/if}}
+                        </div>
+                    </div>
+                </div>
+
                 <div class="form-actions">
                     <a href="/admin/categories/{{categoryID}}/courses" class="btn btn--secondary">
                         <span class="btn__icon">✕</span>

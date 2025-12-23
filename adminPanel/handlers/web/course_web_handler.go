@@ -1,8 +1,10 @@
 package web
 
 import (
+	"adminPanel/config"
 	"adminPanel/handlers/dto/request"
 	"adminPanel/services"
+	"context"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -18,6 +20,29 @@ type CourseView struct {
 	Visible     bool
 	CreatedAt   string
 	UpdatedAt   string
+	Tests       CourseTestsView
+}
+
+// CourseTestsView представляет информацию о тестах курса
+type CourseTestsView struct {
+	Draft     *TestView
+	Published *TestView
+}
+
+// TestView представляет тест для отображения
+type TestView struct {
+	ID string
+}
+
+// getCourseTests получает информацию о тестах для курса из внешнего модуля
+func (h *CourseWebHandler) getCourseTests(ctx context.Context, courseID string) (CourseTestsView, error) {
+	if !h.testModuleConfig.Enabled {
+		return CourseTestsView{}, nil
+	}
+
+	// TODO: Implement HTTP call to test module
+	// For now, return empty
+	return CourseTestsView{}, nil
 }
 
 // levelToRussian преобразует уровень сложности в русский текст
@@ -36,15 +61,17 @@ func levelToRussian(level string) string {
 
 // CourseWebHandler обрабатывает веб-страницы для управления курсами
 type CourseWebHandler struct {
-	courseService   *services.CourseService
-	categoryService *services.CategoryService
+	courseService    *services.CourseService
+	categoryService  *services.CategoryService
+	testModuleConfig config.TestModuleConfig
 }
 
 // NewCourseWebHandler создает новый обработчик веб-страниц курсов
-func NewCourseWebHandler(courseService *services.CourseService, categoryService *services.CategoryService) *CourseWebHandler {
+func NewCourseWebHandler(courseService *services.CourseService, categoryService *services.CategoryService, testModuleConfig config.TestModuleConfig) *CourseWebHandler {
 	return &CourseWebHandler{
-		courseService:   courseService,
-		categoryService: categoryService,
+		courseService:    courseService,
+		categoryService:  categoryService,
+		testModuleConfig: testModuleConfig,
 	}
 }
 
@@ -177,10 +204,19 @@ func (h *CourseWebHandler) RenderEditCourseForm(c *fiber.Ctx) error {
 		Title:       course.Data.Title,
 		Description: course.Data.Description,
 		Level:       course.Data.Level,
+		LevelRu:     levelToRussian(course.Data.Level),
 		Visible:     course.Data.Visibility == "public",
 		CreatedAt:   formatDateTime(course.Data.CreatedAt),
 		UpdatedAt:   formatDateTime(course.Data.UpdatedAt),
 	}
+
+	// Получить информацию о тестах
+	tests, err := h.getCourseTests(ctx, course.Data.ID)
+	if err != nil {
+		// Логировать ошибку, но не прерывать рендеринг
+		tests = CourseTestsView{}
+	}
+	courseView.Tests = tests
 
 	return c.Render("pages/course-form", fiber.Map{
 		"title":        "Редактировать курс",

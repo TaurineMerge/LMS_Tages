@@ -368,7 +368,7 @@ func main() {
 
 	// Web handlers
 	categoryWebHandler := webhandlers.NewCategoryWebHandler(categoryService)
-	courseWebHandler := webhandlers.NewCourseWebHandler(courseService, categoryService)
+	courseWebHandler := webhandlers.NewCourseWebHandler(courseService, categoryService, settings.TestModule)
 	lessonWebHandler := webhandlers.NewLessonWebHandler(lessonService, courseService, categoryService)
 
 	// Register web routes
