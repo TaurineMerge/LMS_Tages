@@ -45,6 +45,7 @@ class WYSIWYGEditor {
         this.editor = document.getElementById(editorId);
         this.toolbar = document.getElementById(toolbarId);
         this.hiddenInput = null;
+        this.cursorMarker = null; // Маркер для сохранения позиции курсора
         
         if (!this.editor || !this.toolbar) {
             console.error('Editor or toolbar not found');
@@ -448,8 +449,44 @@ class WYSIWYGEditor {
     }
     
     insertImageWithDialog() {
+        // Сохраняем позицию курсора перед открытием диалога
+        this.saveSelection();
         // Создаем кастомное диалоговое окно
         this.showImageUploadDialog();
+    }
+    
+    saveSelection() {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            
+            // Вставляем временный маркер в позицию курсора
+            const marker = document.createElement('span');
+            marker.id = 'cursor-marker-' + Date.now();
+            marker.style.display = 'none';
+            
+            range.insertNode(marker);
+            this.cursorMarker = marker;
+        } else {
+            this.cursorMarker = null;
+        }
+    }
+    
+    restoreSelection() {
+        if (this.cursorMarker) {
+            const marker = this.cursorMarker;
+            const range = document.createRange();
+            const selection = window.getSelection();
+            
+            range.setStartBefore(marker);
+            range.setEndBefore(marker);
+            selection.removeAllRanges();
+            selection.addRange(range);
+            
+            // Удаляем маркер
+            marker.remove();
+            this.cursorMarker = null;
+        }
     }
     
     showImageUploadDialog() {
@@ -661,86 +698,94 @@ class WYSIWYGEditor {
 
     
     insertImageElement(url, width = null) {
-        // Создаем изображение
-        const img = document.createElement('img');
-        img.src = url;
-        img.alt = 'Image';
-        img.style.maxWidth = '100%';
-        img.style.height = 'auto';
-        img.style.display = 'block';
-        img.style.margin = '10px 0';
-        img.style.cursor = 'pointer';
+        // Создаем HTML для изображения
+        const widthAttr = (width && !isNaN(width) && width > 0) ? ` style="width: ${width}px;"` : ' style="width: 600px;"';
+        const imgHTML = `<img src="${url}" alt="Image" class="wysiwyg-image" style="max-width: 100%; height: auto; display: block; margin: 10px 0; cursor: pointer;${widthAttr.replace(' style="', '').replace(';"', '')}"><br>`;
         
-        // Если ширина не передана, используем размер по умолчанию
-        if (width && !isNaN(width) && width > 0) {
-            img.style.width = width + 'px';
-        } else {
-            img.style.width = '600px';
-        }
-        
-        // Добавляем класс для идентификации
-        img.className = 'wysiwyg-image';
-        
-        // Обработчик успешной загрузки
-        img.onload = () => {
-            console.log('Image loaded successfully:', url);
-        };
-        
-        // Обработчик ошибки загрузки
-        img.onerror = () => {
-            console.error('Failed to load image:', url);
-            img.alt = '⚠️ Изображение не загружено';
-            img.style.border = '2px dashed #ff0000';
-            img.style.padding = '20px';
-            img.style.background = '#fff3cd';
-            img.style.color = '#856404';
-            img.style.fontSize = '14px';
-            img.style.minHeight = '100px';
-            img.style.display = 'flex';
-            img.style.alignItems = 'center';
-            img.style.justifyContent = 'center';
-        };
-        
-        // Добавляем обработчик клика для редактирования размера
-        img.onclick = (e) => {
-            e.preventDefault();
-            this.editImageSize(img);
-        };
-        
-        // Фокусируем редактор перед вставкой
+        // Фокусируем редактор
         this.editor.focus();
         
-        // Вставляем изображение в редактор
-        const selection = window.getSelection();
+        // Восстанавливаем позицию курсора если она была сохранена
+        if (this.cursorMarker) {
+            this.restoreSelection();
+        }
         
-        // Если нет выделения, вставляем в конец
-        if (selection.rangeCount === 0) {
-            this.editor.appendChild(img);
-            const br = document.createElement('br');
-            this.editor.appendChild(br);
-        } else {
-            const range = selection.getRangeAt(0);
-            range.deleteContents();
-            range.insertNode(img);
+        // Всегда вставляем вручную для надежности
+        const selection = window.getSelection();
             
-            // Добавляем перенос строки после изображения
-            const br = document.createElement('br');
-            if (img.nextSibling) {
-                img.parentNode.insertBefore(br, img.nextSibling);
+            if (selection.rangeCount === 0) {
+                // Вставляем в конец
+                this.editor.insertAdjacentHTML('beforeend', imgHTML);
+                // Прокручиваем к новому изображению
+                const newImages = this.editor.querySelectorAll('img[src="' + url + '"]');
+                const lastImg = newImages[newImages.length - 1];
+                if (lastImg) {
+                    lastImg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
             } else {
-                img.parentNode.appendChild(br);
+                // Вставляем в позицию курсора
+                const range = selection.getRangeAt(0);
+                range.deleteContents();
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = imgHTML;
+                const fragment = document.createDocumentFragment();
+                while (tempDiv.firstChild) {
+                    fragment.appendChild(tempDiv.firstChild);
+                }
+                range.insertNode(fragment);
+                
+                // Перемещаем курсор после вставленного контента
+                // Находим вставленное изображение и устанавливаем курсор после него
+                const insertedImages = this.editor.querySelectorAll('img[src="' + url + '"]');
+                const insertedImg = insertedImages[insertedImages.length - 1];
+                if (insertedImg) {
+                    range.setStartAfter(insertedImg);
+                    range.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    
+                    // Прокручиваем к курсору, чтобы он был виден
+                    const cursorRect = range.getBoundingClientRect();
+                    const editorRect = this.editor.getBoundingClientRect();
+                    if (cursorRect.bottom > editorRect.bottom || cursorRect.top < editorRect.top) {
+                        range.startContainer.parentElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                }
             }
+        
+        // Находим вставленное изображение и добавляем обработчики
+        const images = this.editor.querySelectorAll('img[src="' + url + '"]');
+        const img = images[images.length - 1]; // Берем последнее изображение с этим URL
+        
+        if (img) {
+            // Добавляем обработчик ошибки загрузки
+            img.onerror = () => {
+                console.error('Failed to load image:', url);
+                img.alt = '⚠️ Изображение не загружено';
+                img.style.border = '2px dashed #ff0000';
+                img.style.padding = '20px';
+                img.style.background = '#fff3cd';
+                img.style.color = '#856404';
+                img.style.fontSize = '14px';
+                img.style.minHeight = '100px';
+                img.style.display = 'flex';
+                img.style.alignItems = 'center';
+                img.style.justifyContent = 'center';
+            };
             
-            // Перемещаем курсор после изображения
-            range.setStartAfter(br);
-            range.collapse(true);
-            selection.removeAllRanges();
-            selection.addRange(range);
+            // Добавляем обработчик клика для редактирования размера
+            img.onclick = (e) => {
+                e.preventDefault();
+                this.editImageSize(img);
+            };
         }
         
         this.updateHiddenInput();
         
         console.log('Image inserted into editor:', url);
+        
+        // Очищаем маркер позиции курсора
+        this.cursorMarker = null;
     }
     
     editImageSize(img) {
