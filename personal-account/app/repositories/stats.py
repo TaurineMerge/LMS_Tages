@@ -16,6 +16,7 @@ from app.db import queries as q
 from app.redis_client import get_redis_client
 from app.telemetry import traced
 
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
@@ -162,19 +163,26 @@ class StatsRepository:
         Returns:
             Aggregated statistics dictionary
         """
+        logger.debug("Getting stats for student %s", student_id)
         # 1. Try Redis
         stats = await self.get_from_redis(student_id)
         if stats:
             return stats
+        logger.debug("Stats after Redis: %s", stats)
 
+        logger.debug("Cache miss for student %s, checking DB", student_id)
         # 2. Try DB aggregated table
         stats = await self.get_from_db(student_id)
         if stats:
             await self.save_to_redis(student_id, stats)
             return stats
-
+        logger.debug("Stats after DB: %s", stats)
+        logger.debug("DB miss for student %s, calculating stats", student_id)
         # 3. Calculate, save to DB and Redis
+        logger.debug("Calculating stats for student %s", student_id)
+        logger.debug("Stats before calculation: %s", stats)
         stats = await self.calculate_and_save_aggregated(student_id)
+        logger.debug("Stats after calculation: %s", stats)
         await self.save_to_redis(student_id, stats)
         return stats
 

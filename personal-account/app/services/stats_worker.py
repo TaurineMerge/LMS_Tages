@@ -5,6 +5,7 @@ and process raw payloads into business tables using AsyncIOScheduler.
 """
 
 import logging
+from uuid import UUID
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -16,6 +17,7 @@ from app.repositories.student import student_repository
 from app.services.stats_processor import StatsProcessor
 from app.telemetry import traced
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -34,8 +36,8 @@ class StatsWorker:
         testing_client: TestingClient | None = None,
         processor: StatsProcessor | None = None,
     ):
-        self.testing_client = testing_client or TestingClient()
-        self.processor = processor or StatsProcessor(self.db)
+        self.testing_client = testing_client or TestingClient(get_settings().TESTING_BASE_URL)
+        self.processor = processor or StatsProcessor()
         self.scheduler = AsyncIOScheduler()
         settings = get_settings()
         self.fetch_interval = settings.STATS_WORKER_FETCH_INTERVAL
@@ -82,6 +84,24 @@ class StatsWorker:
 
         return job_wrapper
 
+    @traced("stats_worker.fetch_for_student", record_args=True, record_result=True)
+    async def fetch_for_student(self, student_id: UUID) -> None:
+        """Fetch data for a specific student."""
+        logger.info("Fetching data for student %s", student_id)
+        try:
+            # Fetch stats
+            stats_payload = await self.testing_client.get_user_stats(student_id)
+            await integration_repository.save_raw_user_stats(student_id, stats_payload)
+
+            # Fetch attempts
+            attempts_payload = await self.testing_client.get_user_attempts(student_id)
+            await integration_repository.save_raw_attempts(student_id, attempts_payload)
+
+            logger.info("Successfully fetched data for student %s", student_id)
+        except Exception as e:
+            logger.error("Failed to fetch data for student %s: %s", student_id, e)
+            raise
+
     @traced("stats_worker.fetch_from_testing", record_args=True, record_result=True)
     async def fetch_from_testing(self) -> None:
         """Fetch new data from testing service and save to integration.raw_*.
@@ -92,7 +112,7 @@ class StatsWorker:
         """
         logger.info("Starting fetch from testing service")
         # Get all student IDs (simplified; in production, use paging/checkpoints)
-        students = await student_repository.get_paginated(page=1, limit=1000)  # Adjust limit as needed
+        students = await student_repository.get_paginated(page=1, limit=3)  # Adjust limit as needed
         student_ids = [s["id"] for s in students[0]]
 
         for student_id in student_ids:

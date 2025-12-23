@@ -2,6 +2,8 @@
 -- ФИКС СХЕМЫ ДЛЯ СТАТИСТИКИ
 -- =============================================
 
+CREATE SCHEMA IF NOT EXISTS tests;
+
 -- 1. Добавляем недостающие колонки в попытки тестов
 ALTER TABLE tests.test_attempt_b 
     ADD COLUMN IF NOT EXISTS completed BOOLEAN DEFAULT FALSE,
@@ -29,3 +31,4 @@ CREATE TABLE IF NOT EXISTS stats.student_stats_aggregated (
 
 -- Индексы для статистики
 CREATE INDEX IF NOT EXISTS idx_stats_updated_at ON stats.student_stats_aggregated(updated_at);
+

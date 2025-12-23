@@ -115,10 +115,14 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str:
         """Construct database URL."""
-        return (
+        base_url = (
             f"postgresql://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}"
             f"@{self.DATABASE_HOST}:{self.DATABASE_PORT}/{self.DATABASE_NAME}"
         )
+        # Disable SSL for local development (asyncpg defaults to SSL)
+        if self.is_local:
+            return f"{base_url}?ssl=disable"
+        return base_url
 
     @property
     def is_local(self) -> bool:

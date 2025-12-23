@@ -7,6 +7,103 @@
 --   2. Добавить таблицы для сырых данных статистики из сервиса testing
 --   3. Добавить индексы для быстрого поиска необработанных данных
 
+
+
+
+-- =============================================
+-- МИГРАЦИЯ 002: Интеграция S3 и статистика
+-- =============================================
+-- Дата: 2025-12-17
+-- Описание: 
+--   1. Обновить таблицу certificate_b для работы с S3
+--   2. Добавить таблицы для сырых данных статистики из сервиса testing
+--   3. Добавить индексы для быстрого поиска необработанных данных
+
+-- =============================================
+-- ЧАСТЬ 0: Создание базовых схем и таблиц (дублирование из migrate-001.sql)
+-- =============================================
+
+-- 0.1. Создать схему personal_account
+CREATE SCHEMA IF NOT EXISTS personal_account;
+
+-- 0.2. Создать таблицу student_s (полная структура из migrate-001.sql)
+CREATE TABLE IF NOT EXISTS personal_account.student_s (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL,
+    surname VARCHAR(100) NOT NULL,
+    birth_date DATE,
+    avatar VARCHAR(500),
+    contacts JSONB DEFAULT '{}'::jsonb,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    phone VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 0.3. Создать таблицу certificate_b (базовая, из migrate-001.sql)
+CREATE TABLE IF NOT EXISTS personal_account.certificate_b (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    student_id UUID NOT NULL REFERENCES personal_account.student_s(id) ON DELETE CASCADE,
+    certificate_number SERIAL UNIQUE,
+    pdf_s3_key VARCHAR(500) NOT NULL,
+    snapshot_s3_key VARCHAR(500) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 0.4. Создать схему knowledge_base
+CREATE SCHEMA IF NOT EXISTS knowledge_base;
+
+-- 0.5. Создать таблицу category_d
+CREATE TABLE IF NOT EXISTS knowledge_base.category_d (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 0.6. Создать таблицу course_b
+CREATE TABLE IF NOT EXISTS knowledge_base.course_b (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    level VARCHAR(20) CHECK (level IN ('hard', 'medium', 'easy')) DEFAULT 'medium',
+    category_id UUID NOT NULL REFERENCES knowledge_base.category_d(id) ON DELETE RESTRICT,
+    visibility VARCHAR(20) CHECK (visibility IN ('draft', 'public', 'private')) DEFAULT 'draft',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 0.7. Создать схему tests
+CREATE SCHEMA IF NOT EXISTS tests;
+
+-- 0.8. Создать таблицу test_d
+CREATE TABLE IF NOT EXISTS tests.test_d (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    course_id UUID REFERENCES knowledge_base.course_b(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    min_point INTEGER DEFAULT 0,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 0.9. Создать таблицу test_attempt_b (базовая, из migrate-001.sql)
+CREATE TABLE IF NOT EXISTS tests.test_attempt_b (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    student_id UUID NOT NULL REFERENCES personal_account.student_s(id) ON DELETE CASCADE,
+    test_id UUID NOT NULL REFERENCES tests.test_d(id) ON DELETE CASCADE,
+    date_of_attempt DATE NOT NULL,
+    point INTEGER,
+    passed BOOLEAN,
+    completed BOOLEAN DEFAULT FALSE,
+    result JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+
 -- =============================================
 -- ЧАСТЬ 1: Обновление сертификатов (S3)
 -- =============================================
@@ -145,10 +242,7 @@ CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;…/Work/tages-practice ❯ pyenv shell 3.11.6
-
-…/Work/tages-practice ❯  /usr/bin/env /home/wildberries/.pyenv/versions/3.11.6/bin/python /home/wildberries/.vscode/extensions/ms-python.debugpy-2025.18.0-linux-x64/bundled/libs/debugpy/adapter/../../debugpy/launcher 43585 -- /home/wildberries/Work/tages-practice/LMS_Tages/personal-account/main.py 
-
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 

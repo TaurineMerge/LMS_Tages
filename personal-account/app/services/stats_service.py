@@ -30,6 +30,9 @@ class StatsService:
         Returns:
             Dictionary containing user statistics
         """
+
+        logger.debug("Getting stats for student %s", student_id)
+
         return await self.repo.get_user_stats(student_id)
 
     @traced("stats_service.refresh_user_statistics", record_args=True, record_result=True)
@@ -47,6 +50,3 @@ class StatsService:
         stats = await self.repo.calculate_and_save_aggregated(student_id)
         await self.repo.save_to_redis(student_id, stats)
         return stats
-
-
-stats_service = StatsService()

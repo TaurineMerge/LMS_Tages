@@ -4,7 +4,7 @@ services:
     image: postgres:15
     container_name: app-db-dev
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U pa_user -d personal_account_prod"]
+      test: ["CMD-SHELL", "pg_isready -U superuser -d postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -15,7 +15,9 @@ services:
       - "5432:5432"
     volumes:
       - app_data_dev:/var/lib/postgresql/data
-      - ./init-sql:/docker-entrypoint-initdb.d:ro
+      - ./init-sql/00-init-dbs.sh:/docker-entrypoint-initdb.d/00-init-dbs.sh:ro
+      - ./init-sql/01-run-all-sub-scripts.sh:/docker-entrypoint-initdb.d/01-run-all-sub-scripts.sh:ro
+      - ./init-sql:/docker-entrypoint-initdb.d/init-sql:ro
     networks:
       - dev-network
 
@@ -23,6 +25,11 @@ services:
   redis:
     image: redis:7-alpine
     container_name: redis-dev
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     ports:
       - "6379:6379"
     networks:

@@ -14,6 +14,7 @@ from app.config import get_settings
 from app.database import close_db_pool, init_db_pool
 from app.exceptions import app_exception
 from app.routers import auth, certificates, health, pages, stats, students, visits
+from app.services import stats_worker
 from app.telemetry_config import (
     configure_telemetry,
     instrument_fastapi,
@@ -50,7 +51,7 @@ handler.setFormatter(
     )
 )
 
-logging.basicConfig(level=logging.INFO, handlers=[handler])
+logging.basicConfig(level=logging.DEBUG, handlers=[handler])
 logger = logging.getLogger(__name__)
 
 settings = get_settings()
@@ -75,10 +76,25 @@ async def lifespan(app: FastAPI):
     await init_db_pool()
     logger.info("Database pool initialized")
 
+    # Start background worker
+    try:
+        stats_worker.start()
+        logger.info("StatsWorker started")
+    except Exception as exc:
+        logger.error("Failed to start StatsWorker: %s", exc)
+
     yield
 
     # Shutdown
     logger.info("Shutting down Personal Account API...")
+
+    # Stop background worker
+    try:
+        stats_worker.stop()
+        logger.info("StatsWorker stopped")
+    except Exception as exc:
+        logger.error("Failed to stop StatsWorker: %s", exc)
+
     await close_db_pool()
     logger.info("Database pool closed")
 

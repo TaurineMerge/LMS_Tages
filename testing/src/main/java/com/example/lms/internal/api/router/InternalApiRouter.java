@@ -34,15 +34,15 @@ public class InternalApiRouter {
 
             path("/users/{userId}", () -> {
                 path("/attempts", () -> {
-                    get(withRealm(READ_ACCESS_REALMS, internalApiController::getUserAttempts));
+                    get(internalApiController::getUserAttempts);
                 });
                 path("/stats", () -> {
-                    get(withRealm(READ_ACCESS_REALMS, internalApiController::getUserStats));
+                    get(internalApiController::getUserStats);
                 });
             });
 
             path("/attempts/{attemptId}", () -> {
-                get(withRealm(READ_ACCESS_REALMS, internalApiController::getAttemptDetail));
+                get(internalApiController::getAttemptDetail);
             });
 
             applyStandardAfterMiddleware(logger);

@@ -13,7 +13,7 @@ from opentelemetry import trace
 
 from app.config import get_settings
 from app.core.security import JWTValidator
-from app.services import stats_service
+from app.services import stats_service, stats_worker
 from app.telemetry import traced
 
 settings = get_settings()
@@ -196,7 +196,13 @@ async def statistics_page(request: Request):
 
     # Fetch stats from backend
     try:
+        # logging.debug("Fetching stats for user %s", student_id)
+        # await stats_worker.fetch_from_testing(UUID(student_id))
+        # logging.debug("Processing raws for user %s", student_id)
+        # await stats_worker.process_raws(UUID(student_id))
+        logging.debug("Getting stats for user %s", student_id)
         stats = await stats_service.get_user_statistics(UUID(student_id))
+        logging.debug("Fetched stats for user %s: %s", student_id, stats)
     except Exception as e:
         logger.error(f"Failed to fetch stats for user {student_id}: {e}")
         stats = {}
@@ -223,12 +229,25 @@ async def statistics_refresh(request: Request):
 
     try:
         token_payload = await jwt_validator.validate_token(access_token)
-        student_id = token_payload.sub
-        await stats_service.refresh_user_statistics(UUID(student_id))
+        student_id = UUID(token_payload.sub)
+
+        # 1. Fetch fresh data from testing service
+        await stats_worker.fetch_for_student(student_id)
+
+        # 2. Process raw data into business tables
+        # Note: In production, this might be too slow for a request-response cycle
+        # but for this practice it's fine.
+        await stats_worker.processor.process_raw_user_stats()
+        await stats_worker.processor.process_raw_attempts()
+
+        # 3. Recalculate aggregated stats
+        await stats_service.refresh_user_statistics(student_id)
+
+        logger.info("Successfully refreshed stats for student %s", student_id)
     except Exception as e:
         logger.error(f"Failed to refresh stats: {e}")
 
-    return RedirectResponse(url="/statistics", status_code=303)
+    return RedirectResponse(url=f"{settings.url_prefix}/statistics", status_code=303)
 
 
 @router.get("/register", response_class=HTMLResponse)

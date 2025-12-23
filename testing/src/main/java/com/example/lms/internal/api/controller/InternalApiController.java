@@ -43,13 +43,6 @@ public class InternalApiController {
             UUID attemptId = UUID.fromString(attemptIdParam);
             AttemptDetail detail = internalApiService.getAttemptDetail(attemptId);
 
-            if (detail == null) {
-                ctx.status(HttpStatus.NOT_FOUND)
-                        .json(createErrorResponse("Попытка не найдена"));
-                logger.warn("Попытка {} не найдена", attemptId);
-                return;
-            }
-
             ctx.json(detail);
             ctx.status(HttpStatus.OK);
             logger.info("Возвращены детали попытки: {}", attemptId);

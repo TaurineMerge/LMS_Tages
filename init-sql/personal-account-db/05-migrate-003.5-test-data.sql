@@ -1,6 +1,7 @@
 -- =============================================
 -- ТЕСТОВЫЕ ДАННЫЕ ДЛЯ РАЗРАБОТКИ
 -- =============================================
+CREATE SCHEMA IF NOT EXISTS tests;
 
 -- 1. Студент (соответствует пользователю в Keycloak student.json)
 INSERT INTO personal_account.student_s (id, name, surname, email)
