@@ -48,10 +48,30 @@ class WYSIWYGEditor {
         this.cursorMarker = null; // Маркер для сохранения позиции курсора
         this.draggedElement = null; // Элемент, который перетаскивается
         
-        if (!this.editor || !this.toolbar) {
-            console.error('Editor or toolbar not found');
-            return;
-        }
+        // Добавляем CSS стили для изображений
+        const style = document.createElement('style');
+        style.textContent = `
+            .wysiwyg-float-left {
+                float: left !important;
+                margin: 5px 15px 5px 0 !important;
+                shape-outside: margin-box !important;
+            }
+            .wysiwyg-float-right {
+                float: right !important;
+                margin: 5px 0 5px 15px !important;
+                shape-outside: margin-box !important;
+            }
+            .wysiwyg-block {
+                float: none !important;
+                display: block !important;
+                margin: 10px auto !important;
+                shape-outside: none !important;
+            }
+            #${editorId} p, #${editorId} div {
+                clear: none !important;
+            }
+        `;
+        document.head.appendChild(style);
         
         this.init();
     }
@@ -729,7 +749,7 @@ class WYSIWYGEditor {
     insertImageElement(url, width = null) {
         // Создаем HTML для изображения
         const widthAttr = (width && !isNaN(width) && width > 0) ? ` style="width: ${width}px;"` : ' style="width: 300px;"';
-        const imgHTML = `<img src="${url}" alt="Image" class="wysiwyg-image" draggable="true" style="max-width: 100%; height: auto; float: left; margin: 5px 15px 5px 0; cursor: move;${widthAttr.replace(' style="', '').replace(';"', '')}">`;
+        const imgHTML = `<img src="${url}" alt="Image" class="wysiwyg-image wysiwyg-float-left" draggable="true" style="max-width: 100%; height: auto; cursor: move;${widthAttr.replace(' style="', '').replace(';"', '')}">`;
         
         // Фокусируем редактор
         this.editor.focus();
@@ -853,7 +873,12 @@ class WYSIWYGEditor {
     
     editImageSize(img) {
         const currentWidth = img.style.width ? parseInt(img.style.width) : img.naturalWidth || 300;
-        const currentFloat = img.style.float || 'left';
+        let currentFloat = 'left';
+        if (img.classList.contains('wysiwyg-float-right')) {
+            currentFloat = 'right';
+        } else if (img.classList.contains('wysiwyg-block')) {
+            currentFloat = 'none';
+        }
         
         // Создаем модальное окно для редактирования
         const modal = document.createElement('div');
@@ -899,15 +924,17 @@ class WYSIWYGEditor {
             
             if (newWidth && !isNaN(newWidth) && newWidth > 0) {
                 img.style.width = newWidth + 'px';
-                img.style.float = newAlign;
                 
-                // Корректируем стили в зависимости от выравнивания
-                if (newAlign === 'none') {
-                    img.style.display = 'block';
-                    img.style.margin = '10px auto';
+                // Удаляем старые классы выравнивания
+                img.classList.remove('wysiwyg-float-left', 'wysiwyg-float-right', 'wysiwyg-block');
+                
+                // Добавляем новый класс выравнивания
+                if (newAlign === 'left') {
+                    img.classList.add('wysiwyg-float-left');
+                } else if (newAlign === 'right') {
+                    img.classList.add('wysiwyg-float-right');
                 } else {
-                    img.style.display = 'inline';
-                    img.style.margin = newAlign === 'left' ? '5px 15px 5px 0' : '5px 0 5px 15px';
+                    img.classList.add('wysiwyg-block');
                 }
                 
                 this.updateHiddenInput();
