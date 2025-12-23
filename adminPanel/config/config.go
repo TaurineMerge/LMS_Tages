@@ -125,6 +125,15 @@ type ServerConfig struct {
 	RootPath string
 }
 
+// MinioConfig содержит настройки для подключения к MinIO (S3).
+type MinioConfig struct {
+	Endpoint  string
+	AccessKey string
+	SecretKey string
+	Bucket    string
+	UseSSL    bool
+}
+
 // Settings является главным контейнером конфигурации приложения.
 //
 // Объединяет все подсекции конфигурации и предоставляет методы
@@ -136,6 +145,7 @@ type Settings struct {
 	CORS     CORSConfig
 	Server   ServerConfig
 	Debug    bool
+	Minio    MinioConfig // <--- добавлено
 }
 
 // Validate проверяет обязательные параметры конфигурации
@@ -180,6 +190,7 @@ func NewSettings() *Settings {
 		CORS:     loadCORSConfig(),
 		Server:   loadServerConfig(),
 		Debug:    getEnvAsBool("DEBUG", false),
+		Minio:    loadMinioConfig(), // <--- добавлено
 	}
 }
 
@@ -370,6 +381,27 @@ func loadServerConfig() ServerConfig {
 		Address:  getEnv("API_ADDRESS", ":4000"),
 		AppName:  getEnv("APP_NAME", "Admin Panel API"),
 		RootPath: getEnv("ROOT_PATH", "/admin"),
+	}
+}
+
+// loadMinioConfig загружает конфигурацию MinIO из переменных окружения.
+//
+// Читаемые переменные:
+//   - MINIO_ENDPOINT: эндпоинт MinIO (по умолчанию: "localhost:9000")
+//   - MINIO_ACCESS_KEY: ключ доступа MinIO (по умолчанию: "minioadmin")
+//   - MINIO_SECRET_KEY: секретный ключ MinIO (по умолчанию: "minioadmin")
+//   - MINIO_BUCKET: имя бакета MinIO (по умолчанию: "snapshots")
+//   - MINIO_USE_SSL: использовать SSL (по умолчанию: false)
+//
+// Возвращает:
+//   - MinioConfig: структура с настройками MinIO
+func loadMinioConfig() MinioConfig {
+	return MinioConfig{
+		Endpoint:  getEnv("MINIO_ENDPOINT", "localhost:9000"),
+		AccessKey: getEnv("MINIO_ACCESS_KEY", "minioadmin"),
+		SecretKey: getEnv("MINIO_SECRET_KEY", "minioadmin"),
+		Bucket:    getEnv("MINIO_BUCKET", "snapshots"),
+		UseSSL:    getEnvAsBool("MINIO_USE_SSL", false),
 	}
 }
 
