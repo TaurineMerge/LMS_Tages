@@ -325,6 +325,22 @@ public class TestRepository implements TestRepositoryInterface {
 		}
 	}
 
+	@Override
+	public boolean existsByCourseId(UUID course_id) {
+		String sql = "SELECT 1 FROM testing.test_d WHERE course_id = ?";
+
+		try (Connection conn = getConnection();
+				PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+			stmt.setObject(1, course_id);
+
+			return stmt.executeQuery().next();
+
+		} catch (SQLException e) {
+			throw new RuntimeException("Ошибка при поиске теста по ID курса", e);
+		}
+	}
+
 	/**
 	 * Преобразует строку ResultSet в объект TestModel.
 	 *

@@ -153,4 +153,23 @@ public class TestController {
 			ctx.json(Map.of("deleted", deleted));
 		});
 	}
+
+	/**
+	 * Обработчик GET /tests/by-course/validate/{course-id}.
+	 * <p>
+	 * Проверяет, существует ли тест для данного курса по courseId и возвращает JSON вида:
+	 * 
+	 * <pre>
+	 * {"exists": true}
+	 * </pre>
+	 * 
+	 * @param ctx HTTP-контекст
+	 */
+	public void existsByCourseId(Context ctx) {
+		SimpleTracer.runWithSpan("testExistsByCourseId", () -> {
+			String course_id = ctx.pathParam("courseId");
+			boolean exist = testService.existsByCourseId(course_id);
+			ctx.json(Map.of("exists", exist));
+		});
+	}
 }

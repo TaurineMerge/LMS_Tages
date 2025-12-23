@@ -70,6 +70,13 @@ public class TestRouter {
 				delete(withRealm(Set.of(TEACHER_REALM), testController::deleteTest));
 			});
 
+			path("/by-course", () -> {
+				path("/validate/{courseId}", () -> {
+					// Проверка существования теста по id курса - для всех
+					get(withRealm(READ_ACCESS_REALMS, testController::existsByCourseId));
+				});
+			});
+
 			applyStandardAfterMiddleware(logger);
 		});
 
@@ -79,24 +86,4 @@ public class TestRouter {
 			ctx.result("OK");
 		});
 	}
-
-	// private static void captureUserAttributes(Context ctx) {
-	// Object userId = ctx.attribute("userId");
-	// Object username = ctx.attribute("username");
-	// Object email = ctx.attribute("email");
-	// Object roles = ctx.attribute("roles");
-
-	// if (userId != null) {
-	// SimpleTracer.addAttribute("user.id", userId.toString());
-	// }
-	// if (username != null) {
-	// SimpleTracer.addAttribute("user.username", username.toString());
-	// }
-	// if (email != null) {
-	// SimpleTracer.addAttribute("user.email", email.toString());
-	// }
-	// if (roles != null) {
-	// SimpleTracer.addAttribute("user.roles", roles.toString());
-	// }
-	// }
 }

@@ -139,4 +139,15 @@ public class TestService {
         UUID uuid = UUID.fromString(id);
         return repository.deleteById(uuid);
     }
+
+    /**
+     * Проверяет, существует ли тест по ID курса.
+     *
+     * @param course_id строковый UUID курса
+     * @return true — если тест был существует; false — если не найден
+     */
+    public boolean existsByCourseId(String course_id) {
+        UUID uuid = UUID.fromString(course_id);
+        return repository.existsByCourseId(uuid);
+    }
 }
