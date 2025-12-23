@@ -67,8 +67,27 @@ class WYSIWYGEditor {
                 margin: 10px auto !important;
                 shape-outside: none !important;
             }
+            #${editorId} {
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+            }
             #${editorId} p, #${editorId} div {
                 clear: none !important;
+                float: none !important;
+                display: block !important;
+                position: relative;
+                overflow: visible;
+            }
+            #${editorId} br {
+                clear: none !important;
+            }
+            #${editorId} .wysiwyg-float-left + * {
+                margin-left: 0;
+                margin-right: 0;
+            }
+            #${editorId} .wysiwyg-float-right + * {
+                margin-left: 0;
+                margin-right: 0;
             }
         `;
         document.head.appendChild(style);
@@ -92,6 +111,9 @@ class WYSIWYGEditor {
         
         // Обновляем скрытое поле при изменении контента
         this.editor.addEventListener('input', () => this.updateHiddenInput());
+        
+        // Обрабатываем нажатие клавиш
+        this.editor.addEventListener('keydown', (e) => this.handleKeyDown(e));
         
         // Обрабатываем вставку текста (очищаем форматирование)
         this.editor.addEventListener('paste', (e) => this.handlePaste(e));
@@ -963,6 +985,61 @@ class WYSIWYGEditor {
         
         // Вставляем как текст
         document.execCommand('insertText', false, text);
+    }
+    
+    handleKeyDown(e) {
+        // Обрабатываем Enter около float изображений
+        if (e.key === 'Enter') {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const container = range.commonAncestorContainer;
+                
+                // Проверяем, есть ли рядом float изображение
+                let element = container.nodeType === Node.TEXT_NODE ? container.parentElement : container;
+                let hasFloatImage = false;
+                
+                // Проверяем текущий элемент и его соседей
+                while (element && element !== this.editor) {
+                    if (element.classList && 
+                        (element.classList.contains('wysiwyg-float-left') || 
+                         element.classList.contains('wysiwyg-float-right'))) {
+                        hasFloatImage = true;
+                        break;
+                    }
+                    
+                    // Проверяем предыдущие элементы
+                    let sibling = element.previousElementSibling;
+                    while (sibling) {
+                        if (sibling.classList && 
+                            (sibling.classList.contains('wysiwyg-float-left') || 
+                             sibling.classList.contains('wysiwyg-float-right'))) {
+                            hasFloatImage = true;
+                            break;
+                        }
+                        sibling = sibling.previousElementSibling;
+                    }
+                    
+                    if (hasFloatImage) break;
+                    element = element.parentElement;
+                }
+                
+                // Если есть float изображение, предотвращаем стандартное поведение
+                if (hasFloatImage) {
+                    e.preventDefault();
+                    
+                    // Создаем новый параграф с правильным позиционированием
+                    const br = document.createElement('br');
+                    range.insertNode(br);
+                    range.setStartAfter(br);
+                    range.setEndAfter(br);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    
+                    this.updateHiddenInput();
+                }
+            }
+        }
     }
     
     getContent() {
