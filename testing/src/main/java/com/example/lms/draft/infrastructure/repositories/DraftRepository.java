@@ -1,14 +1,19 @@
 package com.example.lms.draft.infrastructure.repositories;
 
-import com.example.lms.config.DatabaseConfig;
-import com.example.lms.draft.domain.model.DraftModel;
-import com.example.lms.draft.domain.repository.DraftRepositoryInterface;
-
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import com.example.lms.config.DatabaseConfig;
+import com.example.lms.draft.domain.model.DraftModel;
+import com.example.lms.draft.domain.repository.DraftRepositoryInterface;
 
 /**
  * Репозиторий для работы с черновиками тестов в базе данных.
@@ -19,9 +24,8 @@ import java.util.UUID;
  *  - title       VARCHAR
  *  - min_point   INT
  *  - description TEXT
- *  - test_id     UUID    (not null)
- *
- * Примечание: используется схема "testing" по аналогии с test_d.
+ *  - test_id     UUID    (может быть null)
+ *  - course_id   UUID    (может быть null)
  */
 public class DraftRepository implements DraftRepositoryInterface {
 
@@ -61,8 +65,8 @@ public class DraftRepository implements DraftRepositoryInterface {
 		draftModel.validate();
 
 		String sql = """
-				INSERT INTO testing.draft_b (title, min_point, description, test_id)
-				VALUES (?, ?, ?, ?)
+				INSERT INTO testing.draft_b (title, min_point, description, test_id, course_id)
+				VALUES (?, ?, ?, ?, ?)
 				RETURNING id
 				""";
 
@@ -78,6 +82,7 @@ public class DraftRepository implements DraftRepositoryInterface {
 
 			stmt.setString(3, draftModel.getDescription());
 			stmt.setObject(4, draftModel.getTestId());
+			stmt.setObject(5, draftModel.getCourseId());
 
 			try (ResultSet rs = stmt.executeQuery()) {
 				if (rs.next()) {
@@ -102,7 +107,7 @@ public class DraftRepository implements DraftRepositoryInterface {
 	@Override
 	public Optional<DraftModel> findById(UUID id) {
 		String sql = """
-				SELECT id, title, min_point, description, test_id
+				SELECT id, title, min_point, description, test_id, course_id
 				FROM testing.draft_b
 				WHERE id = ?
 				""";
@@ -134,7 +139,7 @@ public class DraftRepository implements DraftRepositoryInterface {
 	@Override
 	public Optional<DraftModel> findByTestId(UUID testId) {
 		String sql = """
-				SELECT id, title, min_point, description, test_id
+				SELECT id, title, min_point, description, test_id, course_id
 				FROM testing.draft_b
 				WHERE test_id = ?
 				""";
@@ -158,6 +163,41 @@ public class DraftRepository implements DraftRepositoryInterface {
 	}
 
 	/**
+	 * Находит черновики по идентификатору курса.
+	 *
+	 * @param courseId UUID курса
+	 * @return список черновиков для указанного курса
+	 */
+	@Override
+	public List<DraftModel> findByCourseId(UUID courseId) {
+		String sql = """
+				SELECT id, title, min_point, description, test_id, course_id
+				FROM testing.draft_b
+				WHERE course_id = ?
+				ORDER BY title
+				""";
+
+		List<DraftModel> result = new ArrayList<>();
+
+		try (Connection conn = getConnection();
+				PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+			stmt.setObject(1, courseId);
+
+			try (ResultSet rs = stmt.executeQuery()) {
+				while (rs.next()) {
+					result.add(mapRowToDraft(rs));
+				}
+			}
+
+			return result;
+
+		} catch (SQLException e) {
+			throw new RuntimeException("Ошибка при поиске черновиков по course_id: " + courseId, e);
+		}
+	}
+
+	/**
 	 * Возвращает список всех черновиков.
 	 *
 	 * @return список черновиков
@@ -165,7 +205,7 @@ public class DraftRepository implements DraftRepositoryInterface {
 	@Override
 	public List<DraftModel> findAll() {
 		String sql = """
-				SELECT id, title, min_point, description, test_id
+				SELECT id, title, min_point, description, test_id, course_id
 				FROM testing.draft_b
 				ORDER BY title
 				""";
@@ -203,7 +243,7 @@ public class DraftRepository implements DraftRepositoryInterface {
 
 		String sql = """
 				UPDATE testing.draft_b
-				SET title = ?, min_point = ?, description = ?, test_id = ?
+				SET title = ?, min_point = ?, description = ?, test_id = ?, course_id = ?
 				WHERE id = ?
 				""";
 
@@ -219,7 +259,8 @@ public class DraftRepository implements DraftRepositoryInterface {
 
 			stmt.setString(3, draftModel.getDescription());
 			stmt.setObject(4, draftModel.getTestId());
-			stmt.setObject(5, draftModel.getId());
+			stmt.setObject(5, draftModel.getCourseId());
+			stmt.setObject(6, draftModel.getId());
 
 			int updated = stmt.executeUpdate();
 			if (updated == 0) {
@@ -258,6 +299,30 @@ public class DraftRepository implements DraftRepositoryInterface {
 	}
 
 	/**
+	 * Удаляет черновики по идентификатору курса.
+	 *
+	 * @param courseId UUID курса
+	 * @return true если были удалены записи, false если записей не было
+	 */
+	@Override
+	public boolean deleteByCourseId(UUID courseId) {
+		String sql = """
+				DELETE FROM testing.draft_b
+				WHERE course_id = ?
+				""";
+
+		try (Connection conn = getConnection();
+				PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+			stmt.setObject(1, courseId);
+			return stmt.executeUpdate() > 0;
+
+		} catch (SQLException e) {
+			throw new RuntimeException("Ошибка при удалении черновиков по course_id: " + courseId, e);
+		}
+	}
+
+	/**
 	 * Маппит строку ResultSet в {@link DraftModel}.
 	 *
 	 * @param rs ResultSet с данными черновика
@@ -268,6 +333,7 @@ public class DraftRepository implements DraftRepositoryInterface {
 		return new DraftModel(
 				rs.getObject("id", UUID.class),
 				rs.getObject("test_id", UUID.class),
+				rs.getObject("course_id", UUID.class),
 				rs.getString("title"),
 				rs.getObject("min_point", Integer.class),
 				rs.getString("description"));

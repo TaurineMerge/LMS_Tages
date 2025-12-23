@@ -37,6 +37,7 @@ public class AnswerService {
                 dto.getQuestionId(),
                 dto.getText(),
                 dto.getScore() != null ? dto.getScore() : 0);
+                // dto.getOrder() != null ? dto.getOrder() : 0);
     }
 
     /**
@@ -122,6 +123,9 @@ public class AnswerService {
         if (answer.getScore() == null) {
             throw new IllegalArgumentException("Балл за ответ обязателен");
         }
+        // if (answer.getOrder() == null) {
+        //     throw new IllegalArgumentException("Порядковый номер ответа обязателен");
+        // }
 
         // Проверяем уникальность ответа для вопроса
         if (repository.existsByQuestionIdAndText(answer.getQuestionId(), answer.getText())) {
@@ -162,6 +166,9 @@ public class AnswerService {
         if (answer.getScore() == null) {
             throw new IllegalArgumentException("Балл за ответ обязателен");
         }
+        /* if (answer.getOrder() == null) {
+            throw new IllegalArgumentException("Порядковый номер ответа обязателен");
+        } */
 
         // Обновляем модель
         AnswerModel model = toModel(answer);

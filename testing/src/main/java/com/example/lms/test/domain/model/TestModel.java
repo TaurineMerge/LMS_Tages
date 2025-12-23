@@ -74,9 +74,9 @@ public class TestModel {
         this.id = Objects.requireNonNull(id, "ID cannot be null");
     }
 
-    public void setCourseId(UUID courseId) {
+    /* public void setCourseId(UUID courseId) {
         this.courseId = Objects.requireNonNull(courseId, "Course ID cannot be null");
-    }
+    } */
 
     public void setTitle(String title) {
         if (title == null || title.trim().isEmpty()) {

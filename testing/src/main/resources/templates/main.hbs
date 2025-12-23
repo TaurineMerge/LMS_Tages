@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}} - Конструктор тестов</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    </style>
+</head>
+<body>
+    {{#if (eq page 'test-builder')}}
+        <!-- Для конструктора тестов используем свой layout -->
+        {{> test-builder}}
+    {{else}}
+        <!-- Дефолтный layout (для preview и других страниц) -->
+        {{> header}}
+        <main class="container">
+            {{{body}}}
+        </main>
+        {{> footer}}
+    {{/if}}
+</body>
+</html>

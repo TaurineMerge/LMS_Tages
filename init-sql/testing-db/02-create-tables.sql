@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS testing.test_d (
 
 CREATE TABLE IF NOT EXISTS testing.question_d (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    test_id UUID NOT NULL,
+    test_id UUID,
+    draft_id UUID,
     text_of_question TEXT,
     "order" INTEGER,
     UNIQUE(id),
@@ -46,7 +47,8 @@ CREATE TABLE IF NOT EXISTS testing.draft_b (
     title VARCHAR,
     min_point INTEGER,
     description TEXT,
-    test_id UUID NOT NULL,
+    course_id UUID,
+    test_id UUID,
     UNIQUE(id),
     CONSTRAINT fk_draft_test FOREIGN KEY (test_id) REFERENCES testing.test_d(id)
 );
