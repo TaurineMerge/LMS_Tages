@@ -52,24 +52,20 @@ public class MinioConfig {
     /** Название bucket для хранения снимков */
     private final String bucket;
 
-    /** Использовать SSL для подключения */
-    private final boolean useSSL;
-
     /**
      * Создаёт конфигурацию MinIO из переменных окружения.
      * <p>
      * Загружает настройки из файла {@code .env} или системных переменных.
      * Использует значения по умолчанию, если переменные не установлены.
      */
-    public MinioConfig() {
-        this.endpoint = dotenv.get("MINIO_ENDPOINT");
-        this.accessKey = dotenv.get("MINIO_ACCESS_KEY");
-        this.secretKey = dotenv.get("MINIO_SECRET_KEY");
-        this.bucket = dotenv.get("MINIO_BUCKET");
-        this.useSSL = Boolean.parseBoolean(dotenv.get("MINIO_USE_SSL"));
+    public MinioConfig(String endpoint, String accessKey, String secretKey, String bucket) {
+        this.endpoint = endpoint;
+        this.accessKey = accessKey;
+        this.secretKey = secretKey;
+        this.bucket = bucket;
 
-        logger.info("MinIO конфигурация загружена: endpoint={}, bucket={}, useSSL={}",
-                endpoint, bucket, useSSL);
+        logger.info("MinIO конфигурация загружена: endpoint={}, bucket={}",
+                endpoint, bucket);
     }
 
     /**
@@ -84,7 +80,7 @@ public class MinioConfig {
     public MinioClient createClient() {
         try {
             MinioClient client = MinioClient.builder()
-                    .endpoint(endpoint, useSSL ? 443 : 9000, useSSL)
+                    .endpoint(endpoint)
                     .credentials(accessKey, secretKey)
                     .build();
 
@@ -155,7 +151,7 @@ public class MinioConfig {
      * @return true если используется HTTPS, false для HTTP
      */
     public boolean isUseSSL() {
-        return useSSL;
+        return endpoint.startsWith("https://");
     }
 
     /**
@@ -166,8 +162,7 @@ public class MinioConfig {
      * @return базовый URL для объектов
      */
     public String getBaseUrl() {
-        String protocol = useSSL ? "https" : "http";
-        return String.format("%s://%s/%s", protocol, endpoint, bucket);
+        return endpoint + "/" + bucket;
     }
 
     @Override
@@ -175,7 +170,6 @@ public class MinioConfig {
         return "MinioConfig{" +
                 "endpoint='" + endpoint + '\'' +
                 ", bucket='" + bucket + '\'' +
-                ", useSSL=" + useSSL +
                 ", accessKey='***'" + // Не показываем ключи в логах
                 ", secretKey='***'" +
                 '}';
