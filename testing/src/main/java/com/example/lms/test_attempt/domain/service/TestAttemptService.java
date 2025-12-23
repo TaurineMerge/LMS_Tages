@@ -15,12 +15,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.example.lms.shared.storage.StorageServiceInterface;
+import com.example.lms.shared.storage.dto.UploadResult;
 
 /**
  * Сервис для работы с попытками тестов.
  *
  * ✅ Сохранён весь функционал HEAD (DTO ↔ Model + CRUD/поиск),
- * ✅ и добавлена UI-часть (attempt_version JSON, saveAnswer, completeAttemptForToday).
+ * ✅ и добавлена UI-часть (attempt_version JSON, saveAnswer,
+ * completeAttemptForToday).
  */
 public class TestAttemptService {
 
@@ -28,9 +31,11 @@ public class TestAttemptService {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final TestAttemptRepositoryInterface repository;
+    private final StorageServiceInterface storageService;
 
-    public TestAttemptService(TestAttemptRepositoryInterface repository) {
+    public TestAttemptService(TestAttemptRepositoryInterface repository, StorageServiceInterface storageService) {
         this.repository = repository;
+        this.storageService = storageService;
     }
 
     // ---------------------------------------------------------------------
@@ -42,7 +47,7 @@ public class TestAttemptService {
             try {
                 date = LocalDate.parse(dto.getDate_of_attempt());
             } catch (Exception e) {
-                logger.warn("Ошибка парсинга даты: {}", dto.getDate_of_attempt());
+                logger.error("Ошибка парсинга даты: {}", dto.getDate_of_attempt(), e);
             }
         }
 
@@ -55,8 +60,7 @@ public class TestAttemptService {
                 dto.getCertificate_id() != null ? UUID.fromString(dto.getCertificate_id()) : null,
                 dto.getAttempt_version(),
                 dto.getAttempt_snapshot(),
-                dto.getCompleted()
-        );
+                dto.getCompleted());
     }
 
     // ---------------------------------------------------------------------
@@ -74,8 +78,7 @@ public class TestAttemptService {
                 model.getCertificateId() != null ? model.getCertificateId().toString() : null,
                 model.getAttemptVersion(),
                 model.getAttemptSnapshot(),
-                model.getCompleted()
-        );
+                model.getCompleted());
     }
 
     // ---------------------------------------------------------------------
@@ -91,8 +94,7 @@ public class TestAttemptService {
         return toDto(saved);
     }
 
-    public TestAttempt getTestAttemptById(String id) {
-        UUID uuid = UUID.fromString(id);
+    public TestAttempt getTestAttemptById(UUID uuid) {
         TestAttemptModel model = repository.findById(uuid).orElseThrow();
         return toDto(model);
     }
@@ -105,6 +107,22 @@ public class TestAttemptService {
 
     public boolean deleteTestAttempt(String id) {
         UUID uuid = UUID.fromString(id);
+
+        // Если используем MinIO, удаляем снепшот из хранилища
+        if (storageService != null) {
+            try {
+                TestAttemptModel model = repository.findById(uuid).orElse(null);
+                if (model != null) {
+                    storageService.deleteSnapshot(
+                            model.getStudentId().toString(),
+                            model.getTestId().toString(),
+                            model.getId().toString());
+                }
+            } catch (Exception e) {
+                logger.warn("Не удалось удалить снепшот из MinIO для попытки: {}", id, e);
+            }
+        }
+
         return repository.deleteById(uuid);
     }
 
@@ -112,16 +130,96 @@ public class TestAttemptService {
         UUID uuid = UUID.fromString(id);
         TestAttemptModel model = repository.findById(uuid).orElseThrow();
         model.completeAttempt(finalPoint);
+
+        TestAttemptModel updated = repository.update(model);
+
+        // Сохраняем финальный снепшот в MinIO
+        if (storageService != null && updated.getAttemptSnapshot() != null) {
+            saveSnapshotToMinio(updated);
+        }
+
+        return toDto(updated);
+    }
+
+    /**
+     * Обновляет снепшот попытки и сохраняет его в MinIO.
+     * 
+     * @param id       ID попытки
+     * @param snapshot JSON-снепшот
+     * @return обновленная попытка
+     */
+    public TestAttempt updateSnapshot(String id, String snapshot) {
+        UUID uuid = UUID.fromString(id);
+        TestAttemptModel model = repository.findById(uuid).orElseThrow();
+
+        // Сохраняем снепшот в MinIO
+        if (storageService != null) {
+            try {
+                UploadResult result = storageService.uploadSnapshot(
+                        model.getStudentId().toString(),
+                        model.getTestId().toString(),
+                        model.getId().toString(),
+                        snapshot, model.getAttemptVersion(), model.getDateOfAttempt());
+
+                logger.info("Снепшот сохранен в MinIO: {}", result.getObjectPath());
+
+                // В БД сохраняем только ссылку на файл в MinIO
+                model.updateSnapshot(result.getObjectPath());
+
+            } catch (Exception e) {
+                logger.error("Ошибка при сохранении снепшота в MinIO", e);
+                // Fallback: сохраняем в БД напрямую
+                model.updateSnapshot(snapshot);
+            }
+        } else {
+            // Если MinIO не настроен, сохраняем в БД
+            model.updateSnapshot(snapshot);
+        }
+
         TestAttemptModel updated = repository.update(model);
         return toDto(updated);
     }
 
-    public TestAttempt updateSnapshot(String id, String snapshot) {
+    /**
+     * Получает полный снепшот попытки из MinIO.
+     * 
+     * @param id ID попытки
+     * @return JSON-снепшот, или null если не найден
+     */
+    public String getFullSnapshot(String id) {
         UUID uuid = UUID.fromString(id);
         TestAttemptModel model = repository.findById(uuid).orElseThrow();
-        model.updateSnapshot(snapshot);
-        TestAttemptModel updated = repository.update(model);
-        return toDto(updated);
+
+        // Если снепшот хранится в MinIO (путь начинается с "snapshots/")
+        if (storageService != null && model.getAttemptSnapshot() != null
+                && model.getAttemptSnapshot().startsWith("snapshots/")) {
+
+            Optional<String> snapshot = storageService.downloadSnapshot(
+                    model.getStudentId().toString(),
+                    model.getTestId().toString(),
+                    model.getId().toString());
+
+            return snapshot.orElse(null);
+        }
+
+        // Иначе возвращаем из БД
+        return model.getAttemptSnapshot();
+    }
+
+    /**
+     * Получает список всех снепшотов студента для конкретного теста из MinIO.
+     * 
+     * @param studentId ID студента
+     * @param testId    ID теста
+     * @return список ID попыток
+     */
+    public List<String> getSnapshotsList(String studentId, String testId) {
+        if (storageService == null) {
+            logger.warn("StorageService не настроен, возвращаем пустой список");
+            return List.of();
+        }
+
+        return storageService.listSnapshots(studentId, testId);
     }
 
     public List<TestAttempt> getTestAttemptsByStudentId(String studentId) {
@@ -173,9 +271,9 @@ public class TestAttemptService {
      *
      * Формат attempt_version:
      * {
-     *   "answers": [
-     *     { "question": "<questionUuid>", "answer": "<answerUuid>" }
-     *   ]
+     * "answers": [
+     * { "question": "<questionUuid>", "answer": "<answerUuid>" }
+     * ]
      * }
      *
      * Правило "без возможности исправления":
@@ -197,7 +295,8 @@ public class TestAttemptService {
                 if (item != null && item.isObject()) {
                     JsonNode qNode = item.get("question");
                     if (qNode != null && q.equals(qNode.asText())) {
-                        logger.info("Ответ уже сохранён (student={}, test={}, date={}, question={}). Повтор игнорируем.",
+                        logger.info(
+                                "Ответ уже сохранён (student={}, test={}, date={}, question={}). Повтор игнорируем.",
                                 studentId, testId, today, questionId);
                         return;
                     }
@@ -289,5 +388,35 @@ public class TestAttemptService {
         } catch (Exception ignored) {
         }
         return OBJECT_MAPPER.createObjectNode();
+    }
+
+    // ======================================================================
+    // PRIVATE HELPER METHODS
+    // ======================================================================
+
+    /**
+     * Сохраняет снепшот попытки в MinIO.
+     */
+    private void saveSnapshotToMinio(TestAttemptModel model) {
+        try {
+            String snapshot = model.getAttemptSnapshot();
+            if (snapshot == null || snapshot.isEmpty()) {
+                logger.warn("Снепшот пустой, пропускаем сохранение в MinIO");
+                return;
+            }
+
+            UploadResult result = storageService.uploadSnapshot(
+                    model.getStudentId().toString(),
+                    model.getTestId().toString(),
+                    model.getId().toString(),
+                    model.getAttemptVersion(),
+                    snapshot, model.getDateOfAttempt());
+
+            logger.info("Снепшот сохранен в MinIO: {}", result.getObjectPath());
+
+        } catch (Exception e) {
+            logger.error("Ошибка при сохранении снепшота в MinIO", e);
+            // Не падаем, продолжаем работу (снепшот остается в БД)
+        }
     }
 }

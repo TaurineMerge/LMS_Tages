@@ -26,15 +26,15 @@ import java.util.UUID;
  *
  * Таблица: testing.test_attempt_b
  * Колонки:
- *  - id UUID (PK)
- *  - student_id UUID
- *  - test_id UUID
- *  - date_of_attempt DATE
- *  - point INTEGER
- *  - certificate_id UUID
- *  - attempt_version JSON
- *  - attempt_snapshot VARCHAR(256)
- *  - completed BOOLEAN
+ * - id UUID (PK)
+ * - student_id UUID
+ * - test_id UUID
+ * - date_of_attempt DATE
+ * - point INTEGER
+ * - certificate_id UUID
+ * - attempt_version JSON
+ * - attempt_snapshot VARCHAR(256)
+ * - completed BOOLEAN
  */
 public class TestAttemptRepository implements TestAttemptRepositoryInterface {
 
@@ -152,12 +152,21 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
     // CRUD
     // ---------------------------------------------------------------------
 
+    /**
+     * Сохраняет новую попытку теста в базе данных.
+     *
+     * @param testAttempt объект TestAttemptModel для сохранения
+     * @return сохраненный объект TestAttemptModel с присвоенным идентификатором
+     * @throws RuntimeException если не удалось сохранить попытку или произошла
+     *                          SQL-ошибка
+     */
+
     @Override
     public TestAttemptModel save(TestAttemptModel testAttempt) {
         testAttempt.validate();
 
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(INSERT_SQL)) {
+                PreparedStatement stmt = conn.prepareStatement(INSERT_SQL)) {
 
             stmt.setObject(1, testAttempt.getStudentId());
             stmt.setObject(2, testAttempt.getTestId());
@@ -214,6 +223,15 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
         }
     }
 
+    /**
+     * Обновляет существующую попытку теста в базе данных.
+     *
+     * @param testAttempt объект TestAttemptModel с обновленными данными
+     * @return обновленный объект TestAttemptModel
+     * @throws IllegalArgumentException если попытка не имеет идентификатора
+     * @throws RuntimeException         если попытка не найдена или произошла
+     *                                  SQL-ошибка
+     */
     @Override
     public TestAttemptModel update(TestAttemptModel testAttempt) {
         if (testAttempt.getId() == null) {
@@ -223,7 +241,7 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
         testAttempt.validate();
 
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(UPDATE_SQL)) {
+                PreparedStatement stmt = conn.prepareStatement(UPDATE_SQL)) {
 
             stmt.setObject(1, testAttempt.getStudentId());
             stmt.setObject(2, testAttempt.getTestId());
@@ -264,6 +282,11 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
                 stmt.setNull(8, Types.BOOLEAN);
             }
 
+            stmt.setObject(5, testAttempt.getCertificateId());
+            stmt.setObject(6, testAttempt.getAttemptVersion());
+            stmt.setString(7, testAttempt.getAttemptSnapshot());
+            stmt.setBoolean(8, testAttempt.getCompleted());
+
             stmt.setObject(9, testAttempt.getId());
 
             int updated = stmt.executeUpdate();
@@ -279,10 +302,25 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
         }
     }
 
+    /**
+     * Находит попытку теста по её идентификатору.
+     *
+     * @param id уникальный идентификатор попытки
+     * @return Optional с найденной попыткой или пустой Optional, если попытка не
+     *         найдена
+     * @throws RuntimeException если произошла SQL-ошибка
+     */
     @Override
     public Optional<TestAttemptModel> findById(UUID id) {
+        String sql = """
+                SELECT id, student_id, test_id, date_of_attempt, point,
+                       certificate_id, attempt_version, attempt_snapshot, completed
+                FROM testing.test_attempt_b
+                WHERE id = ?
+                """;
+
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SELECT_BY_ID)) {
+                PreparedStatement stmt = conn.prepareStatement(SELECT_BY_ID)) {
 
             stmt.setObject(1, id);
 
@@ -304,8 +342,8 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
         List<TestAttemptModel> attempts = new ArrayList<>();
 
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SELECT_ALL);
-             ResultSet rs = stmt.executeQuery()) {
+                PreparedStatement stmt = conn.prepareStatement(SELECT_ALL);
+                ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
                 attempts.add(mapRowToTestAttempt(rs));
@@ -321,7 +359,7 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
     @Override
     public boolean deleteById(UUID id) {
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(DELETE_BY_ID)) {
+                PreparedStatement stmt = conn.prepareStatement(DELETE_BY_ID)) {
 
             stmt.setObject(1, id);
             return stmt.executeUpdate() > 0;
@@ -335,7 +373,7 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
     @Override
     public boolean existsById(UUID id) {
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(EXISTS_BY_ID)) {
+                PreparedStatement stmt = conn.prepareStatement(EXISTS_BY_ID)) {
 
             stmt.setObject(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
@@ -357,7 +395,7 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
         List<TestAttemptModel> attempts = new ArrayList<>();
 
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SELECT_BY_STUDENT)) {
+                PreparedStatement stmt = conn.prepareStatement(SELECT_BY_STUDENT)) {
 
             stmt.setObject(1, studentId);
 
@@ -379,7 +417,7 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
         List<TestAttemptModel> attempts = new ArrayList<>();
 
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SELECT_BY_TEST)) {
+                PreparedStatement stmt = conn.prepareStatement(SELECT_BY_TEST)) {
 
             stmt.setObject(1, testId);
 
@@ -396,12 +434,20 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
         }
     }
 
+    /**
+     * Находит все попытки для указанного студента и теста.
+     *
+     * @param studentId идентификатор студента
+     * @param testId    идентификатор теста
+     * @return список попыток, отсортированных по дате (новые сначала)
+     * @throws RuntimeException если произошла SQL-ошибка
+     */
     @Override
     public List<TestAttemptModel> findByStudentIdAndTestId(UUID studentId, UUID testId) {
         List<TestAttemptModel> attempts = new ArrayList<>();
 
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SELECT_BY_STUDENT_AND_TEST)) {
+                PreparedStatement stmt = conn.prepareStatement(SELECT_BY_STUDENT_AND_TEST)) {
 
             stmt.setObject(1, studentId);
             stmt.setObject(2, testId);
@@ -422,7 +468,7 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
     @Override
     public int countByStudentId(UUID studentId) {
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(COUNT_BY_STUDENT)) {
+                PreparedStatement stmt = conn.prepareStatement(COUNT_BY_STUDENT)) {
 
             stmt.setObject(1, studentId);
 
@@ -439,7 +485,7 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
     @Override
     public int countByTestId(UUID testId) {
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(COUNT_BY_TEST)) {
+                PreparedStatement stmt = conn.prepareStatement(COUNT_BY_TEST)) {
 
             stmt.setObject(1, testId);
 
@@ -458,8 +504,8 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
         List<TestAttemptModel> attempts = new ArrayList<>();
 
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SELECT_COMPLETED);
-             ResultSet rs = stmt.executeQuery()) {
+                PreparedStatement stmt = conn.prepareStatement(SELECT_COMPLETED);
+                ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
                 attempts.add(mapRowToTestAttempt(rs));
@@ -477,8 +523,8 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
         List<TestAttemptModel> attempts = new ArrayList<>();
 
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SELECT_INCOMPLETE);
-             ResultSet rs = stmt.executeQuery()) {
+                PreparedStatement stmt = conn.prepareStatement(SELECT_INCOMPLETE);
+                ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
                 attempts.add(mapRowToTestAttempt(rs));
@@ -503,7 +549,7 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
         }
 
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SELECT_ATTEMPT_VERSION)) {
+                PreparedStatement stmt = conn.prepareStatement(SELECT_ATTEMPT_VERSION)) {
 
             stmt.setObject(1, studentId);
             stmt.setObject(2, testId);
@@ -532,7 +578,7 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
         }
 
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(UPSERT_ATTEMPT_VERSION)) {
+                PreparedStatement stmt = conn.prepareStatement(UPSERT_ATTEMPT_VERSION)) {
 
             stmt.setObject(1, UUID.randomUUID());
             stmt.setObject(2, studentId);
@@ -567,6 +613,7 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
 
     private TestAttemptModel mapRowToTestAttempt(ResultSet rs) throws SQLException {
         Date date = rs.getDate("date_of_attempt");
+
         LocalDate localDate = (date != null) ? date.toLocalDate() : null;
 
         Boolean completed = null;
@@ -584,7 +631,6 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
                 rs.getObject("certificate_id", UUID.class),
                 rs.getString("attempt_version"),
                 rs.getString("attempt_snapshot"),
-                completed
-        );
+                completed);
     }
 }

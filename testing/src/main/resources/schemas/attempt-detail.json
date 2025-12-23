@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AttemptDetail",
+  "type": "object",
+  "required": ["attempt_id","student_id","test_id","date_of_attempt","completed"],
+  "properties": {
+    "attempt_id": { "type": "string", "format": "uuid" },
+    "student_id": { "type": "string", "format": "uuid" },
+    "test_id": { "type": "string", "format": "uuid" },
+    "date_of_attempt": { "type": "string", "format": "date" },
+    "point": { "type": ["integer","null"], "minimum": 0 },
+    "completed": { "type": "boolean" },
+    "passed": { "type": ["boolean","null"] },
+    "certificate_id": { "type": ["string","null"], "format": "uuid" },
+    "attempt_version": { "type": ["object","null"] },
+    "attempt_snapshot_s3": { "type": ["string","null"] },
+    "meta": { "type": ["object","null"], "additionalProperties": true }
+  },
+  "additionalProperties": false
+}

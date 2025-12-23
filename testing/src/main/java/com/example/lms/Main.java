@@ -20,10 +20,17 @@ import com.example.lms.draft.api.controller.DraftController;
 import com.example.lms.draft.api.router.DraftRouter;
 import com.example.lms.draft.domain.service.DraftService;
 import com.example.lms.draft.infrastructure.repositories.DraftRepository;
+import com.example.lms.config.MinioConfig;
+import com.example.lms.internal.api.controller.InternalApiController;
+import com.example.lms.internal.api.router.InternalApiRouter;
+import com.example.lms.internal.service.InternalApiService;
 import com.example.lms.question.api.controller.QuestionController;
 import com.example.lms.question.api.router.QuestionRouter;
 import com.example.lms.question.domain.service.QuestionService;
 import com.example.lms.question.infrastructure.repositories.QuestionRepository;
+import com.example.lms.shared.controller.ImageController;
+import com.example.lms.shared.router.ImageRouter;
+import com.example.lms.shared.storage.MinioStorageService;
 import com.example.lms.test.api.controller.TestController;
 import com.example.lms.test.api.router.TestRouter;
 import com.example.lms.test.domain.service.TestService;
@@ -66,6 +73,11 @@ public class Main {
 		final String DB_USER = dotenv.get("DB_USER");
 		final String DB_PASSWORD = dotenv.get("DB_PASSWORD");
 
+		final String ENDPOINT = dotenv.get("MINIO_ENDPOINT");
+		final String ACCESS_KEY = dotenv.get("MINIO_ACCESS_KEY");
+		final String SECRET_KEY = dotenv.get("MINIO_SECRET_KEY");
+		final String BUCKET = dotenv.get("MINIO_BUCKET");
+
 		// ---------------------------------------------------------------
 		// 2. Настройка зависимостей (Manual Dependency Injection)
 		// ---------------------------------------------------------------
@@ -74,6 +86,7 @@ public class Main {
 
 		// Конфигурация подключения к базе
 		DatabaseConfig dbConfig = new DatabaseConfig(DB_URL, DB_USER, DB_PASSWORD);
+		MinioConfig minioConfig = new MinioConfig(ENDPOINT, ACCESS_KEY, SECRET_KEY, BUCKET);
 
 		// Репозитории с логикой работы с БД
 		TestRepository testRepository = new TestRepository(dbConfig);
@@ -87,9 +100,11 @@ public class Main {
 		TestService testService = new TestService(testRepository);
 		AnswerService answerService = new AnswerService(answerRepository);
 		QuestionService questionService = new QuestionService(questionRepository);
-		TestAttemptService testAttemptService = new TestAttemptService(testAttemptRepository);
 		DraftService draftService = new DraftService(draftRepository);
 		ContentService contentService = new ContentService(contentRepository);
+		MinioStorageService minioStorageService = new MinioStorageService(minioConfig);
+		TestAttemptService testAttemptService = new TestAttemptService(testAttemptRepository, minioStorageService);
+		InternalApiService internalApiService = new InternalApiService(testAttemptService, testService);
 
 		// Контроллер, принимающий HTTP-запросы
 		TestController testController = new TestController(testService, handlebars);
@@ -98,18 +113,18 @@ public class Main {
 		TestAttemptController testAttemptController = new TestAttemptController(testAttemptService);
 		DraftController draftController = new DraftController(draftService);
 		ContentController contentController = new ContentController(contentService, handlebars);
-		
+
 		// ИСПРАВЛЕННАЯ СТРОКА: добавлен draftService в конструктор TestFormController
 		TestFormController testWebController = new TestFormController(
-			testService, 
-			questionService, 
-			answerService, 
-			draftService,  // Добавлен draftService
-			handlebars
-		);
+				testService,
+				questionService,
+				answerService,
+				draftService, // Добавлен draftService
+				handlebars);
 
-		// UI controller (ВАЖНО: добавили testAttemptService)
 		var uiTestController = new UiTestController(testService, questionService, answerService, testAttemptService);
+		InternalApiController internalApiController = new InternalApiController(internalApiService);
+		ImageController imageController = new ImageController(minioStorageService);
 
 		// ---------------------------------------------------------------
 		// 3. Создание и запуск Javalin HTTP-сервера
@@ -117,7 +132,7 @@ public class Main {
 		Javalin app = Javalin.create(config -> {
 			// Используем JavalinJackson по умолчанию (без кастомного ObjectMapper)
 			config.jsonMapper(new JavalinJackson());
-			
+
 			// Добавляем логирование запросов для отладки
 			config.requestLogger.http((ctx, executionTimeMs) -> {
 				logger.info("{} {} - {}ms", ctx.method(), ctx.path(), executionTimeMs);
@@ -157,10 +172,13 @@ public class Main {
 
 				// UI маршруты
 				UiRouter.register(uiTestController);
+				InternalApiRouter.register(internalApiController);
+				ImageRouter.register(imageController);
 
 				// Swagger UI
 				get("/swagger", ctx -> {
-					try (InputStream inputStream = Main.class.getClassLoader().getResourceAsStream("public/swagger.html")) {
+					try (InputStream inputStream = Main.class.getClassLoader()
+							.getResourceAsStream("public/swagger.html")) {
 						if (inputStream == null) {
 							logger.error("Swagger HTML file not found in classpath");
 							ctx.status(404).result("Swagger UI not found");
@@ -176,7 +194,8 @@ public class Main {
 
 				// Swagger JSON
 				get("/swagger.json", ctx -> {
-					try (InputStream inputStream = Main.class.getClassLoader().getResourceAsStream("docs/swagger.json")) {
+					try (InputStream inputStream = Main.class.getClassLoader()
+							.getResourceAsStream("docs/swagger.json")) {
 						if (inputStream == null) {
 							logger.error("Swagger JSON file not found in classpath");
 							ctx.status(404).result("Swagger JSON not found");
