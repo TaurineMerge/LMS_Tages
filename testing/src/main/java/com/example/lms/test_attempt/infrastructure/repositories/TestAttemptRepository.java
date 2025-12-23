@@ -47,15 +47,16 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
      *
      * @param testAttempt объект TestAttemptModel для сохранения
      * @return сохраненный объект TestAttemptModel с присвоенным идентификатором
-     * @throws RuntimeException если не удалось сохранить попытку или произошла SQL-ошибка
+     * @throws RuntimeException если не удалось сохранить попытку или произошла
+     *                          SQL-ошибка
      */
     @Override
     public TestAttemptModel save(TestAttemptModel testAttempt) {
         testAttempt.validate();
 
         String sql = """
-                INSERT INTO testing.test_attempt_b 
-                (student_id, test_id, date_of_attempt, point, certificate_id, 
+                INSERT INTO testing.test_attempt_b
+                (student_id, test_id, date_of_attempt, point, certificate_id,
                  attempt_version, attempt_snapshot, completed)
                 VALUES (?, ?, ?, ?, ?, ?::json, ?, ?)
                 RETURNING id
@@ -66,7 +67,7 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
 
             stmt.setObject(1, testAttempt.getStudentId());
             stmt.setObject(2, testAttempt.getTestId());
-            
+
             if (testAttempt.getDateOfAttempt() != null)
                 stmt.setDate(3, Date.valueOf(testAttempt.getDateOfAttempt()));
             else
@@ -101,7 +102,8 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
      * @param testAttempt объект TestAttemptModel с обновленными данными
      * @return обновленный объект TestAttemptModel
      * @throws IllegalArgumentException если попытка не имеет идентификатора
-     * @throws RuntimeException если попытка не найдена или произошла SQL-ошибка
+     * @throws RuntimeException         если попытка не найдена или произошла
+     *                                  SQL-ошибка
      */
     @Override
     public TestAttemptModel update(TestAttemptModel testAttempt) {
@@ -113,8 +115,8 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
 
         String sql = """
                 UPDATE testing.test_attempt_b
-                SET student_id = ?, test_id = ?, date_of_attempt = ?, point = ?, 
-                    certificate_id = ?, attempt_version = ?, attempt_snapshot = ?, 
+                SET student_id = ?, test_id = ?, date_of_attempt = ?, point = ?,
+                    certificate_id = ?, attempt_version = ?::json, attempt_snapshot = ?,
                     completed = ?
                 WHERE id = ?
                 """;
@@ -124,7 +126,7 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
 
             stmt.setObject(1, testAttempt.getStudentId());
             stmt.setObject(2, testAttempt.getTestId());
-            
+
             if (testAttempt.getDateOfAttempt() != null)
                 stmt.setDate(3, Date.valueOf(testAttempt.getDateOfAttempt()));
             else
@@ -136,7 +138,7 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
                 stmt.setNull(4, Types.INTEGER);
 
             stmt.setObject(5, testAttempt.getCertificateId());
-            stmt.setString(6, testAttempt.getAttemptVersion());
+            stmt.setObject(6, testAttempt.getAttemptVersion());
             stmt.setString(7, testAttempt.getAttemptSnapshot());
             stmt.setBoolean(8, testAttempt.getCompleted());
             stmt.setObject(9, testAttempt.getId());
@@ -156,13 +158,14 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
      * Находит попытку теста по её идентификатору.
      *
      * @param id уникальный идентификатор попытки
-     * @return Optional с найденной попыткой или пустой Optional, если попытка не найдена
+     * @return Optional с найденной попыткой или пустой Optional, если попытка не
+     *         найдена
      * @throws RuntimeException если произошла SQL-ошибка
      */
     @Override
     public Optional<TestAttemptModel> findById(UUID id) {
         String sql = """
-                SELECT id, student_id, test_id, date_of_attempt, point, 
+                SELECT id, student_id, test_id, date_of_attempt, point,
                        certificate_id, attempt_version, attempt_snapshot, completed
                 FROM testing.test_attempt_b
                 WHERE id = ?
@@ -193,7 +196,7 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
     @Override
     public List<TestAttemptModel> findAll() {
         String sql = """
-                SELECT id, student_id, test_id, date_of_attempt, point, 
+                SELECT id, student_id, test_id, date_of_attempt, point,
                        certificate_id, attempt_version, attempt_snapshot, completed
                 FROM testing.test_attempt_b
                 ORDER BY date_of_attempt DESC NULLS LAST
@@ -269,7 +272,7 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
     @Override
     public List<TestAttemptModel> findByStudentId(UUID studentId) {
         String sql = """
-                SELECT id, student_id, test_id, date_of_attempt, point, 
+                SELECT id, student_id, test_id, date_of_attempt, point,
                        certificate_id, attempt_version, attempt_snapshot, completed
                 FROM testing.test_attempt_b
                 WHERE student_id = ?
@@ -304,7 +307,7 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
     @Override
     public List<TestAttemptModel> findByTestId(UUID testId) {
         String sql = """
-                SELECT id, student_id, test_id, date_of_attempt, point, 
+                SELECT id, student_id, test_id, date_of_attempt, point,
                        certificate_id, attempt_version, attempt_snapshot, completed
                 FROM testing.test_attempt_b
                 WHERE test_id = ?
@@ -333,14 +336,14 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
      * Находит все попытки для указанного студента и теста.
      *
      * @param studentId идентификатор студента
-     * @param testId идентификатор теста
+     * @param testId    идентификатор теста
      * @return список попыток, отсортированных по дате (новые сначала)
      * @throws RuntimeException если произошла SQL-ошибка
      */
     @Override
     public List<TestAttemptModel> findByStudentIdAndTestId(UUID studentId, UUID testId) {
         String sql = """
-                SELECT id, student_id, test_id, date_of_attempt, point, 
+                SELECT id, student_id, test_id, date_of_attempt, point,
                        certificate_id, attempt_version, attempt_snapshot, completed
                 FROM testing.test_attempt_b
                 WHERE student_id = ? AND test_id = ?
@@ -429,7 +432,7 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
     @Override
     public List<TestAttemptModel> findCompletedAttempts() {
         String sql = """
-                SELECT id, student_id, test_id, date_of_attempt, point, 
+                SELECT id, student_id, test_id, date_of_attempt, point,
                        certificate_id, attempt_version, attempt_snapshot, completed
                 FROM testing.test_attempt_b
                 WHERE completed = true
@@ -462,7 +465,7 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
     private TestAttemptModel mapRowToTestAttempt(ResultSet rs) throws SQLException {
         Date date = rs.getDate("date_of_attempt");
         LocalDate localDate = date != null ? date.toLocalDate() : null;
-        
+
         return new TestAttemptModel(
                 rs.getObject("id", UUID.class),
                 rs.getObject("student_id", UUID.class),
