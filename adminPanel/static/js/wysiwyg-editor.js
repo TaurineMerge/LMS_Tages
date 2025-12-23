@@ -810,10 +810,9 @@ class WYSIWYGEditor {
 
     
     insertImageElement(url, width = null) {
-        // Создаем HTML для изображения
+        // Создаем HTML для изображения как отдельного блока
         const widthAttr = (width && !isNaN(width) && width > 0) ? ` style="width: ${width}px;"` : ' style="width: 300px;"';
-        // По умолчанию вставляем как блок, чтобы избежать проблем с Enter
-        const imgHTML = `<img src="${url}" alt="Image" class="wysiwyg-image wysiwyg-block" draggable="true" style="max-width: 100%; height: auto; cursor: move;${widthAttr.replace(' style="', '').replace(';"', '')}">`;
+        const imgHTML = `<div><img src="${url}" alt="Image" class="wysiwyg-image wysiwyg-block" draggable="true" style="max-width: 100%; height: auto; cursor: move;${widthAttr.replace(' style="', '').replace(';"', '')}"></div>`;
         
         // Фокусируем редактор
         this.editor.focus();
@@ -823,48 +822,76 @@ class WYSIWYGEditor {
             this.restoreSelection();
         }
         
-        // Всегда вставляем вручную для надежности
         const selection = window.getSelection();
+        
+        if (selection.rangeCount === 0) {
+            // Вставляем в конец
+            this.editor.insertAdjacentHTML('beforeend', imgHTML);
+            // Прокручиваем к новому изображению
+            const newImages = this.editor.querySelectorAll('img[src="' + url + '"]');
+            const lastImg = newImages[newImages.length - 1];
+            if (lastImg) {
+                lastImg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        } else {
+            // Вставляем в позицию курсора как отдельный блок
+            const range = selection.getRangeAt(0);
             
-            if (selection.rangeCount === 0) {
-                // Вставляем в конец
-                this.editor.insertAdjacentHTML('beforeend', imgHTML);
-                // Прокручиваем к новому изображению
-                const newImages = this.editor.querySelectorAll('img[src="' + url + '"]');
-                const lastImg = newImages[newImages.length - 1];
-                if (lastImg) {
-                    lastImg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            // Если курсор находится внутри div'а с текстом, нужно разделить его
+            const container = range.commonAncestorContainer;
+            let parentDiv = container.nodeType === Node.TEXT_NODE ? container.parentElement : container;
+            
+            // Ищем ближайший div
+            while (parentDiv && parentDiv !== this.editor && parentDiv.tagName !== 'DIV') {
+                parentDiv = parentDiv.parentElement;
+            }
+            
+            if (parentDiv && parentDiv !== this.editor && parentDiv.tagName === 'DIV') {
+                // Разделяем div на две части: до курсора и после
+                const divContent = parentDiv.innerHTML;
+                const beforeCursor = divContent.substring(0, range.startOffset);
+                const afterCursor = divContent.substring(range.endOffset);
+                
+                // Заменяем содержимое div'а на часть до курсора
+                parentDiv.innerHTML = beforeCursor;
+                
+                // Вставляем изображение после этого div'а
+                const imgDiv = document.createElement('div');
+                imgDiv.innerHTML = `<img src="${url}" alt="Image" class="wysiwyg-image wysiwyg-block" draggable="true" style="max-width: 100%; height: auto; cursor: move;${widthAttr.replace(' style="', '').replace(';"', '')}">`;
+                
+                if (parentDiv.nextSibling) {
+                    parentDiv.parentNode.insertBefore(imgDiv, parentDiv.nextSibling);
+                } else {
+                    parentDiv.parentNode.appendChild(imgDiv);
                 }
+                
+                // Если есть текст после курсора, создаем новый div для него
+                if (afterCursor.trim()) {
+                    const afterDiv = document.createElement('div');
+                    afterDiv.innerHTML = afterCursor;
+                    imgDiv.parentNode.insertBefore(afterDiv, imgDiv.nextSibling);
+                }
+                
+                // Устанавливаем курсор после изображения
+                const newRange = document.createRange();
+                newRange.setStartAfter(imgDiv);
+                newRange.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(newRange);
             } else {
-                // Вставляем в позицию курсора
-                const range = selection.getRangeAt(0);
+                // Обычная вставка
                 range.deleteContents();
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = imgHTML;
-                const fragment = document.createDocumentFragment();
-                while (tempDiv.firstChild) {
-                    fragment.appendChild(tempDiv.firstChild);
-                }
-                range.insertNode(fragment);
+                range.insertNode(tempDiv);
                 
-                // Перемещаем курсор после вставленного контента
-                // Находим вставленное изображение и устанавливаем курсор после него
-                const insertedImages = this.editor.querySelectorAll('img[src="' + url + '"]');
-                const insertedImg = insertedImages[insertedImages.length - 1];
-                if (insertedImg) {
-                    range.setStartAfter(insertedImg);
-                    range.collapse(true);
-                    selection.removeAllRanges();
-                    selection.addRange(range);
-                    
-                    // Прокручиваем к курсору, чтобы он был виден
-                    const cursorRect = range.getBoundingClientRect();
-                    const editorRect = this.editor.getBoundingClientRect();
-                    if (cursorRect.bottom > editorRect.bottom || cursorRect.top < editorRect.top) {
-                        range.startContainer.parentElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                    }
-                }
+                // Устанавливаем курсор после вставленного блока
+                range.setStartAfter(tempDiv);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
             }
+        }
         
         // Находим вставленное изображение и добавляем обработчики
         const images = this.editor.querySelectorAll('img[src="' + url + '"]');
