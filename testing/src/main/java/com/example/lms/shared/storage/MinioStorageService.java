@@ -320,6 +320,11 @@ public class MinioStorageService implements StorageServiceInterface {
         return getPresignedUrl(IMAGE_BUCKET, objectPath, expirySeconds);
     }
 
+    @Override
+    public String getExtensionFromContentType(String contentType) {
+        return imageValidator.getExtensionFromContentType(contentType);
+    }
+
     // ======================================================================
     // HELPER METHODS
     // ======================================================================
