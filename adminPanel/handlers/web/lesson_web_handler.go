@@ -11,13 +11,13 @@ import (
 
 // LessonView представляет урок для отображения
 type LessonView struct {
-	ID          string
-	CourseID    string
-	Title       string
-	HTMLContent string
-	Number      int
-	CreatedAt   string
-	UpdatedAt   string
+	ID        string
+	CourseID  string
+	Title     string
+	Content   string
+	Number    int
+	CreatedAt string
+	UpdatedAt string
 }
 
 // LessonWebHandler обрабатывает веб-страницы для управления уроками
@@ -185,12 +185,12 @@ func (h *LessonWebHandler) RenderEditLessonForm(c *fiber.Ctx) error {
 	}
 
 	lessonView := LessonView{
-		ID:          lesson.Data.ID,
-		CourseID:    lesson.Data.CourseID,
-		Title:       lesson.Data.Title,
-		HTMLContent: lesson.Data.HTMLContent,
-		CreatedAt:   formatDateTime(lesson.Data.CreatedAt),
-		UpdatedAt:   formatDateTime(lesson.Data.UpdatedAt),
+		ID:        lesson.Data.ID,
+		CourseID:  lesson.Data.CourseID,
+		Title:     lesson.Data.Title,
+		Content:   lesson.Data.Content,
+		CreatedAt: formatDateTime(lesson.Data.CreatedAt),
+		UpdatedAt: formatDateTime(lesson.Data.UpdatedAt),
 	}
 
 	return c.Render("pages/lesson-form", fiber.Map{
@@ -211,10 +211,10 @@ func (h *LessonWebHandler) CreateLesson(c *fiber.Ctx) error {
 
 	// Получаем данные из формы
 	title := c.FormValue("title")
-	htmlContent := c.FormValue("html_content")
+	content := c.FormValue("content")
 
 	// Логирование для отладки
-	log.Printf("[DEBUG] CreateLesson: title=%s, html_content length=%d", title, len(htmlContent))
+	log.Printf("[DEBUG] CreateLesson: title=%s, content length=%d", title, len(content))
 
 	// Валидация
 	if title == "" {
@@ -233,9 +233,8 @@ func (h *LessonWebHandler) CreateLesson(c *fiber.Ctx) error {
 
 	// Создаем урок
 	input := request.LessonCreate{
-		Title:       title,
-		HTMLContent: htmlContent,
-		Content:     nil,
+		Title:   title,
+		Content: content,
 	}
 
 	_, err := h.lessonService.CreateLesson(ctx, courseID, input)
@@ -266,11 +265,11 @@ func (h *LessonWebHandler) UpdateLesson(c *fiber.Ctx) error {
 
 	// Получаем данные из формы
 	title := c.FormValue("title")
-	htmlContent := c.FormValue("html_content")
+	content := c.FormValue("content")
 
 	// Логирование для отладки
-	log.Printf("[DEBUG] UpdateLesson: lessonID=%s, title=%s, html_content length=%d", lessonID, title, len(htmlContent))
-	log.Printf("[DEBUG] HTML content first 100 chars: %s", htmlContent[:min(100, len(htmlContent))])
+	log.Printf("[DEBUG] UpdateLesson: lessonID=%s, title=%s, content length=%d", lessonID, title, len(content))
+	log.Printf("[DEBUG] Content first 100 chars: %s", content[:min(100, len(content))])
 
 	// Валидация
 	if title == "" {
@@ -281,12 +280,12 @@ func (h *LessonWebHandler) UpdateLesson(c *fiber.Ctx) error {
 		var lessonView *LessonView
 		if lesson != nil {
 			lessonView = &LessonView{
-				ID:          lesson.Data.ID,
-				CourseID:    lesson.Data.CourseID,
-				Title:       lesson.Data.Title,
-				HTMLContent: lesson.Data.HTMLContent,
-				CreatedAt:   formatDateTime(lesson.Data.CreatedAt),
-				UpdatedAt:   formatDateTime(lesson.Data.UpdatedAt),
+				ID:        lesson.Data.ID,
+				CourseID:  lesson.Data.CourseID,
+				Title:     lesson.Data.Title,
+				Content:   lesson.Data.Content,
+				CreatedAt: formatDateTime(lesson.Data.CreatedAt),
+				UpdatedAt: formatDateTime(lesson.Data.UpdatedAt),
 			}
 		}
 
@@ -303,9 +302,8 @@ func (h *LessonWebHandler) UpdateLesson(c *fiber.Ctx) error {
 
 	// Обновляем урок
 	input := request.LessonUpdate{
-		Title:       title,
-		HTMLContent: htmlContent,
-		Content:     nil,
+		Title:   title,
+		Content: content,
 	}
 
 	_, err := h.lessonService.UpdateLesson(ctx, lessonID, courseID, input)

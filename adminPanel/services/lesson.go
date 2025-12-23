@@ -112,8 +112,8 @@ func (s *LessonService) GetLesson(ctx context.Context, lessonID, courseID string
 	}
 
 	// DEBUG: Логируем загруженный урок
-	fmt.Printf("[DEBUG] GetLesson: lessonID=%s, courseID=%s, title=%s, html_content length=%d\n",
-		lessonID, courseID, lesson.Title, len(lesson.HTMLContent))
+	fmt.Printf("[DEBUG] GetLesson: lessonID=%s, courseID=%s, title=%s, content length=%d\n",
+		lessonID, courseID, lesson.Title, len(lesson.Content))
 
 	return &response.LessonResponse{
 		Status: "success",
