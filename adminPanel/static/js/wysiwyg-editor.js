@@ -448,13 +448,195 @@ class WYSIWYGEditor {
     }
     
     insertImageWithDialog() {
-        const url = prompt('Введите URL изображения:\n\n⚠️ Внимание:\n- Используйте прямые ссылки на изображения (заканчиваются на .jpg, .png, .gif)\n- Pinterest и социальные сети могут блокировать вставку\n- Рекомендуется загружать изображения на imgur.com или imgbb.com');
+        // Создаем кастомное диалоговое окно
+        this.showImageUploadDialog();
+    }
+    
+    showImageUploadDialog() {
+        // Создаем модальное окно
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center;';
         
-        if (!url) return;
+        const dialog = document.createElement('div');
+        dialog.style.cssText = 'background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-width: 500px; width: 90%;';
         
-        // Запрашиваем размер
-        const width = prompt('Введите ширину изображения в пикселях (например: 600):', '600');
+        dialog.innerHTML = `
+            <h3 style="margin: 0 0 20px 0; font-size: 20px; color: #333;">📷 Добавить изображение</h3>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #555;">URL изображения:</label>
+                <input type="text" id="image-url-input" placeholder="https://example.com/image.jpg" 
+                    style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px; font-size: 14px; box-sizing: border-box;" />
+            </div>
+            
+            <div style="margin-bottom: 25px; text-align: center;">
+                <div style="margin-bottom: 10px; color: #666; font-size: 14px;">или</div>
+                <button id="upload-from-pc-btn" type="button" 
+                    style="padding: 12px 24px; background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    📁 Загрузить с компьютера
+                </button>
+                <input type="file" id="image-file-input" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" style="display: none;" />
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button id="cancel-btn" type="button" 
+                    style="padding: 10px 20px; background: #f5f5f5; color: #333; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                    Отмена
+                </button>
+                <button id="ok-btn" type="button" 
+                    style="padding: 10px 20px; background: #2196F3; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                    ОК
+                </button>
+            </div>
+        `;
         
+        modal.appendChild(dialog);
+        document.body.appendChild(modal);
+        
+        const urlInput = dialog.querySelector('#image-url-input');
+        const fileInput = dialog.querySelector('#image-file-input');
+        const uploadBtn = dialog.querySelector('#upload-from-pc-btn');
+        const okBtn = dialog.querySelector('#ok-btn');
+        const cancelBtn = dialog.querySelector('#cancel-btn');
+        
+        let selectedFile = null;
+        
+        // Обработчик кнопки загрузки с компьютера
+        uploadBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        // Обработчик выбора файла
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                selectedFile = file;
+                uploadBtn.textContent = `✅ ${file.name}`;
+                uploadBtn.style.background = '#4CAF50';
+                urlInput.value = '';
+                urlInput.disabled = true;
+            }
+        });
+        
+        // Обработчик ввода URL
+        urlInput.addEventListener('input', () => {
+            if (urlInput.value) {
+                selectedFile = null;
+                fileInput.value = '';
+                uploadBtn.textContent = '📁 Загрузить с компьютера';
+                uploadBtn.style.background = '#4CAF50';
+                urlInput.disabled = false;
+            }
+        });
+        
+        // Обработчик кнопки OK
+        okBtn.addEventListener('click', async () => {
+            if (selectedFile) {
+                document.body.removeChild(modal);
+                await this.uploadImageFromFileObject(selectedFile);
+            } else if (urlInput.value.trim()) {
+                const imageUrl = urlInput.value.trim();
+                document.body.removeChild(modal);
+                
+                // Сразу вставляем изображение с размером по умолчанию
+                this.insertImageElement(imageUrl);
+                
+                // Показываем успешное сообщение
+                const successMsg = document.createElement('div');
+                successMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #4CAF50; color: white; padding: 15px 20px; border-radius: 8px; z-index: 10000;';
+                successMsg.innerHTML = '✅ Изображение добавлено!';
+                document.body.appendChild(successMsg);
+                setTimeout(() => {
+                    if (document.body.contains(successMsg)) {
+                        document.body.removeChild(successMsg);
+                    }
+                }, 3000);
+            } else {
+                alert('⚠️ Пожалуйста, введите URL или выберите файл');
+            }
+        });
+        
+        // Обработчик кнопки Отмена
+        cancelBtn.addEventListener('click', () => {
+            document.body.removeChild(modal);
+        });
+        
+        // Закрытие по клику вне диалога
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                document.body.removeChild(modal);
+            }
+        });
+        
+        // Фокус на поле URL
+        setTimeout(() => urlInput.focus(), 100);
+    }
+    
+    async uploadImageFromFileObject(file) {
+        if (!file) return;
+            
+            // Проверяем размер файла (максимум 10 МБ)
+            const maxSize = 10 * 1024 * 1024; // 10 MB
+            if (file.size > maxSize) {
+                alert('❌ Ошибка: размер файла превышает 10 МБ');
+                return;
+            }
+            
+            // Показываем индикатор загрузки
+            const loadingMsg = document.createElement('div');
+            loadingMsg.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 8px; z-index: 10000;';
+            loadingMsg.textContent = '⏳ Загрузка изображения...';
+            document.body.appendChild(loadingMsg);
+            
+            try {
+                // Создаем FormData для отправки файла
+                const formData = new FormData();
+                formData.append('image', file);
+                
+                // Отправляем на сервер
+                const response = await fetch('/admin/api/v1/upload/image', {
+                    method: 'POST',
+                    body: formData,
+                    // Добавляем заголовок авторизации, если он есть в localStorage
+                    headers: {
+                        // JWT токен будет добавлен автоматически из cookie или localStorage
+                    }
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Ошибка загрузки изображения');
+                }
+                
+                const data = await response.json();
+                
+                // Убираем индикатор загрузки
+                document.body.removeChild(loadingMsg);
+                
+                // Вставляем изображение в редактор
+                this.insertImageElement(data.image_url);
+                
+                // Показываем успешное сообщение
+                const successMsg = document.createElement('div');
+                successMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #4CAF50; color: white; padding: 15px 20px; border-radius: 8px; z-index: 10000; animation: slideIn 0.3s ease;';
+                successMsg.innerHTML = '✅ Изображение успешно загружено!';
+                document.body.appendChild(successMsg);
+                setTimeout(() => document.body.removeChild(successMsg), 3000);
+                
+            } catch (error) {
+                // Убираем индикатор загрузки
+                if (document.body.contains(loadingMsg)) {
+                    document.body.removeChild(loadingMsg);
+                }
+                
+                // Показываем ошибку
+                alert(`❌ Ошибка загрузки изображения:\n${error.message}`);
+                console.error('Upload error:', error);
+            }
+    }
+
+    
+    insertImageElement(url, width = null) {
         // Создаем изображение
         const img = document.createElement('img');
         img.src = url;
@@ -465,23 +647,34 @@ class WYSIWYGEditor {
         img.style.margin = '10px 0';
         img.style.cursor = 'pointer';
         
+        // Если ширина не передана, используем размер по умолчанию
         if (width && !isNaN(width) && width > 0) {
             img.style.width = width + 'px';
+        } else {
+            img.style.width = '600px';
         }
         
         // Добавляем класс для идентификации
         img.className = 'wysiwyg-image';
         
+        // Обработчик успешной загрузки
+        img.onload = () => {
+            console.log('Image loaded successfully:', url);
+        };
+        
         // Обработчик ошибки загрузки
         img.onerror = () => {
-            img.alt = '⚠️ Изображение не загружено. Возможные причины:\n- Неверная ссылка\n- Сайт блокирует внешние запросы\n- Изображение удалено';
+            console.error('Failed to load image:', url);
+            img.alt = '⚠️ Изображение не загружено';
             img.style.border = '2px dashed #ff0000';
             img.style.padding = '20px';
             img.style.background = '#fff3cd';
             img.style.color = '#856404';
             img.style.fontSize = '14px';
-            img.style.whiteSpace = 'pre-wrap';
-            img.removeAttribute('src');
+            img.style.minHeight = '100px';
+            img.style.display = 'flex';
+            img.style.alignItems = 'center';
+            img.style.justifyContent = 'center';
         };
         
         // Добавляем обработчик клика для редактирования размера
@@ -490,16 +683,29 @@ class WYSIWYGEditor {
             this.editImageSize(img);
         };
         
+        // Фокусируем редактор перед вставкой
+        this.editor.focus();
+        
         // Вставляем изображение в редактор
         const selection = window.getSelection();
-        if (selection.rangeCount > 0) {
+        
+        // Если нет выделения, вставляем в конец
+        if (selection.rangeCount === 0) {
+            this.editor.appendChild(img);
+            const br = document.createElement('br');
+            this.editor.appendChild(br);
+        } else {
             const range = selection.getRangeAt(0);
             range.deleteContents();
             range.insertNode(img);
             
             // Добавляем перенос строки после изображения
             const br = document.createElement('br');
-            img.parentNode.insertBefore(br, img.nextSibling);
+            if (img.nextSibling) {
+                img.parentNode.insertBefore(br, img.nextSibling);
+            } else {
+                img.parentNode.appendChild(br);
+            }
             
             // Перемещаем курсор после изображения
             range.setStartAfter(br);
@@ -509,6 +715,8 @@ class WYSIWYGEditor {
         }
         
         this.updateHiddenInput();
+        
+        console.log('Image inserted into editor:', url);
     }
     
     editImageSize(img) {

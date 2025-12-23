@@ -271,12 +271,12 @@ func main() {
 
 	// Создаём Fiber приложение
 	engine := handlebars.New("./templates", ".hbs")
-	
+
 	// Регистрируем хелпер eq для сравнения строк
 	engine.AddFunc("eq", func(a, b string) bool {
 		return a == b
 	})
-	
+
 	app := fiber.New(fiber.Config{
 		AppName:               settings.Server.AppName,
 		DisableStartupMessage: false,
@@ -316,10 +316,6 @@ func main() {
 		},
 	}))
 
-	// API routes
-	api := app.Group("/api/v1")
-	api.Use(middleware.AuthMiddleware())
-
 	// Repositories
 	categoryRepo := repositories.NewCategoryRepository(db)
 	courseRepo := repositories.NewCourseRepository(db)
@@ -330,12 +326,34 @@ func main() {
 	courseService := services.NewCourseService(courseRepo, categoryRepo)
 	lessonService := services.NewLessonService(lessonRepo, courseRepo)
 
+	// S3 Service
+	s3Service, err := services.NewS3Service(settings.Minio)
+	if err != nil {
+		log.Fatalf("❌ Failed to initialize S3 service: %v", err)
+	}
+
+	// Ensure bucket exists
+	if err := s3Service.EnsureBucketExists(ctx); err != nil {
+		log.Printf("⚠️  Failed to ensure S3 bucket exists: %v", err)
+	} else {
+		log.Printf("✅ S3 bucket '%s' is ready", settings.Minio.Bucket)
+	}
+
 	// Handlers
 	categoryHandler := handlers.NewCategoryHandler(categoryService)
 	courseHandler := handlers.NewCourseHandler(courseService)
 	lessonHandler := handlers.NewLessonHandler(lessonService)
+	uploadHandler := handlers.NewUploadHandler(s3Service)
 
-	// Register routes
+	// API routes
+	api := app.Group("/api/v1")
+
+	// Upload routes (БЕЗ AUTH для удобства загрузки из редактора)
+	upload := api.Group("/upload")
+	uploadHandler.RegisterRoutes(upload)
+
+	// Protected API routes
+	api.Use(middleware.AuthMiddleware())
 	categoryHandler.RegisterRoutes(api)
 	courseHandler.RegisterRoutes(api)
 	lessons := api.Group("/categories/:category_id/courses/:course_id/lessons")

@@ -157,6 +157,12 @@ services:
       API_ADDRESS: ":4000"
       CORS_ALLOW_ORIGINS: "*"
       CORS_ALLOW_CREDENTIALS: "false"
+      MINIO_ENDPOINT: "minio:9000"
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET_IMAGES:-images}
+      MINIO_USE_SSL: "false"
+      MINIO_PUBLIC_URL: "http://localhost:9000"
     ports: []
     networks:
       - app-network
@@ -164,6 +170,8 @@ services:
       app-db:
         condition: service_healthy
       keycloak:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     restart: unless-stopped
 

@@ -132,6 +132,7 @@ type MinioConfig struct {
 	SecretKey string
 	Bucket    string
 	UseSSL    bool
+	PublicURL string // Публичный URL для доступа к изображениям через nginx
 }
 
 // Settings является главным контейнером конфигурации приложения.
@@ -402,6 +403,7 @@ func loadMinioConfig() MinioConfig {
 		SecretKey: getEnv("MINIO_SECRET_KEY", "minioadmin"),
 		Bucket:    getEnv("MINIO_BUCKET", "snapshots"),
 		UseSSL:    getEnvAsBool("MINIO_USE_SSL", false),
+		PublicURL: getEnv("MINIO_PUBLIC_URL", "http://localhost:9000"),
 	}
 }
 
