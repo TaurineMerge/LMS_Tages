@@ -8,10 +8,9 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    environment:
-      POSTGRES_DB: personal_account_prod
-      POSTGRES_USER: pa_user
-      POSTGRES_PASSWORD: replace_with_strong_personal_account_password
+ 
+    env_file:
+      - personal-account/.env.local
     ports:
       - "5432:5432"
     volumes:
@@ -60,7 +59,6 @@ services:
       KC_HOSTNAME: localhost
       KC_HOSTNAME_PORT: 8080
       KC_HOSTNAME_STRICT: "false"
-      KC_HTTP_RELATIVE_PATH: /auth
       KC_HEALTH_ENABLED: "true"
     command: start-dev --import-realm
     ports:

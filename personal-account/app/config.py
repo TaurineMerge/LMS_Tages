@@ -1,5 +1,6 @@
 """Application configuration."""
 
+import logging
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -87,6 +88,22 @@ class Settings(BaseSettings):
 
     # Testing configuration
     TESTING_BASE_URL: str = "http://testing:8085"
+
+    def model_post_init(self, __context):
+        """Override defaults based on ENVIRONMENT."""
+        if self.ENVIRONMENT == "local":
+            logging.info("Applying local environment settings")
+            self.STATS_WORKER_FETCH_INTERVAL = 10  # 10 сек для тестирования
+            self.STATS_WORKER_PROCESS_INTERVAL = 15  # 15 сек
+            # Локальная разработка: Python локально, сервисы на localhost (порты из docker-compose-dev-py.yml)
+            self.DATABASE_HOST = "localhost"
+            self.REDIS_HOST = "localhost"
+            self.KEYCLOAK_SERVER_URL = "http://localhost:8080"  # Убрал /auth - KeycloakOpenID добавит сам
+            self.KEYCLOAK_PUBLIC_URL = "http://localhost:8080"  # Оставил /auth для браузера
+            self.KEYCLOAK_REDIRECT_URI = "http://localhost:8000/callback"
+            self.OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4317"
+            self.TESTING_BASE_URL = "http://localhost:8085"
+        # Для production/development оставляем defaults (Docker networks)
 
     @property
     def testing_base_url(self) -> str:

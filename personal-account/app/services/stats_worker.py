@@ -11,7 +11,6 @@ from apscheduler.triggers.interval import IntervalTrigger
 
 from app.clients.testing_client import TestingClient
 from app.config import get_settings
-from app.database import Database
 from app.repositories.integration import integration_repository
 from app.repositories.student import student_repository
 from app.services.stats_processor import StatsProcessor
@@ -32,13 +31,11 @@ class StatsWorker:
 
     def __init__(
         self,
-        db: Database,
         testing_client: TestingClient | None = None,
         processor: StatsProcessor | None = None,
     ):
-        self.db = db
         self.testing_client = testing_client or TestingClient()
-        self.processor = processor or StatsProcessor(db)
+        self.processor = processor or StatsProcessor(self.db)
         self.scheduler = AsyncIOScheduler()
         settings = get_settings()
         self.fetch_interval = settings.STATS_WORKER_FETCH_INTERVAL

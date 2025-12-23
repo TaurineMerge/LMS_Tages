@@ -5,7 +5,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
 
-from app.services.stats_service import stats_service
+from app.services.stats_service import StatsService as stats_service
+from app.services.stats_worker import StatsWorker as stats_worker
 from app.telemetry import traced
 
 router = APIRouter(prefix="/stats", tags=["Statistics"])
@@ -23,6 +24,9 @@ async def get_student_stats(student_id: UUID):
         Aggregated statistics dictionary
     """
     try:
+        await stats_worker.fetch_from_testing()
+        await stats_worker.process_raws()
+
         logger.log("Fetching stats for student %s", student_id)
         stats = await stats_service.get_user_statistics(student_id)
         logger.log("Fetched stats for student %s: %s", student_id, stats)
