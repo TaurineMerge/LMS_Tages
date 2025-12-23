@@ -46,6 +46,7 @@ class WYSIWYGEditor {
         this.toolbar = document.getElementById(toolbarId);
         this.hiddenInput = null;
         this.cursorMarker = null; // Маркер для сохранения позиции курсора
+        this.draggedElement = null; // Элемент, который перетаскивается
         
         if (!this.editor || !this.toolbar) {
             console.error('Editor or toolbar not found');
@@ -65,6 +66,9 @@ class WYSIWYGEditor {
         
         // Добавляем обработчики для панели инструментов
         this.setupToolbar();
+        
+        // Инициализируем drag and drop для редактора
+        this.setupDragAndDrop();
         
         // Обновляем скрытое поле при изменении контента
         this.editor.addEventListener('input', () => this.updateHiddenInput());
@@ -250,6 +254,31 @@ class WYSIWYGEditor {
             }
             else if (item.type === 'button') {
                 this.createButton(item);
+            }
+        });
+    }
+    
+    setupDragAndDrop() {
+        // Добавляем обработчики drag and drop для редактора
+        this.editor.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        });
+        
+        this.editor.addEventListener('drop', (e) => {
+            e.preventDefault();
+            
+            if (this.draggedElement) {
+                const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+                if (range) {
+                    range.insertNode(this.draggedElement);
+                    range.collapse(false);
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }
+                this.draggedElement = null;
+                this.updateHiddenInput();
             }
         });
     }
@@ -699,8 +728,8 @@ class WYSIWYGEditor {
     
     insertImageElement(url, width = null) {
         // Создаем HTML для изображения
-        const widthAttr = (width && !isNaN(width) && width > 0) ? ` style="width: ${width}px;"` : ' style="width: 600px;"';
-        const imgHTML = `<img src="${url}" alt="Image" class="wysiwyg-image" style="max-width: 100%; height: auto; display: block; margin: 10px 0; cursor: pointer;${widthAttr.replace(' style="', '').replace(';"', '')}"><br>`;
+        const widthAttr = (width && !isNaN(width) && width > 0) ? ` style="width: ${width}px;"` : ' style="width: 300px;"';
+        const imgHTML = `<img src="${url}" alt="Image" class="wysiwyg-image" draggable="true" style="max-width: 100%; height: auto; float: left; margin: 5px 15px 5px 0; cursor: move;${widthAttr.replace(' style="', '').replace(';"', '')}">`;
         
         // Фокусируем редактор
         this.editor.focus();
@@ -778,6 +807,40 @@ class WYSIWYGEditor {
                 e.preventDefault();
                 this.editImageSize(img);
             };
+            
+            // Добавляем обработчики для drag and drop
+            img.addEventListener('dragstart', (e) => {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/html', img.outerHTML);
+                img.style.opacity = '0.5';
+                this.draggedElement = img;
+            });
+            
+            img.addEventListener('dragend', (e) => {
+                img.style.opacity = '1';
+                this.draggedElement = null;
+                this.updateHiddenInput();
+            });
+            
+            // Добавляем обработчики для drop зоны
+            img.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+            });
+            
+            img.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (this.draggedElement && this.draggedElement !== img) {
+                    // Меняем местами элементы
+                    const draggedHTML = this.draggedElement.outerHTML;
+                    const targetHTML = img.outerHTML;
+                    
+                    this.draggedElement.outerHTML = targetHTML;
+                    img.outerHTML = draggedHTML;
+                    
+                    this.updateHiddenInput();
+                }
+            });
         }
         
         this.updateHiddenInput();
@@ -789,13 +852,80 @@ class WYSIWYGEditor {
     }
     
     editImageSize(img) {
-        const currentWidth = img.style.width ? parseInt(img.style.width) : img.naturalWidth || 600;
-        const newWidth = prompt('Введите новую ширину изображения в пикселях (например: 800):', currentWidth);
+        const currentWidth = img.style.width ? parseInt(img.style.width) : img.naturalWidth || 300;
+        const currentFloat = img.style.float || 'left';
         
-        if (newWidth && !isNaN(newWidth) && newWidth > 0) {
-            img.style.width = newWidth + 'px';
-            this.updateHiddenInput();
-        }
+        // Создаем модальное окно для редактирования
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;
+            z-index: 10000;
+        `;
+        
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = `
+            background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            min-width: 300px;
+        `;
+        
+        modalContent.innerHTML = `
+            <h3 style="margin-top: 0;">Настройки изображения</h3>
+            <div style="margin-bottom: 15px;">
+                <label>Ширина (px): <input type="number" id="img-width" value="${currentWidth}" min="50" max="800" style="width: 80px;"></label>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label>Выравнивание: 
+                    <select id="img-align">
+                        <option value="left" ${currentFloat === 'left' ? 'selected' : ''}>Слева (текст справа)</option>
+                        <option value="right" ${currentFloat === 'right' ? 'selected' : ''}>Справа (текст слева)</option>
+                        <option value="none" ${currentFloat === 'none' ? 'selected' : ''}>По центру (блок)</option>
+                    </select>
+                </label>
+            </div>
+            <div style="text-align: right;">
+                <button id="img-save" style="margin-right: 10px; padding: 5px 15px;">Сохранить</button>
+                <button id="img-cancel" style="padding: 5px 15px;">Отмена</button>
+            </div>
+        `;
+        
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+        
+        // Обработчики кнопок
+        document.getElementById('img-save').onclick = () => {
+            const newWidth = parseInt(document.getElementById('img-width').value);
+            const newAlign = document.getElementById('img-align').value;
+            
+            if (newWidth && !isNaN(newWidth) && newWidth > 0) {
+                img.style.width = newWidth + 'px';
+                img.style.float = newAlign;
+                
+                // Корректируем стили в зависимости от выравнивания
+                if (newAlign === 'none') {
+                    img.style.display = 'block';
+                    img.style.margin = '10px auto';
+                } else {
+                    img.style.display = 'inline';
+                    img.style.margin = newAlign === 'left' ? '5px 15px 5px 0' : '5px 0 5px 15px';
+                }
+                
+                this.updateHiddenInput();
+            }
+            
+            document.body.removeChild(modal);
+        };
+        
+        document.getElementById('img-cancel').onclick = () => {
+            document.body.removeChild(modal);
+        };
+        
+        // Закрытие по клику вне модального окна
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                document.body.removeChild(modal);
+            }
+        };
     }
     
     handlePaste(e) {
