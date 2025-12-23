@@ -7,12 +7,21 @@
     
     <title>
         
-             | LMS Documentation
+            User-journey для личного кабинета | LMS Documentation
         
     </title>
 
     
     
+    
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose'
+        });
+    </script>
     
     
     
@@ -88,14 +97,47 @@
                 → <a href="/account/">Account</a>
             
             
-            → 
+            → User-journey для личного кабинета
         
     </div>
     
-    <h1></h1>
+    <h1>User-journey для личного кабинета</h1>
     
     <div class="content">
-        
+        <h2 id="цель-пользователя-пройти-курс-и-получить-сертификат">Цель пользователя: пройти курс и получить сертификат</h2>
+<div class="mermaid">
+    
+
+journey
+    title User Journey: Прохождение курса учеником в LMS
+    section Вход в систему
+      Открытие личного кабинета: 4: Ученик
+      Успешная аутентификация: 5: Ученик
+    section Выбор курса
+      Просмотр доступных курсов: 5: Ученик
+      Изучение описания курса: 4: Ученик
+      Запись на курс: 5: Ученик
+    section Прохождение курса
+      Изучение уроков : 4: Ученик
+      Пропуск знакомых уроков: 5: Ученик
+      Просмотр статистики в ЛК: 5: Ученик
+    section Первая попытка теста
+      Начало итогового теста: 3: Ученик
+      Затруднение с вопросами: 2: Ученик
+      Неудачная попытка: 1: Ученик
+    section Повторная подготовка
+      Повторение сложных тем: 3: Ученик
+    section Вторая попытка теста
+      Начало повторного теста: 4: Ученик
+      Уверенные ответы: 5: Ученик
+      Успешная сдача: 5: Ученик
+    section Получение результата
+      Просмотр результатов: 5: Ученик
+      Получение именного сертификата: 5: Ученик
+
+
+</div>
+
     </div>
     
     
@@ -120,6 +162,8 @@
     
     <div class="navigation">
         
+        <a href="//localhost:1313/account/diagrams/er/" class="nav-prev">← </a>
+        
         
         
         <a href="/account/" class="nav-home">↑ К разделу Account</a>
@@ -137,8 +181,8 @@
         <footer class="site-footer">
     <div class="footer-container">
         <div class="footer-content">
-            <p>LMS Documentation • Обновлено: <span id="update-date">11.1223.232311</span></p>
-            <p class="footer-copyright">© 232311 LMS Project. Все права защищены.</p>
+            <p>LMS Documentation • Обновлено: <span id="update-date">16.1223.232348</span></p>
+            <p class="footer-copyright">© 232348 LMS Project. Все права защищены.</p>
         </div>
     </div>
 </footer>

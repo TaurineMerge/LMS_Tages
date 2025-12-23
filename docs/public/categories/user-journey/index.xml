@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>User Journey on LMS Documentation</title>
+    <link>//localhost:1313/categories/user-journey/</link>
+    <description>Recent content in User Journey on LMS Documentation</description>
+    <generator>Hugo</generator>
+    <language>ru-ru</language>
+    <lastBuildDate>Wed, 15 Jan 2025 00:00:00 +0000</lastBuildDate>
+    <atom:link href="//localhost:1313/categories/user-journey/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>User Journey для системы тестирования</title>
+      <link>//localhost:1313/test/diagrams/user-journey/</link>
+      <pubDate>Wed, 15 Jan 2025 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/test/diagrams/user-journey/</guid>
+      <description>&lt;p&gt;journey&#xA;title User Journey: Ученик проходит тест&#xA;section 1. Подготовка и начало&#xA;Завершение изучения курса: 4: Ученик&#xA;Нажатие &amp;ldquo;Пройти тест&amp;rdquo; в курсе: 5: Ученик&#xA;Загрузка модуля тестирования: 4: Ученик&#xA;Ознакомление с инструкцией: 3: Ученик&lt;/p&gt;&#xA;&lt;pre&gt;&lt;code&gt;section 2. Работа с вопросами&#xA;  Чтение первого вопроса: 5: Ученик&#xA;  Выбор варианта ответа: 5: Ученик&#xA;  Нажатие &amp;quot;Сохранить&amp;quot; для ответа: 4: Ученик&#xA;  Блокировка редактирования сохраненного: 3: Ученик&#xA;  Переход к следующему вопросу: 4: Ученик&#xA;  Ответы в произвольном порядке: 4: Ученик&#xA;  &#xA;section 3. Завершение теста&#xA;  Проверка пройденных вопросов: 4: Ученик&#xA;  Нажатие &amp;quot;Завершить тест&amp;quot;: 5: Ученик&#xA;  Подтверждение решения: 4: Ученик&#xA;  Обработка результатов: 4: Ученик&#xA;  &#xA;section 4. Получение результатов&#xA;  Просмотр страницы с результатами: 5: Ученик&#xA;  Анализ правильных/неправильных ответов: 5: Ученик&#xA;  Сравнение баллов с проходным порогом: 5: Ученик&#xA;  &#xA;section 5. Дальнейшие действия&#xA;  Успешная сдача → Сертификат в ЛК: 5: Ученик&#xA;  Неудачная сдача → Кнопка &amp;quot;Пройти еще раз&amp;quot;: 3: Ученик&#xA;  Возврат к курсу для повторения: 4: Ученик&#xA;&lt;/code&gt;&lt;/pre&gt;</description>
+    </item>
+  </channel>
+</rss>

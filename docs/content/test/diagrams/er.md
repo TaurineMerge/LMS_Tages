@@ -18,7 +18,8 @@ erDiagram
 
     question_d {
         uuid id PK "not null, unique"
-        uuid test_id FK "not null"
+        uuid test_id FK "null"
+        uuid draft_id FK "null"
         text text_of_question
         int order
     }
@@ -48,7 +49,7 @@ erDiagram
         varchar title
         integer min_point
         text description
-        uuid test_id "not null"
+        uuid test_id "null"
     }
 
 
@@ -69,5 +70,6 @@ erDiagram
     draft_b o|--o| test_d : "has drafts"
     content_d }o--o| question_d: "has content"
     content_d }o--o| answer_d: "has content"
+    draft_b ||--o{ question_d: "has questions"
 
 {{< /mermaid >}}

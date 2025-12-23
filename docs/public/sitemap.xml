@@ -38,6 +38,9 @@
     <loc>//localhost:1313/admin/diagrams/sequence/</loc>
     <lastmod>2025-12-15T00:00:00+00:00</lastmod>
   </url><url>
+    <loc>//localhost:1313/sequence-auth/</loc>
+    <lastmod>2025-12-15T00:00:00+00:00</lastmod>
+  </url><url>
     <loc>//localhost:1313/test/</loc>
     <lastmod>2025-12-15T00:00:00+00:00</lastmod>
   </url><url>

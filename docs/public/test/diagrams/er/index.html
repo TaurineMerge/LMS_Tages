@@ -119,7 +119,8 @@ erDiagram
 
     question_d {
         uuid id PK "not null, unique"
-        uuid test_id FK "not null"
+        uuid test_id FK "null"
+        uuid draft_id FK "null"
         text text_of_question
         int order
     }
@@ -149,7 +150,7 @@ erDiagram
         varchar title
         integer min_point
         text description
-        uuid test_id "not null"
+        uuid test_id "null"
     }
 
 
@@ -170,6 +171,7 @@ erDiagram
     draft_b o|--o| test_d : "has drafts"
     content_d }o--o| question_d: "has content"
     content_d }o--o| answer_d: "has content"
+    draft_b ||--o{ question_d: "has questions"
 
 
 </div>
@@ -198,7 +200,7 @@ erDiagram
     
     <div class="navigation">
         
-        <a href="//localhost:1313/test/diagrams/flowchart/" class="nav-prev">← </a>
+        <a href="//localhost:1313/test/diagrams/flowchart/" class="nav-prev">← Flowchart-диаграмма прохождения теста</a>
         
         
         
@@ -217,8 +219,8 @@ erDiagram
         <footer class="site-footer">
     <div class="footer-container">
         <div class="footer-content">
-            <p>LMS Documentation • Обновлено: <span id="update-date">11.1223.232311</span></p>
-            <p class="footer-copyright">© 232311 LMS Project. Все права защищены.</p>
+            <p>LMS Documentation • Обновлено: <span id="update-date">18.1223.23236</span></p>
+            <p class="footer-copyright">© 23236 LMS Project. Все права защищены.</p>
         </div>
     </div>
 </footer>

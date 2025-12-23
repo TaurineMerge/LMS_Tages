@@ -20,13 +20,16 @@ erDiagram
         VARCHAR(20) level "not null, check: ['hard', 'medium', 'easy']"
         UUID category_id FK "not null"
         VARCHAR(20) visibility "not null, check: ['draft', 'public'], default 'draft'"
+        JSONB content "not null, default []"
         TIMESTAMP created_at "not null, default NOW()"
         TIMESTAMP updated_at "not null, default NOW()"
     }
     lesson_d {
         UUID id PK "not null, default gen_random_uuid()"
         VARCHAR(255) title "not null"
+        TEXT description
         UUID course_id FK "not null"
+        VARCHAR(20) visibility "not null, check: ['draft', 'public'], default 'draft'"
         JSONB content "not null, default []"
         TIMESTAMP created_at "not null, default NOW()"
         TIMESTAMP updated_at "not null, default NOW()"

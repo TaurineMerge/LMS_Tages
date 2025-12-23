@@ -80,12 +80,6 @@ erDiagram
         json attempt_version
     }
     
-    visit_students_for_lessons {
-        uuid id PK "not null, unique"
-        uuid student_id "not null, unique"
-        uuid lesson_id FK "not null, unique"
-    }
-    
     course_b ||--o{ lesson_d : "has lessons"
     course_b ||--|| category_d : "belongs to category"
     course_b ||--o| test_d : "has test"
@@ -93,8 +87,6 @@ erDiagram
     question_d ||--|{ answer_d : "has answers"
     student_s ||--o{ certificate_b : "receives certificates"
     student_s ||--o{ test_attempt_b : "attempts tests"
-    student_s }|--|| visit_students_for_lessons : "visits lessons"
-    lesson_d ||--o{ visit_students_for_lessons : "visited by students"
     test_d }o--|{ test_attempt_b : "attempted by students"
     certificate_b ||--o| test_attempt_b : "issued for attempt"
 

@@ -12,3 +12,9 @@ layout: "single"
 
 ### 🗃️ [User-Journey](user-journey)
 Use Case
+
+### 🗃️ [User-Story](user-story)
+Описание функционала продукта с точки зрения конечного пользователя
+
+### 🗃️ [ER-диаграмма](er)
+Диаграмма базы данных

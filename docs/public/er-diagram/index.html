@@ -179,12 +179,6 @@ erDiagram
         json attempt_version
     }
     
-    visit_students_for_lessons {
-        uuid id PK "not null, unique"
-        uuid student_id "not null, unique"
-        uuid lesson_id FK "not null, unique"
-    }
-    
     course_b ||--o{ lesson_d : "has lessons"
     course_b ||--|| category_d : "belongs to category"
     course_b ||--o| test_d : "has test"
@@ -192,8 +186,6 @@ erDiagram
     question_d ||--|{ answer_d : "has answers"
     student_s ||--o{ certificate_b : "receives certificates"
     student_s ||--o{ test_attempt_b : "attempts tests"
-    student_s }|--|| visit_students_for_lessons : "visits lessons"
-    lesson_d ||--o{ visit_students_for_lessons : "visited by students"
     test_d }o--|{ test_attempt_b : "attempted by students"
     certificate_b ||--o| test_attempt_b : "issued for attempt"
 
@@ -206,7 +198,7 @@ erDiagram
     
     <div class="navigation">
         
-        <a href="//localhost:1313/glossary/" class="nav-prev">← </a>
+        <a href="//localhost:1313/sequence-auth/" class="nav-prev">← Sequence-диаграммы архитектуры LMS</a>
         
         
         
@@ -223,8 +215,8 @@ erDiagram
         <footer class="site-footer">
     <div class="footer-container">
         <div class="footer-content">
-            <p>LMS Documentation • Обновлено: <span id="update-date">11.1223.232311</span></p>
-            <p class="footer-copyright">© 232311 LMS Project. Все права защищены.</p>
+            <p>LMS Documentation • Обновлено: <span id="update-date">17.1223.23236</span></p>
+            <p class="footer-copyright">© 23236 LMS Project. Все права защищены.</p>
         </div>
     </div>
 </footer>

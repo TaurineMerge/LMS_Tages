@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Документация системы управления обучением (LMS)">
+    
+    <title>
+        
+            Sequence-диаграммы архитектуры LMS | LMS Documentation
+        
+    </title>
+
+    
+    
+    
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose'
+        });
+    </script>
+    
+    
+    
+    <link rel="stylesheet" href="/css/custom.css">
+    
+    
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+    <div class="site-wrapper">
+        
+        <header class="site-header">
+    <div class="header-container">
+        <div class="logo">
+            <a href="/" class="logo-link">
+                <span class="logo-icon">📚</span>
+                <span class="logo-text">LMS Docs</span>
+            </a>
+        </div>
+        
+        <nav class="main-nav">
+            <ul class="nav-list">
+                
+                <li class="nav-item ">
+                    <a href="/" class="nav-link">
+                        Главная
+                    </a>
+                </li>
+                
+                <li class="nav-item ">
+                    <a href="/public/" class="nav-link">
+                        Public
+                    </a>
+                </li>
+                
+                <li class="nav-item ">
+                    <a href="/admin/" class="nav-link">
+                        Admin
+                    </a>
+                </li>
+                
+                <li class="nav-item ">
+                    <a href="/test/" class="nav-link">
+                        Test
+                    </a>
+                </li>
+                
+                <li class="nav-item ">
+                    <a href="/account/" class="nav-link">
+                        ЛК
+                    </a>
+                </li>
+                
+            </ul>
+        </nav>
+        
+        <button class="mobile-menu-toggle" aria-label="Открыть меню">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </div>
+</header>
+        
+        
+        <main class="main-content">
+            
+<div class="page-content">
+    <div class="breadcrumbs">
+        <a href="/">Главная</a> 
+        
+            
+            
+            → Sequence-диаграммы архитектуры LMS
+        
+    </div>
+    
+    <h1>Sequence-диаграммы архитектуры LMS</h1>
+    
+    <div class="content">
+        <h2 id="авторизация-и-аутентификация-пользователя">Авторизация и аутентификация пользователя</h2>
+<div class="mermaid">
+    
+
+sequenceDiagram
+    participant С as Студент (Гость)
+    participant N as nginx
+    participant K as Keycloak
+    participant PA as Personal Account (Python)
+    participant PS as Public Side (Go)
+    participant DB_A as PostgreSQL Auth
+    participant DB_L as PostgreSQL LMS
+    
+    Note over С,DB_L: Шаг 1: Регистрация через Keycloak
+    С->>N: POST /auth/register
+    N->>K: Проксирует запрос
+    K->>DB_A: Сохраняет нового пользователя
+    DB_A-->>K: Успех
+    K-->>N: 201 Created + user_id
+    N-->>С: Успешная регистрация
+    
+    Note over С,DB_L: Шаг 2: Аутентификация
+    С->>N: POST /auth/login (email/password)
+    N->>K: Проксирует запрос
+    K->>DB_A: Проверяет учетные данные
+    DB_A-->>K: Валидны
+    K->>DB_A: Создает сессию и токены
+    DB_A-->>K: Успех
+    K-->>N: JWT Access + Refresh токены
+    N-->>С: Токены
+    
+    Note over С,DB_L: Шаг 3: Получение профиля
+    С->>N: GET /api/personal/profile (с JWT)
+    N->>PA: Проксирует запрос
+    PA->>K: Валидирует JWT /auth/verify
+    K-->>PA: {valid: true, user_id: X, roles: ["student"]}
+    PA->>DB_L: Ищет student_s по user_id
+    DB_L-->>PA: Не найден (первый вход)
+    PA->>DB_L: Создает запись student_s
+    DB_L-->>PA: Успех (uuid студента)
+    PA-->>N: Профиль студента с avatar=null
+    N-->>С: Профиль создан
+    
+    Note over С,DB_L: Шаг 4: Просмотр доступных курсов
+    С->>N: GET /api/public/courses?visibility=public
+    N->>PS: Проксирует запрос
+    PS->>DB_L: SELECT из course_b WHERE visibility='public'
+    DB_L-->>PS: Список курсов
+    PS-->>N: JSON с курсами
+    N-->>С: Каталог курсов
+
+
+</div>
+
+    </div>
+    
+    
+    
+    <div class="navigation">
+        
+        <a href="//localhost:1313/glossary/" class="nav-prev">← </a>
+        
+        
+        
+        
+        
+        <a href="//localhost:1313/er-diagram/" class="nav-next">ER-диаграмма базы данных LMS →</a>
+        
+    </div>
+</div>
+
+        </main>
+        
+        
+        <footer class="site-footer">
+    <div class="footer-container">
+        <div class="footer-content">
+            <p>LMS Documentation • Обновлено: <span id="update-date">17.1223.23236</span></p>
+            <p class="footer-copyright">© 23236 LMS Project. Все права защищены.</p>
+        </div>
+    </div>
+</footer>
+    </div>
+    
+    
+    <script>
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const updateDateElement = document.getElementById('update-date');
+            if (updateDateElement) {
+                const now = new Date();
+                const formattedDate = now.toLocaleDateString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+                updateDateElement.textContent = formattedDate;
+            }
+        });
+    </script>
+</body>
+</html>

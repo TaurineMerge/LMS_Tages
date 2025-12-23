@@ -121,13 +121,16 @@ erDiagram
         VARCHAR(20) level "not null, check: ['hard', 'medium', 'easy']"
         UUID category_id FK "not null"
         VARCHAR(20) visibility "not null, check: ['draft', 'public'], default 'draft'"
+        JSONB content "not null, default []"
         TIMESTAMP created_at "not null, default NOW()"
         TIMESTAMP updated_at "not null, default NOW()"
     }
     lesson_d {
         UUID id PK "not null, default gen_random_uuid()"
         VARCHAR(255) title "not null"
+        TEXT description
         UUID course_id FK "not null"
+        VARCHAR(20) visibility "not null, check: ['draft', 'public'], default 'draft'"
         JSONB content "not null, default []"
         TIMESTAMP created_at "not null, default NOW()"
         TIMESTAMP updated_at "not null, default NOW()"
@@ -170,6 +173,8 @@ erDiagram
         
         
         
+        <a href="//localhost:1313/admin/diagrams/user-story/" class="nav-next">User Stories для LMS системы →</a>
+        
     </div>
 </div>
 
@@ -179,8 +184,8 @@ erDiagram
         <footer class="site-footer">
     <div class="footer-container">
         <div class="footer-content">
-            <p>LMS Documentation • Обновлено: <span id="update-date">11.1223.232311</span></p>
-            <p class="footer-copyright">© 232311 LMS Project. Все права защищены.</p>
+            <p>LMS Documentation • Обновлено: <span id="update-date">16.1223.232332</span></p>
+            <p class="footer-copyright">© 232332 LMS Project. Все права защищены.</p>
         </div>
     </div>
 </footer>
