@@ -24,6 +24,11 @@ mc mb myminio/"${MINIO_BUCKET_CERTIFICATES}" --ignore-existing
 mc mb myminio/"${MINIO_BUCKET_SNAPSHOTS}" --ignore-existing
 mc mb myminio/"${MINIO_BUCKET_IMAGES}" --ignore-existing
 
+# Создание директорий в images bucket
+mc mb myminio/"${MINIO_BUCKET_IMAGES}/go" --ignore-existing
+mc mb myminio/"${MINIO_BUCKET_IMAGES}/java" --ignore-existing
+mc mb myminio/"${MINIO_BUCKET_IMAGES}/python" --ignore-existing
+
 # Включение версионирования
 mc version enable myminio/"${MINIO_BUCKET_CERTIFICATES}"
 
