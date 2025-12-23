@@ -3,6 +3,7 @@ package com.example.lms.shared.storage;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -46,13 +47,13 @@ public class MinioStorageService implements StorageServiceInterface {
     private final ImageValidator imageValidator;
 
     // Названия buckets
-    private static final String SNAPSHOT_BUCKET = "test-attempts";
-    private static final String IMAGE_BUCKET = "test-images";
+    private static final String SNAPSHOT_BUCKET = "snapshots";
+    private static final String IMAGE_BUCKET = "images";
 
     // Префиксы путей
     private static final String SNAPSHOT_PREFIX = "snapshots/";
-    private static final String QUESTION_PREFIX = "questions/";
-    private static final String ANSWER_PREFIX = "answers/";
+    private static final String QUESTION_PREFIX = "java/questions/";
+    private static final String ANSWER_PREFIX = "java/answers/";
 
     // Настройки presigned URLs
     private static final int DEFAULT_URL_EXPIRY_HOURS = 1;
@@ -130,7 +131,8 @@ public class MinioStorageService implements StorageServiceInterface {
     }
 
     @Override
-    public UploadResult uploadSnapshot(String studentId, String testId, String attemptId, String snapshotJson) {
+    public UploadResult uploadSnapshot(String studentId, String testId, String attemptId, String snapshotJson,
+            String attemptVersionJson, LocalDate attemptDate) {
         String objectPath = buildSnapshotPath(studentId, testId, attemptId);
         byte[] bytes = snapshotJson.getBytes(StandardCharsets.UTF_8);
 

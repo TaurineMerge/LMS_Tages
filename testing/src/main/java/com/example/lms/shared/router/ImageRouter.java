@@ -9,7 +9,7 @@ public class ImageRouter {
     public static void register(ImageController controller) {
         path("/api", () -> {
             // Изображения вопросов
-            path("/questions/{questionId}/images", () -> {
+            path("/questions-storage/{questionId}/images", () -> {
                 post(controller::uploadQuestionImage);
                 path("/{imageId}", () -> {
                     get(controller::getQuestionImage);
@@ -18,7 +18,7 @@ public class ImageRouter {
             });
 
             // Изображения ответов
-            path("/answers/{answerId}/images", () -> {
+            path("/answers-storage/{answerId}/images", () -> {
                 post(controller::uploadAnswerImage);
                 path("/{imageId}", () -> {
                     get(controller::getAnswerImage);

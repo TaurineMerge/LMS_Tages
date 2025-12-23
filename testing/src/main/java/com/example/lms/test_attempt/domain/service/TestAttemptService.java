@@ -34,11 +34,6 @@ public class TestAttemptService {
         this.objectMapper = new ObjectMapper();
     }
 
-    // Старый конструктор для обратной совместимости
-    public TestAttemptService(TestAttemptRepositoryInterface repository) {
-        this(repository, null);
-    }
-
     // DTO -> MODEL
     private TestAttemptModel toModel(TestAttempt dto) {
         LocalDate date = null;
@@ -159,7 +154,7 @@ public class TestAttemptService {
                         model.getStudentId().toString(),
                         model.getTestId().toString(),
                         model.getId().toString(),
-                        snapshot);
+                        snapshot, model.getAttemptVersion(), model.getDateOfAttempt());
 
                 logger.info("Снепшот сохранен в MinIO: {}", result.getObjectPath());
 
@@ -279,7 +274,8 @@ public class TestAttemptService {
                     model.getStudentId().toString(),
                     model.getTestId().toString(),
                     model.getId().toString(),
-                    snapshot);
+                    model.getAttemptVersion(),
+                    snapshot, model.getDateOfAttempt());
 
             logger.info("Снепшот сохранен в MinIO: {}", result.getObjectPath());
 

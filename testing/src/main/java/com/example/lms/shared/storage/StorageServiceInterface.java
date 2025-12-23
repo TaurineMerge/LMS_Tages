@@ -1,6 +1,7 @@
 package com.example.lms.shared.storage;
 
 import java.io.InputStream;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -60,7 +61,8 @@ public interface StorageServiceInterface {
          * @param snapshotJson JSON-снепшот в виде строки
          * @return результат загрузки
          */
-        UploadResult uploadSnapshot(String studentId, String testId, String attemptId, String snapshotJson);
+        UploadResult uploadSnapshot(String studentId, String testId, String attemptId, String snapshot,
+                        String attemptVersionJson, LocalDate attemptDate);
 
         /**
          * Загружает изображение для вопроса или ответа.

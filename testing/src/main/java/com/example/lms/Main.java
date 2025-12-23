@@ -12,6 +12,7 @@ import com.example.lms.answer.domain.service.AnswerService;
 import com.example.lms.answer.infrastructure.repositories.AnswerRepository;
 import com.example.lms.config.DatabaseConfig;
 import com.example.lms.config.HandlebarsConfig;
+import com.example.lms.config.MinioConfig;
 import com.example.lms.internal.api.controller.InternalApiController;
 import com.example.lms.internal.api.router.InternalApiRouter;
 import com.example.lms.internal.service.InternalApiService;
@@ -19,6 +20,9 @@ import com.example.lms.question.api.controller.QuestionController;
 import com.example.lms.question.api.router.QuestionRouter;
 import com.example.lms.question.domain.service.QuestionService;
 import com.example.lms.question.infrastructure.repositories.QuestionRepository;
+import com.example.lms.shared.controller.ImageController;
+import com.example.lms.shared.router.ImageRouter;
+import com.example.lms.shared.storage.MinioStorageService;
 import com.example.lms.test.api.controller.TestController;
 import com.example.lms.test.api.router.TestRouter;
 import com.example.lms.test.domain.service.TestService;
@@ -57,6 +61,11 @@ public class Main {
 		final String DB_USER = dotenv.get("DB_USER");
 		final String DB_PASSWORD = dotenv.get("DB_PASSWORD");
 
+		final String ENDPOINT = dotenv.get("MINIO_ENDPOINT");
+		final String ACCESS_KEY = dotenv.get("MINIO_ACCESS_KEY");
+		final String SECRET_KEY = dotenv.get("MINIO_SECRET_KEY");
+		final String BUCKET = dotenv.get("MINIO_BUCKET");
+
 		// ---------------------------------------------------------------
 		// 2. Настройка зависимостей (Manual Dependency Injection)
 		// ---------------------------------------------------------------
@@ -65,6 +74,7 @@ public class Main {
 
 		// Конфигурация подключения к базе
 		DatabaseConfig dbConfig = new DatabaseConfig(DB_URL, DB_USER, DB_PASSWORD);
+		MinioConfig minioConfig = new MinioConfig(ENDPOINT, ACCESS_KEY, SECRET_KEY, BUCKET);
 
 		// Репозитории с логикой работы с БД
 		TestRepository testRepository = new TestRepository(dbConfig);
@@ -76,7 +86,8 @@ public class Main {
 		TestService testService = new TestService(testRepository);
 		AnswerService answerService = new AnswerService(answerRepository);
 		QuestionService questionService = new QuestionService(questionRepository);
-		TestAttemptService testAttemptService = new TestAttemptService(testAttemptRepository);
+		MinioStorageService minioStorageService = new MinioStorageService(minioConfig);
+		TestAttemptService testAttemptService = new TestAttemptService(testAttemptRepository, minioStorageService);
 		InternalApiService internalApiService = new InternalApiService(testAttemptService, testService);
 
 		// Контроллер, принимающий HTTP-запросы
@@ -85,6 +96,7 @@ public class Main {
 		QuestionController questionController = new QuestionController(questionService);
 		TestAttemptController testAttemptController = new TestAttemptController(testAttemptService);
 		InternalApiController internalApiController = new InternalApiController(internalApiService);
+		ImageController imageController = new ImageController(minioStorageService);
 
 		// ---------------------------------------------------------------
 		// 3. Создание и запуск Javalin HTTP-сервера
@@ -126,6 +138,7 @@ public class Main {
 				QuestionRouter.register(questionController);
 				TestAttemptRouter.register(testAttemptController);
 				InternalApiRouter.register(internalApiController);
+				ImageRouter.register(imageController);
 
 				// Swagger UI
 				get("/swagger", ctx -> {
