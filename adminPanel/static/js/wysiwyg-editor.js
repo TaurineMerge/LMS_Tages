@@ -51,6 +51,22 @@ class WYSIWYGEditor {
         // Добавляем CSS стили для изображений
         const style = document.createElement('style');
         style.textContent = `
+            #${editorId} img.wysiwyg-image {
+                min-height: 100px !important;
+                background: #f8f9fa !important;
+                border: 1px solid #dee2e6 !important;
+            }
+            #${editorId} img.wysiwyg-image:not([src]), 
+            #${editorId} img.wysiwyg-image[loading] {
+                aspect-ratio: 4/3 !important;
+                object-fit: cover !important;
+                background: linear-gradient(45deg, #f8f9fa 25%, transparent 25%), 
+                           linear-gradient(-45deg, #f8f9fa 25%, transparent 25%), 
+                           linear-gradient(45deg, transparent 75%, #f8f9fa 75%), 
+                           linear-gradient(-45deg, transparent 75%, #f8f9fa 75%) !important;
+                background-size: 20px 20px !important;
+                background-position: 0 0, 0 10px, 10px -10px, -10px 0px !important;
+            }
             .wysiwyg-float-left {
                 float: left !important;
                 margin: 5px 15px 5px 0 !important;
@@ -77,6 +93,8 @@ class WYSIWYGEditor {
                 display: block !important;
                 position: relative;
                 overflow: visible;
+                margin: 0 0 1em 0 !important;
+                padding: 0 !important;
             }
             #${editorId} br {
                 clear: none !important;
@@ -88,6 +106,26 @@ class WYSIWYGEditor {
             #${editorId} .wysiwyg-float-right + * {
                 margin-left: 0;
                 margin-right: 0;
+            }
+            /* Улучшаем выделение текста возле float изображений */
+            #${editorId} .wysiwyg-float-left,
+            #${editorId} .wysiwyg-float-right {
+                user-select: none;
+                -webkit-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+            }
+            #${editorId} .wysiwyg-float-left:hover,
+            #${editorId} .wysiwyg-float-right:hover {
+                outline: 2px solid #007bff;
+                outline-offset: 2px;
+            }
+            /* Убеждаемся, что текст возле float изображений можно выделять */
+            #${editorId} p, #${editorId} div, #${editorId} span {
+                user-select: text;
+                -webkit-user-select: text;
+                -moz-user-select: text;
+                -ms-user-select: text;
             }
         `;
         document.head.appendChild(style);
@@ -114,6 +152,9 @@ class WYSIWYGEditor {
         
         // Обрабатываем нажатие клавиш
         this.editor.addEventListener('keydown', (e) => this.handleKeyDown(e));
+        
+        // Обрабатываем выделение текста
+        this.editor.addEventListener('mouseup', (e) => this.handleMouseUp(e));
         
         // Обрабатываем вставку текста (очищаем форматирование)
         this.editor.addEventListener('paste', (e) => this.handlePaste(e));
@@ -771,7 +812,8 @@ class WYSIWYGEditor {
     insertImageElement(url, width = null) {
         // Создаем HTML для изображения
         const widthAttr = (width && !isNaN(width) && width > 0) ? ` style="width: ${width}px;"` : ' style="width: 300px;"';
-        const imgHTML = `<img src="${url}" alt="Image" class="wysiwyg-image wysiwyg-float-left" draggable="true" style="max-width: 100%; height: auto; cursor: move;${widthAttr.replace(' style="', '').replace(';"', '')}">`;
+        // По умолчанию вставляем как блок, чтобы избежать проблем с Enter
+        const imgHTML = `<img src="${url}" alt="Image" class="wysiwyg-image wysiwyg-block" draggable="true" style="max-width: 100%; height: auto; cursor: move;${widthAttr.replace(' style="', '').replace(';"', '')}">`;
         
         // Фокусируем редактор
         this.editor.focus();
@@ -829,6 +871,22 @@ class WYSIWYGEditor {
         const img = images[images.length - 1]; // Берем последнее изображение с этим URL
         
         if (img) {
+            // Добавляем обработчик успешной загрузки
+            img.onload = () => {
+                console.log('Image loaded successfully:', url);
+                // Убираем placeholder стили
+                img.style.background = 'transparent';
+                img.style.border = 'none';
+                img.style.aspectRatio = 'auto'; // Убираем фиксированные пропорции
+                // Обновляем позиционирование
+                this.updateHiddenInput();
+            };
+            
+            // Если изображение уже загружено (из кэша), вызываем onload
+            if (img.complete && img.naturalHeight > 0) {
+                img.onload();
+            }
+            
             // Добавляем обработчик ошибки загрузки
             img.onerror = () => {
                 console.error('Failed to load image:', url);
@@ -987,59 +1045,34 @@ class WYSIWYGEditor {
         document.execCommand('insertText', false, text);
     }
     
-    handleKeyDown(e) {
-        // Обрабатываем Enter около float изображений
-        if (e.key === 'Enter') {
-            const selection = window.getSelection();
-            if (selection.rangeCount > 0) {
-                const range = selection.getRangeAt(0);
-                const container = range.commonAncestorContainer;
-                
-                // Проверяем, есть ли рядом float изображение
-                let element = container.nodeType === Node.TEXT_NODE ? container.parentElement : container;
-                let hasFloatImage = false;
-                
-                // Проверяем текущий элемент и его соседей
+    handleMouseUp(e) {
+        // Проверяем, было ли выделение текста возле float изображений
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            if (range.collapsed) {
+                // Если выделение свернуто (просто клик), проверяем, не кликнули ли по float изображению
+                let element = e.target;
                 while (element && element !== this.editor) {
                     if (element.classList && 
                         (element.classList.contains('wysiwyg-float-left') || 
                          element.classList.contains('wysiwyg-float-right'))) {
-                        hasFloatImage = true;
+                        // Кликнули по float изображению - выделяем его
+                        const imgRange = document.createRange();
+                        imgRange.selectNode(element);
+                        selection.removeAllRanges();
+                        selection.addRange(imgRange);
                         break;
                     }
-                    
-                    // Проверяем предыдущие элементы
-                    let sibling = element.previousElementSibling;
-                    while (sibling) {
-                        if (sibling.classList && 
-                            (sibling.classList.contains('wysiwyg-float-left') || 
-                             sibling.classList.contains('wysiwyg-float-right'))) {
-                            hasFloatImage = true;
-                            break;
-                        }
-                        sibling = sibling.previousElementSibling;
-                    }
-                    
-                    if (hasFloatImage) break;
                     element = element.parentElement;
-                }
-                
-                // Если есть float изображение, предотвращаем стандартное поведение
-                if (hasFloatImage) {
-                    e.preventDefault();
-                    
-                    // Создаем новый параграф с правильным позиционированием
-                    const br = document.createElement('br');
-                    range.insertNode(br);
-                    range.setStartAfter(br);
-                    range.setEndAfter(br);
-                    selection.removeAllRanges();
-                    selection.addRange(range);
-                    
-                    this.updateHiddenInput();
                 }
             }
         }
+    }
+    
+    handleKeyDown(e) {
+        // Убираем специальную обработку Enter возле float изображений
+        // Браузер сам справляется с созданием новых параграфов
     }
     
     getContent() {
