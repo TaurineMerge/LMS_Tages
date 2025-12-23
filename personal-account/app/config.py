@@ -75,6 +75,13 @@ class Settings(BaseSettings):
     KEYCLOAK_DEFAULT_SCOPE: str = "openid profile email"
     KEYCLOAK_USER_EMAIL_VERIFIED_DEFAULT: bool = True
 
+    # Keycloak service-to-service authentication (for Testing API calls)
+    KEYCLOAK_SERVICE_REALM: str = "student"
+    KEYCLOAK_SERVICE_CLIENT_ID: str = "student-client"
+    KEYCLOAK_SERVICE_CLIENT_SECRET: str = "STUDENT_SECRET"
+    KEYCLOAK_TEST_USERNAME: str = "student"
+    KEYCLOAK_TEST_PASSWORD: str = "student"
+
     # Redis Configuration
     REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379

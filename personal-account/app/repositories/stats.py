@@ -7,6 +7,7 @@ aggregated statistics with Redis caching.
 
 import json
 import logging
+from datetime import date, datetime
 from typing import Any
 from uuid import UUID
 
@@ -53,11 +54,16 @@ class StatsRepository:
     @traced("stats.upsert_attempt", record_args=True, record_result=True)
     async def upsert_attempt(self, payload: dict[str, Any]) -> None:
         """Upsert a record in tests.test_attempt_b from validated payload."""
+        # Convert date_of_attempt to datetime.date if it's a string
+        date_of_attempt = payload.get("date_of_attempt")
+        if isinstance(date_of_attempt, str):
+            date_of_attempt = datetime.fromisoformat(date_of_attempt).date()
+
         params = {
             "id": str(UUID(payload["attempt_id"])),
             "student_id": str(UUID(payload["student_id"])),
             "test_id": str(UUID(payload["test_id"])) if payload.get("test_id") else None,
-            "date_of_attempt": payload.get("date_of_attempt"),
+            "date_of_attempt": date_of_attempt,  # Now datetime.date
             "point": payload.get("point"),
             "result": json.dumps(payload.get("result", {})),
             "completed": payload.get("completed", False),
@@ -103,6 +109,11 @@ class StatsRepository:
                 "last_attempt_at": str(result["last_attempt_at"]) if result.get("last_attempt_at") else None,
             }
 
+        # Convert last_attempt_at to datetime.date for PostgreSQL DATE column
+        last_attempt_at_db = (
+            datetime.fromisoformat(stats["last_attempt_at"]).date() if stats["last_attempt_at"] else None
+        )
+
         # Save to aggregated table
         params = {
             "student_id": str(student_id),
@@ -111,8 +122,8 @@ class StatsRepository:
             "failed_attempts": stats["failed_attempts"],
             "avg_score": stats["avg_score"],
             "total_tests_taken": stats["total_tests_taken"],
-            "last_attempt_at": stats["last_attempt_at"],
-            "stats_json": json.dumps(stats),
+            "last_attempt_at": last_attempt_at_db,  # datetime.date for DB
+            "stats_json": json.dumps(stats),  # stats dict with string last_attempt_at
         }
         await execute(q.STUDENT_STATS_AGGREGATED_UPSERT, params)
         logger.info("Saved aggregated stats for student %s", student_id)
@@ -125,8 +136,12 @@ class StatsRepository:
         cache_key = f"user_stats:{student_id}"
         cached = await redis_client.get(cache_key)
         if cached:
+            stats = json.loads(cached)
+            # Ensure last_attempt_at is a string for JSON serialization
+            if "last_attempt_at" in stats and isinstance(stats["last_attempt_at"], date):
+                stats["last_attempt_at"] = stats["last_attempt_at"].isoformat()
             logger.debug("Cache hit for student %s", student_id)
-            return json.loads(cached)
+            return stats
         return None
 
     @traced("stats.save_to_redis", record_args=True, record_result=True)
@@ -150,7 +165,11 @@ class StatsRepository:
         """Get aggregated stats from DB table."""
         result = await fetch_one(q.STUDENT_STATS_AGGREGATED_SELECT, {"student_id": str(student_id)})
         if result and result.get("stats_json"):
-            return result["stats_json"] if isinstance(result["stats_json"], dict) else json.loads(result["stats_json"])
+            stats = result["stats_json"] if isinstance(result["stats_json"], dict) else json.loads(result["stats_json"])
+            # Ensure last_attempt_at is a string for JSON serialization
+            if "last_attempt_at" in stats and isinstance(stats["last_attempt_at"], date):
+                stats["last_attempt_at"] = stats["last_attempt_at"].isoformat()
+            return stats
         return None
 
     @traced("stats.get_user_stats", record_args=True, record_result=True)

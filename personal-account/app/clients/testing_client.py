@@ -10,6 +10,12 @@ The client validates responses using :class:`ContractManager` and persists
 the raw payloads into our integration schema using the
 :mod:`app.repositories.integration` repository.
 
+Authentication
+--------------
+The Testing service internal API requires Keycloak JWT authentication.
+This client uses :class:`KeycloakServiceAuth` to obtain and cache tokens
+automatically.
+
 Instrumentation
 ---------------
 All public methods are decorated with ``@traced()`` so calls, parameters,
@@ -36,6 +42,7 @@ from uuid import UUID
 
 import httpx
 
+from app.clients.keycloak_service_auth import KeycloakServiceAuth, get_keycloak_auth
 from app.clients.validation.contract_manager import ContractManager, ContractValidationError
 from app.config import get_settings
 from app.repositories.integration import integration_repository
@@ -64,6 +71,9 @@ class TestingClient:
     repo: integration_repository | None
         Repository instance used to persist raw payloads. Defaults to the
         project singleton ``integration_repository``.
+    auth: KeycloakServiceAuth | None
+        Optional auth instance for obtaining JWT tokens. If omitted,
+        will use the default singleton.
     """
 
     def __init__(
@@ -72,11 +82,13 @@ class TestingClient:
         timeout_seconds: int = 10,
         contract_manager: ContractManager | None = None,
         repo: Any | None = None,
+        auth: KeycloakServiceAuth | None = None,
     ) -> None:
         self.base_url = get_settings().testing_base_url
         self.timeout = timeout_seconds
         self.contract_manager = contract_manager or ContractManager()
         self.repo = repo or integration_repository
+        self.auth = auth or get_keycloak_auth()
 
     @traced()
     async def fetch_user_stats(self, user_id: UUID) -> dict[str, Any]:
@@ -91,11 +103,11 @@ class TestingClient:
         url = f"{self.base_url}/internal/users/{user_id}/stats"
         logger.debug("Fetching user stats: %s", url)
 
-        # import httpx locally so documentation generation and light imports
-        # don't require httpx to be installed at import-time
+        # Get auth headers for Keycloak JWT authentication
+        auth_headers = await self.auth.get_auth_headers()
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
-            resp = await client.get(url)
+            resp = await client.get(url, headers=auth_headers)
             resp.raise_for_status()
             payload = resp.json()
 
@@ -127,8 +139,11 @@ class TestingClient:
         url = f"{self.base_url}/internal/users/{user_id}/attempts"
         logger.debug("Fetching attempts list: %s", url)
 
+        # Get auth headers for Keycloak JWT authentication
+        auth_headers = await self.auth.get_auth_headers()
+
         async with httpx.AsyncClient(timeout=self.timeout) as client:
-            resp = await client.get(url)
+            resp = await client.get(url, headers=auth_headers)
             resp.raise_for_status()
             payload = resp.json()
 
@@ -165,8 +180,11 @@ class TestingClient:
         url = f"{self.base_url}/internal/attempts/{attempt_id}"
         logger.debug("Fetching attempt detail: %s", url)
 
+        # Get auth headers for Keycloak JWT authentication
+        auth_headers = await self.auth.get_auth_headers()
+
         async with httpx.AsyncClient(timeout=self.timeout) as client:
-            resp = await client.get(url)
+            resp = await client.get(url, headers=auth_headers)
             resp.raise_for_status()
             payload = resp.json()
 
