@@ -1,0 +1,453 @@
+<script>
+// Глобальные переменные
+let questionCount = {{#if questions}}{{questions.length}}{{else}}1{{/if}};
+let answerCounts = {};
+let totalTestPoints = 0;
+
+// Инициализация счетчиков ответов
+{{#if questions}}
+    {{#each questions}}
+    answerCounts[{{@index}}] = {{this.answers.length}};
+    {{/each}}
+{{else}}
+    answerCounts[0] = 2;
+{{/if}}
+
+// DOM Ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Инициализация подсчета баллов
+    initPointsCalculation();
+    
+    // Обновление общих баллов при загрузке
+    updateTotalTestPoints();
+    
+    // Кнопка добавления вопроса
+    document.getElementById('add-question-btn').addEventListener('click', addNewQuestion);
+    
+    // Слушатели изменений в полях баллов
+    document.querySelectorAll('.answer-points-input').forEach(input => {
+        input.addEventListener('change', updateTotalTestPoints);
+        input.addEventListener('input', updateTotalTestPoints);
+    });
+});
+
+// Функции для работы с вопросами
+function addNewQuestion() {
+    const container = document.getElementById('questions-container');
+    const newIndex = questionCount;
+    
+    const newQuestionHtml = `
+        <div class="question-editor" data-question-index="${newIndex}">
+            <div class="card">
+                <div class="question-header">
+                    <h3 style="margin: 0;">Вопрос ${newIndex + 1}</h3>
+                    <div class="question-controls">
+                        <button type="button" class="btn-secondary btn-move-up" onclick="moveQuestionUp(${newIndex})">
+                            ↑ Вверх
+                        </button>
+                        <button type="button" class="btn-secondary btn-move-down" onclick="moveQuestionDown(${newIndex})">
+                            ↓ Вниз
+                        </button>
+                        <button type="button" class="btn-danger btn-remove-question" onclick="removeQuestion(${newIndex})">
+                            × Удалить
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Текст вопроса *</label>
+                    <textarea name="question[${newIndex}][text]" placeholder="Введите текст вопроса" required></textarea>
+                </div>
+                
+                <div class="points-info">
+                    <div class="points-display">
+                        <span>Максимум баллов за вопрос:</span>
+                        <strong id="question-points-${newIndex}">0</strong>
+                    </div>
+                    <small class="points-hint">(ответы с баллами > 0 считаются правильными)</small>
+                </div>
+                
+                <div class="form-group">
+                    <label>Варианты ответов</label>
+                    <div id="answers-${newIndex}" class="answers-container">
+                        <!-- Ответы будут добавлены через addAnswer -->
+                    </div>
+                    <button type="button" class="btn-secondary" onclick="addAnswer(${newIndex})">+ Добавить ответ</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', newQuestionHtml);
+    answerCounts[newIndex] = 0;
+    
+    // Добавляем 2 ответа по умолчанию
+    addAnswer(newIndex);
+    addAnswer(newIndex);
+    
+    questionCount++;
+    reindexQuestions();
+    updateTotalTestPoints();
+}
+
+function moveQuestionUp(index) {
+    if (index <= 0) return;
+    swapQuestions(index, index - 1);
+}
+
+function moveQuestionDown(index) {
+    if (index >= questionCount - 1) return;
+    swapQuestions(index, index + 1);
+}
+
+function swapQuestions(index1, index2) {
+    const container = document.getElementById('questions-container');
+    const questions = Array.from(container.children);
+    
+    if (index1 < 0 || index2 < 0 || index1 >= questions.length || index2 >= questions.length) return;
+    
+    // Меняем местами DOM элементы
+    const temp = questions[index1].outerHTML;
+    questions[index1].outerHTML = questions[index2].outerHTML;
+    questions[index2].outerHTML = temp;
+    
+    // Переиндексация
+    reindexQuestions();
+    updateTotalTestPoints();
+}
+
+function removeQuestion(index) {
+    if (questionCount <= 1 || index === 0) {
+        showNotification('Нельзя удалить первый вопрос', 'error');
+        return;
+    }
+    
+    if (confirm('Удалить этот вопрос?')) {
+        const question = document.querySelector(`[data-question-index="${index}"]`);
+        if (question) {
+            question.remove();
+            questionCount--;
+            reindexQuestions();
+            updateTotalTestPoints();
+            showNotification('Вопрос удален', 'success');
+        }
+    }
+}
+
+// Функции для работы с ответами
+function addAnswer(questionIndex) {
+    const container = document.getElementById(`answers-${questionIndex}`);
+    const answerIndex = answerCounts[questionIndex] || 0;
+    
+    const newAnswerHtml = `
+        <div class="answer-group" data-answer-index="${answerIndex}">
+            <input type="text" 
+                   name="question[${questionIndex}][answers][${answerIndex}][text]" 
+                   placeholder="Текст ответа ${answerIndex + 1}" 
+                   required>
+            
+            <div class="answer-points-group">
+                <label>Баллы:</label>
+                <input type="number" 
+                       class="answer-points-input"
+                       name="question[${questionIndex}][answers][${answerIndex}][points]" 
+                       value="0"
+                       min="0"
+                       step="1"
+                       required
+                       onchange="updateTotalTestPoints()"
+                       oninput="updateTotalTestPoints()">
+            </div>
+            
+            <button type="button" class="btn-danger remove-answer-btn" 
+                    onclick="removeAnswer(${questionIndex}, ${answerIndex})"
+                    ${answerIndex === 0 ? 'disabled' : ''}>
+                × Удалить
+            </button>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', newAnswerHtml);
+    answerCounts[questionIndex] = answerIndex + 1;
+    updateTotalTestPoints();
+}
+
+function removeAnswer(questionIndex, answerIndex) {
+    const answers = document.querySelectorAll(`#answers-${questionIndex} .answer-group`);
+    if (answers.length <= 1) {
+        showNotification('Нельзя удалить последний ответ', 'error');
+        return;
+    }
+    
+    const answer = document.querySelector(`#answers-${questionIndex} [data-answer-index="${answerIndex}"]`);
+    if (answer) {
+        answer.remove();
+        // Переиндексация оставшихся ответов
+        reindexAnswers(questionIndex);
+        updateTotalTestPoints();
+    }
+}
+
+// Переиндексация
+function reindexQuestions() {
+    const container = document.getElementById('questions-container');
+    const questions = container.children;
+    
+    for (let i = 0; i < questions.length; i++) {
+        const question = questions[i];
+        question.setAttribute('data-question-index', i);
+        
+        // Обновляем заголовок
+        const header = question.querySelector('h3');
+        if (header) header.textContent = `Вопрос ${i + 1}`;
+        
+        // Обновляем имена полей
+        question.querySelectorAll('[name^="question["]').forEach(input => {
+            const name = input.getAttribute('name');
+            const newName = name.replace(/question\[\d+\]/, `question[${i}]`);
+            input.setAttribute('name', newName);
+        });
+        
+        // Обновляем ID контейнера ответов
+        const answersContainer = question.querySelector('.answers-container');
+        if (answersContainer) answersContainer.id = `answers-${i}`;
+        
+        // Обновляем ID блока баллов
+        const pointsElement = question.querySelector('[id^="question-points-"]');
+        if (pointsElement) pointsElement.id = `question-points-${i}`;
+        
+        // Обновляем обработчики кнопок
+        question.querySelectorAll('.btn-move-up').forEach(btn => {
+            btn.onclick = () => moveQuestionUp(i);
+            btn.disabled = i === 0;
+        });
+        
+        question.querySelectorAll('.btn-move-down').forEach(btn => {
+            btn.onclick = () => moveQuestionDown(i);
+            btn.disabled = i === questions.length - 1;
+        });
+        
+        question.querySelectorAll('.btn-remove-question').forEach(btn => {
+            btn.onclick = () => removeQuestion(i);
+            btn.disabled = i === 0;
+        });
+        
+        question.querySelectorAll('.btn-secondary[onclick^="addAnswer"]').forEach(btn => {
+            btn.onclick = () => addAnswer(i);
+        });
+    }
+}
+
+function reindexAnswers(questionIndex) {
+    const container = document.getElementById(`answers-${questionIndex}`);
+    if (!container) return;
+    
+    const answers = container.querySelectorAll('.answer-group');
+    let newAnswerCount = 0;
+    
+    answers.forEach((answer, index) => {
+        answer.setAttribute('data-answer-index', index);
+        
+        // Обновляем имена полей
+        answer.querySelectorAll('[name^="question["]').forEach(input => {
+            const name = input.getAttribute('name');
+            const regex = /question\[(\d+)\]\[answers\]\[(\d+)\]/;
+            const match = name.match(regex);
+            if (match) {
+                const newName = name.replace(regex, `question[${questionIndex}][answers][${index}]`);
+                input.setAttribute('name', newName);
+            }
+        });
+        
+        // Обновляем placeholder
+        const textInput = answer.querySelector('input[type="text"]');
+        if (textInput) {
+            textInput.placeholder = `Текст ответа ${index + 1}`;
+        }
+        
+        // Обновляем обработчик кнопки удаления
+        const removeBtn = answer.querySelector('.remove-answer-btn');
+        if (removeBtn) {
+            removeBtn.onclick = () => removeAnswer(questionIndex, index);
+            removeBtn.disabled = index === 0;
+        }
+        
+        newAnswerCount++;
+    });
+    
+    answerCounts[questionIndex] = newAnswerCount;
+}
+
+// Подсчет баллов
+function initPointsCalculation() {
+    document.querySelectorAll('.answer-points-input').forEach(input => {
+        input.addEventListener('change', updateQuestionPoints);
+        input.addEventListener('input', updateQuestionPoints);
+    });
+    updateAllQuestionPoints();
+}
+
+function updateAllQuestionPoints() {
+    document.querySelectorAll('.question-editor').forEach((question, index) => {
+        updateQuestionPointsForQuestion(index);
+    });
+}
+
+function updateQuestionPointsForQuestion(questionIndex) {
+    const container = document.getElementById(`answers-${questionIndex}`);
+    if (!container) return;
+    
+    const answerInputs = container.querySelectorAll('.answer-points-input');
+    let maxPoints = 0;
+    
+    answerInputs.forEach(input => {
+        const points = parseInt(input.value) || 0;
+        if (points > maxPoints) {
+            maxPoints = points;
+        }
+    });
+    
+    const pointsElement = document.getElementById(`question-points-${questionIndex}`);
+    if (pointsElement) {
+        pointsElement.textContent = maxPoints;
+    }
+    
+    return maxPoints;
+}
+
+function updateQuestionPoints(event) {
+    const input = event.target;
+    const answerGroup = input.closest('.answer-group');
+    if (!answerGroup) return;
+    
+    const questionEditor = answerGroup.closest('.question-editor');
+    if (!questionEditor) return;
+    
+    const questionIndex = questionEditor.getAttribute('data-question-index');
+    updateQuestionPointsForQuestion(questionIndex);
+    updateTotalTestPoints();
+}
+
+function updateTotalTestPoints() {
+    totalTestPoints = 0;
+    
+    document.querySelectorAll('.question-editor').forEach((question, index) => {
+        const questionPoints = updateQuestionPointsForQuestion(index);
+        totalTestPoints += questionPoints;
+    });
+    
+    const totalElement = document.getElementById('total-test-points');
+    if (totalElement) {
+        totalElement.textContent = totalTestPoints;
+    }
+}
+
+// Навигация и действия
+function goBack() {
+    if ({{isDraft}} && {{hasPublishedTest}}) {
+        window.location.href = '/testing/web/tests/{{publishedTestId}}/edit';
+    } else {
+        window.location.href = '/testing/web/tests/new';
+    }
+}
+
+function createDraft(testId) {
+    if (confirm('Создать черновик для редактирования? Текущий тест останется неизменным.')) {
+        window.location.href = `/testing/web/tests/${testId}/create-draft`;
+    }
+}
+
+function deleteEntity(entityId) {
+    const isDraft = entityId.startsWith('draft-');
+    const entityName = isDraft ? 'черновик' : 'тест';
+    const message = isDraft 
+        ? 'Удалить черновик? Это действие нельзя отменить.'
+        : 'Удалить тест? Все связанные данные будут удалены.';
+    
+    if (confirm(message)) {
+        fetch(`/testing/web/tests/${entityId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                showNotification(`${entityName} удален`, 'success');
+                setTimeout(() => {
+                    window.location.href = '/testing/web/tests/new';
+                }, 1500);
+            } else {
+                showNotification('Ошибка при удалении', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Ошибка сети', 'error');
+        });
+    }
+}
+
+// Валидация формы
+function validateForm() {
+    const title = document.getElementById('title').value.trim();
+    if (!title) {
+        showNotification('Введите название теста', 'error');
+        return false;
+    }
+    
+    const minPoint = document.getElementById('min_point').value;
+    if (!minPoint || minPoint < 0) {
+        showNotification('Введите корректный минимальный балл', 'error');
+        return false;
+    }
+    
+    // Проверка вопросов
+    const questions = document.querySelectorAll('[name^="question["]');
+    let hasErrors = false;
+    
+    questions.forEach((question, index) => {
+        if (!question.value.trim()) {
+            showNotification(`Вопрос ${index + 1}: введите текст`, 'error');
+            hasErrors = true;
+        }
+    });
+    
+    return !hasErrors;
+}
+
+// Уведомления
+function showNotification(message, type = 'info') {
+    // Удаляем старые уведомления
+    const oldNotifications = document.querySelectorAll('.notification');
+    oldNotifications.forEach(notification => notification.remove());
+    
+    const notification = document.createElement('div');
+    notification.className = `notification alert-${type}`;
+    notification.innerHTML = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+// Предотвращение случайного закрытия страницы
+window.addEventListener('beforeunload', function (e) {
+    // Проверяем, есть ли несохраненные изменения
+    const form = document.getElementById('testForm');
+    if (form && form.checkValidity()) {
+        // Можно добавить проверку на изменения
+        // e.preventDefault();
+        // e.returnValue = '';
+    }
+});
+
+// Инициализация при загрузке
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Test editor loaded');
+    console.log('Question count:', questionCount);
+    console.log('Answer counts:', answerCounts);
+});
+</script>

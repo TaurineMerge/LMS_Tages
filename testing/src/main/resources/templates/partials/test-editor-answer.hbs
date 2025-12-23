@@ -1,0 +1,24 @@
+<div class="answer-group" data-answer-index="{{answerIndex}}">
+    <input type="text" 
+           name="question[{{questionIndex}}][answers][{{answerIndex}}][text]" 
+           placeholder="Текст ответа {{add answerIndex 1}}" 
+           value="{{#if answer}}{{answer.text}}{{/if}}" 
+           required>
+    
+    <div class="answer-points-group">
+        <label>Баллы:</label>
+        <input type="number" 
+               class="answer-points-input"
+               name="question[{{questionIndex}}][answers][{{answerIndex}}][points]" 
+               value="{{#if answer}}{{answer.score}}{{else}}0{{/if}}"
+               min="0"
+               step="1"
+               required>
+    </div>
+    
+    <button type="button" class="btn-danger remove-answer-btn" 
+            onclick="removeAnswer({{questionIndex}}, {{answerIndex}})"
+            {{#if @first}}disabled{{/if}}>
+        × Удалить
+    </button>
+</div>

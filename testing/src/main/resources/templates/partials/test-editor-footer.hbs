@@ -1,0 +1,46 @@
+<div class="footer-buttons">
+    <!-- Кнопка "Назад" -->
+    <button type="button" class="btn-secondary" onclick="goBack()">
+        ← Назад
+    </button>
+    
+    <!-- Универсальные кнопки сохранения -->
+    {{#if isDraft}}
+        <!-- Режим черновика -->
+        <button type="submit" form="testForm" formaction="/testing/web/tests/save" class="btn-primary">
+            💾 Сохранить черновик
+        </button>
+        
+        <button type="submit" form="testForm" formaction="/testing/web/tests/{{entityId}}/publish" class="btn-success">
+            {{#if hasPublishedTest}}🔄 Обновить тест{{else}}🚀 Опубликовать тест{{/if}}
+        </button>
+        
+        <button type="button" class="btn-danger" onclick="deleteEntity('{{entityId}}')">
+            🗑️ Удалить черновик
+        </button>
+    {{else}}
+        <!-- Режим теста -->
+        {{#if isNew}}
+            <button type="submit" form="testForm" formaction="/testing/web/tests/save" class="btn-success">
+                ✅ Создать тест
+            </button>
+        {{else}}
+            <button type="submit" form="testForm" formaction="/testing/web/tests/save" class="btn-success">
+                💾 Сохранить тест
+            </button>
+            
+            <button type="button" class="btn-secondary" onclick="createDraft('{{test.id}}')">
+                📝 Редактировать как черновик
+            </button>
+            
+            <button type="button" class="btn-primary" 
+                    onclick="window.location.href='/testing/web/tests/{{test.id}}/preview'">
+                👁️ Предпросмотр
+            </button>
+            
+            <button type="button" class="btn-danger" onclick="deleteEntity('{{test.id}}')">
+                🗑️ Удалить тест
+            </button>
+        {{/if}}
+    {{/if}}
+</div>
