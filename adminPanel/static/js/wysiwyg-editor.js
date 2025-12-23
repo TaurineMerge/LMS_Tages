@@ -120,7 +120,7 @@ class WYSIWYGEditor {
         
         this.hiddenInput = document.createElement('input');
         this.hiddenInput.type = 'hidden';
-        this.hiddenInput.name = 'html_content';
+        this.hiddenInput.name = 'content';
         form.appendChild(this.hiddenInput);
     }
     
@@ -605,13 +605,6 @@ class WYSIWYGEditor {
                 // Вставляем изображение в редактор
                 this.insertImageElement(data.image_url);
                 
-                // Показываем успешное сообщение
-                const successMsg = document.createElement('div');
-                successMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #4CAF50; color: white; padding: 15px 20px; border-radius: 8px; z-index: 10000; animation: slideIn 0.3s ease;';
-                successMsg.innerHTML = '✅ Изображение успешно загружено!';
-                document.body.appendChild(successMsg);
-                setTimeout(() => document.body.removeChild(successMsg), 3000);
-                
             } catch (error) {
                 // Убираем индикатор загрузки
                 if (document.body.contains(loadingMsg)) {
@@ -653,17 +646,6 @@ class WYSIWYGEditor {
             
             // Вставляем изображение в редактор
             this.insertImageElement(data.image_url);
-            
-            // Показываем успешное сообщение
-            const successMsg = document.createElement('div');
-            successMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #4CAF50; color: white; padding: 15px 20px; border-radius: 8px; z-index: 10000;';
-            successMsg.innerHTML = '✅ Изображение загружено в S3!';
-            document.body.appendChild(successMsg);
-            setTimeout(() => {
-                if (document.body.contains(successMsg)) {
-                    document.body.removeChild(successMsg);
-                }
-            }, 3000);
             
         } catch (error) {
             // Убираем индикатор загрузки

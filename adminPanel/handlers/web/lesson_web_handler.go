@@ -318,6 +318,7 @@ func (h *LessonWebHandler) UpdateLesson(c *fiber.Ctx) error {
 				ID:        lesson.Data.ID,
 				CourseID:  lesson.Data.CourseID,
 				Title:     lesson.Data.Title,
+				Content:   lesson.Data.Content,
 				CreatedAt: formatDateTime(lesson.Data.CreatedAt),
 				UpdatedAt: formatDateTime(lesson.Data.UpdatedAt),
 			}
