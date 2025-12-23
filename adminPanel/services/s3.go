@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
+	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
@@ -288,4 +289,90 @@ func (s *S3Service) UploadImageFromReader(ctx context.Context, reader io.Reader,
 	))
 
 	return imageURL, nil
+}
+
+// UploadImageFromURL загружает изображение по URL в S3
+func (s *S3Service) UploadImageFromURL(ctx context.Context, imageURL string) (string, error) {
+	ctx, span := tracer.Start(ctx, "S3Service.UploadImageFromURL")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("source.url", imageURL))
+
+	// Скачиваем изображение по URL
+	resp, err := http.Get(imageURL)
+	if err != nil {
+		span.RecordError(err)
+		return "", exceptions.NewAppError(
+			fmt.Sprintf("Failed to download image from URL: %v", err),
+			400,
+			"IMAGE_DOWNLOAD_ERROR",
+		)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", exceptions.NewAppError(
+			fmt.Sprintf("Failed to download image: HTTP %d", resp.StatusCode),
+			400,
+			"IMAGE_DOWNLOAD_ERROR",
+		)
+	}
+
+	// Определяем тип контента
+	contentType := resp.Header.Get("Content-Type")
+	if !isValidImageType(contentType) {
+		return "", exceptions.NewAppError(
+			fmt.Sprintf("Invalid image type from URL: %s", contentType),
+			400,
+			"INVALID_IMAGE_TYPE",
+		)
+	}
+
+	// Определяем расширение файла из URL или Content-Type
+	ext := filepath.Ext(imageURL)
+	if ext == "" || len(ext) > 5 {
+		switch contentType {
+		case "image/jpeg", "image/jpg":
+			ext = ".jpg"
+		case "image/png":
+			ext = ".png"
+		case "image/gif":
+			ext = ".gif"
+		case "image/webp":
+			ext = ".webp"
+		default:
+			ext = ".jpg"
+		}
+	}
+
+	// Генерируем уникальное имя файла
+	objectName := fmt.Sprintf("go/%s/%s%s",
+		time.Now().Format("2006/01/02"),
+		uuid.New().String(),
+		ext,
+	)
+
+	span.SetAttributes(attribute.String("object.name", objectName))
+
+	// Загружаем в MinIO
+	_, err = s.client.PutObject(ctx, s.bucket, objectName, resp.Body, resp.ContentLength, minio.PutObjectOptions{
+		ContentType: contentType,
+	})
+	if err != nil {
+		span.RecordError(err)
+		return "", exceptions.NewAppError(
+			fmt.Sprintf("Failed to upload image to S3: %v", err),
+			500,
+			"S3_UPLOAD_ERROR",
+		)
+	}
+
+	// Формируем публичный URL
+	s3URL := s.GetImageURL(objectName)
+
+	span.AddEvent("image uploaded from URL", trace.WithAttributes(
+		attribute.String("s3.url", s3URL),
+	))
+
+	return s3URL, nil
 }

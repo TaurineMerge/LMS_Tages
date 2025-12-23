@@ -538,19 +538,8 @@ class WYSIWYGEditor {
                 const imageUrl = urlInput.value.trim();
                 document.body.removeChild(modal);
                 
-                // Сразу вставляем изображение с размером по умолчанию
-                this.insertImageElement(imageUrl);
-                
-                // Показываем успешное сообщение
-                const successMsg = document.createElement('div');
-                successMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #4CAF50; color: white; padding: 15px 20px; border-radius: 8px; z-index: 10000;';
-                successMsg.innerHTML = '✅ Изображение добавлено!';
-                document.body.appendChild(successMsg);
-                setTimeout(() => {
-                    if (document.body.contains(successMsg)) {
-                        document.body.removeChild(successMsg);
-                    }
-                }, 3000);
+                // Загружаем изображение по URL в S3
+                await this.uploadImageFromURL(imageUrl);
             } else {
                 alert('⚠️ Пожалуйста, введите URL или выберите файл');
             }
@@ -633,6 +622,59 @@ class WYSIWYGEditor {
                 alert(`❌ Ошибка загрузки изображения:\n${error.message}`);
                 console.error('Upload error:', error);
             }
+    }
+    
+    async uploadImageFromURL(url) {
+        // Показываем индикатор загрузки
+        const loadingMsg = document.createElement('div');
+        loadingMsg.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 8px; z-index: 10000;';
+        loadingMsg.textContent = '⏳ Загрузка изображения по URL...';
+        document.body.appendChild(loadingMsg);
+        
+        try {
+            // Отправляем URL на сервер
+            const response = await fetch('/admin/api/v1/upload/image-from-url', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ url: url })
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Ошибка загрузки изображения');
+            }
+            
+            const data = await response.json();
+            
+            // Убираем индикатор загрузки
+            document.body.removeChild(loadingMsg);
+            
+            // Вставляем изображение в редактор
+            this.insertImageElement(data.image_url);
+            
+            // Показываем успешное сообщение
+            const successMsg = document.createElement('div');
+            successMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #4CAF50; color: white; padding: 15px 20px; border-radius: 8px; z-index: 10000;';
+            successMsg.innerHTML = '✅ Изображение загружено в S3!';
+            document.body.appendChild(successMsg);
+            setTimeout(() => {
+                if (document.body.contains(successMsg)) {
+                    document.body.removeChild(successMsg);
+                }
+            }, 3000);
+            
+        } catch (error) {
+            // Убираем индикатор загрузки
+            if (document.body.contains(loadingMsg)) {
+                document.body.removeChild(loadingMsg);
+            }
+            
+            // Показываем ошибку
+            alert(`❌ Ошибка загрузки изображения по URL:\n${error.message}`);
+            console.error('Upload from URL error:', error);
+        }
     }
 
     

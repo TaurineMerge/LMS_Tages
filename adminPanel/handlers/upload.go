@@ -26,6 +26,7 @@ func NewUploadHandler(s3Service *services.S3Service) *UploadHandler {
 // RegisterRoutes регистрирует маршруты для загрузки файлов
 func (h *UploadHandler) RegisterRoutes(upload fiber.Router) {
 	upload.Post("/image", h.uploadImage)
+	upload.Post("/image-from-url", h.uploadImageFromURL)
 }
 
 // UploadImageResponse - структура ответа при успешной загрузке изображения
@@ -79,5 +80,61 @@ func (h *UploadHandler) uploadImage(c *fiber.Ctx) error {
 		Status:   "success",
 		ImageURL: imageURL,
 		Message:  "Image uploaded successfully",
+	})
+}
+
+// UploadImageFromURLRequest - структура запроса для загрузки изображения по URL
+type UploadImageFromURLRequest struct {
+	URL string `json:"url" validate:"required,url"`
+}
+
+// uploadImageFromURL обрабатывает POST /api/v1/upload/image-from-url
+// @Summary Загрузить изображение по URL
+// @Description Скачивает изображение по URL и загружает в S3 хранилище
+// @Tags Upload
+// @Accept json
+// @Produce json
+// @Param body body UploadImageFromURLRequest true "URL изображения"
+// @Success 200 {object} UploadImageResponse
+// @Failure 400 {object} exceptions.AppError "Неверный URL или тип файла"
+// @Failure 500 {object} exceptions.AppError "Ошибка загрузки"
+// @Router /api/v1/upload/image-from-url [post]
+func (h *UploadHandler) uploadImageFromURL(c *fiber.Ctx) error {
+	ctx := c.UserContext()
+	span := trace.SpanFromContext(ctx)
+
+	var req UploadImageFromURLRequest
+	if err := c.BodyParser(&req); err != nil {
+		return exceptions.NewAppError(
+			fmt.Sprintf("Invalid request body: %v", err),
+			400,
+			"VALIDATION_ERROR",
+		)
+	}
+
+	if req.URL == "" {
+		return exceptions.NewAppError(
+			"URL is required",
+			400,
+			"MISSING_URL",
+		)
+	}
+
+	span.SetAttributes(attribute.String("source.url", req.URL))
+
+	// Загружаем изображение по URL в S3
+	imageURL, err := h.s3Service.UploadImageFromURL(ctx, req.URL)
+	if err != nil {
+		return err
+	}
+
+	span.AddEvent("image uploaded from URL", trace.WithAttributes(
+		attribute.String("image.url", imageURL),
+	))
+
+	return c.JSON(UploadImageResponse{
+		Status:   "success",
+		ImageURL: imageURL,
+		Message:  "Image uploaded successfully from URL",
 	})
 }
