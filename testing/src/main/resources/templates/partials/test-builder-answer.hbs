@@ -4,12 +4,16 @@
            placeholder="Текст ответа {{add answerIndex 1}}" 
            value="{{#if answer}}{{answer.text}}{{/if}}" 
            required>
-    <label>
-        <input type="radio" 
-               name="question[{{questionIndex}}][correct]" 
-               value="{{answerIndex}}"
-               {{#if answer}}{{#if answer.isCorrect}}checked{{/if}}{{/if}} 
+    
+    <div class="answer-points-group">
+        <label>Баллы:</label>
+        <input type="number" 
+               class="answer-points-input"
+               name="question[{{questionIndex}}][answers][{{answerIndex}}][points]" 
+               value="{{#if answer}}{{answer.score}}{{else}}0{{/if}}"
+               min="0"
                required>
-        Правильный ответ
-    </label>
+    </div>
+    
+    <button type="button" class="remove-answer-btn" onclick="removeAnswer({{questionIndex}}, {{answerIndex}})">×</button>
 </div>

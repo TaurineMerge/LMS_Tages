@@ -7,81 +7,74 @@ import com.example.lms.draft.api.dto.Draft;
 import com.example.lms.draft.domain.model.DraftModel;
 import com.example.lms.draft.domain.repository.DraftRepositoryInterface;
 
-/**
- * Сервис для работы с черновиками тестов (draft).
- * <p>
- * Отвечает за:
- * <ul>
- *   <li>конвертацию DTO ↔ Domain Model</li>
- *   <li>вызовы репозитория ({@link DraftRepositoryInterface})</li>
- *   <li>бизнес-логику CRUD-операций над черновиками</li>
- * </ul>
- *
- * Сервисный слой отделяет контроллеры от репозитория
- * и обеспечивает единое место для обработки бизнес-процессов.
- */
 public class DraftService {
-
-    /** Репозиторий черновиков (слой работы с базой данных). */
     private final DraftRepositoryInterface repository;
+    
+    /** Временный UUID для черновиков без курса. */
+    private static final UUID TEMP_COURSE_ID = 
+        UUID.fromString("11111111-1111-1111-1111-111111111111");
 
-    /**
-     * Создаёт сервис черновиков.
-     *
-     * @param repository репозиторий, выполняющий операции с БД
-     */
     public DraftService(DraftRepositoryInterface repository) {
         this.repository = repository;
     }
 
-    // ---------------------------------------------------------------------
-    // DTO -> MODEL
-    // ---------------------------------------------------------------------
-
     /**
      * Преобразует DTO в доменную модель {@link DraftModel}.
-     *
-     * @param dto объект API DTO
-     * @return доменная модель черновика
      */
     private DraftModel toModel(Draft dto) {
-        return new DraftModel(
-                dto.getId() != null ? UUID.fromString(dto.getId().toString()) : null,
-                dto.getTest_id() != null ? UUID.fromString(dto.getTest_id().toString()) : null,
+        UUID courseUuid = TEMP_COURSE_ID; // Дефолтное значение
+        
+        // Если courseId передан и валиден, используем его
+        if (dto.getCourseId() != null && !dto.getCourseId().equals(TEMP_COURSE_ID)) {
+            // У Draft DTO courseId уже UUID, не нужно конвертировать
+            courseUuid = dto.getCourseId();
+        }
+        
+        if (dto.getId() == null) {
+            // Новый черновик
+            return new DraftModel(
+                dto.getTestId(),  // МОЖЕТ БЫТЬ NULL
+                courseUuid,       // course_id (temp или реальный)
                 dto.getTitle(),
                 dto.getMin_point(),
                 dto.getDescription()
-        );
+            );
+        } else {
+            // Существующий черновик
+            return new DraftModel(
+                dto.getId(),
+                dto.getTestId(),  // МОЖЕТ БЫТЬ NULL
+                courseUuid,       // course_id (temp или реальный)
+                dto.getTitle(),
+                dto.getMin_point(),
+                dto.getDescription()
+            );
+        }
     }
-
-    // ---------------------------------------------------------------------
-    // MODEL → DTO
-    // ---------------------------------------------------------------------
 
     /**
      * Преобразует доменную модель черновика в DTO для API.
-     *
-     * @param model доменная модель
-     * @return DTO, отправляемый наружу
      */
     private Draft toDto(DraftModel model) {
-        return new Draft(
-                model.getId() != null ? model.getId().toString() : null,
-                model.getTitle(),
-                model.getMinPoint(),
-                model.getDescription(),
-                model.getTestId() != null ? model.getTestId().toString() : null
-        );
+        Draft dto = new Draft();
+        dto.setId(model.getId());
+        dto.setTitle(model.getTitle());
+        dto.setMin_point(model.getMinPoint());
+        dto.setDescription(model.getDescription());
+        dto.setTestId(model.getTestId());  // МОЖЕТ БЫТЬ NULL
+        
+        // Если courseId равен временному UUID, возвращаем null
+        if (model.getCourseId() != null && !model.getCourseId().equals(TEMP_COURSE_ID)) {
+            dto.setCourseId(model.getCourseId());
+        } else {
+            dto.setCourseId(null);
+        }
+        
+        return dto;
     }
 
-    // ---------------------------------------------------------------------
-    // PUBLIC API METHODS
-    // ---------------------------------------------------------------------
-
     /**
-     * Возвращает список всех черновиков, конвертируя их в DTO.
-     *
-     * @return список черновиков в формате DTO
+     * Возвращает список всех черновиков.
      */
     public List<Draft> getAllDrafts() {
         return repository.findAll().stream()
@@ -91,65 +84,141 @@ public class DraftService {
 
     /**
      * Создаёт новый черновик.
-     *
-     * @param dto входные данные черновика
-     * @return созданный черновик в виде DTO
      */
     public Draft createDraft(Draft dto) {
+        if (dto.getId() != null) {
+            throw new IllegalArgumentException("При создании нового черновика ID должен быть null");
+        }
+        
         DraftModel model = toModel(dto);
+        model.validate(); // Важно: вызываем валидацию
         DraftModel saved = repository.create(model);
         return toDto(saved);
     }
 
     /**
      * Получает черновик по ID.
-     * <p>
-     * Если черновик не найден — будет выброшено
-     * {@link java.util.NoSuchElementException}.
-     *
-     * @param id строковый UUID черновика
-     * @return DTO найденного черновика
      */
-    public Draft getDraftById(String id) {
-        UUID uuid = UUID.fromString(id);
-        DraftModel model = repository.findById(uuid).orElseThrow();
+    public Draft getDraftById(UUID id) {
+        if (id == null) {
+            throw new IllegalArgumentException("ID черновика не может быть null");
+        }
+        
+        DraftModel model = repository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Черновик с ID " + id + " не найден"));
         return toDto(model);
     }
 
     /**
      * Получает черновик по testId.
-     * <p>
-     * Частый сценарий: найти черновик для конкретного теста.
-     *
-     * @param testId строковый UUID теста
-     * @return DTO найденного черновика
+     * Возвращает null если черновик не найден (вместо исключения).
      */
-    public Draft getDraftByTestId(String testId) {
-        UUID uuid = UUID.fromString(testId);
-        DraftModel model = repository.findByTestId(uuid).orElseThrow();
-        return toDto(model);
+    public Draft getDraftByTestId(UUID testId) {
+        if (testId == null) {
+            return null;
+        }
+        
+        return repository.findByTestId(testId)
+            .map(this::toDto)
+            .orElse(null);
+    }
+    
+    /**
+     * Получает черновики по courseId.
+     */
+    public List<Draft> getDraftsByCourseId(UUID courseId) {
+        if (courseId == null) {
+            // Возвращаем черновики с временным courseId
+            return repository.findByCourseId(TEMP_COURSE_ID).stream()
+                    .map(this::toDto)
+                    .toList();
+        }
+        
+        return repository.findByCourseId(courseId).stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    /**
+     * Проверяет, существует ли черновик для указанного теста.
+     */
+    public boolean existsByTestId(UUID testId) {
+        if (testId == null) {
+            return false;
+        }
+        
+        return repository.findByTestId(testId).isPresent();
     }
 
     /**
      * Обновляет существующий черновик.
-     *
-     * @param dto данные черновика с актуальными полями
-     * @return DTO обновлённого черновика
      */
     public Draft updateDraft(Draft dto) {
+        if (dto.getId() == null) {
+            throw new IllegalArgumentException("ID черновика обязателен для обновления");
+        }
+        
         DraftModel model = toModel(dto);
+        model.validate();
         DraftModel updated = repository.update(model);
         return toDto(updated);
     }
 
     /**
      * Удаляет черновик по ID.
-     *
-     * @param id строковый UUID черновика
-     * @return true — если удалён; false — если не найден
      */
-    public boolean deleteDraft(String id) {
-        UUID uuid = UUID.fromString(id);
-        return repository.deleteById(uuid);
+    public boolean deleteDraft(UUID id) {
+        if (id == null) {
+            throw new IllegalArgumentException("ID черновика не может быть null");
+        }
+        
+        return repository.deleteById(id);
+    }
+
+    /**
+     * Удаляет черновик по testId.
+     */
+    public boolean deleteDraftByTestId(UUID testId) {
+        if (testId == null) {
+            return false;
+        }
+        
+        return repository.findByTestId(testId)
+            .map(draft -> repository.deleteById(draft.getId()))
+            .orElse(false);
+    }
+    
+    /**
+     * Удаляет черновики по courseId.
+     */
+    public boolean deleteDraftsByCourseId(UUID courseId) {
+        if (courseId == null) {
+            return repository.deleteByCourseId(TEMP_COURSE_ID);
+        }
+        
+        return repository.deleteByCourseId(courseId);
+    }
+    
+    // ---------------------------------------------------------------------
+    // ДОПОЛНИТЕЛЬНЫЕ МЕТОДЫ
+    // ---------------------------------------------------------------------
+    
+    /**
+     * Проверяет, является ли UUID временным courseId.
+     *
+     * @param courseId UUID для проверки
+     * @return true если это временный UUID, false если реальный курс
+     */
+    public boolean isTempCourseId(UUID courseId) {
+        return TEMP_COURSE_ID.equals(courseId);
+    }
+    
+    /**
+     * Возвращает временный UUID для черновиков без курса.
+     *
+     * @return временный UUID
+     */
+    public static UUID getTempCourseId() {
+        return TEMP_COURSE_ID;
     }
 }

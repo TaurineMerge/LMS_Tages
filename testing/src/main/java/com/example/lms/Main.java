@@ -98,7 +98,15 @@ public class Main {
 		TestAttemptController testAttemptController = new TestAttemptController(testAttemptService);
 		DraftController draftController = new DraftController(draftService);
 		ContentController contentController = new ContentController(contentService, handlebars);
-		TestFormController testWebController = new TestFormController(testService, questionService, answerService, handlebars);
+		
+		// ИСПРАВЛЕННАЯ СТРОКА: добавлен draftService в конструктор TestFormController
+		TestFormController testWebController = new TestFormController(
+			testService, 
+			questionService, 
+			answerService, 
+			draftService,  // Добавлен draftService
+			handlebars
+		);
 
 		// UI controller (ВАЖНО: добавили testAttemptService)
 		var uiTestController = new UiTestController(testService, questionService, answerService, testAttemptService);

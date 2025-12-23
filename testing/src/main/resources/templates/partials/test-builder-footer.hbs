@@ -1,7 +1,20 @@
 <div class="footer-buttons">
-    <button type="submit" form="testForm" class="btn-success">
+    <!-- Кнопка для сохранения черновика -->
+    {{#if isNew}}
+    <button type="submit" form="testForm" formaction="/testing/web/tests/draft" class="btn-secondary">
+        Сохранить черновик
+    </button>
+    {{else}}
+    <button type="submit" form="testForm" formaction="/testing/web/tests/{{test.id}}/draft" class="btn-secondary">
+        Сохранить черновик
+    </button>
+    {{/if}}
+    
+    <!-- Кнопка для сохранения/создания теста -->
+    <button type="submit" form="testForm" formaction="/testing/web/tests/save" class="btn-success">
         {{#if isNew}}Создать тест{{else}}Сохранить изменения{{/if}}
     </button>
+    
     {{#unless isNew}}
     <button type="button" class="btn-secondary" onclick="window.location.href='/testing/web/tests/{{test.id}}/preview'">
         Предпросмотр

@@ -13,6 +13,8 @@ import java.util.stream.Collectors;
 
 import com.example.lms.answer.api.dto.Answer;
 import com.example.lms.answer.domain.service.AnswerService;
+import com.example.lms.draft.api.dto.Draft;
+import com.example.lms.draft.domain.service.DraftService;
 import com.example.lms.question.api.dto.Question;
 import com.example.lms.question.domain.service.QuestionService;
 import com.example.lms.test.api.dto.Test;
@@ -33,15 +35,18 @@ public class TestFormController {
     private final TestService testService;
     private final QuestionService questionService;
     private final AnswerService answerService;
+    private final DraftService draftService;
     private final Handlebars handlebars;
     
     public TestFormController(TestService testService,
                              QuestionService questionService,
                              AnswerService answerService,
+                             DraftService draftService,
                              Handlebars handlebars) {
         this.testService = testService;
         this.questionService = questionService;
         this.answerService = answerService;
+        this.draftService = draftService;
         this.handlebars = handlebars;
     }
     
@@ -73,6 +78,7 @@ public class TestFormController {
     public void showEditTestForm(Context ctx) {
         try {
             String testId = ctx.pathParam("id");
+            UUID testUuid = UUID.fromString(testId);
             
             // Получаем тест
             Test test = testService.getTestById(testId);
@@ -81,7 +87,7 @@ public class TestFormController {
             }
             
             // Получаем вопросы для этого теста
-            List<Question> questions = questionService.getQuestionsByTestId(UUID.fromString(testId));
+            List<Question> questions = questionService.getQuestionsByTestId(testUuid);
             
             // Для каждого вопроса получаем ответы
             List<QuestionWithAnswers> questionsWithAnswers = questions.stream()
@@ -92,6 +98,21 @@ public class TestFormController {
                 .collect(Collectors.toList());
             
             Map<String, Object> model = new HashMap<>();
+
+            // Пытаемся получить черновик для этого теста (опционально)
+            boolean hasDraft = false;
+            try {
+                Draft draft = draftService.getDraftByTestId(testUuid);
+                if (draft != null) {
+                    hasDraft = true;
+                    model.put("hasDraft", true);
+                    model.put("draft", draft);
+                }
+            } catch (Exception e) {
+                // Если черновика нет - игнорируем
+                System.out.println("DEBUG: No draft found for test: " + e.getMessage());
+            }
+            
             model.put("title", "Редактирование теста: " + test.getTitle());
             model.put("test", test);
             model.put("questions", questionsWithAnswers);
@@ -99,6 +120,7 @@ public class TestFormController {
             model.put("isNew", false);
             model.put("testId", testId);
             model.put("success", ctx.queryParam("success") != null);
+            model.put("hasDraft", hasDraft);
             
             renderTemplateWithBody(ctx, "test-builder", model);
         } catch (Exception e) {
@@ -116,7 +138,7 @@ public class TestFormController {
     }
     
     /**
-     * POST /web/tests/save - Сохранение теста из формы (ОБНОВЛЕННЫЙ)
+     * POST /web/tests/save - Сохранение теста из формы
      */
     public void saveTestFromForm(Context ctx) {
         try {
@@ -138,7 +160,8 @@ public class TestFormController {
             }
             
             // 4. Сохраняем вопросы и ответы
-            saveQuestionsAndAnswers(savedTest.getId(), formData);
+            UUID testUuid = UUID.fromString(savedTest.getId());
+            saveQuestionsAndAnswers(testUuid, formData);
             
             // 5. Перенаправляем на страницу редактирования
             ctx.redirect("/web/tests/" + savedTest.getId() + "/edit?success=true");
@@ -159,11 +182,36 @@ public class TestFormController {
     }
     
     /**
-     * POST /web/tests/{id}/draft - Сохранение черновика
+     * POST /web/tests/draft - Сохранение черновика нового теста
      */
-    public void saveTestDraft(Context ctx) {
+    public void saveNewTestDraft(Context ctx) {
+        saveDraftInternal(ctx, null, true);
+    }
+
+    /**
+     * POST /web/tests/{id}/draft - Сохранение черновика существующего теста
+     */
+    public void saveExistingTestDraft(Context ctx) {
+        String testId = ctx.pathParam("id");
+        UUID testUuid = null;
+        if (testId != null && !testId.trim().isEmpty()) {
+            try {
+                testUuid = UUID.fromString(testId);
+            } catch (IllegalArgumentException e) {
+                // Невалидный UUID, сохраняем как черновик без test_id
+            }
+        }
+        saveDraftInternal(ctx, testUuid, false);
+    }
+
+    /**
+     * Внутренний метод для сохранения черновика
+     */
+    private void saveDraftInternal(Context ctx, UUID testId, boolean isNewDraft) {
         try {
-            String testId = ctx.pathParam("id");
+            System.out.println("DEBUG: saveDraftInternal called with testId = '" + testId + "', isNewDraft = " + isNewDraft);
+            
+            // Получаем данные из формы
             String title = ctx.formParam("title");
             String description = ctx.formParam("description");
             
@@ -174,48 +222,183 @@ public class TestFormController {
                 minPoint = 60;
             }
             
-            Test test = new Test(testId, null, title, minPoint, description);
-            Test savedTest;
+            System.out.println("DEBUG: title = '" + title + "', minPoint = " + minPoint);
             
-            if (testId == null || testId.isEmpty() || "new".equals(testId)) {
-                savedTest = testService.createTest(test);
-            } else {
-                savedTest = testService.updateTest(test);
+            // Парсим вопросы из формы
+            TestFormData formData = parseTestFormData(ctx);
+            System.out.println("DEBUG: Parsed form data, questions count: " + 
+                              (formData.getQuestions() != null ? formData.getQuestions().size() : 0));
+            
+            // 1. Сохраняем черновик в таблицу draft_b
+            Draft draft = new Draft();
+            draft.setTitle(title);
+            draft.setMin_point(minPoint);
+            draft.setDescription(description);
+            draft.setTestId(testId); // ← UUID или null
+            
+            // Проверяем, существует ли уже черновик для этого testId
+            Draft existingDraft = null;
+            if (testId != null) {
+                try {
+                    existingDraft = draftService.getDraftByTestId(testId);
+                    System.out.println("DEBUG: Existing draft found for testId " + testId + ": " + (existingDraft != null));
+                } catch (Exception e) {
+                    System.out.println("DEBUG: No existing draft found for testId " + testId);
+                }
             }
             
-            // Также сохраняем вопросы и ответы для черновика
-            TestFormData formData = parseTestFormData(ctx);
-            saveQuestionsAndAnswers(savedTest.getId(), formData);
+            Draft savedDraft;
+            if (existingDraft != null) {
+                // Обновляем существующий черновик
+                draft.setId(existingDraft.getId());
+                savedDraft = draftService.updateDraft(draft);
+                System.out.println("DEBUG: Draft updated, id = " + savedDraft.getId());
+                
+                // Удаляем старые вопросы этого черновика
+                deleteDraftQuestions(savedDraft.getId());
+            } else {
+                // Создаем новый черновик
+                savedDraft = draftService.createDraft(draft);
+                System.out.println("DEBUG: Draft created with id = " + savedDraft.getId());
+            }
             
-            // Перезагружаем данные для отображения
-            List<Question> questions = questionService.getQuestionsByTestId(UUID.fromString(savedTest.getId()));
-            List<QuestionWithAnswers> questionsWithAnswers = questions.stream()
-                .map(q -> {
-                    List<Answer> answers = answerService.getAnswersByQuestionId(q.getId());
-                    return new QuestionWithAnswers(q, answers);
-                })
-                .collect(Collectors.toList());
+            // 2. ВАЖНО: Сохраняем вопросы и ответы в таблицу question_d с draft_id
+            if (formData.getQuestions() != null && !formData.getQuestions().isEmpty()) {
+                System.out.println("DEBUG: Saving questions to question_d with draft_id = " + savedDraft.getId());
+                
+                // СОХРАНЯЕМ ВОПРОСЫ С DRAFT_ID
+                for (int i = 0; i < formData.getQuestions().size(); i++) {
+                    TestFormData.QuestionFormData questionData = formData.getQuestions().get(i);
+                    
+                    if (questionData.getTextOfQuestion() != null && 
+                        !questionData.getTextOfQuestion().trim().isEmpty()) {
+                        
+                        // Создаем вопрос ДЛЯ ЧЕРНОВИКА
+                        Question question = new Question();
+                        question.setDraftId(savedDraft.getId()); // ← UUID!
+                        
+                        // Если редактируем существующий тест, можно установить связь
+                        if (testId != null) {
+                            question.setTestId(testId);
+                        }
+                        
+                        question.setTextOfQuestion(questionData.getTextOfQuestion());
+                        question.setOrder(questionData.getOrder() != null ? questionData.getOrder() : i);
+                        
+                        Question savedQuestion = questionService.createQuestion(question);
+                        
+                        // Сохраняем ответы
+                        if (questionData.getAnswers() != null) {
+                            for (TestFormData.AnswerFormData answerData : questionData.getAnswers()) {
+                                if (answerData.getText() != null && !answerData.getText().trim().isEmpty()) {
+                                    Answer answer = new Answer();
+                                    answer.setQuestionId(savedQuestion.getId());
+                                    answer.setText(answerData.getText());
+                                    
+                                    Integer score = answerData.getScore() != null ? answerData.getScore() : 0;
+                                    answer.setScore(score);
+                                    
+                                    answerService.createAnswer(answer);
+                                }
+                            }
+                        }
+                    }
+                }
+                System.out.println("DEBUG: Questions saved as draft");
+            }
             
+            // 3. Подготавливаем данные для отображения
             Map<String, Object> model = new HashMap<>();
+            
+            // Создаем временный объект теста для отображения
+            Test testForDisplay = new Test(null, null, title, minPoint, description);
+            
+            String displayTestId;
+            boolean isNewForDisplay;
+            
+            if (savedDraft.getTestId() != null) {
+                displayTestId = savedDraft.getTestId().toString();
+                isNewForDisplay = false;
+            } else {
+                displayTestId = "draft-" + savedDraft.getId();
+                isNewForDisplay = true;
+            }
+            
+            // Загружаем вопросы черновика для отображения
+            List<QuestionWithAnswers> questionsWithAnswers = new ArrayList<>();
+            try {
+                List<Question> questions = questionService.getQuestionsByDraftId(savedDraft.getId());
+                for (Question question : questions) {
+                    List<Answer> answers = answerService.getAnswersByQuestionId(question.getId());
+                    questionsWithAnswers.add(new QuestionWithAnswers(question, answers));
+                }
+            } catch (Exception e) {
+                System.out.println("DEBUG: Error loading draft questions: " + e.getMessage());
+            }
+            
+            // Настраиваем модель
             model.put("title", "Черновик сохранен");
-            model.put("success", "Черновик успешно сохранен!");
-            model.put("test", savedTest);
+            model.put("success", "Черновик успешно сохранен! (ID черновика: " + savedDraft.getId() + ")");
+            model.put("test", testForDisplay);
             model.put("questions", questionsWithAnswers);
             model.put("page", "test-builder");
-            model.put("isNew", testId == null || testId.isEmpty() || "new".equals(testId));
+            model.put("isNew", isNewForDisplay);
+            model.put("testId", displayTestId);
             
+            System.out.println("DEBUG: Rendering template with " + questionsWithAnswers.size() + " questions");
             renderTemplateWithBody(ctx, "test-builder", model);
             
         } catch (Exception e) {
+            System.out.println("ERROR in saveDraftInternal: " + e.getMessage());
+            e.printStackTrace();
+            
             Map<String, Object> model = new HashMap<>();
             model.put("title", "Ошибка сохранения черновика");
             model.put("error", "Ошибка при сохранении черновика: " + e.getMessage());
-            model.put("test", getTestFromForm(ctx));
-            model.put("questions", getQuestionsFromForm(ctx));
+            
+            try {
+                Test testFromForm = getTestFromForm(ctx);
+                model.put("test", testFromForm);
+                model.put("questions", getQuestionsFromForm(ctx));
+            } catch (Exception ex) {
+                model.put("test", new Test(null, null, "", 60, ""));
+                model.put("questions", new ArrayList<>());
+            }
+            
             model.put("page", "test-builder");
             model.put("isNew", true);
             
             renderTemplateWithBody(ctx, "test-builder", model);
+        }
+    }
+
+    /**
+     * Удаляет вопросы черновика по draft_id
+     */
+    private void deleteDraftQuestions(UUID draftId) {
+        try {
+            List<Question> draftQuestions = questionService.getQuestionsByDraftId(draftId);
+            for (Question question : draftQuestions) {
+                try {
+                    // Удаляем ответы
+                    List<Answer> answers = answerService.getAnswersByQuestionId(question.getId());
+                    for (Answer answer : answers) {
+                        answerService.deleteAnswer(answer.getId());
+                    }
+                } catch (Exception e) {
+                    System.out.println("DEBUG: Error deleting answers: " + e.getMessage());
+                }
+                
+                try {
+                    // Удаляем вопрос
+                    questionService.deleteQuestion(question.getId());
+                } catch (Exception e) {
+                    System.out.println("DEBUG: Error deleting question: " + e.getMessage());
+                }
+            }
+            System.out.println("DEBUG: Deleted " + draftQuestions.size() + " draft questions");
+        } catch (Exception e) {
+            System.out.println("DEBUG: Error deleting draft questions: " + e.getMessage());
         }
     }
     
@@ -309,15 +492,15 @@ public class TestFormController {
         TestFormData formData = new TestFormData();
         Map<String, List<String>> formParams = ctx.formParamMap();
         
-        // 2. Собираем вопросы
+        // Собираем вопросы
         Map<Integer, TestFormData.QuestionFormData> questionsMap = new TreeMap<>();
         
         // Регулярные выражения для парсинга имен полей
         Pattern questionPattern = Pattern.compile("question\\[(\\d+)\\]\\[text\\]");
-        Pattern answerPattern = Pattern.compile("question\\[(\\d+)\\]\\[answers\\]\\[(\\d+)\\]\\[text\\]");
-        Pattern correctAnswerPattern = Pattern.compile("question\\[(\\d+)\\]\\[correct\\]");
+        Pattern answerTextPattern = Pattern.compile("question\\[(\\d+)\\]\\[answers\\]\\[(\\d+)\\]\\[text\\]");
+        Pattern answerPointsPattern = Pattern.compile("question\\[(\\d+)\\]\\[answers\\]\\[(\\d+)\\]\\[points\\]");
         
-        // Сначала собираем тексты вопросов
+        // 1. Собираем тексты вопросов
         for (Map.Entry<String, List<String>> entry : formParams.entrySet()) {
             String paramName = entry.getKey();
             Matcher questionMatcher = questionPattern.matcher(paramName);
@@ -338,10 +521,10 @@ public class TestFormController {
             }
         }
         
-        // Затем собираем ответы для каждого вопроса
+        // 2. Собираем тексты ответов
         for (Map.Entry<String, List<String>> entry : formParams.entrySet()) {
             String paramName = entry.getKey();
-            Matcher answerMatcher = answerPattern.matcher(paramName);
+            Matcher answerMatcher = answerTextPattern.matcher(paramName);
             
             if (answerMatcher.matches()) {
                 int questionIndex = Integer.parseInt(answerMatcher.group(1));
@@ -364,42 +547,39 @@ public class TestFormController {
                         
                         TestFormData.AnswerFormData answer = answers.get(answerIndex);
                         answer.setText(answerText);
-                        // УБРАНО: answer.setOrder(answerIndex);
-                        answer.setScore(0); // По умолчанию 0 баллов
+                        answer.setScore(0); // Значение по умолчанию
                     }
                 }
             }
         }
         
-        // Собираем правильные ответы
+        // 3. Собираем баллы для ответов
         for (Map.Entry<String, List<String>> entry : formParams.entrySet()) {
             String paramName = entry.getKey();
-            Matcher correctMatcher = correctAnswerPattern.matcher(paramName);
+            Matcher pointsMatcher = answerPointsPattern.matcher(paramName);
             
-            if (correctMatcher.matches()) {
-                int questionIndex = Integer.parseInt(correctMatcher.group(1));
-                String correctAnswerValue = entry.getValue().get(0);
+            if (pointsMatcher.matches()) {
+                int questionIndex = Integer.parseInt(pointsMatcher.group(1));
+                int answerIndex = Integer.parseInt(pointsMatcher.group(2));
+                String pointsValue = entry.getValue().get(0);
                 
-                if (correctAnswerValue != null && !correctAnswerValue.isEmpty()) {
-                    try {
-                        int correctAnswerIndex = Integer.parseInt(correctAnswerValue);
-                        TestFormData.QuestionFormData question = questionsMap.get(questionIndex);
-                        if (question != null && question.getAnswers() != null) {
-                            if (question.getAnswers().size() > correctAnswerIndex) {
-                                TestFormData.AnswerFormData answer = question.getAnswers().get(correctAnswerIndex);
-                                answer.setIsCorrect(true);
-                                // Правильный ответ получает 1 балл
-                                answer.setScore(1);
-                            }
+                TestFormData.QuestionFormData question = questionsMap.get(questionIndex);
+                if (question != null && question.getAnswers() != null) {
+                    if (question.getAnswers().size() > answerIndex) {
+                        TestFormData.AnswerFormData answer = question.getAnswers().get(answerIndex);
+                        
+                        try {
+                            Integer score = Integer.parseInt(pointsValue);
+                            answer.setScore(score);
+                        } catch (NumberFormatException e) {
+                            answer.setScore(0);
                         }
-                    } catch (NumberFormatException e) {
-                        // Игнорируем некорректное значение
                     }
                 }
             }
         }
         
-        // 3. Преобразуем TreeMap в List (сохраняя порядок)
+        // 4. Преобразуем TreeMap в List
         List<TestFormData.QuestionFormData> questions = new ArrayList<>(questionsMap.values());
         formData.setQuestions(questions);
         
@@ -409,15 +589,15 @@ public class TestFormController {
     /**
      * Сохраняет вопросы и ответы в базу данных
      */
-    private void saveQuestionsAndAnswers(String testId, TestFormData formData) {
-        // Удаляем старые вопросы (если редактируем существующий тест)
+    private void saveQuestionsAndAnswers(UUID testId, TestFormData formData) {
+        // Удаляем старые вопросы
         try {
-            List<Question> existingQuestions = questionService.getQuestionsByTestId(UUID.fromString(testId));
+            List<Question> existingQuestions = questionService.getQuestionsByTestId(testId);
             for (Question question : existingQuestions) {
                 questionService.deleteQuestion(question.getId());
             }
         } catch (Exception e) {
-            // Игнорируем ошибки при удалении (если вопросов еще нет)
+            // Игнорируем ошибки при удалении
         }
         
         // Сохраняем новые вопросы
@@ -427,13 +607,13 @@ public class TestFormController {
                 
                 // Создаем вопрос
                 Question question = new Question();
-                question.setTestId(UUID.fromString(testId));
+                question.setTestId(testId);
                 question.setTextOfQuestion(questionData.getTextOfQuestion());
-                question.setOrder(questionData.getOrder()); // Сохраняем order для вопроса
+                question.setOrder(questionData.getOrder());
                 
                 Question savedQuestion = questionService.createQuestion(question);
                 
-                // Сохраняем ответы для этого вопроса
+                // Сохраняем ответы
                 if (questionData.getAnswers() != null) {
                     for (TestFormData.AnswerFormData answerData : questionData.getAnswers()) {
                         if (answerData.getText() != null && !answerData.getText().trim().isEmpty()) {
@@ -441,11 +621,8 @@ public class TestFormController {
                             answer.setQuestionId(savedQuestion.getId());
                             answer.setText(answerData.getText());
                             
-                            // Устанавливаем баллы
                             Integer score = answerData.getScore() != null ? answerData.getScore() : 0;
                             answer.setScore(score);
-                            
-                            // УБРАНО: answer.setOrder(answerData.getOrder());
                             
                             answerService.createAnswer(answer);
                         }
@@ -466,7 +643,7 @@ public class TestFormController {
             for (TestFormData.QuestionFormData questionData : formData.getQuestions()) {
                 Question question = new Question();
                 question.setTextOfQuestion(questionData.getTextOfQuestion());
-                question.setOrder(questionData.getOrder()); // Сохраняем order для вопроса
+                question.setOrder(questionData.getOrder());
                 
                 List<Answer> answers = new ArrayList<>();
                 if (questionData.getAnswers() != null) {
@@ -474,7 +651,6 @@ public class TestFormController {
                         Answer answer = new Answer();
                         answer.setText(answerData.getText());
                         answer.setScore(answerData.getScore() != null ? answerData.getScore() : 0);
-                        // УБРАНО: answer.setOrder(answerData.getOrder());
                         answers.add(answer);
                     }
                 }

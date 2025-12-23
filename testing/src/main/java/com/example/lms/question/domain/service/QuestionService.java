@@ -9,44 +9,35 @@ import com.example.lms.question.domain.model.QuestionModel;
 import com.example.lms.question.domain.repository.QuestionRepositoryInterface;
 
 /**
- * Сервисный слой для работы с вопросами.
- * Выполняет преобразование между DTO и доменной моделью,
- * а также содержит бизнес-логику, связанную с вопросами тестов.
+ * Сервисный слой для работы с вопросами тестов и черновиков.
  */
 public class QuestionService {
 
 	private final QuestionRepositoryInterface repository;
 
-	/**
-	 * Конструктор сервиса.
-	 *
-	 * @param repository репозиторий для работы с вопросами
-	 */
 	public QuestionService(QuestionRepositoryInterface repository) {
 		this.repository = repository;
 	}
 
 	/**
-	 * Преобразует DTO в доменную модель.
-	 * <p>
-	 * Если {@code id == null}, считается, что это создание нового вопроса.
-	 * Если поле {@code order} не задано, оно может быть рассчитано как
-	 * следующий порядковый номер для теста.
-	 *
-	 * @param dto объект DTO
-	 * @return доменная модель QuestionModel
+	 * Преобразует DTO в доменную модель с поддержкой draftId.
 	 */
 	private QuestionModel toModel(Question dto) {
 		int order = dto.getOrder() != null ? dto.getOrder() : 0;
 
 		if (dto.getId() == null) {
-			// Новый вопрос: если order не указан, вычисляем следующий
-			if (dto.getOrder() == null && dto.getTestId() != null) {
-				order = repository.getNextOrderForTest(dto.getTestId());
+			// Новый вопрос: вычисляем следующий порядковый номер
+			if (dto.getOrder() == null) {
+				if (dto.getTestId() != null) {
+					order = repository.getNextOrderForTest(dto.getTestId());
+				} else if (dto.getDraftId() != null) {
+					order = repository.getNextOrderForDraft(dto.getDraftId());
+				}
 			}
 
 			return new QuestionModel(
 					dto.getTestId(),
+					dto.getDraftId(),
 					dto.getTextOfQuestion(),
 					order);
 		} else {
@@ -54,29 +45,27 @@ public class QuestionService {
 			return new QuestionModel(
 					dto.getId(),
 					dto.getTestId(),
+					dto.getDraftId(),
 					dto.getTextOfQuestion(),
 					order);
 		}
 	}
 
 	/**
-	 * Преобразует доменную модель в DTO.
-	 *
-	 * @param model доменная модель QuestionModel
-	 * @return объект DTO Question
+	 * Преобразует доменную модель в DTO с поддержкой draftId.
 	 */
 	private Question toDTO(QuestionModel model) {
-		return new Question(
-				model.getId(),
-				model.getTestId(),
-				model.getTextOfQuestion(),
-				model.getOrder());
+		Question question = new Question();
+		question.setId(model.getId());
+		question.setTestId(model.getTestId());
+		question.setDraftId(model.getDraftId());
+		question.setTextOfQuestion(model.getTextOfQuestion());
+		question.setOrder(model.getOrder());
+		return question;
 	}
 
 	/**
 	 * Получает все вопросы.
-	 *
-	 * @return список всех вопросов в формате DTO
 	 */
 	public List<Question> getAllQuestions() {
 		return repository.findAll().stream()
@@ -86,10 +75,6 @@ public class QuestionService {
 
 	/**
 	 * Получает вопрос по его идентификатору.
-	 *
-	 * @param id идентификатор вопроса
-	 * @return объект Question
-	 * @throws RuntimeException если вопрос не найден
 	 */
 	public Question getQuestionById(UUID id) {
 		QuestionModel model = repository.findById(id)
@@ -99,9 +84,6 @@ public class QuestionService {
 
 	/**
 	 * Получает вопрос по его идентификатору с возможностью отсутствия.
-	 *
-	 * @param id идентификатор вопроса
-	 * @return Optional с Question, если вопрос найден
 	 */
 	public java.util.Optional<Question> findQuestionById(UUID id) {
 		return repository.findById(id)
@@ -110,9 +92,6 @@ public class QuestionService {
 
 	/**
 	 * Получает все вопросы для указанного теста.
-	 *
-	 * @param testId идентификатор теста
-	 * @return список вопросов указанного теста
 	 */
 	public List<Question> getQuestionsByTestId(UUID testId) {
 		return repository.findByTestId(testId).stream()
@@ -121,16 +100,24 @@ public class QuestionService {
 	}
 
 	/**
-	 * Создает новый вопрос.
-	 *
-	 * @param question объект Question с данными вопроса
-	 * @return созданный вопрос
-	 * @throws IllegalArgumentException если данные невалидны
+	 * Получает все вопросы для указанного черновика.
+	 */
+	public List<Question> getQuestionsByDraftId(UUID draftId) {
+		return repository.findByDraftId(draftId).stream()
+				.map(this::toDTO)
+				.collect(Collectors.toList());
+	}
+
+	/**
+	 * Создает новый вопрос (для теста или черновика).
 	 */
 	public Question createQuestion(Question question) {
 		// Проверяем обязательные поля
-		if (question.getTestId() == null) {
-			throw new IllegalArgumentException("Идентификатор теста обязателен");
+		if (question.getTestId() == null && question.getDraftId() == null) {
+			throw new IllegalArgumentException("Вопрос должен принадлежать либо тесту, либо черновику");
+		}
+		if (question.getTestId() != null && question.getDraftId() != null) {
+			throw new IllegalArgumentException("Вопрос не может принадлежать одновременно и тесту, и черновику");
 		}
 		if (question.getTextOfQuestion() == null || question.getTextOfQuestion().trim().isEmpty()) {
 			throw new IllegalArgumentException("Текст вопроса обязателен");
@@ -144,19 +131,17 @@ public class QuestionService {
 
 	/**
 	 * Обновляет существующий вопрос.
-	 *
-	 * @param question объект Question с обновлёнными данными
-	 * @return обновлённый вопрос
-	 * @throws IllegalArgumentException если данные невалидны
-	 * @throws RuntimeException         если вопрос не найден
 	 */
 	public Question updateQuestion(Question question) {
 		if (question.getId() == null) {
 			throw new IllegalArgumentException("Идентификатор вопроса обязателен для обновления");
 		}
 
-		if (question.getTestId() == null) {
-			throw new IllegalArgumentException("Идентификатор теста обязателен");
+		if (question.getTestId() == null && question.getDraftId() == null) {
+			throw new IllegalArgumentException("Вопрос должен принадлежать либо тесту, либо черновику");
+		}
+		if (question.getTestId() != null && question.getDraftId() != null) {
+			throw new IllegalArgumentException("Вопрос не может принадлежать одновременно и тесту, и черновику");
 		}
 		if (question.getTextOfQuestion() == null || question.getTextOfQuestion().trim().isEmpty()) {
 			throw new IllegalArgumentException("Текст вопроса обязателен");
@@ -170,29 +155,34 @@ public class QuestionService {
 
 	/**
 	 * Удаляет вопрос по его идентификатору.
-	 *
-	 * @param id идентификатор вопроса
-	 * @return true если вопрос был удалён, false если не найден
 	 */
 	public boolean deleteQuestion(UUID id) {
 		return repository.deleteById(id);
 	}
 
 	/**
+	 * Удаляет все вопросы черновика.
+	 */
+	public boolean deleteQuestionsByDraftId(UUID draftId) {
+		return repository.deleteByDraftId(draftId);
+	}
+
+	/**
 	 * Подсчитывает количество вопросов в тесте.
-	 *
-	 * @param testId идентификатор теста
-	 * @return количество вопросов
 	 */
 	public int countByTestId(UUID testId) {
 		return repository.countByTestId(testId);
 	}
 
 	/**
+	 * Подсчитывает количество вопросов в черновике.
+	 */
+	public int countByDraftId(UUID draftId) {
+		return repository.countByDraftId(draftId);
+	}
+
+	/**
 	 * Ищет вопросы по подстроке в тексте.
-	 *
-	 * @param text часть текста вопроса (поиск регистронезависимый в репозитории)
-	 * @return список подходящих вопросов
 	 */
 	public List<Question> searchByText(String text) {
 		return repository.findByTextContaining(text).stream()
@@ -201,17 +191,30 @@ public class QuestionService {
 	}
 
 	/**
-	 * Сдвигает порядок вопросов в тесте, начиная с указанного.
-	 * <p>
-	 * Может использоваться при вставке нового вопроса в середину
-	 * или при удалении вопроса с нужным перераспределением порядков.
-	 *
-	 * @param testId    идентификатор теста
-	 * @param fromOrder начиная с какого порядка выполнять сдвиг
-	 * @param shiftBy   на сколько изменить порядок (может быть отрицательным)
-	 * @return количество обновлённых вопросов
+	 * Сдвигает порядок вопросов в тесте.
 	 */
 	public int shiftQuestionsOrder(UUID testId, int fromOrder, int shiftBy) {
 		return repository.shiftQuestionsOrder(testId, fromOrder, shiftBy);
+	}
+
+	/**
+	 * Сдвигает порядок вопросов в черновике.
+	 */
+	public int shiftDraftQuestionsOrder(UUID draftId, int fromOrder, int shiftBy) {
+		return repository.shiftDraftQuestionsOrder(draftId, fromOrder, shiftBy);
+	}
+
+	/**
+	 * Получает следующий порядковый номер для вопроса в тесте.
+	 */
+	public int getNextOrderForTest(UUID testId) {
+		return repository.getNextOrderForTest(testId);
+	}
+
+	/**
+	 * Получает следующий порядковый номер для вопроса в черновике.
+	 */
+	public int getNextOrderForDraft(UUID draftId) {
+		return repository.getNextOrderForDraft(draftId);
 	}
 }

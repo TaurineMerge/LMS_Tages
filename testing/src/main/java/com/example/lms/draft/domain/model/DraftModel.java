@@ -13,10 +13,12 @@ import java.util.UUID;
  *  - title       VARCHAR — название (может быть null на уровне БД, но в домене считаем обязательным)
  *  - min_point   INT     — минимальный балл для прохождения (может быть null)
  *  - description TEXT     — описание (может быть null)
- *  - test_id     UUID    (FK/ссылка на test_d, not null)
+ *  - test_id     UUID    (FK/ссылка на test_d, МОЖЕТ БЫТЬ NULL)
+ *  - course_id   UUID    (может быть NULL)
  *
  * Доменные правила:
- *  - testId обязателен
+ *  - testId МОЖЕТ быть null (черновик без привязки к тесту)
+ *  - courseId МОЖЕТ быть null (черновик без привязки к курсу)
  *  - title обязателен и не пустой
  *  - minPoint >= 0, если указан
  *  - description может быть null
@@ -26,8 +28,11 @@ public class DraftModel {
     /** Уникальный ID черновика (PK). */
     private UUID id;
 
-    /** ID теста, к которому относится черновик (обязателен). */
+    /** ID теста, к которому относится черновик (МОЖЕТ БЫТЬ NULL). */
     private UUID testId;
+
+    /** ID курса, к которому относится черновик (МОЖЕТ БЫТЬ NULL). */
+    private UUID courseId;
 
     /** Название черновика. */
     private String title;
@@ -41,30 +46,35 @@ public class DraftModel {
     // ---------------------- КОНСТРУКТОРЫ ----------------------
 
     /**
-     * Конструктор для создания нового черновика.
+     * Конструктор для создания нового черновика (с testId или без).
      */
-    public DraftModel(UUID testId, String title, Integer minPoint, String description) {
-        this.testId = Objects.requireNonNull(testId, "Test ID cannot be null");
+    public DraftModel(UUID testId, UUID courseId, String title, Integer minPoint, String description) {
+        this.testId = testId; // МОЖЕТ БЫТЬ NULL
+        this.courseId = courseId; // МОЖЕТ БЫТЬ NULL
         this.title = Objects.requireNonNull(title, "Title cannot be null");
         this.minPoint = minPoint;       // допускаем null
         this.description = description; // допускаем null
+        validate();
     }
 
     /**
      * Конструктор для загрузки черновика из базы данных.
      */
-    public DraftModel(UUID id, UUID testId, String title, Integer minPoint, String description) {
+    public DraftModel(UUID id, UUID testId, UUID courseId, String title, Integer minPoint, String description) {
         this.id = id;
-        this.testId = testId;
+        this.testId = testId; // МОЖЕТ БЫТЬ NULL
+        this.courseId = courseId; // МОЖЕТ БЫТЬ NULL
         this.title = title;
         this.minPoint = minPoint;
         this.description = description;
+        validate();
     }
 
     // ---------------------- GETTERS ----------------------
 
     public UUID getId() { return id; }
     public UUID getTestId() { return testId; }
+    public UUID getCourseId() { return courseId; } // ← ДОБАВИЛ
     public String getTitle() { return title; }
     public Integer getMinPoint() { return minPoint; }
     public String getDescription() { return description; }
@@ -76,7 +86,11 @@ public class DraftModel {
     }
 
     public void setTestId(UUID testId) {
-        this.testId = Objects.requireNonNull(testId, "Test ID cannot be null");
+        this.testId = testId; // МОЖЕТ БЫТЬ NULL
+    }
+    
+    public void setCourseId(UUID courseId) {
+        this.courseId = courseId; // МОЖЕТ БЫТЬ NULL
     }
 
     public void setTitle(String title) {
@@ -111,15 +125,35 @@ public class DraftModel {
      * Проверка валидности черновика перед сохранением.
      */
     public void validate() {
-        if (testId == null) {
-            throw new IllegalArgumentException("Test ID cannot be null");
-        }
+        // testId МОЖЕТ БЫТЬ NULL - черновик может существовать без теста
+        // courseId МОЖЕТ БЫТЬ NULL - черновик может существовать без курса
         if (title == null || title.trim().isEmpty()) {
             throw new IllegalArgumentException("Title cannot be empty");
         }
         if (minPoint != null && minPoint < 0) {
             throw new IllegalArgumentException("Minimum points cannot be negative");
         }
+    }
+
+    /**
+     * Проверяет, привязан ли черновик к тесту.
+     */
+    public boolean hasTest() {
+        return testId != null;
+    }
+    
+    /**
+     * Проверяет, привязан ли черновик к курсу.
+     */
+    public boolean hasCourse() {
+        return courseId != null;
+    }
+
+    /**
+     * Проверяет, является ли черновик новым (без привязки к тесту).
+     */
+    public boolean isNewDraft() {
+        return testId == null;
     }
 
     // ---------------------- UTILS ----------------------
@@ -146,6 +180,7 @@ public class DraftModel {
                 "id=" + id +
                 ", title='" + title + '\'' +
                 ", testId=" + testId +
+                ", courseId=" + courseId +
                 ", minPoint=" + minPoint +
                 '}';
     }

@@ -46,13 +46,18 @@ public class TestWebRouter {
                 // Сохранение теста
                 post("/save", controller::saveTestFromForm);
                 
+                // Сохранение черновика нового теста (без ID)
+                // ИСПРАВЛЕНИЕ: Используем saveNewTestDraft вместо saveTestDraft
+                post("/draft", controller::saveNewTestDraft);
+                
                 // Операции с конкретным тестом
                 path("/{id}", () -> {
                     // Редактирование теста
                     get("/edit", controller::showEditTestForm);
                     
-                    // Сохранение черновика
-                    post("/draft", controller::saveTestDraft);
+                    // Сохранение черновика существующего теста
+                    // ИСПРАВЛЕНИЕ: Используем saveExistingTestDraft вместо saveTestDraft
+                    post("/draft", controller::saveExistingTestDraft);
                     
                     // Предпросмотр теста
                     get("/preview", controller::previewTest);

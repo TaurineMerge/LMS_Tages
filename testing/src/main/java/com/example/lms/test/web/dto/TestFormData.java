@@ -98,7 +98,7 @@ public class TestFormData {
         private UUID id;
         private String text;
         private Integer score;
-        private Boolean isCorrect;
+
         // УБИРАЕМ поле order из AnswerFormData
         // private Integer order;
         
@@ -127,13 +127,7 @@ public class TestFormData {
             this.score = score;
         }
         
-        public Boolean getIsCorrect() {
-            return isCorrect;
-        }
         
-        public void setIsCorrect(Boolean isCorrect) {
-            this.isCorrect = isCorrect;
-        }
         
         // УБИРАЕМ методы getOrder и setOrder
         // public Integer getOrder() {

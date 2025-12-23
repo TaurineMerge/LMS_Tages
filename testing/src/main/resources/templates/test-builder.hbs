@@ -138,6 +138,113 @@
             cursor: pointer;
             margin-top: 10px;
         }
+        .question-points-info {
+            margin: 15px 0;
+            padding: 12px;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .points-display {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .points-display span {
+            color: #495057;
+        }
+
+        .points-display .total-answers-points {
+            color: #28a745;
+            font-size: 16px;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .points-hint {
+            font-size: 12px;
+            color: #6c757d;
+            font-style: italic;
+        }
+        /* Добавить после существующих стилей */
+
+        .answer-points-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: 10px;
+        }
+
+        .answer-points-group label {
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .answer-points-group input {
+            width: 70px;
+            padding: 5px 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+        }
+
+        .remove-answer-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        .remove-answer-btn:hover {
+            background: #ff5252;
+        }
+
+        .question-controls {
+            display: flex;
+            gap: 5px;
+            float: right;
+        }
+
+        .btn-move-up, .btn-move-down {
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .btn-move-up:hover, .btn-move-down:hover {
+            background: #5a6268;
+        }
+
+        .total-test-points-display {
+            margin: 15px 0;
+            padding: 12px;
+            background-color: #e7f3ff;
+            border: 2px solid #007bff;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .total-test-points-display span {
+            color: #0056b3;
+        }
+
+        #total-test-points {
+            color: #28a745;
+            font-size: 20px;
+        }
         #add-question-btn {
             background: #007bff;
         }

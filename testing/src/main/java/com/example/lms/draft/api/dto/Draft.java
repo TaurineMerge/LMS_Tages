@@ -1,6 +1,7 @@
 package com.example.lms.draft.api.dto;
 
 import java.io.Serializable;
+import java.util.UUID;
 
 /**
  * DTO для представления черновика теста (draft).
@@ -12,7 +13,8 @@ import java.io.Serializable;
  * <li><b>title</b> — название черновика (обычно название теста)</li>
  * <li><b>min_point</b> — минимальный проходной балл</li>
  * <li><b>description</b> — описание</li>
- * <li><b>test_id</b> — идентификатор теста, к которому относится черновик</li>
+ * <li><b>testId</b> — идентификатор теста, к которому относится черновик (может быть null)</li>
+ * <li><b>courseId</b> — идентификатор курса, к которому относится черновик (может быть null)</li>
  * </ul>
  *
  * Реализует {@link Serializable}, что позволяет передавать объект
@@ -22,30 +24,12 @@ public class Draft implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    /**
-     * Идентификатор черновика.
-     */
-    private String id;
-
-    /**
-     * Название черновика.
-     */
+    private UUID id;
     private String title;
-
-    /**
-     * Минимальный балл, необходимый для прохождения теста.
-     */
     private Integer min_point;
-
-    /**
-     * Текстовое описание черновика.
-     */
     private String description;
-
-    /**
-     * Идентификатор теста, к которому привязан черновик.
-     */
-    private String test_id;
+    private UUID testId;    // может быть null
+    private UUID courseId;  // может быть null
 
     /**
      * Пустой конструктор для сериализации/десериализации.
@@ -55,70 +39,34 @@ public class Draft implements Serializable {
 
     /**
      * Основной конструктор.
-     *
-     * @param id          идентификатор черновика
-     * @param title       название
-     * @param min_point   минимальный проходной балл
-     * @param description описание
-     * @param test_id     идентификатор теста
      */
-    public Draft(String id, String title, Integer min_point, String description, String test_id) {
+    public Draft(UUID id, String title, Integer min_point, String description, UUID testId, UUID courseId) {
         this.id = id;
         this.title = title;
         this.min_point = min_point;
         this.description = description;
-        this.test_id = test_id;
+        this.testId = testId;
+        this.courseId = courseId;
     }
 
-    /** @return идентификатор черновика */
-    public String getId() {
-        return id;
-    }
-
-    /** @param id новый идентификатор черновика */
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    /** @return название черновика */
-    public String getTitle() {
-        return title;
-    }
-
-    /** @param title новое название черновика */
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    /** @return минимальный проходной балл */
-    public Integer getMin_point() {
-        return min_point;
-    }
-
-    /** @param min_point новый минимальный проходной балл */
-    public void setMin_point(Integer min_point) {
-        this.min_point = min_point;
-    }
-
-    /** @return описание черновика */
-    public String getDescription() {
-        return description;
-    }
-
-    /** @param description новое описание черновика */
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    /** @return идентификатор теста */
-    public String getTest_id() {
-        return test_id;
-    }
-
-    /** @param test_id новый идентификатор теста */
-    public void setTest_id(String test_id) {
-        this.test_id = test_id;
-    }
+    // Геттеры и сеттеры
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+    
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
+    
+    public Integer getMin_point() { return min_point; }
+    public void setMin_point(Integer min_point) { this.min_point = min_point; }
+    
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+    
+    public UUID getTestId() { return testId; }
+    public void setTestId(UUID testId) { this.testId = testId; }
+    
+    public UUID getCourseId() { return courseId; }
+    public void setCourseId(UUID courseId) { this.courseId = courseId; }
 
     @Override
     public String toString() {
@@ -127,7 +75,8 @@ public class Draft implements Serializable {
                 ", title='" + title + '\'' +
                 ", min_point=" + min_point +
                 ", description='" + description + '\'' +
-                ", test_id=" + test_id +
+                ", testId=" + testId +
+                ", courseId=" + courseId +
                 '}';
     }
 }
