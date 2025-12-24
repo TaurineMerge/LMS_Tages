@@ -11,12 +11,14 @@ package request
 //   - Level: уровень сложности (опционально, "hard", "medium", "easy")
 //   - CategoryID: идентификатор категории (обязательное, UUID v4)
 //   - Visibility: видимость курса (опционально, "draft", "public", "private")
+//   - ImageKey: ключ изображения в S3 (опционально)
 type CourseCreate struct {
 	Title       string `json:"title" validate:"required,min=1,max=255"`
 	Description string `json:"description"`
 	Level       string `json:"level" validate:"omitempty,oneof=hard medium easy"`
 	CategoryID  string `json:"category_id" validate:"required,uuid4"`
 	Visibility  string `json:"visibility" validate:"omitempty,oneof=draft public private"`
+	ImageKey    string `json:"image_key"`
 }
 
 // CourseUpdate - DTO для обновления курса
@@ -30,12 +32,14 @@ type CourseCreate struct {
 //   - Level: новый уровень сложности (опционально, "hard", "medium", "easy")
 //   - CategoryID: новый идентификатор категории (опционально, UUID v4)
 //   - Visibility: новая видимость курса (опционально, "draft", "public", "private")
+//   - ImageKey: новый ключ изображения в S3 (опционально)
 type CourseUpdate struct {
 	Title       string `json:"title" validate:"omitempty,min=1,max=255"`
 	Description string `json:"description"`
 	Level       string `json:"level" validate:"omitempty,oneof=hard medium easy"`
 	CategoryID  string `json:"category_id" validate:"omitempty,uuid4"`
 	Visibility  string `json:"visibility" validate:"omitempty,oneof=draft public private"`
+	ImageKey    string `json:"image_key"`
 }
 
 // CourseFilter - фильтр для поиска курсов

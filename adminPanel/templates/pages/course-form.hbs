@@ -43,6 +43,7 @@
 
             <form method="POST" 
                   action="{{#if course}}/admin/categories/{{categoryID}}/courses/{{course.ID}}/update{{else}}/admin/categories/{{categoryID}}/courses/create{{/if}}" 
+                  enctype="multipart/form-data"
                   class="modern-form">
                 
                 <div class="form-section">
@@ -85,6 +86,28 @@
                             placeholder="Опишите содержание курса, чему студенты научатся..."
                         >{{#if course}}{{course.Description}}{{/if}}</textarea>
                         <p class="form-field__hint">Подробное описание для студентов</p>
+                    <div class="form-field">
+                        <label for="image" class="form-field__label">
+                            <span class="form-field__label-icon">🖼️</span>
+                            Изображение курса
+                        </label>
+                        <div class="form-field__input-wrapper">
+                            <input 
+                                type="file" 
+                                id="image" 
+                                name="image" 
+                                class="form-field__input" 
+                                accept="image/*"
+                            />
+                            <span class="form-field__input-icon">📎</span>
+                        </div>
+                        <p class="form-field__hint">Загрузите изображение для курса (опционально)</p>
+                        {{#if course.ImageKey}}
+                        <div class="current-image">
+                            <p>Текущее изображение:</p>
+                            <img src="/uploads/{{course.ImageKey}}" alt="Course Image" style="max-width: 200px; max-height: 200px;" />
+                        </div>
+                        {{/if}}
                     </div>
                 </div>
 

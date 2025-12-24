@@ -368,7 +368,7 @@ func main() {
 
 	// Web handlers
 	categoryWebHandler := webhandlers.NewCategoryWebHandler(categoryService)
-	courseWebHandler := webhandlers.NewCourseWebHandler(courseService, categoryService, settings.TestModule)
+	courseWebHandler := webhandlers.NewCourseWebHandler(courseService, categoryService, s3Service, settings.TestModule)
 	lessonWebHandler := webhandlers.NewLessonWebHandler(lessonService, courseService, categoryService)
 	homeWebHandler := webhandlers.NewHomeWebHandler(categoryService, courseService, lessonService)
 

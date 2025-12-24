@@ -169,6 +169,78 @@ func (s *S3Service) UploadImage(ctx context.Context, file *multipart.FileHeader)
 	return imageURL, nil
 }
 
+// UploadImageKey загружает изображение в S3 и возвращает ключ объекта
+func (s *S3Service) UploadImageKey(ctx context.Context, file *multipart.FileHeader) (string, error) {
+	ctx, span := tracer.Start(ctx, "S3Service.UploadImageKey")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("file.name", file.Filename),
+		attribute.Int64("file.size", file.Size),
+	)
+
+	// Проверяем тип файла
+	contentType := file.Header.Get("Content-Type")
+	if !isValidImageType(contentType) {
+		return "", exceptions.NewAppError(
+			fmt.Sprintf("Invalid image type: %s. Only JPEG, PNG, GIF, and WEBP are allowed", contentType),
+			400,
+			"INVALID_IMAGE_TYPE",
+		)
+	}
+
+	// Проверяем размер файла (максимум 10 МБ)
+	maxSize := int64(10 * 1024 * 1024) // 10 MB
+	if file.Size > maxSize {
+		return "", exceptions.NewAppError(
+			fmt.Sprintf("Image size exceeds maximum allowed size of %d bytes", maxSize),
+			400,
+			"IMAGE_TOO_LARGE",
+		)
+	}
+
+	// Открываем файл
+	src, err := file.Open()
+	if err != nil {
+		span.RecordError(err)
+		return "", exceptions.NewAppError(
+			fmt.Sprintf("Failed to open uploaded file: %v", err),
+			500,
+			"FILE_OPEN_ERROR",
+		)
+	}
+	defer src.Close()
+
+	// Генерируем уникальное имя файла
+	ext := filepath.Ext(file.Filename)
+	objectName := fmt.Sprintf("go/%s/%s%s",
+		time.Now().Format("2006/01/02"),
+		uuid.New().String(),
+		ext,
+	)
+
+	span.SetAttributes(attribute.String("object.name", objectName))
+
+	// Загружаем файл в MinIO
+	_, err = s.client.PutObject(ctx, s.bucket, objectName, src, file.Size, minio.PutObjectOptions{
+		ContentType: contentType,
+	})
+	if err != nil {
+		span.RecordError(err)
+		return "", exceptions.NewAppError(
+			fmt.Sprintf("Failed to upload image to S3: %v", err),
+			500,
+			"S3_UPLOAD_ERROR",
+		)
+	}
+
+	span.AddEvent("image uploaded", trace.WithAttributes(
+		attribute.String("object.key", objectName),
+	))
+
+	return objectName, nil
+}
+
 // DeleteImage удаляет изображение из S3
 func (s *S3Service) DeleteImage(ctx context.Context, imageURL string) error {
 	ctx, span := tracer.Start(ctx, "S3Service.DeleteImage")

@@ -42,8 +42,8 @@ func NewCourseRepository(db *database.Database) *CourseRepository {
 func (r *CourseRepository) Create(ctx context.Context, course request.CourseCreate) (map[string]interface{}, error) {
 	query := `
 		INSERT INTO knowledge_base.course_b 
-		(id, title, description, level, category_id, visibility, created_at, updated_at)
-		VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, NOW(), NOW())
+		(id, title, description, level, category_id, visibility, image_key, created_at, updated_at)
+		VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, NOW(), NOW())
 		RETURNING *
 	`
 
@@ -53,6 +53,7 @@ func (r *CourseRepository) Create(ctx context.Context, course request.CourseCrea
 		course.Level,
 		course.CategoryID,
 		course.Visibility,
+		course.ImageKey,
 	)
 }
 
@@ -77,8 +78,9 @@ func (r *CourseRepository) Update(ctx context.Context, id string, course request
 			level = COALESCE($3, level),
 			category_id = COALESCE($4, category_id),
 			visibility = COALESCE($5, visibility),
+			image_key = COALESCE($6, image_key),
 			updated_at = NOW()
-		WHERE id = $6
+		WHERE id = $7
 		RETURNING *
 	`
 
@@ -88,6 +90,7 @@ func (r *CourseRepository) Update(ctx context.Context, id string, course request
 		course.Level,
 		course.CategoryID,
 		course.Visibility,
+		course.ImageKey,
 		id,
 	)
 }

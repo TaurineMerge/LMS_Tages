@@ -20,6 +20,7 @@ type CourseView struct {
 	Visible     bool
 	CreatedAt   string
 	UpdatedAt   string
+	ImageKey    string
 	Tests       CourseTestsView
 }
 
@@ -63,14 +64,16 @@ func levelToRussian(level string) string {
 type CourseWebHandler struct {
 	courseService    *services.CourseService
 	categoryService  *services.CategoryService
+	s3Service        *services.S3Service
 	testModuleConfig config.TestModuleConfig
 }
 
 // NewCourseWebHandler создает новый обработчик веб-страниц курсов
-func NewCourseWebHandler(courseService *services.CourseService, categoryService *services.CategoryService, testModuleConfig config.TestModuleConfig) *CourseWebHandler {
+func NewCourseWebHandler(courseService *services.CourseService, categoryService *services.CategoryService, s3Service *services.S3Service, testModuleConfig config.TestModuleConfig) *CourseWebHandler {
 	return &CourseWebHandler{
 		courseService:    courseService,
 		categoryService:  categoryService,
+		s3Service:        s3Service,
 		testModuleConfig: testModuleConfig,
 	}
 }
@@ -137,6 +140,7 @@ func (h *CourseWebHandler) RenderCoursesEditor(c *fiber.Ctx) error {
 			Visible:     course.Visibility == "public",
 			CreatedAt:   formatDateTime(course.CreatedAt),
 			UpdatedAt:   formatDateTime(course.UpdatedAt),
+			ImageKey:    course.ImageKey,
 		})
 	}
 
@@ -208,6 +212,7 @@ func (h *CourseWebHandler) RenderEditCourseForm(c *fiber.Ctx) error {
 		Visible:     course.Data.Visibility == "public",
 		CreatedAt:   formatDateTime(course.Data.CreatedAt),
 		UpdatedAt:   formatDateTime(course.Data.UpdatedAt),
+		ImageKey:    course.Data.ImageKey,
 	}
 
 	// Получить информацию о тестах
@@ -259,6 +264,22 @@ func (h *CourseWebHandler) CreateCourse(c *fiber.Ctx) error {
 		visibility = "public"
 	}
 
+	// Обрабатываем загрузку изображения
+	var imageKey string
+	file, err := c.FormFile("image")
+	if err == nil && file != nil {
+		// Загружаем изображение в S3
+		imageKey, err = h.s3Service.UploadImageKey(ctx, file)
+		if err != nil {
+			return c.Status(400).Render("pages/course-form", fiber.Map{
+				"title":        "Новый курс",
+				"categoryID":   categoryID,
+				"categoryName": category.Title,
+				"error":        "Ошибка загрузки изображения: " + err.Error(),
+			}, "layouts/main")
+		}
+	}
+
 	// Создаем курс
 	input := request.CourseCreate{
 		Title:       title,
@@ -266,6 +287,7 @@ func (h *CourseWebHandler) CreateCourse(c *fiber.Ctx) error {
 		Level:       level,
 		CategoryID:  categoryID,
 		Visibility:  visibility,
+		ImageKey:    imageKey,
 	}
 
 	_, err = h.courseService.CreateCourse(ctx, input)
@@ -316,6 +338,7 @@ func (h *CourseWebHandler) UpdateCourse(c *fiber.Ctx) error {
 				Visible:     course.Data.Visibility == "public",
 				CreatedAt:   formatDateTime(course.Data.CreatedAt),
 				UpdatedAt:   formatDateTime(course.Data.UpdatedAt),
+				ImageKey:    course.Data.ImageKey,
 			}
 		}
 
@@ -333,6 +356,40 @@ func (h *CourseWebHandler) UpdateCourse(c *fiber.Ctx) error {
 		visibility = "public"
 	}
 
+	// Обрабатываем загрузку изображения
+	var imageKey string
+	file, err := c.FormFile("image")
+	if err == nil && file != nil {
+		// Загружаем изображение в S3
+		imageKey, err = h.s3Service.UploadImageKey(ctx, file)
+		if err != nil {
+			// Получаем курс для отображения в форме
+			course, _ := h.courseService.GetCourse(ctx, categoryID, courseID)
+			var courseView *CourseView
+			if course != nil {
+				courseView = &CourseView{
+					ID:          course.Data.ID,
+					CategoryID:  course.Data.CategoryID,
+					Title:       course.Data.Title,
+					Description: course.Data.Description,
+					Level:       course.Data.Level,
+					Visible:     course.Data.Visibility == "public",
+					CreatedAt:   formatDateTime(course.Data.CreatedAt),
+					UpdatedAt:   formatDateTime(course.Data.UpdatedAt),
+					ImageKey:    course.Data.ImageKey,
+				}
+			}
+
+			return c.Status(400).Render("pages/course-form", fiber.Map{
+				"title":        "Редактировать курс",
+				"categoryID":   categoryID,
+				"categoryName": category.Title,
+				"course":       courseView,
+				"error":        "Ошибка загрузки изображения: " + err.Error(),
+			}, "layouts/main")
+		}
+	}
+
 	// Обновляем курс
 	input := request.CourseUpdate{
 		Title:       title,
@@ -340,6 +397,7 @@ func (h *CourseWebHandler) UpdateCourse(c *fiber.Ctx) error {
 		Level:       level,
 		CategoryID:  categoryID,
 		Visibility:  visibility,
+		ImageKey:    imageKey,
 	}
 
 	_, err = h.courseService.UpdateCourse(ctx, categoryID, courseID, input)
@@ -357,6 +415,7 @@ func (h *CourseWebHandler) UpdateCourse(c *fiber.Ctx) error {
 				Visible:     course.Data.Visibility == "public",
 				CreatedAt:   formatDateTime(course.Data.CreatedAt),
 				UpdatedAt:   formatDateTime(course.Data.UpdatedAt),
+				ImageKey:    course.Data.ImageKey,
 			}
 		}
 
