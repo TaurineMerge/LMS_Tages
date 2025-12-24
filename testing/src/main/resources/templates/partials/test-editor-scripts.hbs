@@ -1,143 +1,72 @@
 <script>
-// Глобальные переменные
-let questionCount = {{#if questions}}{{questions.length}}{{else}}1{{/if}};
-let answerCounts = {};
-let totalTestPoints = 0;
+let questionCounter = {{#if questions}}{{questions.length}}{{else}}1{{/if}};
+let answerCounter = {};
 
-// Инициализация счетчиков ответов
+// Инициализация счетчиков ответов при загрузке
 {{#if questions}}
     {{#each questions}}
-    answerCounts[{{@index}}] = {{this.answers.length}};
+    answerCounter[{{@index}}] = {{this.answers.length}};
     {{/each}}
 {{else}}
-    answerCounts[0] = 2;
+    answerCounter[0] = 2;
 {{/if}}
 
-// DOM Ready
-document.addEventListener('DOMContentLoaded', function() {
-    // Инициализация подсчета баллов
-    initPointsCalculation();
+// Функция расчета суммы баллов за ответы в вопросе
+function calculateAnswerPoints(questionIndex) {
+    const questionCard = document.querySelector(`[data-question-index="${questionIndex}"]`);
+    if (!questionCard) return 0;
     
-    // Обновление общих баллов при загрузке
-    updateTotalTestPoints();
+    const answerInputs = questionCard.querySelectorAll('.answer-points-input');
+    let total = 0;
     
-    // Кнопка добавления вопроса
-    document.getElementById('add-question-btn').addEventListener('click', addNewQuestion);
-    
-    // Слушатели изменений в полях баллов
-    document.querySelectorAll('.answer-points-input').forEach(input => {
-        input.addEventListener('change', updateTotalTestPoints);
-        input.addEventListener('input', updateTotalTestPoints);
+    answerInputs.forEach(input => {
+        const value = parseFloat(input.value) || 0;
+        total += value;
     });
-});
-
-// Функции для работы с вопросами
-function addNewQuestion() {
-    const container = document.getElementById('questions-container');
-    const newIndex = questionCount;
     
-    const newQuestionHtml = `
-        <div class="question-editor" data-question-index="${newIndex}">
-            <div class="card">
-                <div class="question-header">
-                    <h3 style="margin: 0;">Вопрос ${newIndex + 1}</h3>
-                    <div class="question-controls">
-                        <button type="button" class="btn-secondary btn-move-up" onclick="moveQuestionUp(${newIndex})">
-                            ↑ Вверх
-                        </button>
-                        <button type="button" class="btn-secondary btn-move-down" onclick="moveQuestionDown(${newIndex})">
-                            ↓ Вниз
-                        </button>
-                        <button type="button" class="btn-danger btn-remove-question" onclick="removeQuestion(${newIndex})">
-                            × Удалить
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label>Текст вопроса *</label>
-                    <textarea name="question[${newIndex}][text]" placeholder="Введите текст вопроса" required></textarea>
-                </div>
-                
-                <div class="points-info">
-                    <div class="points-display">
-                        <span>Максимум баллов за вопрос:</span>
-                        <strong id="question-points-${newIndex}">0</strong>
-                    </div>
-                    <small class="points-hint">(ответы с баллами > 0 считаются правильными)</small>
-                </div>
-                
-                <div class="form-group">
-                    <label>Варианты ответов</label>
-                    <div id="answers-${newIndex}" class="answers-container">
-                        <!-- Ответы будут добавлены через addAnswer -->
-                    </div>
-                    <button type="button" class="btn-secondary" onclick="addAnswer(${newIndex})">+ Добавить ответ</button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    container.insertAdjacentHTML('beforeend', newQuestionHtml);
-    answerCounts[newIndex] = 0;
-    
-    // Добавляем 2 ответа по умолчанию
-    addAnswer(newIndex);
-    addAnswer(newIndex);
-    
-    questionCount++;
-    reindexQuestions();
-    updateTotalTestPoints();
-}
-
-function moveQuestionUp(index) {
-    if (index <= 0) return;
-    swapQuestions(index, index - 1);
-}
-
-function moveQuestionDown(index) {
-    if (index >= questionCount - 1) return;
-    swapQuestions(index, index + 1);
-}
-
-function swapQuestions(index1, index2) {
-    const container = document.getElementById('questions-container');
-    const questions = Array.from(container.children);
-    
-    if (index1 < 0 || index2 < 0 || index1 >= questions.length || index2 >= questions.length) return;
-    
-    // Меняем местами DOM элементы
-    const temp = questions[index1].outerHTML;
-    questions[index1].outerHTML = questions[index2].outerHTML;
-    questions[index2].outerHTML = temp;
-    
-    // Переиндексация
-    reindexQuestions();
-    updateTotalTestPoints();
-}
-
-function removeQuestion(index) {
-    if (questionCount <= 1 || index === 0) {
-        showNotification('Нельзя удалить первый вопрос', 'error');
-        return;
+    const totalDisplay = questionCard.querySelector(`#question-points-${questionIndex}`);
+    if (totalDisplay) {
+        totalDisplay.textContent = total.toFixed(1);
     }
     
-    if (confirm('Удалить этот вопрос?')) {
-        const question = document.querySelector(`[data-question-index="${index}"]`);
-        if (question) {
-            question.remove();
-            questionCount--;
-            reindexQuestions();
-            updateTotalTestPoints();
-            showNotification('Вопрос удален', 'success');
-        }
-    }
+    return total;
 }
 
-// Функции для работы с ответами
+// Функция для обновления всех расчетов баллов
+function updateAllPointsCalculations() {
+    let totalTestPoints = 0;
+    
+    document.querySelectorAll('.question-editor').forEach(card => {
+        const questionIndex = parseInt(card.dataset.questionIndex);
+        const questionPoints = calculateAnswerPoints(questionIndex);
+        totalTestPoints += questionPoints;
+    });
+    
+    // Обновляем общую сумму баллов за тест
+    const totalPointsDisplay = document.getElementById('total-test-points');
+    if (totalPointsDisplay) {
+        totalPointsDisplay.textContent = totalTestPoints.toFixed(1);
+    }
+    
+    return totalTestPoints;
+}
+
+// Добавляем обработчики событий для полей ввода баллов
+function setupPointsListeners() {
+    document.querySelectorAll('.answer-points-input').forEach(input => {
+        input.addEventListener('input', function() {
+            const questionCard = this.closest('.question-editor');
+            const questionIndex = parseInt(questionCard.dataset.questionIndex);
+            calculateAnswerPoints(questionIndex);
+            updateAllPointsCalculations();
+        });
+    });
+}
+
+// Функция для добавления ответа
 function addAnswer(questionIndex) {
-    const container = document.getElementById(`answers-${questionIndex}`);
-    const answerIndex = answerCounts[questionIndex] || 0;
+    const answersContainer = document.getElementById(`answers-${questionIndex}`);
+    const answerIndex = answerCounter[questionIndex] || answersContainer.children.length;
     
     const newAnswerHtml = `
         <div class="answer-group" data-answer-index="${answerIndex}">
@@ -154,9 +83,7 @@ function addAnswer(questionIndex) {
                        value="0"
                        min="0"
                        step="1"
-                       required
-                       onchange="updateTotalTestPoints()"
-                       oninput="updateTotalTestPoints()">
+                       required>
             </div>
             
             <button type="button" class="btn-danger remove-answer-btn" 
@@ -167,188 +94,252 @@ function addAnswer(questionIndex) {
         </div>
     `;
     
-    container.insertAdjacentHTML('beforeend', newAnswerHtml);
-    answerCounts[questionIndex] = answerIndex + 1;
-    updateTotalTestPoints();
+    answersContainer.insertAdjacentHTML('beforeend', newAnswerHtml);
+    answerCounter[questionIndex] = (answerCounter[questionIndex] || 0) + 1;
+    
+    // Добавляем обработчик для нового поля баллов
+    const newInput = answersContainer.lastElementChild.querySelector('.answer-points-input');
+    if (newInput) {
+        newInput.addEventListener('input', function() {
+            calculateAnswerPoints(questionIndex);
+            updateAllPointsCalculations();
+        });
+    }
+    
+    // Пересчитываем баллы
+    calculateAnswerPoints(questionIndex);
+    updateAllPointsCalculations();
 }
 
+// Функция для удаления ответа
 function removeAnswer(questionIndex, answerIndex) {
-    const answers = document.querySelectorAll(`#answers-${questionIndex} .answer-group`);
-    if (answers.length <= 1) {
-        showNotification('Нельзя удалить последний ответ', 'error');
+    const answersContainer = document.getElementById(`answers-${questionIndex}`);
+    const answerElements = answersContainer.querySelectorAll('.answer-group');
+    
+    if (answerElements.length <= 2) {
+        alert('Вопрос должен содержать минимум 2 ответа');
         return;
     }
     
-    const answer = document.querySelector(`#answers-${questionIndex} [data-answer-index="${answerIndex}"]`);
-    if (answer) {
-        answer.remove();
-        // Переиндексация оставшихся ответов
-        reindexAnswers(questionIndex);
-        updateTotalTestPoints();
-    }
-}
-
-// Переиндексация
-function reindexQuestions() {
-    const container = document.getElementById('questions-container');
-    const questions = container.children;
-    
-    for (let i = 0; i < questions.length; i++) {
-        const question = questions[i];
-        question.setAttribute('data-question-index', i);
+    if (answerIndex < answerElements.length) {
+        answerElements[answerIndex].remove();
         
-        // Обновляем заголовок
-        const header = question.querySelector('h3');
-        if (header) header.textContent = `Вопрос ${i + 1}`;
-        
-        // Обновляем имена полей
-        question.querySelectorAll('[name^="question["]').forEach(input => {
-            const name = input.getAttribute('name');
-            const newName = name.replace(/question\[\d+\]/, `question[${i}]`);
-            input.setAttribute('name', newName);
-        });
-        
-        // Обновляем ID контейнера ответов
-        const answersContainer = question.querySelector('.answers-container');
-        if (answersContainer) answersContainer.id = `answers-${i}`;
-        
-        // Обновляем ID блока баллов
-        const pointsElement = question.querySelector('[id^="question-points-"]');
-        if (pointsElement) pointsElement.id = `question-points-${i}`;
-        
-        // Обновляем обработчики кнопок
-        question.querySelectorAll('.btn-move-up').forEach(btn => {
-            btn.onclick = () => moveQuestionUp(i);
-            btn.disabled = i === 0;
-        });
-        
-        question.querySelectorAll('.btn-move-down').forEach(btn => {
-            btn.onclick = () => moveQuestionDown(i);
-            btn.disabled = i === questions.length - 1;
-        });
-        
-        question.querySelectorAll('.btn-remove-question').forEach(btn => {
-            btn.onclick = () => removeQuestion(i);
-            btn.disabled = i === 0;
-        });
-        
-        question.querySelectorAll('.btn-secondary[onclick^="addAnswer"]').forEach(btn => {
-            btn.onclick = () => addAnswer(i);
-        });
-    }
-}
-
-function reindexAnswers(questionIndex) {
-    const container = document.getElementById(`answers-${questionIndex}`);
-    if (!container) return;
-    
-    const answers = container.querySelectorAll('.answer-group');
-    let newAnswerCount = 0;
-    
-    answers.forEach((answer, index) => {
-        answer.setAttribute('data-answer-index', index);
-        
-        // Обновляем имена полей
-        answer.querySelectorAll('[name^="question["]').forEach(input => {
-            const name = input.getAttribute('name');
-            const regex = /question\[(\d+)\]\[answers\]\[(\d+)\]/;
-            const match = name.match(regex);
-            if (match) {
-                const newName = name.replace(regex, `question[${questionIndex}][answers][${index}]`);
-                input.setAttribute('name', newName);
+        // Обновляем индексы оставшихся ответов
+        const remainingAnswers = answersContainer.querySelectorAll('.answer-group');
+        remainingAnswers.forEach((element, newIndex) => {
+            element.dataset.answerIndex = newIndex;
+            
+            const textInput = element.querySelector('input[type="text"]');
+            const pointsInput = element.querySelector('.answer-points-input');
+            const removeBtn = element.querySelector('.remove-answer-btn');
+            
+            if (textInput) {
+                textInput.name = `question[${questionIndex}][answers][${newIndex}][text]`;
+                textInput.placeholder = `Текст ответа ${newIndex + 1}`;
+            }
+            
+            if (pointsInput) {
+                pointsInput.name = `question[${questionIndex}][answers][${newIndex}][points]`;
+            }
+            
+            if (removeBtn) {
+                removeBtn.setAttribute('onclick', `removeAnswer(${questionIndex}, ${newIndex})`);
+                removeBtn.disabled = newIndex === 0;
             }
         });
         
-        // Обновляем placeholder
-        const textInput = answer.querySelector('input[type="text"]');
-        if (textInput) {
-            textInput.placeholder = `Текст ответа ${index + 1}`;
+        answerCounter[questionIndex] = remainingAnswers.length;
+        calculateAnswerPoints(questionIndex);
+        updateAllPointsCalculations();
+    }
+}
+
+// Функция для удаления вопроса
+function removeQuestion(questionIndex) {
+    const questions = document.querySelectorAll('.question-editor');
+    if (questions.length <= 1) {
+        alert('Тест должен содержать хотя бы один вопрос');
+        return;
+    }
+    
+    if (confirm('Вы уверены, что хотите удалить этот вопрос?')) {
+        document.querySelector(`[data-question-index="${questionIndex}"]`).remove();
+        delete answerCounter[questionIndex];
+        
+        // Переиндексация оставшихся вопросов
+        renumberQuestions();
+        updateAllPointsCalculations();
+    }
+}
+
+// Функция перемещения вопроса вверх
+function moveQuestionUp(questionIndex) {
+    const questionCard = document.querySelector(`[data-question-index="${questionIndex}"]`);
+    const prevCard = questionCard.previousElementSibling;
+    
+    if (prevCard && prevCard.classList.contains('question-editor')) {
+        questionCard.parentNode.insertBefore(questionCard, prevCard);
+        renumberQuestions();
+    }
+}
+
+// Функция перемещения вопроса вниз
+function moveQuestionDown(questionIndex) {
+    const questionCard = document.querySelector(`[data-question-index="${questionIndex}"]`);
+    const nextCard = questionCard.nextElementSibling;
+    
+    if (nextCard && nextCard.classList.contains('question-editor')) {
+        questionCard.parentNode.insertBefore(nextCard, questionCard);
+        renumberQuestions();
+    }
+}
+
+// Переиндексация вопросов
+function renumberQuestions() {
+    const remainingQuestions = document.querySelectorAll('.question-editor');
+    questionCounter = 0;
+    
+    remainingQuestions.forEach((questionCard, index) => {
+        const newIndex = index;
+        questionCounter++;
+        questionCard.dataset.questionIndex = newIndex;
+        
+        // Обновляем заголовок
+        const title = questionCard.querySelector('h3');
+        if (title) title.textContent = `Вопрос ${newIndex + 1}`;
+        
+        // Обновляем textarea вопроса
+        const textarea = questionCard.querySelector('textarea[name^="question"]');
+        if (textarea) {
+            textarea.name = `question[${newIndex}][text]`;
         }
         
-        // Обновляем обработчик кнопки удаления
-        const removeBtn = answer.querySelector('.remove-answer-btn');
+        // Обновляем кнопки управления
+        const moveUpBtn = questionCard.querySelector('.btn-move-up');
+        if (moveUpBtn) {
+            moveUpBtn.setAttribute('onclick', `moveQuestionUp(${newIndex})`);
+            moveUpBtn.disabled = newIndex === 0;
+        }
+        
+        const moveDownBtn = questionCard.querySelector('.btn-move-down');
+        if (moveDownBtn) {
+            moveDownBtn.setAttribute('onclick', `moveQuestionDown(${newIndex})`);
+            moveDownBtn.disabled = newIndex === remainingQuestions.length - 1;
+        }
+        
+        const removeBtn = questionCard.querySelector('.btn-remove-question');
         if (removeBtn) {
-            removeBtn.onclick = () => removeAnswer(questionIndex, index);
-            removeBtn.disabled = index === 0;
+            removeBtn.setAttribute('onclick', `removeQuestion(${newIndex})`);
+            removeBtn.disabled = newIndex === 0;
         }
         
-        newAnswerCount++;
+        const addAnswerBtn = questionCard.querySelector('.btn-secondary[onclick^="addAnswer"]');
+        if (addAnswerBtn) addAnswerBtn.setAttribute('onclick', `addAnswer(${newIndex})`);
+        
+        // Обновляем ID контейнера ответов
+        const answersContainer = questionCard.querySelector('.answers-container');
+        if (answersContainer) answersContainer.id = `answers-${newIndex}`;
+        
+        // Обновляем ID блока баллов
+        const pointsElement = questionCard.querySelector('[id^="question-points-"]');
+        if (pointsElement) pointsElement.id = `question-points-${newIndex}`;
+        
+        // Обновляем ответы
+        const answerGroups = questionCard.querySelectorAll('.answer-group');
+        answerGroups.forEach((group, answerIndex) => {
+            group.dataset.answerIndex = answerIndex;
+            
+            const textInput = group.querySelector('input[type="text"]');
+            const pointsInput = group.querySelector('.answer-points-input');
+            const removeAnswerBtn = group.querySelector('.remove-answer-btn');
+            
+            if (textInput) {
+                textInput.name = `question[${newIndex}][answers][${answerIndex}][text]`;
+                textInput.placeholder = `Текст ответа ${answerIndex + 1}`;
+            }
+            
+            if (pointsInput) {
+                pointsInput.name = `question[${newIndex}][answers][${answerIndex}][points]`;
+            }
+            
+            if (removeAnswerBtn) {
+                removeAnswerBtn.setAttribute('onclick', `removeAnswer(${newIndex}, ${answerIndex})`);
+                removeAnswerBtn.disabled = answerIndex === 0;
+            }
+        });
     });
     
-    answerCounts[questionIndex] = newAnswerCount;
-}
-
-// Подсчет баллов
-function initPointsCalculation() {
-    document.querySelectorAll('.answer-points-input').forEach(input => {
-        input.addEventListener('change', updateQuestionPoints);
-        input.addEventListener('input', updateQuestionPoints);
-    });
-    updateAllQuestionPoints();
-}
-
-function updateAllQuestionPoints() {
-    document.querySelectorAll('.question-editor').forEach((question, index) => {
-        updateQuestionPointsForQuestion(index);
+    // Обновляем счетчики
+    answerCounter = {};
+    remainingQuestions.forEach((card, index) => {
+        const questionIndex = parseInt(card.dataset.questionIndex);
+        const answerCount = card.querySelectorAll('.answer-group').length;
+        answerCounter[questionIndex] = answerCount;
     });
 }
 
-function updateQuestionPointsForQuestion(questionIndex) {
-    const container = document.getElementById(`answers-${questionIndex}`);
-    if (!container) return;
+// Кнопка добавления нового вопроса
+function addNewQuestion() {
+    const newQuestionIndex = questionCounter;
     
-    const answerInputs = container.querySelectorAll('.answer-points-input');
-    let maxPoints = 0;
+    const newQuestionHtml = `
+        <div class="question-editor" data-question-index="${newQuestionIndex}">
+            <div class="card">
+                <div class="question-header">
+                    <h3 style="margin: 0;">Вопрос ${newQuestionIndex + 1}</h3>
+                    <div class="question-controls">
+                        <button type="button" class="btn-secondary btn-move-up" onclick="moveQuestionUp(${newQuestionIndex})">
+                            ↑ Вверх
+                        </button>
+                        <button type="button" class="btn-secondary btn-move-down" onclick="moveQuestionDown(${newQuestionIndex})">
+                            ↓ Вниз
+                        </button>
+                        <button type="button" class="btn-danger btn-remove-question" onclick="removeQuestion(${newQuestionIndex})">
+                            × Удалить
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Текст вопроса *</label>
+                    <textarea name="question[${newQuestionIndex}][text]" placeholder="Введите текст вопроса" required></textarea>
+                </div>
+                
+                <div class="points-info">
+                    <div class="points-display">
+                        <span>Максимум баллов за вопрос:</span>
+                        <strong id="question-points-${newQuestionIndex}">0</strong>
+                    </div>
+                    <small class="points-hint">(ответы с баллами > 0 считаются правильными)</small>
+                </div>
+                
+                <div class="form-group">
+                    <label>Варианты ответов</label>
+                    <div id="answers-${newQuestionIndex}" class="answers-container"></div>
+                    <button type="button" class="btn-secondary" onclick="addAnswer(${newQuestionIndex})">+ Добавить ответ</button>
+                </div>
+            </div>
+        </div>
+    `;
     
-    answerInputs.forEach(input => {
-        const points = parseInt(input.value) || 0;
-        if (points > maxPoints) {
-            maxPoints = points;
-        }
-    });
+    // Добавляем новый вопрос
+    document.getElementById('questions-container').insertAdjacentHTML('beforeend', newQuestionHtml);
     
-    const pointsElement = document.getElementById(`question-points-${questionIndex}`);
-    if (pointsElement) {
-        pointsElement.textContent = maxPoints;
-    }
+    // Добавляем 2 ответа по умолчанию
+    addAnswer(newQuestionIndex);
+    addAnswer(newQuestionIndex);
     
-    return maxPoints;
-}
-
-function updateQuestionPoints(event) {
-    const input = event.target;
-    const answerGroup = input.closest('.answer-group');
-    if (!answerGroup) return;
+    // Обновляем счетчики
+    questionCounter++;
     
-    const questionEditor = answerGroup.closest('.question-editor');
-    if (!questionEditor) return;
-    
-    const questionIndex = questionEditor.getAttribute('data-question-index');
-    updateQuestionPointsForQuestion(questionIndex);
-    updateTotalTestPoints();
-}
-
-function updateTotalTestPoints() {
-    totalTestPoints = 0;
-    
-    document.querySelectorAll('.question-editor').forEach((question, index) => {
-        const questionPoints = updateQuestionPointsForQuestion(index);
-        totalTestPoints += questionPoints;
-    });
-    
-    const totalElement = document.getElementById('total-test-points');
-    if (totalElement) {
-        totalElement.textContent = totalTestPoints;
-    }
+    // Переиндексация
+    renumberQuestions();
+    updateAllPointsCalculations();
 }
 
 // Навигация и действия
 function goBack() {
-    if ({{isDraft}} && {{hasPublishedTest}}) {
-        window.location.href = '/testing/web/tests/{{publishedTestId}}/edit';
-    } else {
-        window.location.href = '/testing/web/tests/new';
-    }
+    window.location.href = '/testing/web/tests/new';
 }
 
 function createDraft(testId) {
@@ -366,54 +357,23 @@ function deleteEntity(entityId) {
     
     if (confirm(message)) {
         fetch(`/testing/web/tests/${entityId}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
-            }
+            method: 'DELETE'
         })
         .then(response => {
             if (response.ok) {
-                showNotification(`${entityName} удален`, 'success');
+                alert(`${entityName} удален`);
                 setTimeout(() => {
                     window.location.href = '/testing/web/tests/new';
                 }, 1500);
             } else {
-                showNotification('Ошибка при удалении', 'error');
+                alert('Ошибка при удалении');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            showNotification('Ошибка сети', 'error');
+            alert('Ошибка сети');
         });
     }
-}
-
-// Валидация формы
-function validateForm() {
-    const title = document.getElementById('title').value.trim();
-    if (!title) {
-        showNotification('Введите название теста', 'error');
-        return false;
-    }
-    
-    const minPoint = document.getElementById('min_point').value;
-    if (!minPoint || minPoint < 0) {
-        showNotification('Введите корректный минимальный балл', 'error');
-        return false;
-    }
-    
-    // Проверка вопросов
-    const questions = document.querySelectorAll('[name^="question["]');
-    let hasErrors = false;
-    
-    questions.forEach((question, index) => {
-        if (!question.value.trim()) {
-            showNotification(`Вопрос ${index + 1}: введите текст`, 'error');
-            hasErrors = true;
-        }
-    });
-    
-    return !hasErrors;
 }
 
 // Уведомления
@@ -423,7 +383,7 @@ function showNotification(message, type = 'info') {
     oldNotifications.forEach(notification => notification.remove());
     
     const notification = document.createElement('div');
-    notification.className = `notification alert-${type}`;
+    notification.className = `alert alert-${type}`;
     notification.innerHTML = message;
     
     document.body.appendChild(notification);
@@ -433,21 +393,65 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
-// Предотвращение случайного закрытия страницы
-window.addEventListener('beforeunload', function (e) {
-    // Проверяем, есть ли несохраненные изменения
-    const form = document.getElementById('testForm');
-    if (form && form.checkValidity()) {
-        // Можно добавить проверку на изменения
-        // e.preventDefault();
-        // e.returnValue = '';
+// Валидация формы
+function validateForm() {
+    const title = document.getElementById('title').value.trim();
+    if (!title) {
+        alert('Введите название теста');
+        return false;
     }
-});
+    
+    const minPoint = document.getElementById('min_point').value;
+    if (!minPoint || minPoint < 0) {
+        alert('Введите корректный минимальный балл');
+        return false;
+    }
+    
+    // Проверка вопросов
+    const questions = document.querySelectorAll('[name^="question["]');
+    let hasErrors = false;
+    
+    questions.forEach((question, index) => {
+        if (!question.value.trim()) {
+            alert(`Вопрос ${index + 1}: введите текст`);
+            hasErrors = true;
+        }
+    });
+    
+    return !hasErrors;
+}
 
 // Инициализация при загрузке
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Test editor loaded');
-    console.log('Question count:', questionCount);
-    console.log('Answer counts:', answerCounts);
+    console.log('Test editor loaded with', questionCounter, 'questions');
+    
+    // Инициализация счетчиков ответов
+    document.querySelectorAll('.question-editor').forEach((card, index) => {
+        const questionIndex = parseInt(card.dataset.questionIndex);
+        const answerCount = card.querySelectorAll('.answer-group').length;
+        answerCounter[questionIndex] = answerCount;
+    });
+    
+    // Инициализируем обработчики
+    setupPointsListeners();
+    updateAllPointsCalculations();
+    
+    // Кнопка добавления вопроса
+    const addBtn = document.getElementById('add-question-btn');
+    if (addBtn) {
+        addBtn.addEventListener('click', addNewQuestion);
+    }
 });
+
+// Делаем функции глобальными
+window.addAnswer = addAnswer;
+window.removeAnswer = removeAnswer;
+window.removeQuestion = removeQuestion;
+window.moveQuestionUp = moveQuestionUp;
+window.moveQuestionDown = moveQuestionDown;
+window.goBack = goBack;
+window.createDraft = createDraft;
+window.deleteEntity = deleteEntity;
+window.showNotification = showNotification;
+window.validateForm = validateForm;
 </script>

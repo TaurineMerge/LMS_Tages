@@ -86,7 +86,14 @@ public class TestWebRouter {
                             controller.deleteTest(ctx);
                         }
                     });
-                    
+                    post("/delete", ctx -> {
+                        String id = ctx.pathParam("id");
+                        if (id.startsWith("draft-")) {
+                            controller.deleteDraft(ctx);
+                        } else {
+                            controller.deleteTest(ctx);
+                        }
+                    });
                     // ========== ДОПОЛНИТЕЛЬНЫЕ ОПЕРАЦИИ ==========
                     
                     // 9. Создание черновика из существующего теста

@@ -7,7 +7,7 @@
     <!-- Универсальные кнопки сохранения -->
     {{#if isDraft}}
         <!-- Режим черновика -->
-        <button type="submit" form="testForm" formaction="/testing/web/tests/save" class="btn-primary">
+        <button type="submit" form="testForm" formaction="/testing/web/tests/draft" class="btn-primary">
             💾 Сохранить черновик
         </button>
         
@@ -15,9 +15,15 @@
             {{#if hasPublishedTest}}🔄 Обновить тест{{else}}🚀 Опубликовать тест{{/if}}
         </button>
         
-        <button type="button" class="btn-danger" onclick="deleteEntity('{{entityId}}')">
+        {{!-- <button type="button" class="btn-danger" onclick="deleteEntity('{{entityId}}')">
             🗑️ Удалить черновик
         </button>
+ --}}
+        <form method="POST" action="/testing/web/tests/{{entityId}}/delete" style="display: inline;">
+        <button type="submit" class="btn-danger" onclick="return confirm('Удалить черновик?')">
+            🗑️ Удалить черновик
+        </button>
+    </form>
     {{else}}
         <!-- Режим теста -->
         {{#if isNew}}
@@ -26,21 +32,18 @@
             </button>
         {{else}}
             <button type="submit" form="testForm" formaction="/testing/web/tests/save" class="btn-success">
-                💾 Сохранить тест
+                💾 Сохранить изменения
             </button>
             
-            <button type="button" class="btn-secondary" onclick="createDraft('{{test.id}}')">
+            {{!-- <button type="button" class="btn-secondary" onclick="createDraft('{{test.id}}')">
                 📝 Редактировать как черновик
-            </button>
-            
-            <button type="button" class="btn-primary" 
-                    onclick="window.location.href='/testing/web/tests/{{test.id}}/preview'">
-                👁️ Предпросмотр
-            </button>
+            </button> --}}
+
             
             <button type="button" class="btn-danger" onclick="deleteEntity('{{test.id}}')">
                 🗑️ Удалить тест
             </button>
+            
         {{/if}}
     {{/if}}
 </div>
