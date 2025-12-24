@@ -162,9 +162,24 @@ public class TestService {
      * @return true — если тест был удалён; false — если не найден
      */
     public boolean deleteTest(String id) {
+    try {
         UUID uuid = UUID.fromString(id);
+        
+        // Проверяем, существует ли тест
+        if (repository.findById(uuid).isEmpty()) {
+            return false; // Тест не найден
+        }
+        
+        // Пытаемся удалить (сначала вопросы, потом тест)
         return repository.deleteById(uuid);
+        
+    } catch (IllegalArgumentException e) {
+        throw new RuntimeException("Неверный формат ID теста: " + id, e);
+    } catch (RuntimeException e) {
+        // Добавляем информацию об ID в сообщение об ошибке
+        throw new RuntimeException("Ошибка при удалении теста " + id + ": " + e.getMessage(), e);
     }
+}
 
     /**
      * Проверяет, существует ли тест по ID курса.

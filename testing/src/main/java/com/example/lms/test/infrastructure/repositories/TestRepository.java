@@ -7,6 +7,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -224,16 +225,80 @@ public class TestRepository implements TestRepositoryInterface {
      */
     @Override
     public boolean deleteById(UUID id) {
-        String sql = "DELETE FROM testing.test_d WHERE id = ?";
-
-        try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setObject(1, id);
-            return stmt.executeUpdate() > 0;
-
+        Connection conn = null;
+        
+        try {
+            conn = getConnection();
+            conn.setAutoCommit(false); // Начинаем транзакцию
+            
+            // 1. Находим все вопросы этого теста
+            String findQuestionsSQL = "SELECT id FROM testing.question_d WHERE test_id = ?";
+            List<UUID> questionIds = new ArrayList<>();
+            
+            try (PreparedStatement findQuestionsStmt = conn.prepareStatement(findQuestionsSQL)) {
+                findQuestionsStmt.setObject(1, id);
+                ResultSet rs = findQuestionsStmt.executeQuery();
+                
+                while (rs.next()) {
+                    questionIds.add(rs.getObject("id", UUID.class));
+                }
+            }
+            
+            System.out.println("Found " + questionIds.size() + " questions to delete");
+            
+            // 2. Удаляем все ответы для этих вопросов
+            if (!questionIds.isEmpty()) {
+                String deleteAnswersSQL = "DELETE FROM testing.answer_d WHERE question_id = ?";
+                try (PreparedStatement deleteAnswersStmt = conn.prepareStatement(deleteAnswersSQL)) {
+                    for (UUID questionId : questionIds) {
+                        deleteAnswersStmt.setObject(1, questionId);
+                        deleteAnswersStmt.addBatch();
+                    }
+                    int[] answerDeletions = deleteAnswersStmt.executeBatch();
+                    System.out.println("Deleted answers: " + Arrays.stream(answerDeletions).sum());
+                }
+            }
+            
+            // 3. Удаляем все вопросы
+            String deleteQuestionsSQL = "DELETE FROM testing.question_d WHERE test_id = ?";
+            try (PreparedStatement deleteQuestionsStmt = conn.prepareStatement(deleteQuestionsSQL)) {
+                deleteQuestionsStmt.setObject(1, id);
+                int questionsDeleted = deleteQuestionsStmt.executeUpdate();
+                System.out.println("Deleted " + questionsDeleted + " questions");
+            }
+            
+            // 4. Теперь удаляем сам тест
+            String deleteTestSQL = "DELETE FROM testing.test_d WHERE id = ?";
+            try (PreparedStatement deleteTestStmt = conn.prepareStatement(deleteTestSQL)) {
+                deleteTestStmt.setObject(1, id);
+                int testsDeleted = deleteTestStmt.executeUpdate();
+                
+                conn.commit(); // Фиксируем транзакцию
+                System.out.println("Deleted " + testsDeleted + " tests");
+                return testsDeleted > 0;
+            }
+            
         } catch (SQLException e) {
+            // Откатываем транзакцию при ошибке
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException rollbackEx) {
+                    System.err.println("Ошибка при откате транзакции: " + rollbackEx.getMessage());
+                }
+            }
             throw new RuntimeException("Ошибка при удалении теста: " + e.getMessage(), e);
+            
+        } finally {
+            // Закрываем соединение
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException closeEx) {
+                    System.err.println("Ошибка при закрытии соединения: " + closeEx.getMessage());
+                }
+            }
         }
     }
 

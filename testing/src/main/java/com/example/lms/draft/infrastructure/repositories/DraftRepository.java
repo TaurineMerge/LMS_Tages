@@ -282,22 +282,78 @@ public class DraftRepository implements DraftRepositoryInterface {
 	 */
 	@Override
 	public boolean deleteById(UUID id) {
-		String sql = """
-				DELETE FROM testing.draft_b
-				WHERE id = ?
-				""";
-
-		try (Connection conn = getConnection();
-				PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-			stmt.setObject(1, id);
-			return stmt.executeUpdate() > 0;
-
+		Connection conn = null;
+		
+		try {
+			conn = getConnection();
+			conn.setAutoCommit(false);
+			
+			// 1. Находим все вопросы черновика
+			String findQuestionsSQL = "SELECT id FROM testing.question_d WHERE draft_id = ?";
+			List<UUID> questionIds = new ArrayList<>();
+			
+			try (PreparedStatement findQuestionsStmt = conn.prepareStatement(findQuestionsSQL)) {
+				findQuestionsStmt.setObject(1, id);
+				ResultSet rs = findQuestionsStmt.executeQuery();
+				
+				while (rs.next()) {
+					questionIds.add(rs.getObject("id", UUID.class));
+				}
+			}
+			
+			System.out.println("Found " + questionIds.size() + " draft questions to delete");
+			
+			// 2. Удаляем ответы для этих вопросов
+			if (!questionIds.isEmpty()) {
+				String deleteAnswersSQL = "DELETE FROM testing.answer_d WHERE question_id = ?";
+				try (PreparedStatement deleteAnswersStmt = conn.prepareStatement(deleteAnswersSQL)) {
+					for (UUID questionId : questionIds) {
+						deleteAnswersStmt.setObject(1, questionId);
+						deleteAnswersStmt.addBatch();
+					}
+					int[] answerDeletions = deleteAnswersStmt.executeBatch();
+					int totalAnswersDeleted = 0;
+					for (int deleted : answerDeletions) {
+						totalAnswersDeleted += deleted;
+					}
+					System.out.println("Deleted " + totalAnswersDeleted + " draft answers");
+				}
+			}
+			
+			// 3. Удаляем вопросы черновика
+			String deleteQuestionsSQL = "DELETE FROM testing.question_d WHERE draft_id = ?";
+			try (PreparedStatement stmt = conn.prepareStatement(deleteQuestionsSQL)) {
+				stmt.setObject(1, id);
+				int questionsDeleted = stmt.executeUpdate();
+				System.out.println("Deleted " + questionsDeleted + " draft questions");
+			}
+			
+			// 4. Удаляем сам черновик - ИСПРАВЛЕНО!
+			String deleteDraftSQL = "DELETE FROM testing.draft_b WHERE id = ?";
+			
+			try (PreparedStatement stmt = conn.prepareStatement(deleteDraftSQL)) {
+				stmt.setObject(1, id);
+				int deleted = stmt.executeUpdate();
+				
+				conn.commit();
+				System.out.println("Deleted " + deleted + " drafts");
+				return deleted > 0;
+			}
+			
 		} catch (SQLException e) {
-			throw new RuntimeException("Ошибка при удалении черновика по id: " + id, e);
+			if (conn != null) {
+				try { conn.rollback(); } catch (SQLException ignored) {}
+			}
+			throw new RuntimeException("Ошибка при удалении черновика: " + e.getMessage(), e);
+		} finally {
+			if (conn != null) {
+				try {
+					conn.setAutoCommit(true);
+					conn.close();
+				} catch (SQLException ignored) {}
+			}
 		}
 	}
-
 	/**
 	 * Удаляет черновики по идентификатору курса.
 	 *
