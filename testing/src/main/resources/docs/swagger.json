@@ -1616,6 +1616,80 @@
           }
         }
       }
+    },
+    "/internal/course/{courseId}/test": {
+      "get": {
+        "tags": ["Internal"],
+        "summary": "Получить тест для курса",
+        "description": "Возвращает тест для указанного курса через внутренний API",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "courseId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "description": "Идентификатор курса (UUID v4)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Тест найден",
+            "schema": {
+              "$ref": "#/definitions/CourseTestResponse"
+            }
+          },
+          "400": {
+            "description": "Неверный формат UUID"
+          },
+          "401": {
+            "description": "Не авторизован"
+          }
+        }
+      }
+    },
+    "/internal/course/{courseId}/draft": {
+      "get": {
+        "tags": ["Internal"],
+        "summary": "Получить черновик для курса",
+        "description": "Возвращает черновик для указанного курса через внутренний API",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "courseId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "description": "Идентификатор курса (UUID v4)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Черновик найден",
+            "schema": {
+              "$ref": "#/definitions/CourseDraftResponse"
+            }
+          },
+          "400": {
+            "description": "Неверный формат UUID"
+          },
+          "401": {
+            "description": "Не авторизован"
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -2125,6 +2199,106 @@
         "order": {
           "type": "integer",
           "description": "Порядковый номер вопроса в тесте"
+        }
+      }
+    },
+    "CourseTestResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/TestData"
+        },
+        "courseId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор курса (UUID v4)"
+        },
+        "status": {
+          "type": "string",
+          "description": "Статус операции: 'success' или 'not_found'"
+        }
+      }
+    },
+    "CourseDraftResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/DraftData"
+        },
+        "courseId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор курса (UUID v4)"
+        },
+        "status": {
+          "type": "string",
+          "description": "Статус операции: 'success' или 'not_found'"
+        }
+      }
+    },
+    "TestData": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор теста (UUID v4)"
+        },
+        "courseId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор курса (UUID v4)"
+        },
+        "title": {
+          "type": "string",
+          "description": "Название теста"
+        },
+        "min_point": {
+          "type": "integer",
+          "description": "Минимальный балл для прохождения"
+        },
+        "description": {
+          "type": "string",
+          "description": "Описание теста"
+        }
+      }
+    },
+    "DraftData": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор черновика (UUID v4)"
+        },
+        "testId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор теста (UUID v4)"
+        },
+        "courseId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор курса (UUID v4)"
+        },
+        "title": {
+          "type": "string",
+          "description": "Название черновика"
+        },
+        "min_point": {
+          "type": "integer",
+          "description": "Минимальный балл для прохождения"
+        },
+        "description": {
+          "type": "string",
+          "description": "Описание черновика"
         }
       }
     }

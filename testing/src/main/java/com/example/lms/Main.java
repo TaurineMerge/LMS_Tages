@@ -104,7 +104,7 @@ public class Main {
 		ContentService contentService = new ContentService(contentRepository);
 		MinioStorageService minioStorageService = new MinioStorageService(minioConfig);
 		TestAttemptService testAttemptService = new TestAttemptService(testAttemptRepository, minioStorageService);
-		InternalApiService internalApiService = new InternalApiService(testAttemptService, testService);
+		InternalApiService internalApiService = new InternalApiService(testAttemptService, testService, draftService);
 
 		// Контроллер, принимающий HTTP-запросы
 		TestController testController = new TestController(testService, handlebars);
