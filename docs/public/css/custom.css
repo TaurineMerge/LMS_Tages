@@ -9,7 +9,7 @@ body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
     line-height: 1.6;
     color: #2d3748;
-    background: linear-gradient(135deg, #fff8f0 0%, #ffe0cc 50%, #ffccb3 100%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
 }
 
@@ -32,7 +32,7 @@ body {
     left: 0;
     right: 0;
     height: 5px;
-    background: linear-gradient(90deg, #ff6636, #ff8c42);
+    background: linear-gradient(90deg, #667eea, #764ba2);
 }
 
 /* ===== ХЕДЕР И НАВИГАЦИЯ ===== */
@@ -71,7 +71,7 @@ body {
 
 .logo-icon {
     font-size: 2rem;
-    background: linear-gradient(135deg, #ff6636, #ff8c42);
+    background: linear-gradient(135deg, #667eea, #764ba2);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -93,13 +93,13 @@ body {
 }
 
 .nav-link:hover {
-    color: #ff6636;
-    background: rgba(255, 102, 54, 0.1);
+    color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
 }
 
 .nav-item.active .nav-link {
-    color: #ff6636;
-    background: rgba(255, 102, 54, 0.1);
+    color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
 }
 
 /* ===== ХЛЕБНЫЕ КРОШКИ ===== */
@@ -116,14 +116,14 @@ body {
 }
 
 .breadcrumbs a {
-    color: #ff6636;
+    color: #667eea;
     text-decoration: none;
     transition: color 0.3s;
     font-weight: 500;
 }
 
 .breadcrumbs a:hover {
-    color: #ff4500;
+    color: #764ba2;
     text-decoration: underline;
 }
 
@@ -133,7 +133,7 @@ h1 {
     font-weight: 700;
     color: #2d3748;
     margin-bottom: 1.5rem;
-    background: linear-gradient(135deg, #ff6636, #ff8c42);
+    background: linear-gradient(135deg, #667eea, #764ba2);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -174,8 +174,8 @@ h3 {
 
 .service-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 20px 40px rgba(255, 102, 54, 0.15);
-    border-color: #ff6636;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    border-color: #667eea;
 }
 
 .service-card h3 {
@@ -213,7 +213,7 @@ h3 {
 /* ===== СЕКЦИИ С ССЫЛКАМИ ===== */
 .section-links {
     background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
-    border-left: 4px solid #ff6636;
+    border-left: 4px solid #667eea;
     padding: 1.5rem;
     margin: 2rem 0;
     border-radius: 0 15px 15px 0;
@@ -249,8 +249,8 @@ h3 {
 
 .section-card:hover {
     transform: translateX(5px);
-    border-color: #ff6636;
-    box-shadow: 0 10px 20px rgba(255, 102, 54, 0.1);
+    border-color: #667eea;
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.1);
 }
 
 .section-card .icon {
@@ -288,12 +288,12 @@ h3 {
 }
 
 .nav-prev, .nav-next {
-    color: #ff6636;
-    border: 2px solid #ff6636;
+    color: #667eea;
+    border: 2px solid #667eea;
 }
 
 .nav-prev:hover, .nav-next:hover {
-    background: #ff6636;
+    background: #667eea;
     color: white;
 }
 
@@ -339,92 +339,8 @@ h3 {
 }
 
 #update-date {
-    color: #ff6636;
+    color: #667eea;
     font-weight: 600;
-}
-
-/* ===== СТИЛИ ДЛЯ ИЗОБРАЖЕНИЙ ===== */
-.page-content img,
-.content img {
-    max-width: 100%;
-    height: auto;
-    display: block;
-    margin: 1.5rem auto;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    border: 1px solid #e2e8f0;
-}
-
-/* Особый стиль для C4 диаграмм */
-.page-content img[src*="/c4/"] {
-    background: white;
-    padding: 1rem;
-    border: 2px solid #cbd5e0;
-}
-
-/* Стиль только для C4 диаграмм */
-img[src*="c4-container"],
-img[src*="/c4/"] {
-    max-width: 90%;
-    height: auto;
-    display: block;
-    margin: 2rem auto;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 10px;
-    background: #f8fafc;
-}
-
-/* Стили для секции диаграмм */
-.diagrams-section {
-    margin: 2rem 0;
-}
-
-.diagrams-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1.5rem;
-    margin: 1.5rem 0;
-}
-
-.diagram-card {
-    display: flex;
-    flex-direction: column;
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 1.5rem;
-    text-decoration: none;
-    color: inherit;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-}
-
-.diagram-card:hover {
-    transform: translateY(-5px);
-    border-color: #ff6636;
-    box-shadow: 0 10px 25px rgba(255, 102, 54, 0.15);
-}
-
-.diagram-card .icon {
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
-    text-align: center;
-}
-
-.diagram-card .title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #2d3748;
-    margin-bottom: 0.5rem;
-    text-align: center;
-}
-
-.diagram-card .desc {
-    font-size: 0.9rem;
-    color: #718096;
-    line-height: 1.5;
-    text-align: center;
 }
 
 /* ===== АДАПТИВНОСТЬ ===== */
@@ -463,8 +379,97 @@ img[src*="/c4/"] {
         width: 100%;
         text-align: center;
     }
-    
+
+        /* ===== СТИЛИ ДЛЯ ИЗОБРАЖЕНИЙ ===== */
+
+/* Стиль для всех изображений внутри контента */
+.page-content img,
+.content img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 1.5rem auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+}
+
+/* Особый стиль для C4 диаграмм */
+.page-content img[src*="/c4/"] {
+    background: white;
+    padding: 1rem;
+    border: 2px solid #cbd5e0;
+}
+
+/* Для мобильных устройств */
+@media (max-width: 768px) {
     .page-content img {
         margin: 1rem auto;
     }
+}
+}
+
+/* Стиль только для C4 диаграмм */
+img[src*="c4-container"],
+img[src*="/c4/"] {
+    max-width: 90%; /* или 100% если нужно на всю ширину */
+    height: auto;
+    display: block;
+    margin: 2rem auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 10px;
+    background: #f8fafc;
+}
+
+/* Стили для секции диаграмм */
+.diagrams-section {
+    margin: 2rem 0;
+}
+
+.diagrams-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin: 1.5rem 0;
+}
+
+.diagram-card {
+    display: flex;
+    flex-direction: column;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.diagram-card:hover {
+    transform: translateY(-5px);
+    border-color: #667eea;
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.15);
+}
+
+.diagram-card .icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.diagram-card .title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+    text-align: center;
+}
+
+.diagram-card .desc {
+    font-size: 0.9rem;
+    color: #718096;
+    line-height: 1.5;
+    text-align: center;
 }

@@ -19,6 +19,7 @@ erDiagram
         TEXT description
         VARCHAR(20) level "not null, check: ['hard', 'medium', 'easy']"
         UUID category_id FK "not null"
+        VARCHAR(500) image_key
         VARCHAR(20) visibility "not null, check: ['draft', 'public'], default 'draft'"
         TIMESTAMP created_at "not null, default NOW()"
         TIMESTAMP updated_at "not null, default NOW()"
@@ -26,10 +27,9 @@ erDiagram
     lesson_d {
         UUID id PK "not null, default gen_random_uuid()"
         VARCHAR(255) title "not null"
-        TEXT description
         UUID course_id FK "not null"
         VARCHAR(20) visibility "not null, check: ['draft', 'public'], default 'draft'"
-        TEXT content "not null"
+        TEXT content "not null, default 'draft'"
         TIMESTAMP created_at "not null, default NOW()"
         TIMESTAMP updated_at "not null, default NOW()"
     }

@@ -44,7 +44,7 @@ hasCJKLanguage = false
   
   [[menu.main]]
     identifier = "account"
-    name = "ЛК"
+    name = "Account"
     url = "/account/"
     weight = 50
 

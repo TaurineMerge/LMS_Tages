@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>1. Общая информация on LMS Documentation</title>
+    <link>//localhost:1313/documentation/01_overviews/</link>
+    <description>Recent content in 1. Общая информация on LMS Documentation</description>
+    <generator>Hugo</generator>
+    <language>ru-ru</language>
+    <lastBuildDate>Mon, 15 Dec 2025 00:00:00 +0000</lastBuildDate>
+    <atom:link href="//localhost:1313/documentation/01_overviews/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Описание</title>
+      <link>//localhost:1313/documentation/01_overviews/01_overview/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/documentation/01_overviews/01_overview/</guid>
+      <description>&lt;p&gt;&lt;strong&gt;LMS&lt;/strong&gt; - это система управления обучением, предназначенная для организации и проведения учебных процессов. Студенты могут знакомиться с курсами и уроками без обязательной регистрации, а после авторизации — проходить итоговое тестирование и получать сертификаты о завершении обучения. Преподавателям система предоставляет инструменты для создания собственных курсов, уроков и тестов, позволяя эффективно передавать знания и оценивать результаты учащихся.&lt;/p&gt;&#xA;&lt;h3 id=&#34;основной-функционал&#34;&gt;Основной функционал:&lt;/h3&gt;&#xA;&lt;blockquote&gt;&#xA;&lt;p&gt;Функционал может меняться в зависимости от роли пользователя.&lt;/p&gt;&#xA;&lt;/blockquote&gt;&#xA;&lt;blockquote&gt;&#xA;&lt;p&gt;Для студентов:&lt;/p&gt;&#xA;&lt;/blockquote&gt;&#xA;&lt;hr&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Просмотр курсов и уроков без обязательной регистрации&lt;/li&gt;&#xA;&lt;li&gt;Прохождение итогового тестирования после авторизации&lt;/li&gt;&#xA;&lt;li&gt;Получение сертификатов о завершении обучения&lt;/li&gt;&#xA;&lt;li&gt;Отслеживание своего прогресса обучения&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;hr&gt;&#xA;&lt;blockquote&gt;&#xA;&lt;p&gt;Для преподавателей:&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>Требования</title>
+      <link>//localhost:1313/documentation/01_overviews/02_requiments/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/documentation/01_overviews/02_requiments/</guid>
+      <description>&lt;h2 id=&#34;бизнес-требования&#34;&gt;Бизнес требования&lt;/h2&gt;&#xA;&lt;ol&gt;&#xA;&lt;li&gt;При входе в систему должна осуществляться авторизация и аутентификация пользователя через Keycloak.&lt;/li&gt;&#xA;&lt;li&gt;Гости (неавторизованные пользователи) должны иметь возможность просматривать категории, курсы и уроки без авторизации.&lt;/li&gt;&#xA;&lt;li&gt;Для прохождения тестов и получения сертификатов пользователь должен быть авторизован.&lt;/li&gt;&#xA;&lt;li&gt;Управление контентом в административной панели должно осуществляться в табличном виде с возможностью применения следующих инструментов:&lt;/li&gt;&#xA;&lt;/ol&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;пагинация&lt;/li&gt;&#xA;&lt;li&gt;фильтрация&lt;/li&gt;&#xA;&lt;li&gt;сортировка&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;ol start=&#34;5&#34;&gt;&#xA;&lt;li&gt;Статистика прохождения тестов в личном кабинете должна отображать следующие данные:&lt;/li&gt;&#xA;&lt;/ol&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;количество попыток прохождения теста в рамках одного курса&lt;/li&gt;&#xA;&lt;li&gt;последний результат тестирования&lt;/li&gt;&#xA;&lt;li&gt;среднее количество баллов за все тесты&lt;/li&gt;&#xA;&lt;li&gt;общее количество пройденных тестов за все курсы&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;ol start=&#34;6&#34;&gt;&#xA;&lt;li&gt;При вводе данных в формы (создание/редактирование категорий, курсов, уроков, тестов) должна осуществляться валидация.&lt;/li&gt;&#xA;&lt;li&gt;Курсы, уроки и тесты должны иметь статусную модель (например, &amp;ldquo;черновик&amp;rdquo; и &amp;ldquo;опубликован&amp;rdquo;) для управления их видимостью.&lt;/li&gt;&#xA;&lt;li&gt;Взаимодействие между компонентами системы должно осуществляться по REST API.&lt;/li&gt;&#xA;&lt;li&gt;Административная панель должна предоставлять редактор для создания и редактирования уроков с поддержкой:&lt;/li&gt;&#xA;&lt;/ol&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;форматирования текста (жирный, курсив, подчеркивание, цвет)&lt;/li&gt;&#xA;&lt;li&gt;изменения стилей (заголовки, параграфы)&lt;/li&gt;&#xA;&lt;li&gt;изменения кегля и начертания шрифта&lt;/li&gt;&#xA;&lt;li&gt;вставки изображений&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;ol start=&#34;12&#34;&gt;&#xA;&lt;li&gt;Административная панель должна позволять загружать изображения для курсов в S3-хранилище (MinIO) и управлять ими.&lt;/li&gt;&#xA;&lt;li&gt;Интеграция со следующими системами:&lt;/li&gt;&#xA;&lt;/ol&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Keycloak для аутентификации и авторизации&lt;/li&gt;&#xA;&lt;li&gt;S3-совместимое хранилище (MinIO) для хранения изображений&lt;/li&gt;&#xA;&lt;li&gt;Модуль тестирования (конструктор тестов)&lt;/li&gt;&#xA;&lt;li&gt;Личный кабинет пользователя&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;быстрый-доступ&#34;&gt;Быстрый доступ&lt;/h2&gt;&#xA;&lt;p&gt;&lt;a href=&#34;//localhost:1313/documentation/01_overviews/&#34;&gt;← На главную&lt;/a&gt;&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>C4-диаграмма архитектуры LMS</title>
+      <link>//localhost:1313/documentation/01_overviews/03_architecture/</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/documentation/01_overviews/03_architecture/</guid>
+      <description>&lt;h2 id=&#34;диаграмма-контейнеров-level-2&#34;&gt;Диаграмма контейнеров (Level 2)&lt;/h2&gt;&#xA;&lt;p&gt;&lt;img src=&#34;//localhost:1313/images/c4/c4-container.png&#34; alt=&#34;C4 Container Diagram&#34;&gt;&lt;/p&gt;&#xA;&lt;p&gt;&lt;strong&gt;Описание&lt;/strong&gt;: Архитектура модулей и их взаимодействие.&lt;/p&gt;&#xA;&lt;h2 id=&#34;быстрый-доступ&#34;&gt;Быстрый доступ&lt;/h2&gt;&#xA;&lt;p&gt;&lt;a href=&#34;//localhost:1313/documentation/01_overviews/&#34;&gt;← На главную&lt;/a&gt;&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>
