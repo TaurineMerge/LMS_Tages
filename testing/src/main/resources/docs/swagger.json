@@ -1095,21 +1095,49 @@
       "get": {
         "tags": ["Drafts"],
         "summary": "Получить список черновиков тестов",
-        "description": "Возвращает список всех черновиков тестов в формате JSON",
+        "description": "Возвращает список всех черновиков тестов. Если передан параметр courseId, возвращает черновики только для указанного курса.",
         "security": [
           {
             "keycloak": ["openid"]
           }
         ],
+        "parameters": [
+          {
+            "name": "courseId",
+            "in": "query",
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "description": "Фильтр по ID курса (UUID)"
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Список черновиков",
+            "description": "Успешный ответ со списком черновиков",
             "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Draft"
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Draft"
+                  }
+                },
+                "courseId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                  "description": "ID курса (если был передан в запросе)"
+                },
+                "status": {
+                  "type": "string",
+                  "description": "Статус операции: 'success' или 'error' (если черновиков нет)"
+                }
               }
             }
+          },
+          "400": {
+            "description": "Неверный формат UUID"
           },
           "401": {
             "description": "Не авторизован"
@@ -1146,6 +1174,131 @@
           },
           "401": {
             "description": "Не авторизован"
+          }
+        }
+      }
+    },
+    "/drafts/by-course/{courseId}": {
+      "get": {
+        "tags": ["Drafts"],
+        "summary": "Получить черновики по ID курса",
+        "description": "Возвращает список черновиков для указанного курса",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "courseId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "description": "Идентификатор курса (UUID v4)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список черновиков курса",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Draft"
+              }
+            }
+          },
+          "400": {
+            "description": "Неверный формат UUID"
+          },
+          "401": {
+            "description": "Не авторизован"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Drafts"],
+        "summary": "Удалить черновики по ID курса",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "courseId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Результат удаления",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "deleted": {
+                  "type": "boolean",
+                  "description": "Были ли удалены черновики"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверный формат UUID"
+          },
+          "401": {
+            "description": "Не авторизован"
+          }
+        }
+      }
+    },
+    "/drafts/by-course/validate/{courseId}": {
+      "get": {
+        "tags": ["Drafts"],
+        "summary": "Проверить существование черновиков по идентификатору курса",
+        "description": "Проверяет, существуют ли черновики для указанного курса, и возвращает результат в виде объекта с полем exists.",
+        "security": [
+          {
+            "keycloak": ["openid"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "courseId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "description": "Идентификатор курса (UUID v4)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Результат проверки существования черновиков для указанного курса",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "exists": {
+                  "type": "boolean",
+                  "description": "Существуют ли черновики для указанного курса"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверный формат UUID"
+          },
+          "401": {
+            "description": "Не авторизован"
+          },
+          "500": {
+            "description": "Внутренняя ошибка сервера"
           }
         }
       }
@@ -1841,12 +1994,18 @@
           "format": "uuid",
           "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
           "description": "Идентификатор теста, к которому относится черновик (UUID v4)"
+        },
+        "course_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор курса, к которому относится черновик (UUID v4)"
         }
       }
     },
     "DraftCreate": {
       "type": "object",
-      "required": ["title", "test_id"],
+      "required": ["title"],
       "properties": {
         "title": {
           "type": "string",
@@ -1865,6 +2024,12 @@
           "format": "uuid",
           "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
           "description": "Идентификатор теста, к которому относится черновик (UUID v4)"
+        },
+        "course_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор курса, к которому относится черновик (UUID v4)"
         }
       }
     },
@@ -1888,6 +2053,12 @@
           "format": "uuid",
           "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
           "description": "Идентификатор теста, к которому относится черновик (UUID v4)"
+        },
+        "course_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "Идентификатор курса, к которому относится черновик (UUID v4)"
         }
       }
     },

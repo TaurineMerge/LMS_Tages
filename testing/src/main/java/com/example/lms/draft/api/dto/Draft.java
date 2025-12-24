@@ -3,22 +3,12 @@ package com.example.lms.draft.api.dto;
 import java.io.Serializable;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * DTO для представления черновика теста (draft).
  * <p>
  * Используется для передачи данных о черновике между слоями приложения.
- * Содержит информацию:
- * <ul>
- * <li><b>id</b> — идентификатор черновика</li>
- * <li><b>title</b> — название черновика (обычно название теста)</li>
- * <li><b>min_point</b> — минимальный проходной балл</li>
- * <li><b>description</b> — описание</li>
- * <li><b>testId</b> — идентификатор теста, к которому относится черновик (может быть null)</li>
- * <li><b>courseId</b> — идентификатор курса, к которому относится черновик (может быть null)</li>
- * </ul>
- *
- * Реализует {@link Serializable}, что позволяет передавать объект
- * через сеть или сохранять в файлы, если это необходимо.
  */
 public class Draft implements Serializable {
 
@@ -26,9 +16,16 @@ public class Draft implements Serializable {
 
     private UUID id;
     private String title;
+    
+    @JsonProperty("min_point")
     private Integer min_point;
+    
     private String description;
+    
+    @JsonProperty("test_id")
     private UUID testId;    // может быть null
+    
+    @JsonProperty("course_id")
     private UUID courseId;  // может быть null
 
     /**

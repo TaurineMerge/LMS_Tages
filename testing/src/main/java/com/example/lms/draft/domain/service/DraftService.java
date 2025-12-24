@@ -9,10 +9,6 @@ import com.example.lms.draft.domain.repository.DraftRepositoryInterface;
 
 public class DraftService {
     private final DraftRepositoryInterface repository;
-    
-    /** Временный UUID для черновиков без курса. */
-    private static final UUID TEMP_COURSE_ID = 
-        UUID.fromString("11111111-1111-1111-1111-111111111111");
 
     public DraftService(DraftRepositoryInterface repository) {
         this.repository = repository;
@@ -20,21 +16,14 @@ public class DraftService {
 
     /**
      * Преобразует DTO в доменную модель {@link DraftModel}.
+     * Убрана логика с временным courseId - используем null для черновиков без курса
      */
     private DraftModel toModel(Draft dto) {
-        UUID courseUuid = TEMP_COURSE_ID; // Дефолтное значение
-        
-        // Если courseId передан и валиден, используем его
-        if (dto.getCourseId() != null && !dto.getCourseId().equals(TEMP_COURSE_ID)) {
-            // У Draft DTO courseId уже UUID, не нужно конвертировать
-            courseUuid = dto.getCourseId();
-        }
-        
         if (dto.getId() == null) {
             // Новый черновик
             return new DraftModel(
                 dto.getTestId(),  // МОЖЕТ БЫТЬ NULL
-                courseUuid,       // course_id (temp или реальный)
+                dto.getCourseId(), // МОЖЕТ БЫТЬ NULL - используем переданное значение
                 dto.getTitle(),
                 dto.getMin_point(),
                 dto.getDescription()
@@ -44,7 +33,7 @@ public class DraftService {
             return new DraftModel(
                 dto.getId(),
                 dto.getTestId(),  // МОЖЕТ БЫТЬ NULL
-                courseUuid,       // course_id (temp или реальный)
+                dto.getCourseId(), // МОЖЕТ БЫТЬ NULL
                 dto.getTitle(),
                 dto.getMin_point(),
                 dto.getDescription()
@@ -61,15 +50,8 @@ public class DraftService {
         dto.setTitle(model.getTitle());
         dto.setMin_point(model.getMinPoint());
         dto.setDescription(model.getDescription());
-        dto.setTestId(model.getTestId());  // МОЖЕТ БЫТЬ NULL
-        
-        // Если courseId равен временному UUID, возвращаем null
-        if (model.getCourseId() != null && !model.getCourseId().equals(TEMP_COURSE_ID)) {
-            dto.setCourseId(model.getCourseId());
-        } else {
-            dto.setCourseId(null);
-        }
-        
+        dto.setTestId(model.getTestId());
+        dto.setCourseId(model.getCourseId()); // Просто передаем как есть
         return dto;
     }
 
@@ -91,7 +73,7 @@ public class DraftService {
         }
         
         DraftModel model = toModel(dto);
-        model.validate(); // Важно: вызываем валидацию
+        model.validate();
         DraftModel saved = repository.create(model);
         return toDto(saved);
     }
@@ -111,7 +93,6 @@ public class DraftService {
 
     /**
      * Получает черновик по testId.
-     * Возвращает null если черновик не найден (вместо исключения).
      */
     public Draft getDraftByTestId(UUID testId) {
         if (testId == null) {
@@ -125,15 +106,9 @@ public class DraftService {
     
     /**
      * Получает черновики по courseId.
+     * Если courseId null, возвращает черновики без привязки к курсу
      */
     public List<Draft> getDraftsByCourseId(UUID courseId) {
-        if (courseId == null) {
-            // Возвращаем черновики с временным courseId
-            return repository.findByCourseId(TEMP_COURSE_ID).stream()
-                    .map(this::toDto)
-                    .toList();
-        }
-        
         return repository.findByCourseId(courseId).stream()
                 .map(this::toDto)
                 .toList();
@@ -176,49 +151,9 @@ public class DraftService {
     }
 
     /**
-     * Удаляет черновик по testId.
-     */
-    public boolean deleteDraftByTestId(UUID testId) {
-        if (testId == null) {
-            return false;
-        }
-        
-        return repository.findByTestId(testId)
-            .map(draft -> repository.deleteById(draft.getId()))
-            .orElse(false);
-    }
-    
-    /**
      * Удаляет черновики по courseId.
      */
     public boolean deleteDraftsByCourseId(UUID courseId) {
-        if (courseId == null) {
-            return repository.deleteByCourseId(TEMP_COURSE_ID);
-        }
-        
         return repository.deleteByCourseId(courseId);
-    }
-    
-    // ---------------------------------------------------------------------
-    // ДОПОЛНИТЕЛЬНЫЕ МЕТОДЫ
-    // ---------------------------------------------------------------------
-    
-    /**
-     * Проверяет, является ли UUID временным courseId.
-     *
-     * @param courseId UUID для проверки
-     * @return true если это временный UUID, false если реальный курс
-     */
-    public boolean isTempCourseId(UUID courseId) {
-        return TEMP_COURSE_ID.equals(courseId);
-    }
-    
-    /**
-     * Возвращает временный UUID для черновиков без курса.
-     *
-     * @return временный UUID
-     */
-    public static UUID getTempCourseId() {
-        return TEMP_COURSE_ID;
     }
 }
