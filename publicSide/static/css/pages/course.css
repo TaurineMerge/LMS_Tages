@@ -62,6 +62,7 @@
 }
 
 .course-details__value {
+    text-align: center;
     font-weight: 600;
     color: var(--main-text-color);
     font-size: 16px;
@@ -94,12 +95,10 @@
 
 
 .course-details__image {
-    width: 100%;
-    max-width: 100%;
-    height: auto;
-    border-radius: var(--border-radius);
-    margin-bottom: 30px;
-    object-fit: cover; /* Ensure image covers the area nicely */
+    float: right;
+    shape-outside: margin-box;
+    margin: 0 20px 10px 0;
+    max-width: 40%;
 }
 
 .course-details__description-title {
@@ -108,10 +107,17 @@
     margin-bottom: 15px;
     color: var(--main-text-color);
 }
+/* 
+.course-details__description-text {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 20px;
+    align-items: start;
+} */
 
 .course-details__description-text p {
     font-size: 16px;
     line-height: 1.6;
     color: var(--secondary-text-color);
-    margin-bottom: 15px; /* Add margin between paragraphs */
+    margin-bottom: 15px;
 }

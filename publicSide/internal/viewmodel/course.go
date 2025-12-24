@@ -16,6 +16,7 @@ type CourseViewModel struct {
 	LessonsAmount int
 	UpdatedAt     time.Time
 	CreatedAt     time.Time
+	ImageURL      string
 }
 
 func NewCourseViewModel(courseDTO *response.CourseDTO, lessonAmount int) *CourseViewModel {
@@ -28,6 +29,7 @@ func NewCourseViewModel(courseDTO *response.CourseDTO, lessonAmount int) *Course
 		LessonsAmount: lessonAmount,
 		UpdatedAt:     courseDTO.UpdatedAt,
 		CreatedAt:     courseDTO.CreatedAt,
+		ImageURL:      courseDTO.ImageURL,
 	}
 }
 

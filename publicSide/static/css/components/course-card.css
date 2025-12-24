@@ -13,7 +13,7 @@
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
 }
 
-.course-card__image {
+.course-card__image-container {
     width: 100%;
     height: 180px;
     background: linear-gradient(135deg, var(--accent-color-light) 0%, var(--accent-color-light) 100%);
@@ -21,6 +21,13 @@
     align-items: center;
     justify-content: center;
     font-size: 3.5rem;
+}
+
+.course-card__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 
 .course-card__content {

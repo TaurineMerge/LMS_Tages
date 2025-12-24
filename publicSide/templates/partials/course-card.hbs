@@ -1,5 +1,11 @@
 <div class="course-card">
-    <div class="course-card__image">📖</div>
+    <div class="course-card__image-container">
+        {{#if ImageURL}}
+            <img src="{{ImageURL}}" alt="Обложка курса {{Title}}" class="course-card__image">
+        {{else}}    
+            📖
+        {{/if}}
+    </div>
     <div class="course-card__content">
         <div class="course-card__meta">
             <span class="course-card__level course-card__level--{{Level}}">

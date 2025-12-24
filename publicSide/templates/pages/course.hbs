@@ -29,13 +29,12 @@
                     </div>
                 </div>
 
-                {{#if Course.ImageURL}}
-                    <img src="{{Course.ImageURL}}" alt="Обложка курса {{Course.Title}}" class="course-details__image">
-                {{/if}}
-
                 <div class="course-details__description">
                     <h2 class="course-details__description-title">О курсе</h2>
                     <div class="course-details__description-text">
+                        {{#if Course.ImageURL}}
+                            <img src="{{Course.ImageURL}}" alt="Обложка курса {{Course.Title}}" class="course-details__image">
+                        {{/if}}
                         {{#if Course.Description}}
                             <p>{{Course.Description}}</p>
                         {{else}}
