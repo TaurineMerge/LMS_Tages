@@ -356,8 +356,8 @@ function deleteEntity(entityId) {
         : 'Удалить тест? Все связанные данные будут удалены.';
     
     if (confirm(message)) {
-        fetch(`/testing/web/tests/${entityId}`, {
-            method: 'DELETE'
+        fetch(`/testing/web/tests/${entityId}/delete`, {
+            method: 'POST'
         })
         .then(response => {
             if (response.ok) {

@@ -15,15 +15,14 @@
             {{#if hasPublishedTest}}🔄 Обновить тест{{else}}🚀 Опубликовать тест{{/if}}
         </button>
         
-        {{!-- <button type="button" class="btn-danger" onclick="deleteEntity('{{entityId}}')">
-            🗑️ Удалить черновик
-        </button>
- --}}
+        <!-- Форма для удаления черновика -->
         <form method="POST" action="/testing/web/tests/{{entityId}}/delete" style="display: inline;">
-        <button type="submit" class="btn-danger" onclick="return confirm('Удалить черновик?')">
-            🗑️ Удалить черновик
-        </button>
-    </form>
+            <button type="submit" class="btn-danger" 
+                    onclick="return confirm('Удалить черновик? Это действие нельзя отменить.')">
+                🗑️ Удалить черновик
+            </button>
+        </form>
+        
     {{else}}
         <!-- Режим теста -->
         {{#if isNew}}
@@ -35,14 +34,13 @@
                 💾 Сохранить изменения
             </button>
             
-            {{!-- <button type="button" class="btn-secondary" onclick="createDraft('{{test.id}}')">
-                📝 Редактировать как черновик
-            </button> --}}
-
-            
-            <button type="button" class="btn-danger" onclick="deleteEntity('{{test.id}}')">
-                🗑️ Удалить тест
-            </button>
+            <!-- Форма для удаления теста -->
+            <form method="POST" action="/testing/web/tests/{{test.id}}/delete" style="display: inline;">
+                <button type="submit" class="btn-danger" 
+                        onclick="return confirm('Удалить тест? Все связанные вопросы и ответы будут удалены. Это действие нельзя отменить.')">
+                    🗑️ Удалить тест
+                </button>
+            </form>
             
         {{/if}}
     {{/if}}
