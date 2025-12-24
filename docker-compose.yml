@@ -13,10 +13,10 @@ services:
     depends_on:
       keycloak:
         condition: service_healthy
-      public-side:
-        condition: service_started
-      admin-panel:
-        condition: service_started
+      # public-side:
+      #   condition: service_started
+      # admin-panel:
+      #   condition: service_started
       personal-account:
         condition: service_started
       testing:
@@ -39,7 +39,7 @@ services:
     volumes:
       - keycloak_data:/var/lib/postgresql/data
     networks:
-      - keycloak-network
+      - app-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U keycloaks -d keycloaks"]
       interval: 10s
@@ -57,23 +57,14 @@ services:
       KC_DB_PASSWORD: keycloaks
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
-      KC_HEALTH_ENABLED: true
-      KC_METRICS_ENABLED: true
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+      KC_HOSTNAME: localhost
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
-      KC_PROXY: "reencrypt"
-      KC_HOSTNAME_PORT: "80"
-      KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
+      KC_PROXY: edge
       KC_HTTP_RELATIVE_PATH: "/auth"
-      KC_BASE_URL: "http://localhost/auth"
-      KC_HOSTNAME: "localhost"
-    command:
-      - start-dev
-      - --http-port=8080
-      - --import-realm
-      - --hostname-strict-https=false
-      - --http-relative-path=/auth
-      - --hostname-admin-url=http://localhost/auth
+    command: ["start-dev", "--import-realm"]
     ports: []
     volumes:
       - ./keycloak/student.json:/opt/keycloak/data/import/student.json:ro
@@ -92,7 +83,6 @@ services:
       retries: 10
       start_period: 60s
     networks:
-      - keycloak-network
       - app-network
     restart: unless-stopped
 
@@ -107,7 +97,9 @@ services:
       - ./.env
     volumes:
       - app_data:/var/lib/postgresql/data
-      - ./init-sql:/docker-entrypoint-initdb.d:ro
+      - ./init-sql/00-init-dbs.sh:/docker-entrypoint-initdb.d/00-init-dbs.sh:ro
+      - ./init-sql/01-run-all-sub-scripts.sh:/docker-entrypoint-initdb.d/01-run-all-sub-scripts.sh:ro
+      - ./init-sql:/docker-entrypoint-initdb.d/init-sql:ro
     networks:
       - app-network
     ports:
@@ -123,58 +115,58 @@ services:
       retries: 5
     restart: unless-stopped
 
-  public-side:
-    build: ./publicSide
-    container_name: public-side
-    environment:
-      DB_NAME: ${KNOWLEDGE_BASE_DB_NAME}
-      DB_USER: ${KNOWLEDGE_BASE_RO_USER}
-      DB_PASSWORD: ${KNOWLEDGE_BASE_RO_PASSWORD}
-      DB_HOST: ${APP_DB_HOST}
-      DB_PORT: ${APP_DB_INTERNAL_PORT}
-      OTEL_EXPORTER_OTLP_ENDPOINT: "otel-collector:4317"
-    ports: []
-    networks:
-      - app-network
-    depends_on:
-      app-db:
-        condition: service_healthy
-      keycloak:
-        condition: service_started
-    restart: unless-stopped
+  # public-side:
+  #   build: ./publicSide
+  #   container_name: public-side
+  #   environment:
+  #     DB_NAME: ${KNOWLEDGE_BASE_DB_NAME}
+  #     DB_USER: ${KNOWLEDGE_BASE_RO_USER}
+  #     DB_PASSWORD: ${KNOWLEDGE_BASE_RO_PASSWORD}
+  #     DB_HOST: ${APP_DB_HOST}
+  #     DB_PORT: ${APP_DB_INTERNAL_PORT}
+  #     OTEL_EXPORTER_OTLP_ENDPOINT: "otel-collector:4317"
+  #   ports: []
+  #   networks:
+  #     - app-network
+  #   depends_on:
+  #     app-db:
+  #       condition: service_healthy
+  #     keycloak:
+  #       condition: service_started
+  #   restart: unless-stopped
 
-  admin-panel:
-    build: ./adminPanel
-    container_name: admin-panel
-    env_file:
-      - ./adminPanel/.env.prod
-    environment:
-      DB_NAME: ${KNOWLEDGE_BASE_DB_NAME}
-      DB_USER: ${KNOWLEDGE_BASE_ADMIN_USER}
-      DB_PASSWORD: ${KNOWLEDGE_BASE_ADMIN_PASSWORD}
-      DB_HOST: ${APP_DB_HOST}
-      DB_PORT: ${APP_DB_INTERNAL_PORT}
-      DATABASE_POOL_MIN_SIZE: "5"
-      DATABASE_POOL_MAX_SIZE: "20"
-      KEYCLOAK_ISSUER_URL: "http://keycloak:8080/auth/realms/teacher"
-      KEYCLOAK_CLIENT_ID: "teacher-client"
-      KEYCLOAK_CLIENT_SECRET: "TEACHER_SECRET"
-      KEYCLOAK_APP_NAME: "LMS Admin Application"
-      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
-      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
-      OTEL_SERVICE_NAME: "admin-panel"
-      API_ADDRESS: ":4000"
-      CORS_ALLOW_ORIGINS: "*"
-      CORS_ALLOW_CREDENTIALS: "false"
-    ports: []
-    networks:
-      - app-network
-    depends_on:
-      app-db:
-        condition: service_healthy
-      keycloak:
-        condition: service_healthy
-    restart: unless-stopped
+  # admin-panel:
+  #   build: ./adminPanel
+  #   container_name: admin-panel
+  #   env_file:
+  #     - ./adminPanel/.env.prod
+  #   environment:
+  #     DB_NAME: ${KNOWLEDGE_BASE_DB_NAME}
+  #     DB_USER: ${KNOWLEDGE_BASE_ADMIN_USER}
+  #     DB_PASSWORD: ${KNOWLEDGE_BASE_ADMIN_PASSWORD}
+  #     DB_HOST: ${APP_DB_HOST}
+  #     DB_PORT: ${APP_DB_INTERNAL_PORT}
+  #     DATABASE_POOL_MIN_SIZE: "5"
+  #     DATABASE_POOL_MAX_SIZE: "20"
+  #     KEYCLOAK_ISSUER_URL: "http://keycloak:8080/auth/realms/teacher"
+  #     KEYCLOAK_CLIENT_ID: "teacher-client"
+  #     KEYCLOAK_CLIENT_SECRET: "TEACHER_SECRET"
+  #     KEYCLOAK_APP_NAME: "LMS Admin Application"
+  #     OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+  #     OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+  #     OTEL_SERVICE_NAME: "admin-panel"
+  #     API_ADDRESS: ":4000"
+  #     CORS_ALLOW_ORIGINS: "*"
+  #     CORS_ALLOW_CREDENTIALS: "false"
+  #   ports: []
+  #   networks:
+  #     - app-network
+  #   depends_on:
+  #     app-db:
+  #       condition: service_healthy
+  #     keycloak:
+  #       condition: service_healthy
+  #   restart: unless-stopped
 
   personal-account:
     build: ./personal-account
@@ -260,9 +252,6 @@ services:
     restart: unless-stopped
 
 networks:
-  keycloak-network:
-    driver: bridge
-    internal: true
   app-network:
     driver: bridge
 
