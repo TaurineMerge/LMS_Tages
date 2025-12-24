@@ -58,17 +58,20 @@ services:
     container_name: keycloak-dev
     environment:
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloaks
+      KC_DB_URL_HOST: keycloak-db
+      KC_DB_URL_DATABASE: keycloaks
       KC_DB_USERNAME: keycloaks
       KC_DB_PASSWORD: keycloaks
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_HOSTNAME: localhost
       KC_HOSTNAME_PORT: 8080
-      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY: edge
       KC_HEALTH_ENABLED: "true"
-      KC_HOSTNAME_STRICT_HTTPS: false
-      KC_HTTP_ENABLED: true 
+      KC_CACHE: local
     command: start-dev --import-realm --hostname-strict-https=false --hostname-strict=false
     ports:
       - "8080:8080"

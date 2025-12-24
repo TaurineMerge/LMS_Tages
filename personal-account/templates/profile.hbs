@@ -7,7 +7,7 @@
 {% block content %}
 <div class="profile">
     <div class="profile__container">
-        <form class="form profile__form" method="post" action="/account/profile"> 
+        <form class="form profile__form" method="post" action="{{prefix}}/profile"> 
         <label for="form__input--name" class="form__label name">
             <p>Имя:</p>
             <input class="form__input" type="text" id="form__input--name" name="name" placeholder="Имя" value="{{user.name}}"/>

@@ -4,7 +4,7 @@ import logging
 from typing import Tuple
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import (
     HTMLResponse,
@@ -17,6 +17,7 @@ from app.config import get_settings
 from app.core.security import JWTValidator, TokenPayload, get_current_user, get_current_user_with_raw_token
 from app.schemas.student import student_update
 from app.services import stats_service, stats_worker
+from app.services.auth import auth_service
 from app.services.keycloak import keycloak_service
 from app.services.student import student_service
 from app.telemetry import traced
@@ -208,14 +209,11 @@ async def update_profile_form(
     data: student_update = Depends(form_data_to_student_update),
     user: TokenPayload = Depends(get_current_user),
 ):
+    refresh_token = request.cookies.get("refresh_token")
+    if not refresh_token:
+        logger.warning("Refresh token missing in cookies")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired. Please login again")
     try:
-        # Логируем, что пользователь успешно аутентифицирован
-        logger.info(f"User authenticated: {user.sub}, email: {user.email}")
-
-        # Логируем полученные данные из формы
-        logger.info(f"Received form data: {data.model_dump()}")
-
-        # Правильно формируем payload для Keycloak
         keycloak_payload = {}
         if data.name is not None:
             keycloak_payload["firstName"] = data.name
@@ -223,38 +221,36 @@ async def update_profile_form(
             keycloak_payload["lastName"] = data.surname
         if data.email is not None:
             keycloak_payload["email"] = data.email
-        if data.username is not None:  # ✅ Добавлено!
-            keycloak_payload["username"] = data.username  # ✅ Добавлено!
-
-        logger.info(f"📦 Keycloak payload prepared: {keycloak_payload}")
-        logger.info(f"📡 About to update Keycloak user: {user.sub}")
+        if data.username is not None:
+            keycloak_payload["username"] = data.username
 
         await run_in_threadpool(keycloak_service.update_user_data, user.sub, keycloak_payload)
+        logger.info("✅ Keycloak update successful")
 
-        logger.info("✅ Keycloak updated successfully")
+        new_tokens = await auth_service.refresh_token(refresh_token)
+        new_access_token = new_tokens["access_token"]
+        new_refresh_token = new_tokens.get("refresh_token", refresh_token)
 
-        # Проверим, что данные действительно обновились
-        updated_data = await run_in_threadpool(keycloak_service.get_user_data, user.sub)
-        logger.info(f"🔍 Verified updated data: {updated_data}")
+        response = RedirectResponse(url="/profile?success=true", status_code=303)
 
-        # Редиректим на GET /profile
-        return RedirectResponse(url="/account/profile?success=true", status_code=303)
+        response.set_cookie(
+            "access_token",
+            new_access_token,
+            httponly=True,
+            max_age=300,  # 5 минут
+            path="/",
+        )
+        response.set_cookie(
+            "refresh_token",
+            new_refresh_token,
+            httponly=True,
+            max_age=86400,  # 24 часа
+            path="/",
+        )
+        return response
 
     except Exception as e:
         logger.error(f"💥 ERROR in update_profile_form: {e}", exc_info=True)
-        user_info = data.model_dump(exclude_unset=True)
-        return templates.TemplateResponse(
-            "profile.hbs",
-            {
-                "request": request,
-                "user": user_info,
-                "active_page": "profile",
-                "errors": [{"loc": ["server"], "msg": f"Failed to update profile: {e!s}"}],
-                **get_keycloak_urls(),
-            },
-        )
-    except Exception as e:
-        logger.error(f"Unexpected error in update_profile_form: {e}", exc_info=True)
         user_info = data.model_dump(exclude_unset=True)
         return templates.TemplateResponse(
             "profile.hbs",

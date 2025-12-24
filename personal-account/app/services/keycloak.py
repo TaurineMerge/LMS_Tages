@@ -38,14 +38,19 @@ class KeycloakService:
         """Lazy initialization of Keycloak Admin client."""
         if not self._admin_client:
             try:
+                logger.info(settings.KEYCLOAK_SERVER_URL)
+                logger.info(settings.KEYCLOAK_ADMIN_USERNAME)
+                logger.info(settings.KEYCLOAK_ADMIN_PASSWORD)
+                logger.info(settings.KEYCLOAK_REALM)
                 self._admin_client = KeycloakAdmin(
                     server_url=settings.KEYCLOAK_SERVER_URL,
                     username=settings.KEYCLOAK_ADMIN_USERNAME,
                     password=settings.KEYCLOAK_ADMIN_PASSWORD,
                     realm_name=settings.KEYCLOAK_REALM,
+                    user_realm_name="master",  # realm где находится админский пользователь
                     verify=False,
-                    custom_headers={"User-Agent": "python-keycloak-dev"},
                 )
+
             except Exception as e:
                 logger.error(f"Failed to initialize Keycloak Admin: {e}")
                 raise
@@ -107,6 +112,67 @@ class KeycloakService:
     @traced("keycloak.get_user_id", record_args=True, record_result=True)
     def get_user_id(self, username: str) -> Optional[str]:
         return self.admin.get_user_id(username)
+
+    @traced("keycloak.update_user_data", record_args=True, record_result=True)
+    def update_user_data(self, user_id: str, data: dict[str, Any]):
+        """Updates user data in Keycloak."""
+        try:
+            logger.info(f"🔄 STARTING update_user_data for user_id: {user_id}")
+            logger.info(f"📥 Input data: {data}")
+
+            # Получаем полный объект пользователя
+            user_obj = self.admin.get_user(user_id)
+            logger.info(f"📋 Current user object: {user_obj}")
+
+            # Обновляем только указанные поля
+            if "firstName" in data and data["firstName"] is not None:
+                user_obj["firstName"] = data["firstName"]
+            if "lastName" in data and data["lastName"] is not None:
+                user_obj["lastName"] = data["lastName"]
+            if "email" in data and data["email"] is not None:
+                user_obj["email"] = data["email"]
+            if "username" in data and data["username"] is not None:
+                user_obj["username"] = data["username"]  # Пытаемся обновить через полный объект
+
+            logger.info(f"📦 Updated user object: {user_obj}")
+
+            # Обновляем весь объект
+            result = self.admin.update_user(user_id=user_id, payload=user_obj)
+            logger.info(f"✅ Keycloak API update result: {result}")
+
+            # Проверяем результат
+            updated_user = self.admin.get_user(user_id)
+            logger.info(f"📋 User data AFTER full update: {updated_user}")
+
+            # Проверяем, что изменения применились
+            changes_applied = True
+            if "firstName" in data and updated_user.get("firstName") != data["firstName"]:
+                logger.error(
+                    f"❌ Name was not updated! Expected: {data['firstName']}, Got: {updated_user.get('firstName')}"
+                )
+                changes_applied = False
+            if "lastName" in data and updated_user.get("lastName") != data["lastName"]:
+                logger.error(
+                    f"❌ Surname was not updated! Expected: {data['lastName']}, Got: {updated_user.get('lastName')}"
+                )
+                changes_applied = False
+            if "email" in data and updated_user.get("email") != data["email"]:
+                logger.error(f"❌ Email was not updated! Expected: {data['email']}, Got: {updated_user.get('email')}")
+                changes_applied = False
+            if "username" in data and updated_user.get("username") != data["username"]:
+                logger.error(
+                    f"❌ Username was not updated! Expected: {data['username']}, Got: {updated_user.get('username')}"
+                )
+                changes_applied = False
+
+            if changes_applied:
+                logger.info(f"🎉 User {user_id} updated successfully in Keycloak.")
+            else:
+                logger.error(f"💥 Some fields were not updated for user {user_id}")
+
+        except Exception as e:
+            logger.error(f"💥 ERROR in update_user_data: {e}", exc_info=True)
+            raise
 
 
 # Singleton instance
