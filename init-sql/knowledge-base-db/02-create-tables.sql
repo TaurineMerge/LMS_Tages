@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS knowledge_base.course_b (
     level VARCHAR(20) NOT NULL CHECK (level IN ('hard', 'medium', 'easy')),
     visibility VARCHAR(20) NOT NULL DEFAULT 'draft' CHECK (visibility IN ('draft', 'public')),
     category_id UUID NOT NULL REFERENCES knowledge_base.category_d(id) ON DELETE RESTRICT,
+    image_key VARCHAR(500),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
