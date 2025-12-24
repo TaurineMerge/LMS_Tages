@@ -7,12 +7,21 @@
     
     <title>
         
-             | LMS Documentation
+            ER-диаграмма базы данных LMS | LMS Documentation
         
     </title>
 
     
     
+    
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose'
+        });
+    </script>
     
     
     
@@ -88,14 +97,54 @@
                 → <a href="/account/">Account</a>
             
             
-            → 
+            → ER-диаграмма базы данных LMS
         
     </div>
     
-    <h1></h1>
+    <h1>ER-диаграмма базы данных LMS</h1>
     
     <div class="content">
-        
+        <div class="mermaid">
+    
+
+erDiagram
+    student_s {
+        uuid id PK "not null, unique"
+        varchar name
+        varchar surname
+        date birth_date
+        varchar avatar
+        json contacts
+        varchar email
+        varchar phone
+    }
+    
+    certificate_b {
+        uuid id PK "not null, unique"
+        integer certificate_number
+        date created_at
+        varchar content
+        uuid student_id FK
+        uuid course_id FK
+    }
+    
+    test_attempt_b {
+        uuid id PK "student_id, test_id, date_of_attempt"
+        uuid student_id "not null"
+        uuid test_id "not null"
+        date date_of_attempt
+        int point
+        uuid certificate_id
+        json attempt_version
+    }
+    
+    
+    student_s ||--o{ certificate_b : "receives certificates"
+    certificate_b ||--o| test_attempt_b : "issued for attempt"
+
+
+</div>
+
     </div>
     
     
@@ -120,15 +169,13 @@
     
     <div class="navigation">
         
-        <a href="//localhost:1313/account/diagrams/user-journey/" class="nav-prev">← </a>
+        <a href="//localhost:1313/account/diagrams/flowchart/" class="nav-prev">← Flowchart-диаграмма архитектуры LMS</a>
         
         
         
         <a href="/account/" class="nav-home">↑ К разделу Account</a>
         
         
-        
-        <a href="//localhost:1313/account/diagrams/sequence/" class="nav-next">Sequence-диаграмма архитектуры LMS →</a>
         
     </div>
 </div>
@@ -139,8 +186,8 @@
         <footer class="site-footer">
     <div class="footer-container">
         <div class="footer-content">
-            <p>LMS Documentation • Обновлено: <span id="update-date">16.1223.232315</span></p>
-            <p class="footer-copyright">© 232315 LMS Project. Все права защищены.</p>
+            <p>LMS Documentation • Обновлено: <span id="update-date">11.1224.242421</span></p>
+            <p class="footer-copyright">© 242421 LMS Project. Все права защищены.</p>
         </div>
     </div>
 </footer>

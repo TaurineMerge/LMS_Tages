@@ -8,48 +8,59 @@ layout: "single"
 
 {{< mermaid >}}
 flowchart TD
-    A[Ученик завершил курс] --> B[Нажатие "Пройти тест"];
-    B --> C[Перенаправление в модуль тестирования];
-    C --> D[Загрузка страницы теста<br/>все вопросы на одной странице];
+    STU_Start[Ученик завершил курс] --> STU_Click[Нажатие 'Пройти тест'];
+    STU_Click --> STU_Redirect[Перенаправление в модуль тестирования];
+    STU_Redirect --> STU_Load[Загрузка страницы теста<br>все вопросы на одной странице];
     
-    D --> E{Выбрать вопрос};
-    E --> F[Просмотр вопроса и вариантов];
-    F --> G[Выбор ответа/ов];
-    G --> H[Нажатие "Сохранить ответ"];
-    H --> I[Ответ сохранен<br/>редактирование заблокировано];
-    I --> J{Ответить на все вопросы?};
-    J -->|Нет| E;
-    J -->|Да| K[Нажатие "Завершить тест"];
+    STU_Load --> STU_Select{Выбор вопроса};
+    STU_Select --> STU_View[Просмотр вопроса и вариантов];
+    STU_View --> STU_Choose[Выбор ответа/ов];
+    STU_Choose --> STU_Save[Нажатие 'Ответить'];
     
-    E --> K;
+    STU_Save --> STU_SendToServer[Отправка ответа на сервер];
+    STU_SendToServer --> STU_Confirmation[Подтверждение от сервера];
+    STU_Confirmation --> STU_Saved[Ответ сохранен<br>редактирование заблокировано];
     
-    K --> L{Все вопросы отвечены?};
-    L -->|Нет| M[Диалог подтверждения<br/>"Уверены, что хотите закончить?"];
-    M --> N{Подтверждение};
-    N -->|Да| O;
-    N -->|Нет| E;
-    L -->|Да| O;
+    STU_Saved --> STU_Check{Все вопросы отвечены?};
     
-    O[Отправка результатов на сервер] --> P[Перенаправление на страницу результатов];
-    P --> Q[Отображение результатов];
-    Q --> R{Успешная сдача?<br/>балл ≥ проходного};
-    R -->|Да| S[Автоматическая генерация сертификата];
-    S --> T[Сертификат отправлен в ЛК];
-    T --> U[Поздравление с успешным прохождением];
-    R -->|Нет| V[Отображение сообщения о провале];
-    V --> W[Кнопка "Пройти еще раз"];
-    W --> X[Возврат к изучению материалов];
+    STU_Check -->|Нет| STU_Continue{Продолжить отвечать?};
+    STU_Continue -->|Да| STU_Select;
+    STU_Continue -->|Нет| STU_Finish[Нажатие 'Завершить тест'];
     
-    style B fill:#e3f2fd
-    style H fill:#fff3e0
-    style K fill:#ffebee
-    style S fill:#e8f5e8
-    style W fill:#fce4ec
+    STU_Check -->|Да| STU_Finish;
+    
+    STU_Finish --> STU_Confirm{Все вопросы отвечены?};
+    STU_Confirm -->|Нет| STU_Warning[Диалог подтверждения<br>'Уверены, что хотите закончить?'];
+    STU_Warning --> STU_Decision{Подтверждение?};
+    STU_Decision -->|Да| STU_Finalize;
+    STU_Decision -->|Нет| STU_Select;
+    
+    STU_Confirm -->|Да| STU_Finalize[Отправка команды<br>'Завершить попытку'];
+    
+    STU_Finalize --> STU_Results[Перенаправление на страницу результатов];
+    STU_Results --> STU_Show[Отображение результатов<br> на основе данных с сервера];
+    STU_Show --> STU_PassCheck{Успешная сдача?<br>балл ≥ проходного};
+    
+    STU_PassCheck -->|Да| STU_Cert[Автоматическая генерация сертификата];
+    STU_Cert --> STU_Send[Сертификат отправлен в ЛК];
+    STU_Send --> STU_Congrats[Поздравление с успешным прохождением];
+    
+    STU_PassCheck -->|Нет| STU_Fail[Отображение сообщения о провале];
+    STU_Fail --> STU_Retry[Кнопка 'Пройти еще раз'];
+    STU_Retry --> STU_Return[Возврат к изучению материалов];
+
+    style STU_Click fill:#e3f2fd
+    style STU_Save fill:#fff3e0
+    style STU_SendToServer fill:#e1f5fe
+    style STU_Finish fill:#ffebee
+    style STU_Finalize fill:#f3e5f5
+    style STU_Cert fill:#e8f5e8
+    style STU_Retry fill:#fce4ec
 {{< /mermaid >}}
 
 ---
 
-## Редактирование теста учителем
+## Создание и редактирование теста учителем
 
 {{< mermaid >}}
 flowchart TD

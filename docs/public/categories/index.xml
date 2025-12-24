@@ -6,6 +6,35 @@
     <description>Recent content in Categories on LMS Documentation</description>
     <generator>Hugo</generator>
     <language>ru-ru</language>
+    <lastBuildDate>Wed, 15 Jan 2025 00:00:00 +0000</lastBuildDate>
     <atom:link href="//localhost:1313/categories/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>User Journey</title>
+      <link>//localhost:1313/categories/user-journey/</link>
+      <pubDate>Wed, 15 Jan 2025 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/categories/user-journey/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>User Stories</title>
+      <link>//localhost:1313/categories/user-stories/</link>
+      <pubDate>Wed, 15 Jan 2025 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/categories/user-stories/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Бэклог</title>
+      <link>//localhost:1313/categories/%D0%B1%D1%8D%D0%BA%D0%BB%D0%BE%D0%B3/</link>
+      <pubDate>Wed, 15 Jan 2025 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/categories/%D0%B1%D1%8D%D0%BA%D0%BB%D0%BE%D0%B3/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Документация</title>
+      <link>//localhost:1313/categories/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D0%B0%D1%86%D0%B8%D1%8F/</link>
+      <pubDate>Wed, 15 Jan 2025 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/categories/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D0%B0%D1%86%D0%B8%D1%8F/</guid>
+      <description></description>
+    </item>
   </channel>
 </rss>

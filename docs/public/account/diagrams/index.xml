@@ -9,6 +9,13 @@
     <lastBuildDate>Mon, 15 Dec 2025 00:00:00 +0000</lastBuildDate>
     <atom:link href="//localhost:1313/account/diagrams/index.xml" rel="self" type="application/rss+xml" />
     <item>
+      <title>ER-диаграмма базы данных LMS</title>
+      <link>//localhost:1313/account/diagrams/er/</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/account/diagrams/er/</guid>
+      <description>&lt;div class=&#34;mermaid&#34;&gt;&#xA;    &#xA;&#xA;erDiagram&#xA;    student_s {&#xA;        uuid id PK &#34;not null, unique&#34;&#xA;        varchar name&#xA;        varchar surname&#xA;        date birth_date&#xA;        varchar avatar&#xA;        json contacts&#xA;        varchar email&#xA;        varchar phone&#xA;    }&#xA;    &#xA;    certificate_b {&#xA;        uuid id PK &#34;not null, unique&#34;&#xA;        integer certificate_number&#xA;        date created_at&#xA;        varchar content&#xA;        uuid student_id FK&#xA;        uuid course_id FK&#xA;    }&#xA;    &#xA;    test_attempt_b {&#xA;        uuid id PK &#34;student_id, test_id, date_of_attempt&#34;&#xA;        uuid student_id &#34;not null&#34;&#xA;        uuid test_id &#34;not null&#34;&#xA;        date date_of_attempt&#xA;        int point&#xA;        uuid certificate_id&#xA;        json attempt_version&#xA;    }&#xA;    &#xA;    &#xA;    student_s ||--o{ certificate_b : &#34;receives certificates&#34;&#xA;    certificate_b ||--o| test_attempt_b : &#34;issued for attempt&#34;&#xA;&#xA;&#xA;&lt;/div&gt;</description>
+    </item>
+    <item>
       <title>Flowchart-диаграмма архитектуры LMS</title>
       <link>//localhost:1313/account/diagrams/flowchart/</link>
       <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
@@ -28,13 +35,6 @@
       <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
       <guid>//localhost:1313/account/diagrams/user-journey/</guid>
       <description>&lt;h2 id=&#34;цель-пользователя-пройти-курс-и-получить-сертификат&#34;&gt;Цель пользователя: пройти курс и получить сертификат&lt;/h2&gt;&#xA;&lt;div class=&#34;mermaid&#34;&gt;&#xA;    &#xA;&#xA;journey&#xA;    title User Journey: Прохождение курса учеником в LMS&#xA;    section Вход в систему&#xA;      Открытие личного кабинета: 4: Ученик&#xA;      Успешная аутентификация: 5: Ученик&#xA;    section Выбор курса&#xA;      Просмотр доступных курсов: 5: Ученик&#xA;      Изучение описания курса: 4: Ученик&#xA;      Запись на курс: 5: Ученик&#xA;    section Прохождение курса&#xA;      Изучение уроков : 4: Ученик&#xA;      Пропуск знакомых уроков: 5: Ученик&#xA;      Просмотр статистики в ЛК: 5: Ученик&#xA;    section Первая попытка теста&#xA;      Начало итогового теста: 3: Ученик&#xA;      Затруднение с вопросами: 2: Ученик&#xA;      Неудачная попытка: 1: Ученик&#xA;    section Повторная подготовка&#xA;      Повторение сложных тем: 3: Ученик&#xA;    section Вторая попытка теста&#xA;      Начало повторного теста: 4: Ученик&#xA;      Уверенные ответы: 5: Ученик&#xA;      Успешная сдача: 5: Ученик&#xA;    section Получение результата&#xA;      Просмотр результатов: 5: Ученик&#xA;      Получение именного сертификата: 5: Ученик&#xA;&#xA;&#xA;&lt;/div&gt;</description>
-    </item>
-    <item>
-      <title></title>
-      <link>//localhost:1313/account/diagrams/er/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>//localhost:1313/account/diagrams/er/</guid>
-      <description></description>
     </item>
   </channel>
 </rss>

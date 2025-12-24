@@ -14,7 +14,7 @@ sequenceDiagram
     participant K as Keycloak
     participant PA as Personal Account (Python)
     participant PS as Public Side (Go)
-    participant DB_A as PostgreSQL Auth
+    participant DB_A as KC db
     participant DB_L as PostgreSQL LMS
     
     Note over С,DB_L: Шаг 1: Регистрация через Keycloak
@@ -48,7 +48,7 @@ sequenceDiagram
     N-->>С: Профиль создан
     
     Note over С,DB_L: Шаг 4: Просмотр доступных курсов
-    С->>N: GET /api/public/courses?visibility=public
+    С->>N: GET localhost/categories/category_{id}/courses/
     N->>PS: Проксирует запрос
     PS->>DB_L: SELECT из course_b WHERE visibility='public'
     DB_L-->>PS: Список курсов

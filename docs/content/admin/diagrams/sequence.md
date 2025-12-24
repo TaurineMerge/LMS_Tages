@@ -1,58 +1,150 @@
 ---
-title: "Sequence-диаграммы архитектуры LMS"
+title: "Sequence-диаграммы админ-панели LMS"
 date: 2025-12-15
 layout: "single"
 ---
 
-## Авторизация и аутентификация пользователя
+## Вход в админ-панель и создание категории
 
 {{< mermaid >}}
 
 sequenceDiagram
-    participant С as Студент (Гость)
+    participant Admin as Админ (Teacher)
     participant N as nginx
+    participant AP as Admin Panel (Go)
     participant K as Keycloak
-    participant PA as Personal Account (Python)
-    participant PS as Public Side (Go)
-    participant DB_A as PostgreSQL Auth
-    participant DB_L as PostgreSQL LMS
+    participant KB as Knowledge Base DB
     
-    Note over С,DB_L: Шаг 1: Регистрация через Keycloak
-    С->>N: POST /auth/register
-    N->>K: Проксирует запрос
-    K->>DB_A: Сохраняет нового пользователя
-    DB_A-->>K: Успех
-    K-->>N: 201 Created + user_id
-    N-->>С: Успешная регистрация
+    Note over Admin,KB: Шаг 1: Вход в админ-панель
+    Admin->>N: GET localhost/admin
+    N->>AP: Проксирует запрос
+    AP->>K: Проверка JWT токена и роли
+    K-->>AP: {valid: true, user_id: X, roles: ["teacher"]}
+    AP-->>N: HTML страницы админ-панели
+    N-->>Admin: Отображает админ-панель
     
-    Note over С,DB_L: Шаг 2: Аутентификация
-    С->>N: POST /auth/login (email/password)
-    N->>K: Проксирует запрос
-    K->>DB_A: Проверяет учетные данные
-    DB_A-->>K: Валидны
-    K->>DB_A: Создает сессию и токены
-    DB_A-->>K: Успех
-    K-->>N: JWT Access + Refresh токены
-    N-->>С: Токены
+    Note over Admin,KB: Шаг 2: Создание категории
+    Admin->>N: POST /admin/categories (title: "Новая категория")
+    N->>AP: Проксирует запрос
+    AP->>K: Проверка JWT токена и роли
+    K-->>AP: {valid: true, user_id: X, roles: ["teacher"]}
+    AP->>KB: INSERT INTO category_d (title) VALUES ("Новая категория")
+    KB-->>AP: Успех (id категории)
+    AP-->>N: 201 Created + id категории
+    N-->>Admin: Категория успешно создана
+
+{{< /mermaid >}}
+
+---
+
+## Создание курса с загрузкой изображения
+
+{{< mermaid >}}
+
+sequenceDiagram
+    participant Admin as Админ (Teacher)
+    participant N as nginx
+    participant AP as Admin Panel (Go)
+    participant K as Keycloak
+    participant M as MinIO (S3)
+    participant KB as Knowledge Base DB
     
-    Note over С,DB_L: Шаг 3: Получение профиля
-    С->>N: GET /api/personal/profile (с JWT)
-    N->>PA: Проксирует запрос
-    PA->>K: Валидирует JWT /auth/verify
-    K-->>PA: {valid: true, user_id: X, roles: ["student"]}
-    PA->>DB_L: Ищет student_s по user_id
-    DB_L-->>PA: Не найден (первый вход)
-    PA->>DB_L: Создает запись student_s
-    DB_L-->>PA: Успех (uuid студента)
-    PA-->>N: Профиль студента с avatar=null
-    N-->>С: Профиль создан
+    Note over Admin,KB: Шаг 1: Загрузка формы создания курса
+    Admin->>N: GET /admin/categories/category_{id}/courses/new
+    N->>AP: Проксирует запрос
+    AP->>K: Проверка JWT токена и роли
+    K-->>AP: {valid: true, user_id: X, roles: ["teacher"]}
+    AP-->>N: HTML формы создания курса
+    N-->>Admin: Отображает форму
     
-    Note over С,DB_L: Шаг 4: Просмотр доступных курсов
-    С->>N: GET /api/public/courses?visibility=public
-    N->>PS: Проксирует запрос
-    PS->>DB_L: SELECT из course_b WHERE visibility='public'
-    DB_L-->>PS: Список курсов
-    PS-->>N: JSON с курсами
-    N-->>С: Каталог курсов
+    Note over Admin,KB: Шаг 2: Отправка данных курса с изображением
+    Admin->>N: POST /admin/categories/category_{id}/courses (multipart/form-data:<br/>title, description, level, category_id, visibility, image_file)
+    N->>AP: Проксирует запрос с файлом
+    
+    Note over AP,K: Проверка прав доступа
+    AP->>K: Проверка JWT токена и роли
+    K-->>AP: {valid: true, user_id: X, roles: ["teacher"]}
+    
+    Note over AP,M: Загрузка изображения в S3
+    AP->>AP: Парсинг multipart формы<br/>Извлечение image_file
+    AP->>M: PUT /go/{uuid}.jpg<br/>Загрузка файла
+    M-->>AP: Успех, возвращает image_key
+    
+    Note over AP,KB: Сохранение курса в БД
+    AP->>KB: INSERT INTO course_b<br/>(title, description, level, category_id, visibility, image_key)<br/>VALUES (..., "images/{uuid}.jpg")
+    KB-->>AP: Успех (id курса)
+    AP-->>N: 201 Created + id курса
+    N-->>Admin: Курс успешно создан
+
+{{< /mermaid >}}
+
+---
+
+## Создание и редактирование урока
+
+{{< mermaid >}}
+
+sequenceDiagram
+    participant Admin as Админ (Teacher)
+    participant N as nginx
+    participant AP as Admin Panel (Go)
+    participant K as Keycloak
+    participant KB as Knowledge Base DB
+    
+    Note over Admin,KB: Вариант A: Создание урока
+    Admin->>N: POST /admin/categories/category_{id}/courses/course_{id}/lessons<br/>(course_id, title, description, content, visibility)
+    N->>AP: Проксирует запрос
+    AP->>K: Проверка JWT токена и роли
+    K-->>AP: {valid: true, user_id: X, roles: ["teacher"]}
+    AP->>KB: INSERT INTO lesson_d<br/>(course_id, title, description, content, visibility)<br/>VALUES (...)
+    KB-->>AP: Успех (id урока)
+    AP-->>N: 201 Created
+    N-->>Admin: Урок создан
+    
+    Note over Admin,KB: Вариант B: Редактирование урока
+    Admin->>N: PUT /admin/categories/category_{id}/courses/course_{id}/lessons/lessons/{id}<br/>(title, description, content, visibility)
+    N->>AP: Проксирует запрос
+    AP->>K: Проверка JWT токена и роли
+    K-->>AP: {valid: true, user_id: X, roles: ["teacher"]}
+    AP->>KB: UPDATE lesson_d SET<br/>title=..., description=..., content=..., visibility=...<br/>WHERE id = {lesson_id}
+    KB-->>AP: Успех
+    AP-->>N: 200 OK
+    N-->>Admin: Урок обновлен
+
+{{< /mermaid >}}
+
+---
+
+## Кнопка "Создать тест"
+
+{{< mermaid >}}
+
+sequenceDiagram
+    participant Admin as Админ (Teacher)
+    participant N as nginx
+    participant AP as Admin Panel (Go)
+    participant TB as Test Builder Service
+    participant KB as Knowledge Base DB
+    
+    Note over Admin,KB: Шаг 1: Нажатие кнопки в админке
+    Admin->>N: GET /admin/courses/course_{id}/create-test (пример)
+    N->>AP: Проксирует запрос
+    AP->>KB: Получение данных курса
+    KB-->>AP: Данные курса
+    AP->>AP: Генерация ссылки на конструктор тестов<br/>с параметрами (course_id, title)
+    
+    Note over AP,TB: Перенаправление на внешний сервис
+    AP-->>N: 302 Redirect → https://test-builder.com/create?course_id=...
+    N-->>Admin: Перенаправление на конструктор тестов
+    
+    Note over Admin,TB: Работа во внешнем сервисе
+    Admin->>TB: Работает в конструкторе тестов
+    TB-->>Admin: Тест создан/сохранен
+    
+    Note over Admin,AP: Возврат в админ-панель
+    Admin->>N: GET /admin/courses/course_{id}
+    N->>AP: Проксирует запрос
+    AP-->>N: Страница курса
+    N-->>Admin: Отображает страницу курса<br/>(теперь с кнопкой "Редактировать тест")
 
 {{< /mermaid >}}

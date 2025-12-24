@@ -19,27 +19,35 @@ erDiagram
     }
     
     course_b {
-        uuid id PK "not null, unique"
-        varchar title
-        text description
-        varchar level "hard, medium, easy"
-        uuid category_id FK "not null"
-        varchar visibility "draft, public, private"
+        UUID id PK "not null, default gen_random_uuid()"
+        VARCHAR(255) title "not null"
+        TEXT description
+        VARCHAR(20) level "not null, check: ['hard', 'medium', 'easy']"
+        UUID category_id FK "not null"
+        VARCHAR(20) visibility "not null, check: ['draft', 'public'], default 'draft'"
+        TIMESTAMP created_at "not null, default NOW()"
+        TIMESTAMP updated_at "not null, default NOW()"
     }
     
     category_d {
-        uuid id PK "not null, unique"
-        varchar title
+        UUID id PK "not null, default gen_random_uuid()"
+        VARCHAR(255) title "not null"
+        TIMESTAMP created_at "not null, default NOW()"
+        TIMESTAMP updated_at "not null, default NOW()"
     }
     
     lesson_d {
-        uuid id PK "not null, unique"
-        varchar title
-        uuid course_id FK "not null"
-        json content
+        UUID id PK "not null, default gen_random_uuid()"
+        VARCHAR(255) title "not null"
+        TEXT description
+        UUID course_id FK "not null"
+        VARCHAR(20) visibility "not null, check: ['draft', 'public'], default 'draft'"
+        TEXT content "not null"
+        TIMESTAMP created_at "not null, default NOW()"
+        TIMESTAMP updated_at "not null, default NOW()"
     }
     
-    test_d {
+     test_d {
         uuid id PK "not null, unique"
         uuid course_id FK
         varchar title
@@ -49,7 +57,8 @@ erDiagram
     
     question_d {
         uuid id PK "not null, unique"
-        uuid test_id FK "not null"
+        uuid test_id FK "null"
+        uuid draft_id FK "null"
         text text_of_question
         int order
     }
@@ -78,12 +87,35 @@ erDiagram
         int point
         uuid certificate_id
         json attempt_version
+        varchar attempt_snapshot
+        boolen completed
+    }
+
+    draft_b {
+        uuid id PK "not null, unique"
+        varchar title
+        integer min_point
+        text description
+        uuid test_id "null"
+    }
+
+    content_d {
+        uuid id PK "not null, unique"
+        int order
+        text content
+        boolen type_of_content
+        uuid question_id FK "not null"
+        uuid answer_id FK "not null"
     }
     
     course_b ||--o{ lesson_d : "has lessons"
     course_b ||--|| category_d : "belongs to category"
     course_b ||--o| test_d : "has test"
     test_d ||--|{ question_d : "contains questions"
+    draft_b o|--o| test_d : "has drafts"
+    content_d }o--o| question_d: "has content"
+    content_d }o--o| answer_d: "has content"
+    draft_b ||--o{ question_d: "has questions"
     question_d ||--|{ answer_d : "has answers"
     student_s ||--o{ certificate_b : "receives certificates"
     student_s ||--o{ test_attempt_b : "attempts tests"
