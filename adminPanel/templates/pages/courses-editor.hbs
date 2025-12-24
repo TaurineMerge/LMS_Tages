@@ -95,11 +95,12 @@
                         </div>
                         
                         <div class="entity-card__body">
-                            {{#if ImageKey}}
-                            <div class="entity-card__image">
-                                <img src="{{ImageURL}}" alt="Course Image" />
+                            <div class="entity-card__image-placeholder">
+                                <span>🖼️</span>
+                                {{#if ImageKey}}
+                                <img src="{{ImageURL}}" alt="Course Image" onload="this.style.display='block'; this.previousElementSibling.style.display='none';" />
+                                {{/if}}
                             </div>
-                            {{/if}}
                             <h3 class="entity-card__title">{{Title}}</h3>
                             {{#if Description}}
                                 <p class="entity-card__description">{{Description}}</p>
