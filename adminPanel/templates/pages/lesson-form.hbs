@@ -78,10 +78,9 @@
                         <p class="form-field__hint" style="margin-bottom: 12px;">
                             Используйте панель инструментов для форматирования текста, добавления изображений и списков
                         </p>
-                        <div class="wysiwyg-editor">
-                            <div id="wysiwyg-toolbar" class="wysiwyg-toolbar"></div>
-                            <div id="lesson-content-editor" class="wysiwyg-editor__content">{{#if lesson}}{{{lesson.Content}}}{{/if}}</div>
-                        </div>
+                        <textarea 
+                            id="lesson-content-editor" 
+                            name="content">{{#if lesson}}{{{lesson.Content}}}{{/if}}</textarea>
                     </div>
                 </div>
 
@@ -99,3 +98,15 @@
         </div>
     </main>
 </div>
+
+<script>
+    // Инициализация TinyMCE редактора после загрузки страницы
+    document.addEventListener('DOMContentLoaded', function() {
+        // Проверяем что TinyMCE загружен
+        if (typeof tinymce !== 'undefined') {
+            initTinyMCE('#lesson-content-editor');
+        } else {
+            console.error('TinyMCE не загружен!');
+        }
+    });
+</script>
