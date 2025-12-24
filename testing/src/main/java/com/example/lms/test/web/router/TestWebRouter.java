@@ -8,31 +8,24 @@ import com.example.lms.tracing.SimpleTracer;
 
 import static io.javalin.apibuilder.ApiBuilder.after;
 import static io.javalin.apibuilder.ApiBuilder.before;
+import static io.javalin.apibuilder.ApiBuilder.delete;
 import static io.javalin.apibuilder.ApiBuilder.get;
+import static io.javalin.apibuilder.ApiBuilder.patch;
 import static io.javalin.apibuilder.ApiBuilder.path;
 import static io.javalin.apibuilder.ApiBuilder.post;
+import static io.javalin.apibuilder.ApiBuilder.put;
 
 /**
  * Роутер для веб-интерфейса (HTML формы) тестов
- * Этот роутер НЕ использует JWT аутентификацию для простоты
- * Можно добавить сессионную аутентификацию позже
  */
 public class TestWebRouter {
     private static final Logger logger = LoggerFactory.getLogger(TestWebRouter.class);
     
-    /**
-     * Регистрирует маршруты для веб-интерфейса тестов
-     * Все маршруты начинаются с /web/tests
-     */
     public static void register(TestFormController controller) {
-        // ВЕБ-ИНТЕРФЕЙС (HTML)
         path("/web", () -> {
-            // Главная страница (перенаправление на создание теста)
             get("/", controller::showHomePage);
             
-            // Тесты
             path("/tests", () -> {
-                // Логирование начала запроса
                 before(ctx -> {
                     logger.info("Web request started: {} {} (traceId: {})",
                             ctx.method(),
@@ -40,30 +33,79 @@ public class TestWebRouter {
                             SimpleTracer.getCurrentTraceId());
                 });
                 
-                // Создание нового теста
+                // ========== GET ЗАПРОСЫ (ОТОБРАЖЕНИЕ) ==========
+                
+                // 1. Форма создания нового теста
                 get("/new", controller::showNewTestForm);
                 
-                // Сохранение теста
+                // ========== POST ЗАПРОСЫ (СОЗДАНИЕ) ==========
+                
+                // 2. Создание нового теста (через универсальную форму)
                 post("/save", controller::saveTestFromForm);
                 
-                // Сохранение черновика нового теста (без ID)
-                // ИСПРАВЛЕНИЕ: Используем saveNewTestDraft вместо saveTestDraft
+                // 3. Создание черновика нового теста
                 post("/draft", controller::saveNewTestDraft);
                 
-                // Операции с конкретным тестом
+                // ========== ОПЕРАЦИИ С КОНКРЕТНЫМ ТЕСТОМ/ЧЕРНОВИКОМ ==========
+                
                 path("/{id}", () -> {
-                    // Редактирование теста
+                    // 4. Универсальная форма редактирования (теста или черновика)
                     get("/edit", controller::showEditTestForm);
                     
-                    // Сохранение черновика существующего теста
-                    // ИСПРАВЛЕНИЕ: Используем saveExistingTestDraft вместо saveTestDraft
+                    // 5. Предпросмотр теста
+                    get("/preview", controller::previewTest);
+                    
+                    // 6. Обновление существующего теста/черновика (PUT - полное обновление)
+                    put("/", ctx -> {
+                        String id = ctx.pathParam("id");
+                        if (id.startsWith("draft-")) {
+                            controller.updateDraftFromForm(ctx);
+                        } else {
+                            controller.updateTestFromForm(ctx);
+                        }
+                    });
+                    
+                    // 7. Частичное обновление (PATCH - если нужно)
+                    patch("/", ctx -> {
+                        String id = ctx.pathParam("id");
+                        if (id.startsWith("draft-")) {
+                            // controller.partialUpdateDraft(ctx); // Пока нет реализации
+                            ctx.status(501).result("Частичное обновление черновика не реализовано");
+                        } else {
+                            // controller.partialUpdateTest(ctx); // Пока нет реализации
+                            ctx.status(501).result("Частичное обновление теста не реализовано");
+                        }
+                    });
+                    
+                    // 8. Удаление теста/черновика
+                    delete("/", ctx -> {
+                        String id = ctx.pathParam("id");
+                        if (id.startsWith("draft-")) {
+                            controller.deleteDraft(ctx);
+                        } else {
+                            controller.deleteTest(ctx);
+                        }
+                    });
+                    post("/delete", ctx -> {
+                        String id = ctx.pathParam("id");
+                        if (id.startsWith("draft-")) {
+                            controller.deleteDraft(ctx);
+                        } else {
+                            controller.deleteTest(ctx);
+                        }
+                    });
+                    // ========== ДОПОЛНИТЕЛЬНЫЕ ОПЕРАЦИИ ==========
+                    
+                    // 9. Создание черновика из существующего теста
+                    post("/create-draft", controller::createDraftFromTest);
+                    
+                    // 10. Сохранение черновика существующего теста
                     post("/draft", controller::saveExistingTestDraft);
                     
-                    // Предпросмотр теста
-                    get("/preview", controller::previewTest);
+                    // 11. Публикация черновика
+                    post("/publish", controller::publishDraft);
                 });
                 
-                // Логирование завершения запроса
                 after(ctx -> {
                     logger.info("Web request completed: {} {} -> {} (traceId: {})",
                             ctx.method(),

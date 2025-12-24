@@ -1,0 +1,56 @@
+<div class="question-editor" data-question-index="{{questionIndex}}">
+    <div class="card">
+        <!-- Заголовок вопроса -->
+        <div class="question-header">
+            <h3 style="margin: 0;">Вопрос {{add questionIndex 1}}</h3>
+            <div class="question-controls">
+                <button type="button" class="btn-secondary btn-move-up" onclick="moveQuestionUp({{questionIndex}})" 
+                        {{#unless questionIndex}}disabled{{/unless}}>
+                    ↑ Вверх
+                </button>
+                <button type="button" class="btn-secondary btn-move-down" onclick="moveQuestionDown({{questionIndex}})">
+                    ↓ Вниз
+                </button>
+                <button type="button" class="btn-danger btn-remove-question" onclick="removeQuestion({{questionIndex}})"
+                        {{#unless questionIndex}}disabled{{/unless}}>
+                    × Удалить
+                </button>
+            </div>
+        </div>
+        
+        <!-- Текст вопроса -->
+        <div class="form-group">
+            <label>Текст вопроса *</label>
+            <textarea name="question[{{questionIndex}}][text]" placeholder="Введите текст вопроса" required>{{#if question}}{{question.question.textOfQuestion}}{{/if}}</textarea>
+        </div>
+        
+        <!-- Баллы за вопрос -->
+        <div class="points-info">
+            <div class="points-display">
+                <span>Максимум баллов за вопрос:</span>
+                <strong id="question-points-{{questionIndex}}">0</strong>
+            </div>
+            <small class="points-hint">(ответы с баллами > 0 считаются правильными)</small>
+        </div>
+        
+        <!-- Ответы -->
+        <div class="form-group">
+            <label>Варианты ответов</label>
+            <div id="answers-{{questionIndex}}" class="answers-container">
+                {{#if question}}
+                    {{#each question.answers}}
+                    {{> partials/test-editor-answer 
+                        questionIndex=@../questionIndex 
+                        answerIndex=@index 
+                        answer=this
+                    }}
+                    {{/each}}
+                {{else}}
+                    {{> partials/test-editor-answer questionIndex=questionIndex answerIndex=0}}
+                    {{> partials/test-editor-answer questionIndex=questionIndex answerIndex=1}}
+                {{/if}}
+            </div>
+            <button type="button" class="btn-secondary" onclick="addAnswer({{questionIndex}})">+ Добавить ответ</button>
+        </div>
+    </div>
+</div>

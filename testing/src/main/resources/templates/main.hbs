@@ -10,10 +10,13 @@
 </head>
 <body>
     {{#if (eq page 'test-builder')}}
-        <!-- Для конструктора тестов используем свой layout -->
+        <!-- Для конструктора тестов -->
         {{> test-builder}}
-    {{else}}
-        <!-- Дефолтный layout (для preview и других страниц) -->
+    {{else if (eq page 'test-editor')}}
+        <!-- Для редактора тестов -->
+        {{> test-editor}}
+    {{else if (eq page 'test-preview')}}
+        <!-- Для предпросмотра -->
         {{> header}}
         <main class="container">
             {{{body}}}
