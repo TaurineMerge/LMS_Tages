@@ -65,13 +65,17 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_HOSTNAME: localhost
       KC_HOSTNAME_PORT: 8080
-      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT: false
       KC_HEALTH_ENABLED: "true"
-    command: start-dev --import-realm
+      KC_HOSTNAME_STRICT_HTTPS: false
+      KC_HTTP_ENABLED: true 
+    command: start-dev --import-realm --hostname-strict-https=false --hostname-strict=false
     ports:
       - "8080:8080"
     volumes:
       - ./keycloak:/opt/keycloak/data/import:ro
+      - ./keycloak/student.json:/opt/keycloak/data/import/student.json:ro
+      - ./keycloak/teacher.json:/opt/keycloak/data/import/teacher.json:ro
     depends_on:
       keycloak-db:
         condition: service_healthy

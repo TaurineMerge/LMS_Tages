@@ -2,7 +2,7 @@
 
 import logging
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Tuple
 
 import httpx
 from fastapi import Depends, HTTPException, Request, status
@@ -28,8 +28,7 @@ class TokenPayload(BaseModel):
 
     sub: str = Field(..., description="User ID (subject)")
     email: Optional[str] = None
-    given_name: Optional[str] = None  # ← добавлено
-    family_name: Optional[str] = None
+    name: Optional[str] = None
     preferred_username: Optional[str] = None
     exp: int = Field(..., description="Token expiration time")
     iat: Optional[int] = None
@@ -40,8 +39,7 @@ class TokenPayload(BaseModel):
             "example": {
                 "sub": "user-id-uuid",
                 "email": "user@example.com",
-                "given_name": "User",
-                "family_name": "Name",
+                "name": "User Name",
                 "preferred_username": "username",
                 "exp": 1765284914,
                 "iat": 1765284614,
@@ -50,9 +48,7 @@ class TokenPayload(BaseModel):
 
 
 # replace internal jwks/cache with shared service
-_jwt_service = JwtService(
-    keycloak_url=settings.KEYCLOAK_SERVER_URL, realm=settings.KEYCLOAK_REALM
-)
+_jwt_service = JwtService(keycloak_url=settings.KEYCLOAK_SERVER_URL, realm=settings.KEYCLOAK_REALM)
 
 
 class JWTValidator:
@@ -77,12 +73,7 @@ class JWTValidator:
             HTTPException: If token is invalid or expired
         """
         try:
-            payload = await _jwt_service.decode(
-                token,
-                audience="account",
-                issuer=self.issuer,
-                keycloak_url=self.keycloak_url,
-            )
+            payload = await _jwt_service.decode(token, audience="account", issuer=self.issuer)
             # extract roles as before
             roles = []
             if isinstance(payload, dict):
@@ -111,16 +102,11 @@ class JWTValidator:
         except JWTError as e:
             logger.warning(f"JWT validation failed: {e}")
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token",
-                headers={"WWW-Authenticate": "Bearer"},
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token", headers={"WWW-Authenticate": "Bearer"}
             )
         except Exception as e:
             logger.error(f"Unexpected error during token validation: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Token validation error",
-            )
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Token validation error")
 
 
 # Создаём singleton validator
@@ -131,7 +117,7 @@ _jwt_validator = JWTValidator(
 )
 
 
-@traced("security.get_current_user", record_result=True, record_args=True)
+@traced("security.get_current_user", record_result=False)
 async def get_current_user(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
@@ -152,24 +138,46 @@ async def get_current_user(
     # Prefer Authorization header if present
     if credentials and credentials.credentials:
         token = credentials.credentials
-        logger.info("Token found in Authorization header")
 
     # Fallback to HttpOnly cookie set by the callback endpoint
     if not token:
         cookie_token = request.cookies.get("access_token")
         if cookie_token:
             token = cookie_token
-            logger.info("Token found in access_token cookie")
 
     if not token:
-        logger.warning("No token found in header or cookie")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated", headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    return await _jwt_validator.validate_token(token)
+
+
+@traced("security.get_current_user_with_raw_token", record_result=False)
+async def get_current_user_with_raw_token(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+) -> Tuple[TokenPayload, str]:
+    """
+    Returns both validated payload AND raw access token string.
+    Used when we need to call Keycloak userinfo endpoint.
+    """
+    token = None
+
+    if credentials and credentials.credentials:
+        token = credentials.credentials
+    if not token:
+        token = request.cookies.get("access_token")
+
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    logger.info("Validating token...")
-    return await _jwt_validator.validate_token(token)
+
+    payload = await _jwt_validator.validate_token(token)
+    return payload, token  # ← теперь есть и payload, и сырой токен
 
 
 @traced("security.get_current_user_optional", record_result=False)
@@ -214,24 +222,17 @@ def require_roles(*roles: str):
     ```
     """
 
-    async def check_roles(
-        current_user: TokenPayload = Depends(get_current_user),
-    ) -> None:
+    async def check_roles(current_user: TokenPayload = Depends(get_current_user)) -> None:
         # Ensure the user is authenticated
         if not current_user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
-            )
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
 
         # Check that at least one of the required roles is present in token
         if roles:
             user_roles = set(getattr(current_user, "roles", []) or [])
             required = set(roles)
             if user_roles.isdisjoint(required):
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Insufficient permissions",
-                )
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
 
     return check_roles
 

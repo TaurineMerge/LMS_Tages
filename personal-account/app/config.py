@@ -9,9 +9,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
-    model_config = SettingsConfigDict(
-        env_file=(".env", ".env.local"), env_file_encoding="utf-8", extra="ignore"
-    )
+    model_config = SettingsConfigDict(env_file=(".env", ".env.local"), env_file_encoding="utf-8", extra="ignore")
 
     DATABASE_HOST: str = "app-db"
     DATABASE_PORT: int = 5432
@@ -107,12 +105,8 @@ class Settings(BaseSettings):
             # Локальная разработка: Python локально, сервисы на localhost (порты из docker-compose-dev-py.yml)
             self.DATABASE_HOST = "localhost"
             self.REDIS_HOST = "localhost"
-            self.KEYCLOAK_SERVER_URL = (
-                "http://localhost:8080"  # Убрал /auth - KeycloakOpenID добавит сам
-            )
-            self.KEYCLOAK_PUBLIC_URL = (
-                "http://localhost:8080"  # Оставил /auth для браузера
-            )
+            self.KEYCLOAK_SERVER_URL = "http://localhost:8080"  # Убрал /auth - KeycloakOpenID добавит сам
+            self.KEYCLOAK_PUBLIC_URL = "http://localhost:8080"  # Оставил /auth для браузера
             self.KEYCLOAK_REDIRECT_URI = "http://localhost:8000/callback"
             self.OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4317"
             self.TESTING_BASE_URL = "http://localhost:8085"

@@ -32,38 +32,15 @@ class JwtService:
             logger.debug("Fetched JWKS (%d keys)", len(self._jwks_cache.get("keys", [])))
             return self._jwks_cache
 
-    async def decode(
-        self,
-        token: str,
-        audience: Optional[str] = None,
-        issuer: Optional[str] = None,
-        keycloak_url: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    async def decode(self, token: str, audience: Optional[str] = None, issuer: Optional[str] = None) -> Dict[str, Any]:
         """
         Validate and decode token using JWKS. Returns payload dict or raises JWTError/ExpiredSignatureError.
         """
-        if keycloak_url:
-            jwks = await self._fetch_jwks_from_url(keycloak_url)
-        else:
-            jwks = await self._fetch_jwks()
-
+        jwks = await self._fetch_jwks()
+        # jose accepts jwks directly as key (works like before)
         return jwt.decode(
-            token,
-            jwks,
-            algorithms=["RS256"],
-            audience=audience,
-            issuer=issuer,
-            options={"verify_exp": True},
+            token, jwks, algorithms=["RS256"], audience=audience, issuer=issuer, options={"verify_exp": True}
         )
-
-    async def _fetch_jwks_from_url(self, keycloak_url: str) -> Dict[str, Any]:
-        """Fetch JWKS from a specific Keycloak URL."""
-        url = f"{keycloak_url.rstrip('/')}/realms/{self.realm}/protocol/openid-connect/certs"
-        async with httpx.AsyncClient(timeout=10) as client:
-            r = await client.get(url)
-            r.raise_for_status()
-            logger.debug("Fetched JWKS from %s (%d keys)", url, len(r.json().get("keys", [])))
-            return r.json()
 
     def encode(
         self, payload: Dict[str, Any], private_key_pem: str, algorithm: str = "RS256", expires_in: Optional[int] = None

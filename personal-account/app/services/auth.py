@@ -29,7 +29,29 @@ class AuthService:
         redirect_uri = settings.KEYCLOAK_REDIRECT_URI
 
         try:
-            return await run_in_threadpool(keycloak_service.get_token, code, redirect_uri)
+            tokens = await run_in_threadpool(keycloak_service.get_token, code, redirect_uri)
+
+            # 🔍 ——— ВРЕМЕННЫЙ ОТЛАДОЧНЫЙ БЛОК ———
+            access_token = tokens.get("access_token")
+            if access_token:
+                # Маскируем токен для безопасности (показываем начало и конец)
+                masked = access_token[:12] + "…" + access_token[-8:]
+                logger.info(f"🔑 DEBUG: Access token (masked): {masked}")
+
+                # Декодируем payload без проверки подписи
+                from jose import jwt
+
+                try:
+                    payload = jwt.decode(access_token, options={"verify_signature": False})
+                    scopes = payload.get("scope", "")
+                    logger.info(f"🔍 DEBUG: Token scopes: '{scopes}'")
+                    logger.info(f"👤 DEBUG: Token sub: '{payload.get('sub')}'")
+                    logger.info(f"🏢 DEBUG: Token aud: '{payload.get('aud')}'")
+                except Exception as decode_err:
+                    logger.warning(f"⚠️ Failed to decode token payload: {decode_err}")
+            # ——— КОНЕЦ ВРЕМЕННОГО БЛОКА ———
+
+            return tokens
         except Exception as e:
             logger.error(f"Token exchange failed: {e}")
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Failed to exchange code for token")

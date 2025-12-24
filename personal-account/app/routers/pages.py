@@ -1,6 +1,7 @@
 """Frontend pages router with Jinja2 templates."""
 
 import logging
+from typing import Tuple
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
@@ -13,7 +14,7 @@ from fastapi.templating import Jinja2Templates
 from opentelemetry import trace
 
 from app.config import get_settings
-from app.core.security import JWTValidator, TokenPayload, get_current_user
+from app.core.security import JWTValidator, TokenPayload, get_current_user, get_current_user_with_raw_token
 from app.schemas.student import student_update
 from app.services import stats_service, stats_worker
 from app.services.keycloak import keycloak_service
@@ -29,9 +30,7 @@ def form_data_to_student_update(
     email: str = Form(None),
     username: str = Form(None),
 ) -> student_update:
-    logger.info(
-        f"📥 Form data received: name={name}, surname={surname}, email={email}, username={username}"
-    )
+    logger.info(f"📥 Form data received: name={name}, surname={surname}, email={email}, username={username}")
 
     # Создаем словарь только с непустыми и не None значениями
     data_dict = {}
@@ -107,16 +106,8 @@ def _render_template_safe(template_name: str, context: dict):
         # Log with trace/span ids
         try:
             span_ctx = span.get_span_context()
-            trace_id = (
-                format(span_ctx.trace_id, "032x")
-                if span_ctx and span_ctx.is_valid
-                else "-"
-            )
-            span_id = (
-                format(span_ctx.span_id, "016x")
-                if span_ctx and span_ctx.is_valid
-                else "-"
-            )
+            trace_id = format(span_ctx.trace_id, "032x") if span_ctx and span_ctx.is_valid else "-"
+            span_id = format(span_ctx.span_id, "016x") if span_ctx and span_ctx.is_valid else "-"
         except Exception:
             trace_id = "-"
             span_id = "-"
@@ -167,9 +158,7 @@ async def root_page(request: Request):
     if token:
         return RedirectResponse(url=f"{settings.url_prefix}/dashboard")
 
-    return _render_template_safe(
-        "index.hbs", {"request": request, **get_keycloak_urls()}
-    )
+    return _render_template_safe("index.hbs", {"request": request, **get_keycloak_urls()})
 
 
 @router.get("/dashboard", response_class=HTMLResponse)  # <-- Теперь дэшборд здесь
@@ -191,18 +180,21 @@ async def dashboard_page(request: Request):
 @router.get("/profile", response_class=HTMLResponse)
 @traced("pages.profile")
 async def profile_page(
-    request: Request, user: TokenPayload = Depends(get_current_user)
+    request: Request,
+    user_and_token: Tuple[TokenPayload, str] = Depends(get_current_user_with_raw_token),
 ):
-    # Получаем актуальные данные из Keycloak, а не из токена
-    keycloak_data = await run_in_threadpool(keycloak_service.get_user_data, user.sub)
-    logger.info(f"GET /profile: Retrieved fresh Keycloak data: {keycloak_data}")
+    user, access_token = user_and_token
+
+    # ✅ Теперь можем использовать userinfo — без админки и без HTTPS-ограничений (если Keycloak позволяет HTTP)
+    keycloak_data = await run_in_threadpool(keycloak_service.get_user_data_by_token, access_token)
+    logger.info(f"GET /profile: Retrieved fresh Keycloak data via userinfo: {keycloak_data}")
 
     return templates.TemplateResponse(
         "profile.hbs",
         {
             "request": request,
             "active_page": "profile",
-            "user": keycloak_data,  # всегда свежие данные из Keycloak
+            "user": keycloak_data,
             "success": request.query_params.get("success"),
             **get_keycloak_urls(),
         },
@@ -237,9 +229,7 @@ async def update_profile_form(
         logger.info(f"📦 Keycloak payload prepared: {keycloak_payload}")
         logger.info(f"📡 About to update Keycloak user: {user.sub}")
 
-        await run_in_threadpool(
-            keycloak_service.update_user_data, user.sub, keycloak_payload
-        )
+        await run_in_threadpool(keycloak_service.update_user_data, user.sub, keycloak_payload)
 
         logger.info("✅ Keycloak updated successfully")
 
@@ -259,9 +249,7 @@ async def update_profile_form(
                 "request": request,
                 "user": user_info,
                 "active_page": "profile",
-                "errors": [
-                    {"loc": ["server"], "msg": f"Failed to update profile: {e!s}"}
-                ],
+                "errors": [{"loc": ["server"], "msg": f"Failed to update profile: {e!s}"}],
                 **get_keycloak_urls(),
             },
         )
@@ -274,9 +262,7 @@ async def update_profile_form(
                 "request": request,
                 "user": user_info,
                 "active_page": "profile",
-                "errors": [
-                    {"loc": ["server"], "msg": f"Failed to update profile: {e!s}"}
-                ],
+                "errors": [{"loc": ["server"], "msg": f"Failed to update profile: {e!s}"}],
                 **get_keycloak_urls(),
             },
         )
@@ -383,9 +369,7 @@ async def statistics_refresh(request: Request):
 @traced("pages.register")
 async def register_page(request: Request):
     """Render registration page."""
-    return _render_template_safe(
-        "register.hbs", {"request": request, **get_keycloak_urls()}
-    )
+    return _render_template_safe("register.hbs", {"request": request, **get_keycloak_urls()})
 
 
 @router.get("/callback", response_class=HTMLResponse)
