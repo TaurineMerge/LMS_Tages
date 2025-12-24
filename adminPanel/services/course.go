@@ -116,6 +116,7 @@ func (s *CourseService) GetCourses(ctx context.Context, filter request.CourseFil
 			Level:       toString(item["level"]),
 			CategoryID:  toString(item["category_id"]),
 			Visibility:  toString(item["visibility"]),
+			ImageKey:    toString(item["image_key"]),
 		}
 		courses = append(courses, course)
 	}
@@ -187,6 +188,7 @@ func (s *CourseService) GetCourse(ctx context.Context, categoryID, id string) (*
 			Level:       toString(data["level"]),
 			CategoryID:  toString(data["category_id"]),
 			Visibility:  toString(data["visibility"]),
+			ImageKey:    toString(data["image_key"]),
 		},
 	}
 
@@ -252,6 +254,7 @@ func (s *CourseService) CreateCourse(ctx context.Context, input request.CourseCr
 			Level:       toString(data["level"]),
 			CategoryID:  toString(data["category_id"]),
 			Visibility:  toString(data["visibility"]),
+			ImageKey:    toString(data["image_key"]),
 		},
 	}
 
@@ -315,6 +318,7 @@ func (s *CourseService) UpdateCourse(ctx context.Context, categoryID, id string,
 			Level:       toString(data["level"]),
 			CategoryID:  toString(data["category_id"]),
 			Visibility:  toString(data["visibility"]),
+			ImageKey:    toString(data["image_key"]),
 		},
 	}
 

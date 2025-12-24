@@ -29,6 +29,10 @@
             "type": "string",
             "enum": ["draft", "public", "private"],
             "description": "Новая видимость курса"
+        },
+        "image_key": {
+            "type": "string",
+            "description": "Новый ключ изображения в S3"
         }
     },
     "additionalProperties": false,

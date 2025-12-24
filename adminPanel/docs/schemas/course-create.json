@@ -29,6 +29,10 @@
             "type": "string",
             "enum": ["draft", "public", "private"],
             "description": "Видимость курса"
+        },
+        "image_key": {
+            "type": "string",
+            "description": "Ключ изображения в S3"
         }
     },
     "required": ["title", "category_id"],

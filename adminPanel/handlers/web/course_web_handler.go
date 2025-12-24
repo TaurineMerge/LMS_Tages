@@ -21,6 +21,7 @@ type CourseView struct {
 	CreatedAt   string
 	UpdatedAt   string
 	ImageKey    string
+	ImageURL    string
 	Tests       CourseTestsView
 }
 
@@ -141,6 +142,13 @@ func (h *CourseWebHandler) RenderCoursesEditor(c *fiber.Ctx) error {
 			CreatedAt:   formatDateTime(course.CreatedAt),
 			UpdatedAt:   formatDateTime(course.UpdatedAt),
 			ImageKey:    course.ImageKey,
+			ImageURL: func() string {
+				if course.ImageKey != "" {
+					return h.s3Service.GetImageURL(course.ImageKey)
+				} else {
+					return ""
+				}
+			}(),
 		})
 	}
 
@@ -213,6 +221,13 @@ func (h *CourseWebHandler) RenderEditCourseForm(c *fiber.Ctx) error {
 		CreatedAt:   formatDateTime(course.Data.CreatedAt),
 		UpdatedAt:   formatDateTime(course.Data.UpdatedAt),
 		ImageKey:    course.Data.ImageKey,
+		ImageURL: func() string {
+			if course.Data.ImageKey != "" {
+				return h.s3Service.GetImageURL(course.Data.ImageKey)
+			} else {
+				return ""
+			}
+		}(),
 	}
 
 	// Получить информацию о тестах

@@ -95,6 +95,11 @@
                         </div>
                         
                         <div class="entity-card__body">
+                            {{#if ImageKey}}
+                            <div class="entity-card__image">
+                                <img src="{{ImageURL}}" alt="Course Image" />
+                            </div>
+                            {{/if}}
                             <h3 class="entity-card__title">{{Title}}</h3>
                             {{#if Description}}
                                 <p class="entity-card__description">{{Description}}</p>
