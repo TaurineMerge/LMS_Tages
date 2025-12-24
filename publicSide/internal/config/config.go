@@ -18,6 +18,7 @@ type (
 		Otel     OtelConfig
 		Log      LogConfig
 		OIDC     OIDCConfig
+		Minio    MinioConfig
 	}
 
 	// AppConfig holds general application settings.
@@ -60,6 +61,16 @@ type (
 		ClientSecret string
 		IssuerURL    string
 		RedirectURL  string
+	}
+
+	// MinioConfig holds MinIO (S3) connection settings.
+	MinioConfig struct {
+		Endpoint  string
+		AccessKey string
+		SecretKey string
+		Bucket    string
+		UseSSL    bool
+		PublicURL string
 	}
 )
 
@@ -204,6 +215,23 @@ func WithDevFromEnv() Option {
 		if err != nil {
 			return err
 		}
+		return nil
+	}
+}
+
+// WithMinioFromEnv configures MinIO settings from environment variables.
+func WithMinioFromEnv() Option {
+	return func(cfg *Config) error {
+		cfg.Minio.Endpoint = getOptionalEnv("MINIO_ENDPOINT", "minio:9000")
+		cfg.Minio.AccessKey = getOptionalEnv("MINIO_ACCESS_KEY", "minioadmin")
+		cfg.Minio.SecretKey = getOptionalEnv("MINIO_SECRET_KEY", "minioadmin")
+		cfg.Minio.Bucket = getOptionalEnv("MINIO_BUCKET", "images")
+		var err error
+		cfg.Minio.UseSSL, err = getOptionalEnvAsBool("MINIO_USE_SSL", false)
+		if err != nil {
+			return err
+		}
+		cfg.Minio.PublicURL = getOptionalEnv("MINIO_PUBLIC_URL", "http://localhost:9000")
 		return nil
 	}
 }

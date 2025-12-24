@@ -9,6 +9,7 @@ type CourseDTO struct {
 	Description string    `json:"description"`
 	Level       string    `json:"level"`
 	CategoryID  string    `json:"category_id"`
+	ImageURL    string    `json:"image_url"` // Added ImageURL
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }

@@ -24,13 +24,15 @@ type CourseService interface {
 type courseService struct {
 	repo         repository.CourseRepository
 	categoryRepo repository.CategoryRepository
+	s3Service    *S3Service // Added S3Service
 }
 
 // NewCourseService creates a new instance of the course service.
-func NewCourseService(repo repository.CourseRepository, categoryRepo repository.CategoryRepository) CourseService {
+func NewCourseService(repo repository.CourseRepository, categoryRepo repository.CategoryRepository, s3Service *S3Service) CourseService {
 	return &courseService{
 		repo:         repo,
 		categoryRepo: categoryRepo,
+		s3Service:    s3Service,
 	}
 }
 
@@ -90,12 +92,18 @@ func (s *courseService) GetCoursesByCategoryID(ctx context.Context, categoryID s
 
 // mapCourseToDTO converts a domain Course to a CourseDTO.
 func (s *courseService) mapCourseToDTO(course domain.Course) response.CourseDTO {
+	imageURL := ""
+	if s.s3Service != nil && course.ImageKey != "" {
+		imageURL = s.s3Service.GetImageURL(course.ImageKey)
+	}
+
 	return response.CourseDTO{
 		ID:          course.ID,
 		Title:       course.Title,
 		Description: course.Description,
 		Level:       course.Level,
 		CategoryID:  course.CategoryID,
+		ImageURL:    imageURL,
 		CreatedAt:   course.CreatedAt,
 		UpdatedAt:   course.UpdatedAt,
 	}
@@ -103,7 +111,7 @@ func (s *courseService) mapCourseToDTO(course domain.Course) response.CourseDTO 
 
 // TruncateDescription truncates a description to a specified number of characters,
 // ensuring it doesn't cut in the middle of a word and adds ellipsis if truncated.
-func TruncateDescription(text string, maxChars int) string {
+func (s *courseService) TruncateDescription(text string, maxChars int) string {
 	if maxChars <= 0 {
 		return ""
 	}

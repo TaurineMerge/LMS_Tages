@@ -117,11 +117,16 @@ services:
       DB_HOST: ${APP_DB_HOST}
       DB_PORT: ${APP_DB_INTERNAL_PORT}
       OTEL_EXPORTER_OTLP_ENDPOINT: "otel-collector:4317"
-      # OIDC variables for container-to-container communication
       OIDC_CLIENT_ID: "teacher-client"
       OIDC_CLIENT_SECRET: "TEACHER_SECRET"
       OIDC_ISSUER_URL: "http://localhost/auth/realms/teacher"
       OIDC_REDIRECT_URL: "http://localhost/auth/callback"
+      MINIO_ENDPOINT: "minio:9000"
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET_IMAGES:-images}
+      MINIO_USE_SSL: "false"
+      MINIO_PUBLIC_URL: "http://localhost:9000"
     ports:
       - "3000:3000"
     extra_hosts:
@@ -133,6 +138,8 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_healthy
+      minio:
+        condition: service_healthy
     restart: unless-stopped
 
   admin-panel:
@@ -141,7 +148,6 @@ services:
     env_file:
       - ./adminPanel/.env.prod
     environment:
-      # Database
       DB_NAME: ${KNOWLEDGE_BASE_DB_NAME}
       DB_USER: ${KNOWLEDGE_BASE_ADMIN_USER}
       DB_PASSWORD: ${KNOWLEDGE_BASE_ADMIN_PASSWORD}
@@ -149,20 +155,22 @@ services:
       DB_PORT: ${APP_DB_INTERNAL_PORT}
       DATABASE_POOL_MIN_SIZE: "5"
       DATABASE_POOL_MAX_SIZE: "20"
-      # Keycloak
-      KEYCLOAK_ISSUER_URL: "http://keycloak/auth/realms/teacher"
+      KEYCLOAK_ISSUER_URL: "http://keycloak:8080/auth/realms/teacher"
       KEYCLOAK_CLIENT_ID: "teacher-client"
       KEYCLOAK_CLIENT_SECRET: "TEACHER_SECRET"
       KEYCLOAK_APP_NAME: "LMS Admin Application"
-      # OpenTelemetry
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
       OTEL_SERVICE_NAME: "admin-panel"
-      # Server
       API_ADDRESS: ":4000"
-      # CORS
       CORS_ALLOW_ORIGINS: "*"
       CORS_ALLOW_CREDENTIALS: "false"
+      MINIO_ENDPOINT: "minio:9000"
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET_IMAGES:-images}
+      MINIO_USE_SSL: "false"
+      MINIO_PUBLIC_URL: "http://localhost:9000"
     ports:
       - "4000:4000"
     networks:
@@ -171,6 +179,8 @@ services:
       app-db:
         condition: service_healthy
       keycloak:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     restart: unless-stopped
 
@@ -238,6 +248,29 @@ services:
     networks:
       - app-network
     restart: unless-stopped
+  minio:
+    build: ./minio
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET_CERTIFICATES: ${MINIO_BUCKET_CERTIFICATES:-certificates}
+      MINIO_BUCKET_SNAPSHOTS: ${MINIO_BUCKET_SNAPSHOTS:-snapshots}
+      MINIO_BUCKET_IMAGES: ${MINIO_BUCKET_IMAGES:-images}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - app-network
+    restart: unless-stopped
 
 networks:
   keycloak-network:
@@ -250,4 +283,6 @@ volumes:
   keycloak_data:
     driver: local
   app_data:
+    driver: local
+  minio_data:
     driver: local

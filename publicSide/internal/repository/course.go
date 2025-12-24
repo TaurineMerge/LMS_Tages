@@ -3,6 +3,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
 	"github.com/Masterminds/squirrel"
@@ -35,6 +36,8 @@ func NewCourseRepository(db *pgxpool.Pool) CourseRepository {
 
 func (r *courseRepository) scanCourse(row scanner) (domain.Course, error) {
 	var course domain.Course
+	var imageKey sql.NullString // Use sql.NullString for nullable columns
+
 	err := row.Scan(
 		&course.ID,
 		&course.Title,
@@ -42,10 +45,21 @@ func (r *courseRepository) scanCourse(row scanner) (domain.Course, error) {
 		&course.Level,
 		&course.CategoryID,
 		&course.Visibility,
+		&imageKey, // Scan into the nullable type
 		&course.CreatedAt,
 		&course.UpdatedAt,
 	)
-	return course, err
+	if err != nil {
+		return domain.Course{}, err
+	}
+
+	if imageKey.Valid {
+		course.ImageKey = imageKey.String
+	} else {
+		course.ImageKey = ""
+	}
+
+	return course, nil
 }
 
 // GetCoursesByCategoryID retrieves paginated public courses for a given category with optional filters and sorting.
@@ -98,7 +112,7 @@ func (r *courseRepository) GetCoursesByCategoryID(ctx context.Context, categoryI
 	offset := (page - 1) * limit
 
 	// Get paginated courses with filters
-	queryBuilder := r.psql.Select("id", "title", "description", "level", "category_id", "visibility", "created_at", "updated_at").
+	queryBuilder := r.psql.Select("id", "title", "description", "level", "category_id", "visibility", "image_key", "created_at", "updated_at").
 		From(courseTable).
 		Where(squirrel.Eq{
 			"category_id": categoryID,
@@ -167,7 +181,7 @@ func (r *courseRepository) GetCourseByID(ctx context.Context, categoryID, course
 		attribute.String("course_id", courseID),
 	)
 
-	queryBuilder := r.psql.Select("id", "title", "description", "level", "category_id", "visibility", "created_at", "updated_at").
+	queryBuilder := r.psql.Select("id", "title", "description", "level", "category_id", "visibility", "image_key", "created_at", "updated_at").
 		From(courseTable).
 		Where(squirrel.Eq{
 			"id":          courseID,

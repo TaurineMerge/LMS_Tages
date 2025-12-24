@@ -9,6 +9,7 @@ type Course struct {
 	Level       string    `json:"level"`      // easy, medium, hard
 	Visibility  string    `json:"visibility"` // draft, public
 	CategoryID  string    `json:"category_id"`
+	ImageKey    string    `json:"image_key"` // Added ImageKey
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }

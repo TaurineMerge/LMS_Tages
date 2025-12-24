@@ -41,8 +41,9 @@ func main() {
 		config.WithPortFromEnv(),
 		config.WithTracingFromEnv(),
 		config.WithLogLevelFromEnv(),
-		config.WithDevFromEnv(),  // Add Dev mode configuration
-		config.WithOIDCFromEnv(), // Add OIDC configuration
+		config.WithDevFromEnv(),
+		config.WithOIDCFromEnv(),
+		config.WithMinioFromEnv(),
 	)
 	if err != nil {
 		slog.Error("Failed to initialize config", "error", err)
@@ -90,16 +91,24 @@ func main() {
 	defer dbPool.Close()
 	slog.Info("Database connection pool established")
 
-	// 6. Initialize Services
+	// 6. Initialize S3 Service
+	s3Service, err := service.NewS3Service(cfg.Minio)
+	if err != nil {
+		slog.Error("Failed to initialize S3 service", "error", err)
+		os.Exit(1)
+	}
+	slog.Info("S3 service initialized")
+
+	// 7. Initialize Services
 	lessonRepo := repository.NewLessonRepository(dbPool)
 	categoryRepo := repository.NewCategoryRepository(dbPool)
 	courseRepo := repository.NewCourseRepository(dbPool)
 
 	lessonService := service.NewLessonService(lessonRepo)
 	categoryService := service.NewCategoryService(categoryRepo)
-	courseService := service.NewCourseService(courseRepo, categoryRepo)
+	courseService := service.NewCourseService(courseRepo, categoryRepo, s3Service)
 
-	// 7. Initialize Fiber App and Global Middleware
+	// 8. Initialize Fiber App and Global Middleware
 	engine := template.NewEngine(&cfg.App)
 	app := fiber.New(fiber.Config{
 		Views:        engine,
@@ -116,7 +125,7 @@ func main() {
 	app.Use(otelfiber.Middleware())
 	app.Use(middleware.RequestResponseLogger())
 
-	// 8. Setup Routes
+	// 9. Setup Routes
 	webRouter := &router.WebRouter{
 		Config:              &cfg.App,
 		HomeHandler:         web.NewHomeHandler(categoryService, courseService),
@@ -135,7 +144,7 @@ func main() {
 	}
 	apiRouter.Setup(app)
 
-	// 9. Start Server
+	// 10. Start Server
 	slog.Info("Starting server", "address", cfg.Server.Port)
 	if err := app.Listen(fmt.Sprintf(":%s", cfg.Server.Port)); err != nil {
 		slog.Error("Server failed to start", "error", err)
