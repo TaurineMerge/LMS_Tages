@@ -33,25 +33,25 @@
             <div class="entity-grid">
                 {{#each categories}}
                     <article class="entity-card entity-card--category">
-                        <div class="entity-card__header">
-                            <div class="entity-card__menu">
-                                <input type="checkbox" id="menu-cat-{{ID}}" class="entity-card__menu-toggle">
-                                <label for="menu-cat-{{ID}}" class="entity-card__menu-btn" title="Действия">⋮</label>
-                                <div class="entity-card__menu-dropdown">
-                                    <a href="/admin/categories/{{ID}}" class="entity-card__menu-item">
-                                        <span>✏️</span> Редактировать
-                                    </a>
-                                    <form method="POST" action="/admin/categories/{{ID}}/delete" class="entity-card__menu-form">
-                                        <button type="submit" class="entity-card__menu-item entity-card__menu-item--danger">
-                                            <span>🗑️</span> Удалить
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
                         
                         <div class="entity-card__body">
-                            <h3 class="entity-card__title">{{Title}}</h3>
+                            <div class="entity-card__title-row">
+                                <h3 class="entity-card__title">{{Title}}</h3>
+                                <div class="entity-card__menu">
+                                    <input type="checkbox" id="menu-cat-{{ID}}" class="entity-card__menu-toggle">
+                                    <label for="menu-cat-{{ID}}" class="entity-card__menu-btn" title="Действия">⋮</label>
+                                    <div class="entity-card__menu-dropdown">
+                                        <a href="/admin/categories/{{ID}}" class="entity-card__menu-item">
+                                            <span>✏️</span> Редактировать
+                                        </a>
+                                        <form method="POST" action="/admin/categories/{{ID}}/delete" class="entity-card__menu-form">
+                                            <button type="submit" class="entity-card__menu-item entity-card__menu-item--danger">
+                                                <span>🗑️</span> Удалить
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="entity-card__meta">
                                 <span class="entity-card__meta-item">
                                     <span class="meta-icon">🕐</span>

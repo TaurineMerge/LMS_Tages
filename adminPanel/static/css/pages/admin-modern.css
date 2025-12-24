@@ -312,8 +312,15 @@
     font-size: 1.25rem;
     font-weight: 700;
     color: var(--gray-900);
-    margin: 0 0 0.75rem 0;
+    margin: 0;
     line-height: 1.3;
+}
+
+.entity-card__title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
 }
 
 .entity-card__description {
