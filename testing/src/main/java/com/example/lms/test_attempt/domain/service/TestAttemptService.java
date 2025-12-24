@@ -1,7 +1,6 @@
 package com.example.lms.test_attempt.domain.service;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -25,9 +24,18 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  * - attempt_version инициализируется сразу всеми вопросами
  * - attemptNo пишем в JSON
  *
- * Поддержка multi-answer:
- * - в JSON используем "answerIds": ["...","..."]
- * - для обратной совместимости оставляем "answerId" если выбран ровно 1 ответ
+ * Формат attempt_version (АКТУАЛЬНЫЙ):
+ * {
+ *   "attemptNo": 1,
+ *   "answers": [
+ *     {"order":1,"questionId":"...","answerIds":[],"answerPoints":[],"earnedPoints":0},
+ *     ...
+ *   ]
+ * }
+ *
+ * Важно:
+ * - answerId (legacy) НЕ пишем вообще
+ * - но при чтении старых данных можем встретить answerId и не падаем
  */
 public class TestAttemptService {
 
@@ -41,7 +49,7 @@ public class TestAttemptService {
     }
 
     // =========================================================
-    // DTO <-> MODEL (HEAD)
+    // DTO <-> MODEL
     // =========================================================
 
     private TestAttemptModel toModel(TestAttempt dto) {
@@ -84,7 +92,7 @@ public class TestAttemptService {
     }
 
     // =========================================================
-    // CRUD / Queries (HEAD)
+    // CRUD / Queries
     // =========================================================
 
     public List<TestAttempt> getAllTestAttempts() {
@@ -170,11 +178,12 @@ public class TestAttemptService {
      */
     public UUID createNewAttempt(UUID studentId, UUID testId) {
         TestAttemptModel m = new TestAttemptModel(studentId, testId);
-        // m.setDateOfAttempt(LocalDate.now()); // ❌ НЕ ДЕЛАЕМ
+        m.setDateOfAttempt(LocalDate.now()); 
         m.setCompleted(false);
         m.validate();
         TestAttemptModel saved = repository.save(m);
         return saved.getId();
+
     }
 
     /**
@@ -197,7 +206,7 @@ public class TestAttemptService {
      * {
      *   "attemptNo": 1,
      *   "answers": [
-     *     {"order":1,"questionId":"...","answerId":null,"answerIds":[]},
+     *     {"order":1,"questionId":"...","answerIds":[],"answerPoints":[],"earnedPoints":0},
      *     ...
      *   ]
      * }
@@ -215,8 +224,12 @@ public class TestAttemptService {
                 ObjectNode item = OBJECT_MAPPER.createObjectNode();
                 if (q.order != null) item.put("order", q.order);
                 item.put("questionId", q.questionId.toString());
-                item.putNull("answerId");               // legacy
-                item.set("answerIds", OBJECT_MAPPER.createArrayNode()); // multi
+
+                // ✅ только новый формат
+                item.set("answerIds", OBJECT_MAPPER.createArrayNode());
+                item.set("answerPoints", OBJECT_MAPPER.createArrayNode());
+                item.put("earnedPoints", 0);
+
                 answers.add(item);
             }
             root.set("answers", answers);
@@ -230,22 +243,27 @@ public class TestAttemptService {
     }
 
     /**
-     * Старый single API: сохраняем 1 ответ.
-     * Для совместимости оставляем метод, но внутри пишем через saveAnswers().
+     * Оставляем старую сигнатуру для совместимости компиляции (если где-то ещё вызывается).
+     * Баллы по ответам не запишет (0), но хотя бы сохранит answerIds.
      */
-    public void saveAnswer(UUID attemptId, UUID questionId, UUID answerId) {
-        saveAnswers(attemptId, questionId, List.of(answerId));
+    public void saveAnswers(UUID attemptId, UUID questionId, List<UUID> answerIds) {
+        saveAnswers(attemptId, questionId, answerIds, List.of(), 0);
     }
 
     /**
-     * Multi API: сохраняем выбранные ответы.
+     * Multi API: сохраняем выбранные ответы + баллы.
      * Если уже есть ответ(ы) — повтор игнорируем.
+     *
+     * Пишем:
+     * - answerIds: [...]
+     * - answerPoints: [...]
+     * - earnedPoints: N
      */
-    public void saveAnswers(UUID attemptId, UUID questionId, List<UUID> answerIds) {
-        if (answerIds == null || answerIds.isEmpty()) {
-            throw new IllegalArgumentException("answerIds пустой");
-        }
-
+    public void saveAnswers(UUID attemptId,
+                            UUID questionId,
+                            List<UUID> answerIds,
+                            List<Integer> answerPoints,
+                            int earnedPoints) {
         try {
             String json = repository.findAttemptVersionByAttemptId(attemptId).orElse(null);
             ObjectNode root = toObjectNodeOrEmpty(json);
@@ -253,29 +271,37 @@ public class TestAttemptService {
 
             String q = questionId.toString();
 
-            // нормализуем: без null + без дублей, но сохраняем порядок
-            List<String> ids = new ArrayList<>();
-            for (UUID id : answerIds) {
-                if (id == null) continue;
-                String s = id.toString();
-                if (!ids.contains(s)) ids.add(s);
-            }
-            if (ids.isEmpty()) {
-                throw new IllegalArgumentException("answerIds после нормализации пустой");
+            ArrayNode idsNode = OBJECT_MAPPER.createArrayNode();
+            for (UUID id : answerIds) idsNode.add(id.toString());
+
+            ArrayNode ptsNode = OBJECT_MAPPER.createArrayNode();
+            if (answerPoints != null && answerPoints.size() == answerIds.size()) {
+                for (Integer p : answerPoints) ptsNode.add(Math.max(0, p == null ? 0 : p));
+            } else {
+                // если points не передали или размер не совпал — пишем нули по количеству ответов
+                for (int i = 0; i < answerIds.size(); i++) ptsNode.add(0);
+                earnedPoints = 0;
             }
 
             for (JsonNode item : answers) {
                 if (item != null && item.isObject()) {
                     String qid = item.path("questionId").asText(null);
-                    if (qid != null && qid.equals(q)) {
+                    if (q.equals(qid)) {
+                        ObjectNode obj = (ObjectNode) item;
 
-                        // если уже есть выбранные — игнорируем повтор (как у тебя было)
-                        if (hasAnySelected((ObjectNode) item)) {
+                        // если уже отвечено — игнор
+                        JsonNode existingIds = obj.get("answerIds");
+                        if (existingIds != null && existingIds.isArray() && existingIds.size() > 0) {
                             logger.info("Ответ уже был выбран (attemptId={}, questionId={}) — игнор", attemptId, questionId);
                             return;
                         }
 
-                        applySelectedAnswers((ObjectNode) item, ids);
+                        obj.set("answerIds", idsNode);
+                        obj.set("answerPoints", ptsNode);
+                        obj.put("earnedPoints", Math.max(0, earnedPoints));
+
+                        // на всякий: если в старых данных был answerId — удалим, чтобы формат стал единым
+                        obj.remove("answerId");
 
                         String updated = OBJECT_MAPPER.writeValueAsString(root);
                         repository.updateAttemptVersionByAttemptId(attemptId, updated);
@@ -284,17 +310,19 @@ public class TestAttemptService {
                 }
             }
 
-            // если вопроса вдруг нет в массиве — добавим (на всякий)
+            // если вопроса нет — добавим
             ObjectNode newItem = OBJECT_MAPPER.createObjectNode();
             newItem.put("questionId", q);
-            applySelectedAnswers(newItem, ids);
+            newItem.set("answerIds", idsNode);
+            newItem.set("answerPoints", ptsNode);
+            newItem.put("earnedPoints", Math.max(0, earnedPoints));
             answers.add(newItem);
 
             String updated = OBJECT_MAPPER.writeValueAsString(root);
             repository.updateAttemptVersionByAttemptId(attemptId, updated);
 
         } catch (Exception e) {
-            logger.error("Ошибка saveAnswers", e);
+            logger.error("Ошибка saveAnswers(with points)", e);
             throw new RuntimeException("Ошибка сохранения ответа", e);
         }
     }
@@ -336,36 +364,10 @@ public class TestAttemptService {
         return OBJECT_MAPPER.createObjectNode();
     }
 
-    private boolean hasAnySelected(ObjectNode item) {
-        // multi
-        JsonNode arr = item.get("answerIds");
-        if (arr != null && arr.isArray() && arr.size() > 0) return true;
-
-        // legacy single
-        JsonNode single = item.get("answerId");
-        if (single != null && !single.isNull() && !single.asText("").isBlank()) return true;
-
-        return false;
-    }
-
-    private void applySelectedAnswers(ObjectNode item, List<String> ids) {
-        // legacy: если ровно 1 — кладём в answerId, иначе null
-        if (ids.size() == 1) item.put("answerId", ids.get(0));
-        else item.putNull("answerId");
-
-        ArrayNode arr = OBJECT_MAPPER.createArrayNode();
-        for (String id : ids) arr.add(id);
-        item.set("answerIds", arr);
-    }
-
     // ---------------------------------------------------------------------
     // BACKWARD COMPATIBILITY (for TestAttemptController)
     // ---------------------------------------------------------------------
 
-    /**
-     * Старый API — завершение попытки по ID (используется API-контроллером).
-     * ДЛЯ ОБРАТНОЙ СОВМЕСТИМОСТИ.
-     */
     public TestAttempt completeTestAttempt(String id, Integer finalPoint) {
         UUID attemptId = UUID.fromString(id);
 
@@ -377,10 +379,6 @@ public class TestAttemptService {
         return toDto(updated);
     }
 
-    /**
-     * Старый API — обновление snapshot (используется API-контроллером).
-     * ДЛЯ ОБРАТНОЙ СОВМЕСТИМОСТИ.
-     */
     public TestAttempt updateSnapshot(String id, String snapshot) {
         UUID attemptId = UUID.fromString(id);
 

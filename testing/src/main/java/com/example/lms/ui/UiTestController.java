@@ -274,8 +274,24 @@ public class UiTestController {
 
         resolveStudentIdForPost(ctx);
 
+        // ====== NEW: считаем баллы по каждому выбранному ответу ======
+        List<Answer> allAnswers = answerService.getAnswersByQuestionId(questionId);
+        Map<String, Integer> scoreByAnswerId = new HashMap<>();
+        for (Answer a : allAnswers) {
+            scoreByAnswerId.put(String.valueOf(a.getId()), Math.max(0, extractAnswerScore(a)));
+        }
+
+        List<Integer> answerPoints = new ArrayList<>();
+        int earnedPoints = 0;
+        for (UUID aid : answerIds) {
+            int p = scoreByAnswerId.getOrDefault(aid.toString(), 0);
+            answerPoints.add(p);
+            earnedPoints += p;
+        }
+
         try {
-            testAttemptService.saveAnswers(attemptId, questionId, answerIds);
+            // ⚠️ теперь вызываем overload, который умеет сохранять answerPoints + earnedPoints
+            testAttemptService.saveAnswers(attemptId, questionId, answerIds, answerPoints, earnedPoints);
         } catch (Exception e) {
             ctx.status(500).contentType("text/plain; charset=utf-8")
                     .result("Ошибка при сохранении ответа: " + e.getMessage());
@@ -284,6 +300,7 @@ public class UiTestController {
 
         ctx.redirect("/testing/ui/tests/" + testId + "/take?attemptId=" + attemptId + "#q_" + questionId);
     }
+
 
     // =========================================================
     // FINISH
