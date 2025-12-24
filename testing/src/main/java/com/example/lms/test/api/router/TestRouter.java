@@ -6,20 +6,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.example.lms.shared.router.RouterUtils;
-import static com.example.lms.shared.router.RouterUtils.READ_ACCESS_REALMS;
-import static com.example.lms.shared.router.RouterUtils.TEACHER_REALM;
-import static com.example.lms.shared.router.RouterUtils.applyStandardAfterMiddleware;
-import static com.example.lms.shared.router.RouterUtils.applyStandardBeforeMiddleware;
-import static com.example.lms.shared.router.RouterUtils.validateController;
-import static com.example.lms.shared.router.RouterUtils.withRealm;
+import static com.example.lms.shared.router.RouterUtils.*;
 import com.example.lms.test.api.controller.TestController;
 
-import static io.javalin.apibuilder.ApiBuilder.delete;
-import static io.javalin.apibuilder.ApiBuilder.get;
-import static io.javalin.apibuilder.ApiBuilder.path;
-import static io.javalin.apibuilder.ApiBuilder.post;
-import static io.javalin.apibuilder.ApiBuilder.put;
-
+import static io.javalin.apibuilder.ApiBuilder.*;
 /**
  * Роутер для управления тестами.
  * <p>
@@ -57,30 +47,40 @@ public class TestRouter {
 			// Стандартные middleware
 			applyStandardBeforeMiddleware(logger);
 
-			// Список и создание тестов
+			// Список тестов
 			get(withRealm(READ_ACCESS_REALMS, testController::getTests));
-			post(withRealm(TEACHER_REALM, testController::createTest));
+
+            // Создание теста с JSON Schema валидацией
+            post(withValidationAndRealm(
+                    "/schemas/test-schema.json",
+                    TEACHER_REALM,
+                    testController::createTest));
 
 			path("/{id}", () -> {
 				// Просмотр теста - для всех
 				get(withRealm(READ_ACCESS_REALMS, testController::getTestById));
 
-				// Редактирование и удаление
-				put(withRealm(TEACHER_REALM, testController::updateTest));
+				// удаление
 				delete(withRealm(Set.of(TEACHER_REALM), testController::deleteTest));
 			});
 
-			path("/by-course", () -> {
-				// Получить тест по ID курса
-				path("/{courseId}", () -> {
-					get(withRealm(READ_ACCESS_REALMS, testController::getTestByCourseId));
-				});
+			// Обновление теста с JSON Schema валидацией
+            put("/{id}", withValidationAndRealm(
+                    "/schemas/test-schema.json",
+                    TEACHER_REALM,
+                    testController::updateTest));
 
-				path("/validate/{courseId}", () -> {
-					// Проверка существования теста по id курса - для всех
-					get(withRealm(READ_ACCESS_REALMS, testController::existsByCourseId));
-				});
-			});
+			// path("/by-course", () -> {
+			// 	// Получить тест по ID курса
+			// 	path("/{courseId}", () -> {
+			// 		get(withRealm(READ_ACCESS_REALMS, testController::getTestByCourseId));
+			// 	});
+
+			// 	path("/validate/{courseId}", () -> {
+			// 		// Проверка существования теста по id курса - для всех
+			// 		get(withRealm(READ_ACCESS_REALMS, testController::existsByCourseId));
+			// 	});
+			// });
 
 			applyStandardAfterMiddleware(logger);
 		});

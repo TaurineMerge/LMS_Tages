@@ -5,6 +5,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.example.lms.test.api.dto.Test;
 import com.example.lms.test.domain.service.TestService;
@@ -13,6 +17,7 @@ import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.Template;
 
 import io.javalin.http.Context;
+import io.minio.messages.ErrorResponse;
 
 /**
  * Контроллер для управления тестами.
@@ -34,6 +39,7 @@ import io.javalin.http.Context;
  * </ul>
  */
 public class TestController {
+	private static final Logger logger = LoggerFactory.getLogger(TestController.class);
 
 	/** Сервисный слой, содержащий бизнес-логику работы с тестами. */
 	private final TestService testService;
@@ -109,9 +115,43 @@ public class TestController {
 	 */
 	public void createTest(Context ctx) {
 		SimpleTracer.runWithSpan("createTest", () -> {
-			Test dto = ctx.bodyAsClass(Test.class);
-			Test created = testService.createTest(dto);
-			ctx.json(created);
+			try {
+				// 1. Получаем валидированный JSON (валидация структуры уже прошла)
+				// Можно использовать JsonSchemaValidator.getValidatedJson(ctx) если нужно,
+				// но проще использовать bodyValidator для бизнес-правил
+				
+				// 2. Бизнес-валидация через bodyValidator
+				Test test = ctx.bodyValidator(Test.class)
+						.check(t -> t.getTitle() != null && !t.getTitle().trim().isEmpty(), 
+							"Название теста обязательно")
+						.check(t -> t.getTitle().length() <= 200, 
+							"Название теста не должно превышать 200 символов")
+						.check(t -> t.getMin_point() != null && t.getMin_point() >= 0, 
+							"Минимальный балл должен быть >= 0")
+						.check(t -> t.getDescription() == null || t.getDescription().length() <= 1000, 
+							"Описание не должно превышать 1000 символов")
+						.get();
+				
+				// 3. Дополнительные бизнес-правила (если нужно)
+				// Например, проверка уникальности названия в рамках курса
+				// if (testService.existsByTitleAndCourseId(test.getTitle(), test.getCourseId())) {
+				//     ctx.status(409).json(new ErrorResponse("Тест с таким названием уже существует в этом курсе"));
+				//     return;
+				// }
+				
+				// 4. Сохраняем тест
+				Test createdTest = testService.createTest(test);
+				logger.info("Создан новый тест с ID: {}", createdTest.getId());
+				ctx.status(201).json(createdTest);
+				
+			} catch (IllegalArgumentException e) {
+				// Ошибка валидации через bodyValidator
+				logger.error("Ошибка валидации при создании теста", e);
+				ctx.status(400).json(new ErrorResponse("Ошибка валидации: " + e.getMessage()));
+			} catch (Exception e) {
+				logger.error("Ошибка при создании теста", e);
+				ctx.status(500).json(new ErrorResponse("Ошибка при создании теста"));
+			}
 		});
 	}
 
@@ -124,9 +164,23 @@ public class TestController {
 	 */
 	public void getTestById(Context ctx) {
 		SimpleTracer.runWithSpan("getTestById", () -> {
-			String id = ctx.pathParam("id");
-			Test dto = testService.getTestById(id);
-			ctx.json(dto);
+			try {
+				String idParam = ctx.pathParam("id");
+				UUID id = UUID.fromString(idParam);
+				
+				Test test = testService.getTestById(id.toString());
+				if (test == null) {
+					ctx.status(404).json(new ErrorResponse("Тест с ID " + id + " не найден"));
+					return;
+				}
+				ctx.json(test);
+			} catch (IllegalArgumentException e) {
+				logger.error("Неверный формат UUID", e);
+				ctx.status(400).json(new ErrorResponse("Неверный формат идентификатора"));
+			} catch (Exception e) {
+				logger.error("Ошибка при получении теста по ID", e);
+				ctx.status(500).json(new ErrorResponse("Ошибка при получении теста"));
+			}
 		});
 	}
 
@@ -139,12 +193,50 @@ public class TestController {
 	 */
 	public void updateTest(Context ctx) {
 		SimpleTracer.runWithSpan("updateTest", () -> {
-			String id = ctx.pathParam("id");
-			Test dto = ctx.bodyAsClass(Test.class);
-			dto.setId(id);
-
-			Test updated = testService.updateTest(dto);
-			ctx.json(updated);
+			try {
+				// 1. Валидация UUID параметра
+				String idParam = ctx.pathParam("id");
+				UUID id;
+				try {
+					id = UUID.fromString(idParam);
+				} catch (IllegalArgumentException e) {
+					ctx.status(400).json(new ErrorResponse("Неверный формат UUID"));
+					return;
+				}
+				
+				// 2. Проверка существования теста
+				Test existingTest = testService.getTestById(id.toString());
+				if (existingTest == null) {
+					ctx.status(404).json(new ErrorResponse("Тест с ID " + id + " не найден"));
+					return;
+				}
+				
+				// 3. Бизнес-валидация через bodyValidator
+				Test test = ctx.bodyValidator(Test.class)
+						.check(t -> t.getTitle() != null && !t.getTitle().trim().isEmpty(), 
+							"Название теста обязательно")
+						.check(t -> t.getTitle().length() <= 200, 
+							"Название теста не должно превышать 200 символов")
+						.check(t -> t.getMin_point() != null && t.getMin_point() >= 0, 
+							"Минимальный балл должен быть >= 0")
+						.check(t -> t.getDescription() == null || t.getDescription().length() <= 1000, 
+							"Описание не должно превышать 1000 символов")
+						.get();
+				
+				test.setId(id.toString());
+				
+				// 4. Обновляем тест
+				Test updatedTest = testService.updateTest(test);
+				logger.info("Обновлен тест с ID: {}", id);
+				ctx.json(updatedTest);
+            
+			} catch (IllegalArgumentException e) {
+				logger.error("Ошибка валидации при обновлении теста", e);
+				ctx.status(400).json(new ErrorResponse("Ошибка валидации: " + e.getMessage()));
+			} catch (Exception e) {
+				logger.error("Ошибка при обновлении теста", e);
+				ctx.status(500).json(new ErrorResponse("Ошибка при обновлении теста"));
+			}
 		});
 	}
 
@@ -200,4 +292,19 @@ public class TestController {
 			ctx.json(tests);
 		});
 	}
+
+	/**
+     * Класс для передачи сообщений об ошибках
+     */
+    private static class ErrorResponse {
+        private final String error;
+
+        public ErrorResponse(String error) {
+            this.error = error;
+        }
+
+        public String getError() {
+            return error;
+        }
+    }
 }

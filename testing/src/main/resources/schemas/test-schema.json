@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Test",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "Название теста"
+    },
+    "min_point": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Минимальный проходной балл"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Описание теста"
+    },
+    "courseId": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "ID курса"
+    }
+  },
+  "required": ["title", "min_point"],
+  "additionalProperties": false
+}
