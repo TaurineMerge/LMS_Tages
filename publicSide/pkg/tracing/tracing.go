@@ -4,6 +4,7 @@ package tracing
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/config"
 	"go.opentelemetry.io/otel"
@@ -16,15 +17,17 @@ import (
 	"google.golang.org/grpc"
 )
 
-// InitTracer initializes and registers a new OpenTelemetry tracer provider.
-// It configures an OTLP exporter to send traces to a collector (e.g., Jaeger via OTel Collector).
-func InitTracer(cfg *config.Config) (*sdktrace.TracerProvider, error) {
+type Tracer struct {
+	traceProvider *sdktrace.TracerProvider
+}
+
+func New(cfg *config.OtelConfig) (*Tracer, error) {
 	ctx := context.Background()
 
 	// Create a new resource with service name and version attributes.
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
-			semconv.ServiceName(cfg.OTELServiceName),
+			semconv.ServiceName(cfg.ServiceName),
 		),
 	)
 	if err != nil {
@@ -36,7 +39,7 @@ func InitTracer(cfg *config.Config) (*sdktrace.TracerProvider, error) {
 	// For local development, an insecure connection is typically used.
 	traceExporter, err := otlptrace.New(ctx, otlptracegrpc.NewClient(
 		otlptracegrpc.WithInsecure(),
-		otlptracegrpc.WithEndpoint(cfg.OTELCollectorEndpoint),
+		otlptracegrpc.WithEndpoint(cfg.CollectorEndpoint),
 		otlptracegrpc.WithDialOption(grpc.WithBlock()),
 	))
 	if err != nil {
@@ -53,5 +56,13 @@ func InitTracer(cfg *config.Config) (*sdktrace.TracerProvider, error) {
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
-	return tp, nil
+	return &Tracer{
+		traceProvider: tp,
+	}, nil
+}
+
+func (t *Tracer) Close() {
+	if err := t.traceProvider.Shutdown(context.Background()); err != nil {
+		slog.Error("Error shutting down tracer provider", "error", err)
+	}
 }

@@ -6,15 +6,13 @@ import (
 	"errors"
 	"log/slog"
 
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/api/v1/dto/response"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/dto/response"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apperrors"
 	"github.com/gofiber/fiber/v2"
 )
 
-// GlobalErrorHandler is a centralized error handler for the application.
-// It catches errors returned from handlers, logs them, and formats them
-// into a consistent JSON error response.
-func GlobalErrorHandler(c *fiber.Ctx, err error) error {
+// APIErrorHandler handles errors for API routes, always returning a JSON response.
+func APIErrorHandler(c *fiber.Ctx, err error) error {
 	var appErr *apperrors.AppError
 	if errors.As(err, &appErr) {
 		slog.Info("Handler error", "error", err)
@@ -28,12 +26,13 @@ func GlobalErrorHandler(c *fiber.Ctx, err error) error {
 	}
 
 	// This is an unhandled, unexpected error
-	slog.Error("Unhandled error", "error", err) // Log the unexpected error
-	return c.Status(fiber.StatusInternalServerError).JSON(response.ErrorResponse{
+	slog.Error("Unhandled API error", "error", err) // Log the unexpected error
+	appErr = apperrors.NewInternal().(*apperrors.AppError)
+	return c.Status(appErr.HTTPStatus).JSON(response.ErrorResponse{
 		Status: response.StatusError,
 		Error: response.ErrorDetail{
-			Code:    "INTERNAL_SERVER_ERROR",
-			Message: "An unexpected internal error occurred",
+			Code:    appErr.Code,
+			Message: appErr.Message,
 		},
 	})
 }

@@ -1,7 +1,3 @@
-/* Page Header */
-.page-header {
-    margin-bottom: 2.5rem;
-}
 
 .page-header__breadcrumbs {
     display: flex;
@@ -9,30 +5,36 @@
     gap: 0.5rem;
     font-size: 0.875rem;
     color: var(--gray-500);
-    margin-bottom: 0.75rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
 }
 
-.page-header__breadcrumbs a {
-    color: var(--orange-500);
+.page-header__breadcrumb-link {
+    color: var(--accent-color);
     text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
 }
 
-.page-header__breadcrumbs a:hover {
+.page-header__breadcrumb-link:hover {
+    color: #E67E22;
     text-decoration: underline;
 }
 
-.page-header__separator {
-    color: var(--gray-500);
+.page-header__breadcrumb-separator {
+    color: var(--gray-300);
+    margin: 0 0.25rem;
+}
+
+.page-header__breadcrumb-text {
+    font-weight: 600;
+    color: var(--main-text-color);
 }
 
 .page-header__title {
     font-size: 2rem;
     font-weight: 700;
-    color: var(--gray-900);
-}
-
-@media (max-width: 768px) {
-    .page-header__title {
-        font-size: 1.5rem;
-    }
+    color: var(--main-text-color);
+    line-height: var(--line-height-tight);
+    text-align: center;
 }

@@ -1,22 +1,22 @@
-/* Base Scaffolding */
+
 body {
-    width: 100%;
-    min-height: 100vh;
     font-family: var(--font-family);
     background-color: var(--gray-50);
     color: var(--gray-900);
 }
 
-.wrapper {
-    width: 100%;
-    min-height: 100vh;
-}
-
-/* Main Content */
 .main {
-    max-width: 1800px;
+    width: 100%;
+    min-height: 90vh;
     margin: 0 auto;
     padding: 2.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.accent {
+    color: var(--accent-color);
+    font-weight: 700;
 }
 
 /* Responsive */

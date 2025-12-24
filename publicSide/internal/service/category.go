@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/api/v1/dto/response"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/dto/response"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/repository"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apperrors"
 	"go.opentelemetry.io/otel"
@@ -19,6 +19,7 @@ import (
 type CategoryService interface {
 	// GetAll retrieves a paginated list of all categories.
 	GetAll(ctx context.Context, page, limit int) ([]response.CategoryDTO, response.Pagination, error)
+	GetAllNotEmpty(ctx context.Context, page, limit int) ([]response.CategoryDTO, response.Pagination, error)
 	// GetByID retrieves a single category by its ID.
 	GetByID(ctx context.Context, categoryID string) (response.CategoryDTO, error)
 }
@@ -29,7 +30,9 @@ type categoryService struct {
 
 // NewCategoryService creates a new instance of a category service.
 func NewCategoryService(repo repository.CategoryRepository) CategoryService {
-	return &categoryService{repo: repo}
+	return &categoryService{
+		repo: repo,
+	}
 }
 
 func toCategoryDTO(category domain.Category) response.CategoryDTO {
@@ -56,6 +59,40 @@ func (s *categoryService) GetAll(ctx context.Context, page, limit int) ([]respon
 	}
 
 	categories, total, err := s.repo.GetAll(ctx, page, limit)
+	if err != nil {
+		return nil, response.Pagination{}, err
+	}
+
+	categoryDTOs := make([]response.CategoryDTO, len(categories))
+	for i, category := range categories {
+		categoryDTOs[i] = toCategoryDTO(category)
+	}
+
+	pagination := response.Pagination{
+		Page:  page,
+		Limit: limit,
+		Total: total,
+		Pages: int(math.Ceil(float64(total) / float64(limit))),
+	}
+
+	return categoryDTOs, pagination, nil
+}
+
+func (s *categoryService) GetAllNotEmpty(ctx context.Context, page, limit int) ([]response.CategoryDTO, response.Pagination, error) {
+	ctx, span := otel.Tracer("categoryService").Start(ctx, "GetAllNotEmpty")
+	defer span.End()
+
+	if page <= 0 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	categories, total, err := s.repo.GetAllNotEmpty(ctx, page, limit)
 	if err != nil {
 		return nil, response.Pagination{}, err
 	}

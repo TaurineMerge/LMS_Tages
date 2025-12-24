@@ -3,16 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{title}} - LMS</title>
+    <title>{{Main.Title}} - LMS</title>
+    <link rel="icon" href="/static/icon/icon.ico" type="image/x-icon">
     <link rel="stylesheet" href="/static/css/main.css">
 </head>
-<body>
-    <div class="wrapper">
-        {{> partials/header }}
-        <main class="main">
-            {{{embed}}}
-        </main>
-        {{> partials/footer }}
-    </div>
+<body class="body">
+    {{> partials/header }}
+    <main class="main">
+        {{{embed}}}
+    </main>
+    {{> partials/footer }}
 </body>
 </html>

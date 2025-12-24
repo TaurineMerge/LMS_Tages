@@ -1,53 +1,26 @@
-<!-- templates/pages/categories.hbs -->
+{{#with Context}}
+    {{> partials/page-header PageHeader}}
+    <section class="categories-page">
+        {{#if Categories}}
+            <div class="categories-page__grid">
+                {{#each Categories}}
+                    <div class="categories-page__grid-item">
+                        {{> partials/category-card this}}
+                    </div>
+                {{/each}}
+            </div>
 
-<section class="category-courses">
-    <header class="page-header">
-        <div class="page-header__breadcrumbs">
-            <a href="/">Главная</a>
-            <span class="page-header__separator">/</span>
-            <span>Категории</span>
-        </div>
-        <h1 class="page-header__title">Категории курсов</h1>
-    </header>
-
-    {{#if categories}}
-        <div class="categories-grid">
-            {{#each categories}}
-                <section class="categories-grid__column">
-                    <h2 class="categories-grid__title">{{Title}}</h2>
-
-                    {{#if TotalCourses}}
-                        <div class="categories-grid__count">{{TotalCourses}} курсов</div>
-                    {{/if}}
-
-                    {{#if Courses}}
-                        <ul class="categories-grid__courses">
-                            {{#each Courses}}
-                                <li class="categories-grid__course-item">
-                                    <a href="/categories/{{../ID}}/courses/{{ID}}" class="categories-grid__course-link">{{Title}}</a>
-                                </li>
-                            {{/each}}
-                        </ul>
-                    {{else}}
-                        <div class="categories-grid__empty">
-                            В этой категории пока нет доступных курсов.
-                        </div>
-                    {{/if}}
-
-                    {{#if HasMoreCourses}}
-                        <a href="/categories/{{ID}}/courses" class="categories-grid__more-link">
-                            Показать ещё
-                        </a>
-                    {{/if}}
-                </section>
-            {{/each}}
-        </div>
-    {{else}}
-        <div class="empty-state">
-            <p class="empty-state__text">
-                Пока нет ни одной категории. Создайте категории через Swagger admin, и они появятся здесь автоматически.
-            </p>
-        </div>
-    {{/if}}
-</section>
-
+            <div class="categories-page__pagination">
+                {{> partials/pagination Pagination }}
+            </div>
+        {{else}}
+            <div class="empty-state">
+                 <div class="empty-state__icon">📭</div>
+                <h2 class="empty-state__title">Категории не найдены</h2>
+                <p class="empty-state__text">
+                    Пока нет ни одной категории. Создайте их, и они появятся здесь.
+                </p>
+            </div>
+        {{/if}}
+    </section>
+{{/with}}

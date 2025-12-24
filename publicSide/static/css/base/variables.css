@@ -1,14 +1,63 @@
 /* Variables */
 :root {
-    --gray-25: #FAFBFC;
-    --gray-50: #F5F7FA;
-    --gray-100: #E5E7EB;
-    --gray-500: #8C94A3;
-    --gray-900: #1D2026;
-    --lavender-100: #EBEBFF;
-    --orange-100: #FFEEE8;
-    --orange-500: #FF6636;
+    /* Colors */
+    --main-text-color: #2d2d2d;
+    --main-background-color: #fff;
+    --gray-50: #fafafa;
+    --gray-100: #f5f5f5;
+    --gray-900: #2d2d2d;
     
-    --font-family: 'Inter', sans-serif;
-    --border-radius: 0.5rem;
+    /* Accent colors */
+    --accent-color: #f65700;
+    --accent-color-hover: #fa7125;
+    --accent-color-active: #e76e2c;
+    --accent-color-light: #FFEEE8;
+
+    /* Border & Card */
+    --card-border-color: #bdbdbd;
+    --border-color: #989898;
+    
+    /* Effects */
+    --hover-shadow: 0 0 78px rgba(85, 85, 85, 0.05), 0 0 15px rgba(85, 85, 85, 0.06), 0 0 5px rgba(85, 85, 85, 0.02);
+    --button-text-color: #fff;
+    
+    /* Status colors */
+    --error-color: #e6332a;
+    --success-color: #4caf50;
+    --warning-color: #ff9800;
+    --info-color: #2196f3;
+    
+    /* Typography */
+    --font-family: "Gotham", system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;
+    
+    /* Spacing */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-2xl: 2.5rem;
+    
+    /* Border radius */
+    --border-radius-sm: 0.25rem;
+    --border-radius-md: 0.5rem;
+    --border-radius-lg: 1rem;
+    --border-radius: 0;
+    
+    /* Transitions */
+    --transition-duration: 0.2s;
+    --transition-fast: 0.15s;
+    --transition-slow: 0.3s;
+    
+    /* Z-index */
+    --z-dropdown: 100;
+    --z-modal: 1000;
+    --z-tooltip: 1100;
+    
+    /* Line height */
+    --line-height-tight: 1.3;
+    --line-height-normal: 1.6;
+    --line-height-relaxed: 1.8;
+
+    --category-card-width: 380px;
 }

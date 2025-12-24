@@ -2,10 +2,10 @@
 package v1
 
 import (
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/api/v1/dto/request"
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/api/v1/dto/response"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/dto/request"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/dto/response"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/service"
-	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apiconst"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/routing"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apperrors"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -23,22 +23,13 @@ func NewCourseHandler(courseService service.CourseService) *CourseHandler {
 	}
 }
 
-// RegisterRoutes registers the routes for course page endpoints.
-func (h *CourseHandler) RegisterRoutes(router fiber.Router) fiber.Router {
-	courseRouter := router.Group("/courses")
-	courseRouter.Get("/", h.GetCoursesByCategoryID)
 
-	courseIdRouter := courseRouter.Group("/:" + apiconst.PathVariableCourseID)
-	courseIdRouter.Get("/", h.GetCourseByID)
-
-	return courseIdRouter
-}
 
 // GetCoursesByCategoryID handles the request to get paginated courses for a specific category.
 func (h *CourseHandler) GetCoursesByCategoryID(c *fiber.Ctx) error {
-	categoryID := c.Params(apiconst.PathVariableCategoryID)
+	categoryID := c.Params(routing.PathVariableCategoryID)
 	if _, err := uuid.Parse(categoryID); err != nil {
-		return apperrors.NewInvalidUUID(apiconst.PathVariableCategoryID)
+		return apperrors.NewInvalidUUID(routing.PathVariableCategoryID)
 	}
 
 	var query request.PaginationQuery
@@ -63,14 +54,14 @@ func (h *CourseHandler) GetCoursesByCategoryID(c *fiber.Ctx) error {
 
 // GetCourseByID handles the request to get a single course by its ID.
 func (h *CourseHandler) GetCourseByID(c *fiber.Ctx) error {
-	categoryID := c.Params(apiconst.PathVariableCategoryID)
+	categoryID := c.Params(routing.PathVariableCategoryID)
 	if _, err := uuid.Parse(categoryID); err != nil {
-		return apperrors.NewInvalidUUID(apiconst.PathVariableCategoryID)
+		return apperrors.NewInvalidUUID(routing.PathVariableCategoryID)
 	}
 
-	courseID := c.Params(apiconst.PathVariableCourseID)
+	courseID := c.Params(routing.PathVariableCourseID)
 	if _, err := uuid.Parse(courseID); err != nil {
-		return apperrors.NewInvalidUUID(apiconst.PathVariableCourseID)
+		return apperrors.NewInvalidUUID(routing.PathVariableCourseID)
 	}
 
 	course, err := h.courseService.GetCourseByID(c.UserContext(), categoryID, courseID)

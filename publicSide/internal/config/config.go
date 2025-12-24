@@ -8,29 +8,60 @@ import (
 	"strconv"
 )
 
-// Config stores all configuration of the application.
-type Config struct {
-	// DatabaseURL is the connection string for the PostgreSQL database.
-	DatabaseURL string
-	// CORSAllowedOrigins is a comma-separated list of origins that are allowed to make cross-origin requests.
-	CORSAllowedOrigins string
-	// CORSAllowedMethods is a comma-separated list of methods that are allowed for cross-origin requests.
-	CORSAllowedMethods string
-	// CORSAllowedHeaders is a comma-separated list of headers that are allowed for cross-origin requests.
-	CORSAllowedHeaders string
-	// CORSAllowCredentials indicates whether credentials can be shared in cross-origin requests.
-	CORSAllowCredentials bool
-	// Port is the network port on which the application server will listen.
-	Port string
-	// OTELServiceName is the name of the service for OpenTelemetry.
-	OTELServiceName string
-	// OTELCollectorEndpoint is the endpoint of the OpenTelemetry collector.
-	OTELCollectorEndpoint string
-	// LogLevel is the level for application logging (e.g., DEBUG, INFO, WARN, ERROR).
-	LogLevel string
-	// Dev indicates whether the application is running in development mode.
-	Dev bool
-}
+type (
+	// Config is the root configuration struct that aggregates all other configs.
+	Config struct {
+		App      AppConfig
+		Server   ServerConfig
+		Database DatabaseConfig
+		CORS     CORSConfig
+		Otel     OtelConfig
+		Log      LogConfig
+		OIDC     OIDCConfig
+	}
+
+	// AppConfig holds general application settings.
+	AppConfig struct {
+		Dev bool
+	}
+
+	// ServerConfig holds HTTP server settings.
+	ServerConfig struct {
+		Port string
+	}
+
+	// DatabaseConfig holds database connection settings.
+	DatabaseConfig struct {
+		URL string
+	}
+
+	// CORSConfig holds Cross-Origin Resource Sharing settings.
+	CORSConfig struct {
+		AllowedOrigins   string
+		AllowedMethods   string
+		AllowedHeaders   string
+		AllowCredentials bool
+	}
+
+	// OtelConfig holds OpenTelemetry settings.
+	OtelConfig struct {
+		ServiceName      string
+		CollectorEndpoint string
+	}
+
+	// LogConfig holds logging settings.
+	LogConfig struct {
+		Level string
+	}
+
+	// OIDCConfig holds OIDC-specific settings for authentication.
+	OIDCConfig struct {
+		ClientID     string
+		ClientSecret string
+		IssuerURL    string
+		RedirectURL  string
+	}
+)
 
 // Option defines a function that configures a Config object.
 type Option func(*Config) error
@@ -48,12 +79,37 @@ func New(opts ...Option) (*Config, error) {
 	return cfg, nil
 }
 
+// WithOIDCFromEnv configures OIDC settings from environment variables.
+func WithOIDCFromEnv() Option {
+	return func(cfg *Config) error {
+		var err error
+		cfg.OIDC.ClientID, err = getRequiredEnv("OIDC_CLIENT_ID")
+		if err != nil {
+			return err
+		}
+		cfg.OIDC.ClientSecret, err = getRequiredEnv("OIDC_CLIENT_SECRET")
+		if err != nil {
+			return err
+		}
+		cfg.OIDC.IssuerURL, err = getRequiredEnv("OIDC_ISSUER_URL")
+		if err != nil {
+			return err
+		}
+		cfg.OIDC.RedirectURL, err = getRequiredEnv("OIDC_REDIRECT_URL")
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+}
+
+
 // WithDBFromEnv configures the database settings from environment variables.
 func WithDBFromEnv() Option {
 	return func(cfg *Config) error {
 		databaseURL := os.Getenv("DATABASE_URL")
 		if databaseURL != "" {
-			cfg.DatabaseURL = databaseURL
+			cfg.Database.URL = databaseURL
 			return nil
 		}
 
@@ -75,7 +131,7 @@ func WithDBFromEnv() Option {
 
 		sslMode := getOptionalEnv("DB_SSLMODE", "disable")
 
-		cfg.DatabaseURL = fmt.Sprintf(
+		cfg.Database.URL = fmt.Sprintf(
 			"postgres://%s:%s@%s:%s/%s?sslmode=%s",
 			requiredEnvs["DB_USER"],
 			requiredEnvs["DB_PASSWORD"],
@@ -91,12 +147,12 @@ func WithDBFromEnv() Option {
 // WithCORSFromEnv configures CORS settings from environment variables, with sensible defaults.
 func WithCORSFromEnv() Option {
 	return func(cfg *Config) error {
-		cfg.CORSAllowedOrigins = getOptionalEnv("CORS_ALLOWED_ORIGINS", "*")
-		cfg.CORSAllowedMethods = getOptionalEnv("CORS_ALLOWED_METHODS", "GET")
-		cfg.CORSAllowedHeaders = getOptionalEnv("CORS_ALLOWED_HEADERS", "Origin,Content-Type,Accept,Authorization")
+		cfg.CORS.AllowedOrigins = getOptionalEnv("CORS_ALLOWED_ORIGINS", "*")
+		cfg.CORS.AllowedMethods = getOptionalEnv("CORS_ALLOWED_METHODS", "GET")
+		cfg.CORS.AllowedHeaders = getOptionalEnv("CORS_ALLOWED_HEADERS", "Origin,Content-Type,Accept,Authorization")
 
 		var err error
-		cfg.CORSAllowCredentials, err = getOptionalEnvAsBool("CORS_ALLOW_CREDENTIALS", false)
+		cfg.CORS.AllowCredentials, err = getOptionalEnvAsBool("CORS_ALLOW_CREDENTIALS", false)
 		if err != nil {
 			return err
 		}
@@ -106,16 +162,15 @@ func WithCORSFromEnv() Option {
 }
 
 // WithPortFromEnv configures the application port from the APP_PORT environment variable.
-// It defaults to "3000" if the variable is not set.
 func WithPortFromEnv() Option {
 	return func(cfg *Config) error {
-		portStr := getOptionalEnv("APP_PORT", "3000") // Get port as string, default empty
+		portStr := getOptionalEnv("APP_PORT", "3000")
 
 		_, err := strconv.Atoi(portStr)
 		if err != nil {
 			return fmt.Errorf("failed to parse APP_PORT environment variable as integer: %w", err)
 		}
-		cfg.Port = portStr
+		cfg.Server.Port = portStr
 		return nil
 	}
 }
@@ -123,9 +178,9 @@ func WithPortFromEnv() Option {
 // WithTracingFromEnv configures OpenTelemetry settings from environment variables.
 func WithTracingFromEnv() Option {
 	return func(cfg *Config) error {
-		cfg.OTELServiceName = getOptionalEnv("OTEL_SERVICE_NAME", "publicSide")
+		cfg.Otel.ServiceName = getOptionalEnv("OTEL_SERVICE_NAME", "publicSide")
 		var err error
-		cfg.OTELCollectorEndpoint, err = getRequiredEnv("OTEL_EXPORTER_OTLP_ENDPOINT")
+		cfg.Otel.CollectorEndpoint, err = getRequiredEnv("OTEL_EXPORTER_OTLP_ENDPOINT")
 		if err != nil {
 			return err
 		}
@@ -136,7 +191,7 @@ func WithTracingFromEnv() Option {
 // WithLogLevelFromEnv configures the logging level from the LOG_LEVEL environment variable.
 func WithLogLevelFromEnv() Option {
 	return func(cfg *Config) error {
-		cfg.LogLevel = getOptionalEnv("LOG_LEVEL", "INFO")
+		cfg.Log.Level = getOptionalEnv("LOG_LEVEL", "INFO")
 		return nil
 	}
 }
@@ -145,7 +200,7 @@ func WithLogLevelFromEnv() Option {
 func WithDevFromEnv() Option {
 	return func(cfg *Config) error {
 		var err error
-		cfg.Dev, err = getOptionalEnvAsBool("DEV", false)
+		cfg.App.Dev, err = getOptionalEnvAsBool("DEV", false)
 		if err != nil {
 			return err
 		}
@@ -168,19 +223,6 @@ func getOptionalEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
-}
-
-// getRequiredEnvAsBool retrieves a required environment variable as a boolean.
-func getRequiredEnvAsBool(key string) (bool, error) {
-	valueStr, err := getRequiredEnv(key)
-	if err != nil {
-		return false, err
-	}
-	value, err := strconv.ParseBool(valueStr)
-	if err != nil {
-		return false, fmt.Errorf("failed to parse environment variable '%s' as boolean: %w", key, err)
-	}
-	return value, nil
 }
 
 // getOptionalEnvAsBool retrieves an optional environment variable as a boolean, with a default.

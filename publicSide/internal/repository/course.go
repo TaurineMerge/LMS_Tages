@@ -7,6 +7,7 @@ import (
 
 	"github.com/Masterminds/squirrel"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/utils"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -110,23 +111,12 @@ func (r *courseRepository) GetCoursesByCategoryID(ctx context.Context, categoryI
 	}
 
 	// Determine sort order
-	orderBy := "updated_at DESC"
-	switch sortBy {
-	case "updated_asc":
-		orderBy = "updated_at ASC"
-	case "updated_desc":
-		orderBy = "updated_at DESC"
-	case "created_asc":
-		orderBy = "created_at ASC"
-	case "created_desc":
-		orderBy = "created_at DESC"
-	default:
-		// Default to updated_at DESC
-		orderBy = "updated_at DESC"
-	}
+	column, direction := utils.UnpackSort(sortBy, "updated_at", utils.DescendingDirection, map[string]bool{
+		"updated_at": true,
+	})
 
 	queryBuilder = queryBuilder.
-		OrderBy(orderBy).
+		OrderBy(column + " " + direction).
 		Limit(uint64(limit)).
 		Offset(uint64(offset))
 
