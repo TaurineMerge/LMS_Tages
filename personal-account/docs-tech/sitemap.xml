@@ -2,110 +2,134 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>http://localhost/account/docs-tech/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
     </url>
     <url>
          <loc>http://localhost/account/docs-tech/architecture/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
     </url>
     <url>
          <loc>http://localhost/account/docs-tech/api/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
     </url>
     <url>
          <loc>http://localhost/account/docs-tech/api/config/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
     </url>
     <url>
          <loc>http://localhost/account/docs-tech/api/database/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
     </url>
     <url>
          <loc>http://localhost/account/docs-tech/api/telemetry/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
+    </url>
+    <url>
+         <loc>http://localhost/account/docs-tech/api/clients/</loc>
+         <lastmod>2025-12-19</lastmod>
+    </url>
+    <url>
+         <loc>http://localhost/account/docs-tech/api/clients/testing/</loc>
+         <lastmod>2025-12-19</lastmod>
+    </url>
+    <url>
+         <loc>http://localhost/account/docs-tech/api/clients/validation/</loc>
+         <lastmod>2025-12-19</lastmod>
+    </url>
+    <url>
+         <loc>http://localhost/account/docs-tech/api/clients/validation/contract_manager/</loc>
+         <lastmod>2025-12-19</lastmod>
+    </url>
+    <url>
+         <loc>http://localhost/account/docs-tech/api/clients/validation/schema_loader/</loc>
+         <lastmod>2025-12-19</lastmod>
     </url>
     <url>
          <loc>http://localhost/account/docs-tech/api/core/jwt/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
     </url>
     <url>
          <loc>http://localhost/account/docs-tech/api/core/security/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
     </url>
     <url>
          <loc>http://localhost/account/docs-tech/api/repositories/base/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
     </url>
     <url>
          <loc>http://localhost/account/docs-tech/api/repositories/certificate/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
+    </url>
+    <url>
+         <loc>http://localhost/account/docs-tech/api/repositories/integration/</loc>
+         <lastmod>2025-12-19</lastmod>
     </url>
     <url>
          <loc>http://localhost/account/docs-tech/api/repositories/student/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
     </url>
     <url>
          <loc>http://localhost/account/docs-tech/api/repositories/visit/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
     </url>
     <url>
          <loc>http://localhost/account/docs-tech/api/routers/auth/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
     </url>
     <url>
          <loc>http://localhost/account/docs-tech/api/routers/certificates/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
     </url>
     <url>
          <loc>http://localhost/account/docs-tech/api/routers/health/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
     </url>
     <url>
          <loc>http://localhost/account/docs-tech/api/routers/students/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
     </url>
     <url>
          <loc>http://localhost/account/docs-tech/api/routers/visits/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
     </url>
     <url>
          <loc>http://localhost/account/docs-tech/api/schemas/certificate/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
     </url>
     <url>
          <loc>http://localhost/account/docs-tech/api/schemas/common/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
     </url>
     <url>
          <loc>http://localhost/account/docs-tech/api/schemas/student/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
     </url>
     <url>
          <loc>http://localhost/account/docs-tech/api/schemas/validators/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
     </url>
     <url>
          <loc>http://localhost/account/docs-tech/api/schemas/visit/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
     </url>
     <url>
          <loc>http://localhost/account/docs-tech/api/services/auth/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
     </url>
     <url>
          <loc>http://localhost/account/docs-tech/api/services/certificate/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
     </url>
     <url>
          <loc>http://localhost/account/docs-tech/api/services/keycloak/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
     </url>
     <url>
          <loc>http://localhost/account/docs-tech/api/services/student/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
     </url>
     <url>
          <loc>http://localhost/account/docs-tech/api/services/visit/</loc>
-         <lastmod>2025-12-11</lastmod>
+         <lastmod>2025-12-19</lastmod>
     </url>
 </urlset>

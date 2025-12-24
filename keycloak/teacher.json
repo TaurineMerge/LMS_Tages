@@ -1,7 +1,7 @@
 {
   "realm": "teacher",
   "enabled": true,
-  "sslRequired": "external",
+  "sslRequired": "none",
   "registrationAllowed": false,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
@@ -30,6 +30,9 @@
         "http://localhost/admin/swagger/*",
         "http://localhost/admin/swagger/oauth2-redirect.html",
         "http://localhost/auth/*",
+        "http://testing/auth/*",
+        "http://localhost/oauth2-redirect.html",
+        "http://localhost/testing/swagger/oauth2-redirect.html",
         "*"
       ],
       "webOrigins": [
@@ -37,6 +40,9 @@
         "http://localhost/admin",
         "http://localhost/admin/swagger",
         "http://localhost/auth",
+        "http://testing/auth/*",
+        "http://localhost/oauth2-redirect.html",
+        "http://localhost/testing/swagger/oauth2-redirect.html",
         "*"
       ],
       "bearerOnly": false,

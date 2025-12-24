@@ -48,7 +48,13 @@ class KeycloakService:
 
     @traced("keycloak.get_auth_url", record_args=True, record_result=True)
     def get_auth_url(self, redirect_uri: str) -> str:
-        return self.openid.auth_url(redirect_uri=redirect_uri)
+        try:
+            url = self.openid.auth_url(redirect_uri=redirect_uri)
+            print(f"Keycloak auth URL: {url}")  # Добавь для отладки
+            return url
+        except Exception as e:
+            print(f"Keycloak error: {e}")  # Добавь
+            raise
 
     @traced("keycloak.get_user_data", record_args=True, record_result=True)
     def get_user_data(self, user_id: str) -> dict[str, Any]:

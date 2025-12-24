@@ -1,0 +1,116 @@
+services:
+  # База данных приложения
+  app-db:
+    image: postgres:15
+    container_name: app-db-dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U superuser -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+ 
+    env_file:
+      - personal-account/.env.local
+    ports:
+      - "5432:5432"
+    volumes:
+      - app_data_dev:/var/lib/postgresql/data
+      - ./init-sql/00-init-dbs.sh:/docker-entrypoint-initdb.d/00-init-dbs.sh:ro
+      - ./init-sql/01-run-all-sub-scripts.sh:/docker-entrypoint-initdb.d/01-run-all-sub-scripts.sh:ro
+      - ./init-sql:/docker-entrypoint-initdb.d/init-sql:ro
+    networks:
+      - dev-network
+
+  # Redis для кеша статистики
+  redis:
+    image: redis:7-alpine
+    container_name: redis-dev
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    ports:
+      - "6379:6379"
+    networks:
+      - dev-network
+
+  # Keycloak для авторизации
+  keycloak-db:
+    image: postgres:15
+    container_name: keycloak-db-dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloaks -d keycloaks"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    environment:
+      POSTGRES_DB: keycloaks
+      POSTGRES_USER: keycloaks
+      POSTGRES_PASSWORD: keycloaks
+    volumes:
+      - keycloak_db_data_dev:/var/lib/postgresql/data
+    networks:
+      - dev-network
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0.0
+    container_name: keycloak-dev
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloaks
+      KC_DB_USERNAME: keycloaks
+      KC_DB_PASSWORD: keycloaks
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8080
+      KC_HOSTNAME_STRICT: "false"
+      KC_HEALTH_ENABLED: "true"
+    command: start-dev --import-realm
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import:ro
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    networks:
+      - dev-network
+
+  # Телеметрия
+  jaeger:
+    image: jaegertracing/all-in-one:1.54
+    container_name: jaeger-dev
+    ports:
+      - "16686:16686" # UI
+      - "4317:4317"  # OTLP gRPC
+    networks:
+      - dev-network
+
+  # Testing service для интеграционных тестов
+  testing:
+    build: ./testing
+    container_name: testing-dev
+    env_file:
+      - ./testing/.env
+    volumes:
+      - ./docs:/app/docs
+    ports:
+      - "8085:8085"  # Открываем порт для доступа из локального Python
+    depends_on:
+      app-db:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    networks:
+      - dev-network
+    restart: unless-stopped
+
+networks:
+  dev-network:
+    driver: bridge
+
+volumes:
+  app_data_dev:
+  keycloak_db_data_dev:

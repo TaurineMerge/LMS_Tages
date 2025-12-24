@@ -1,0 +1,53 @@
+{% extends "base.hbs" %}
+
+{% block title %}Статистика | LMS Tages{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Моя статистика</h1>
+
+{% if not stats %}
+<div id="stats-error" class="text-red-600 text-center py-8">
+    <p>Ошибка загрузки статистики или данных пока нет</p>
+</div>
+{% else %}
+<div id="stats-content">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-gray-500 text-sm">Всего попыток</h3>
+            <p id="total-attempts" class="text-3xl font-bold text-blue-600">{{ stats.total_attempts or 0 }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-gray-500 text-sm">Пройдено</h3>
+            <p id="passed-attempts" class="text-3xl font-bold text-green-600">{{ stats.passed_attempts or 0 }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-gray-500 text-sm">Не пройдено</h3>
+            <p id="failed-attempts" class="text-3xl font-bold text-red-600">{{ stats.failed_attempts or 0 }}</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-gray-500 text-sm">Средний балл</h3>
+            <p id="avg-score" class="text-3xl font-bold text-purple-600">{{ "%.1f"|format(stats.avg_score or 0) }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-gray-500 text-sm">Пройдено тестов</h3>
+            <p id="total-tests" class="text-3xl font-bold text-orange-600">{{ stats.total_tests_taken or 0 }}</p>
+        </div>
+    </div>
+
+    <div class="mt-6 text-center">
+        <form action="{{ prefix }}/statistics/refresh" method="POST" style="display: inline;">
+            <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                Обновить статистику
+            </button>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{# JavaScript удален, так как статистика теперь рендерится на сервере #}
+{% endblock %}

@@ -50,16 +50,17 @@ class TokenPayload(BaseModel):
 
 
 # replace internal jwks/cache with shared service
-_jwt_service = JwtService(keycloak_url=settings.KEYCLOAK_SERVER_URL, realm=settings.KEYCLOAK_REALM)
+_jwt_service = JwtService(
+    keycloak_url=settings.KEYCLOAK_SERVER_URL, realm=settings.KEYCLOAK_REALM
+)
 
 
 class JWTValidator:
     """Validate JWT tokens using Keycloak JWKS."""
 
-    def __init__(self, keycloak_url: str, issuer_url: str, realm: str, client_id: str):
+    def __init__(self, keycloak_server_url: str, realm: str, client_id: str):
         self.client_id = client_id
-        self.issuer = f"{issuer_url.rstrip('/')}/realms/{realm}"  # ← внешний URL для issuer
-        self.keycloak_url = keycloak_url  # ← внутренний URL для получения ключей
+        self.issuer = f"{keycloak_server_url.rstrip('/')}/realms/{realm}"
 
     @traced("jwt_validator.validate_token", record_args=True, record_result=True)
     async def validate_token(self, token: str) -> TokenPayload:
@@ -77,7 +78,10 @@ class JWTValidator:
         """
         try:
             payload = await _jwt_service.decode(
-                token, audience="account", issuer=self.issuer, keycloak_url=self.keycloak_url
+                token,
+                audience="account",
+                issuer=self.issuer,
+                keycloak_url=self.keycloak_url,
             )
             # extract roles as before
             roles = []
@@ -107,17 +111,21 @@ class JWTValidator:
         except JWTError as e:
             logger.warning(f"JWT validation failed: {e}")
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token", headers={"WWW-Authenticate": "Bearer"}
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token",
+                headers={"WWW-Authenticate": "Bearer"},
             )
         except Exception as e:
             logger.error(f"Unexpected error during token validation: {e}")
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Token validation error")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Token validation error",
+            )
 
 
 # Создаём singleton validator
 _jwt_validator = JWTValidator(
-    keycloak_url=settings.KEYCLOAK_SERVER_URL,
-    issuer_url=settings.KEYCLOAK_PUBLIC_URL,
+    keycloak_server_url=settings.KEYCLOAK_PUBLIC_URL,  # Используем PUBLIC_URL для issuer
     realm=settings.KEYCLOAK_REALM,
     client_id=settings.KEYCLOAK_CLIENT_ID,
 )
@@ -156,7 +164,9 @@ async def get_current_user(
     if not token:
         logger.warning("No token found in header or cookie")
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated", headers={"WWW-Authenticate": "Bearer"}
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
         )
     logger.info("Validating token...")
     return await _jwt_validator.validate_token(token)
@@ -204,17 +214,24 @@ def require_roles(*roles: str):
     ```
     """
 
-    async def check_roles(current_user: TokenPayload = Depends(get_current_user)) -> None:
+    async def check_roles(
+        current_user: TokenPayload = Depends(get_current_user),
+    ) -> None:
         # Ensure the user is authenticated
         if not current_user:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
+            )
 
         # Check that at least one of the required roles is present in token
         if roles:
             user_roles = set(getattr(current_user, "roles", []) or [])
             required = set(roles)
             if user_roles.isdisjoint(required):
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Insufficient permissions",
+                )
 
     return check_roles
 

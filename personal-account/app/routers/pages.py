@@ -13,8 +13,9 @@ from fastapi.templating import Jinja2Templates
 from opentelemetry import trace
 
 from app.config import get_settings
-from app.core.security import TokenPayload, get_current_user
+from app.core.security import JWTValidator, TokenPayload, get_current_user
 from app.schemas.student import student_update
+from app.services import stats_service, stats_worker
 from app.services.keycloak import keycloak_service
 from app.services.student import student_service
 from app.telemetry import traced
@@ -28,7 +29,9 @@ def form_data_to_student_update(
     email: str = Form(None),
     username: str = Form(None),
 ) -> student_update:
-    logger.info(f"📥 Form data received: name={name}, surname={surname}, email={email}, username={username}")
+    logger.info(
+        f"📥 Form data received: name={name}, surname={surname}, email={email}, username={username}"
+    )
 
     # Создаем словарь только с непустыми и не None значениями
     data_dict = {}
@@ -55,6 +58,13 @@ router = APIRouter(tags=["Pages"])
 
 logger = logging.getLogger(__name__)
 
+# JWT validator for token decoding
+jwt_validator = JWTValidator(
+    keycloak_server_url=settings.KEYCLOAK_PUBLIC_URL,  # Используем PUBLIC_URL для issuer
+    realm=settings.KEYCLOAK_REALM,
+    client_id=settings.KEYCLOAK_CLIENT_ID,
+)
+
 
 def _render_template_safe(template_name: str, context: dict):
     """Render a Jinja2 template and attach telemetry/logging on exception.
@@ -63,8 +73,15 @@ def _render_template_safe(template_name: str, context: dict):
     with trace/span identifiers so failures in template rendering are visible
     in logs and traces.
     """
+    request = context.get("request")
+    if not request:
+        logger.error("Request object missing in template context for %s", template_name)
+        raise ValueError("Request object is required for TemplateResponse")
+
     try:
         # TemplateResponse will be returned to FastAPI and rendered by Starlette
+        context["prefix"] = settings.url_prefix  # Динамический prefix из settings
+
         resp = templates.TemplateResponse(template_name, context)
         # Add trace headers to response (best-effort)
         try:
@@ -90,8 +107,16 @@ def _render_template_safe(template_name: str, context: dict):
         # Log with trace/span ids
         try:
             span_ctx = span.get_span_context()
-            trace_id = format(span_ctx.trace_id, "032x") if span_ctx and span_ctx.is_valid else "-"
-            span_id = format(span_ctx.span_id, "016x") if span_ctx and span_ctx.is_valid else "-"
+            trace_id = (
+                format(span_ctx.trace_id, "032x")
+                if span_ctx and span_ctx.is_valid
+                else "-"
+            )
+            span_id = (
+                format(span_ctx.span_id, "016x")
+                if span_ctx and span_ctx.is_valid
+                else "-"
+            )
         except Exception:
             trace_id = "-"
             span_id = "-"
@@ -140,9 +165,11 @@ async def root_page(request: Request):
     token = request.cookies.get("access_token")
 
     if token:
-        return RedirectResponse(url="/dashboard")  # Full path with /account prefix
+        return RedirectResponse(url=f"{settings.url_prefix}/dashboard")
 
-    return _render_template_safe("index.hbs", {"request": request, **get_keycloak_urls()})
+    return _render_template_safe(
+        "index.hbs", {"request": request, **get_keycloak_urls()}
+    )
 
 
 @router.get("/dashboard", response_class=HTMLResponse)  # <-- Теперь дэшборд здесь
@@ -163,7 +190,9 @@ async def dashboard_page(request: Request):
 
 @router.get("/profile", response_class=HTMLResponse)
 @traced("pages.profile")
-async def profile_page(request: Request, user: TokenPayload = Depends(get_current_user)):
+async def profile_page(
+    request: Request, user: TokenPayload = Depends(get_current_user)
+):
     # Получаем актуальные данные из Keycloak, а не из токена
     keycloak_data = await run_in_threadpool(keycloak_service.get_user_data, user.sub)
     logger.info(f"GET /profile: Retrieved fresh Keycloak data: {keycloak_data}")
@@ -208,7 +237,9 @@ async def update_profile_form(
         logger.info(f"📦 Keycloak payload prepared: {keycloak_payload}")
         logger.info(f"📡 About to update Keycloak user: {user.sub}")
 
-        await run_in_threadpool(keycloak_service.update_user_data, user.sub, keycloak_payload)
+        await run_in_threadpool(
+            keycloak_service.update_user_data, user.sub, keycloak_payload
+        )
 
         logger.info("✅ Keycloak updated successfully")
 
@@ -228,7 +259,9 @@ async def update_profile_form(
                 "request": request,
                 "user": user_info,
                 "active_page": "profile",
-                "errors": [{"loc": ["server"], "msg": f"Failed to update profile: {e!s}"}],
+                "errors": [
+                    {"loc": ["server"], "msg": f"Failed to update profile: {e!s}"}
+                ],
                 **get_keycloak_urls(),
             },
         )
@@ -241,7 +274,9 @@ async def update_profile_form(
                 "request": request,
                 "user": user_info,
                 "active_page": "profile",
-                "errors": [{"loc": ["server"], "msg": f"Failed to update profile: {e!s}"}],
+                "errors": [
+                    {"loc": ["server"], "msg": f"Failed to update profile: {e!s}"}
+                ],
                 **get_keycloak_urls(),
             },
         )
@@ -267,11 +302,90 @@ async def visits_page(request: Request):
     )
 
 
+@router.get("/statistics", response_class=HTMLResponse)
+@traced("pages.statistics")
+async def statistics_page(request: Request):
+    """Render statistics page.
+
+    This page displays aggregated user statistics loaded from Redis cache.
+    """
+    # Get token from cookie
+    access_token = request.cookies.get("access_token")
+    if not access_token:
+        # Redirect to login if not authenticated
+        return RedirectResponse(url="/api/v1/auth/login", status_code=302)
+
+    # Decode token to get user info
+    try:
+        token_payload = await jwt_validator.validate_token(access_token)
+        student_id = token_payload.sub
+    except Exception:
+        # Token invalid, redirect to login
+        return RedirectResponse(url="/api/v1/auth/login", status_code=302)
+
+    # Fetch stats from backend
+    try:
+        # logging.debug("Fetching stats for user %s", student_id)
+        # await stats_worker.fetch_from_testing(UUID(student_id))
+        # logging.debug("Processing raws for user %s", student_id)
+        # await stats_worker.process_raws(UUID(student_id))
+        logging.debug("Getting stats for user %s", student_id)
+        stats = await stats_service.get_user_statistics(UUID(student_id))
+        logging.debug("Fetched stats for user %s: %s", student_id, stats)
+    except Exception as e:
+        logger.error(f"Failed to fetch stats for user {student_id}: {e}")
+        stats = {}
+
+    return _render_template_safe(
+        "statistics.hbs",
+        {
+            "request": request,
+            "active_page": "statistics",
+            "stats": stats,
+            "student_id": student_id,
+            **get_keycloak_urls(),
+        },
+    )
+
+
+@router.post("/statistics/refresh")
+@traced("pages.statistics_refresh")
+async def statistics_refresh(request: Request):
+    """Refresh statistics and redirect back."""
+    access_token = request.cookies.get("access_token")
+    if not access_token:
+        return RedirectResponse(url="/api/v1/auth/login", status_code=302)
+
+    try:
+        token_payload = await jwt_validator.validate_token(access_token)
+        student_id = UUID(token_payload.sub)
+
+        # 1. Fetch fresh data from testing service
+        await stats_worker.fetch_for_student(student_id)
+
+        # 2. Process raw data into business tables
+        # Note: In production, this might be too slow for a request-response cycle
+        # but for this practice it's fine.
+        await stats_worker.processor.process_raw_user_stats()
+        await stats_worker.processor.process_raw_attempts()
+
+        # 3. Recalculate aggregated stats
+        await stats_service.refresh_user_statistics(student_id)
+
+        logger.info("Successfully refreshed stats for student %s", student_id)
+    except Exception as e:
+        logger.error(f"Failed to refresh stats: {e}")
+
+    return RedirectResponse(url=f"{settings.url_prefix}/statistics", status_code=303)
+
+
 @router.get("/register", response_class=HTMLResponse)
 @traced("pages.register")
 async def register_page(request: Request):
     """Render registration page."""
-    return _render_template_safe("register.hbs", {"request": request, **get_keycloak_urls()})
+    return _render_template_safe(
+        "register.hbs", {"request": request, **get_keycloak_urls()}
+    )
 
 
 @router.get("/callback", response_class=HTMLResponse)

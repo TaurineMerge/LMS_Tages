@@ -5,7 +5,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.example.lms.question.api.dto.Question;
-import com.example.lms.question.api.domain.model.QuestionModel;
+import com.example.lms.question.domain.model.QuestionModel;
 import com.example.lms.question.domain.repository.QuestionRepositoryInterface;
 
 /**

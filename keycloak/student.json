@@ -1,7 +1,7 @@
 {
   "realm": "student",
   "enabled": true,
-  "sslRequired": "external",
+  "sslRequired": "none",
   "registrationAllowed": false,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
@@ -129,6 +129,7 @@
       ]
     },
     {
+      "id": "d3b07384-d92d-4e12-9096-c8350fdc5fd2",  
       "username": "student",
       "enabled": true,
       "emailVerified": true,

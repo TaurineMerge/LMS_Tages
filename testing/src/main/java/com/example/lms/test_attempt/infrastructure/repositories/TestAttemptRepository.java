@@ -1,496 +1,477 @@
 package com.example.lms.test_attempt.infrastructure.repositories;
 
-import java.sql.Connection;
-import java.sql.Date;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
+import com.example.lms.config.DatabaseConfig;
+import com.example.lms.test_attempt.domain.model.TestAttemptModel;
+import com.example.lms.test_attempt.domain.repository.TestAttemptRepositoryInterface;
+
+import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.example.lms.config.DatabaseConfig;
-import com.example.lms.test_attempt.domain.model.TestAttemptModel;
-import com.example.lms.test_attempt.domain.repository.TestAttemptRepositoryInterface;
-
+/**
+ * Репозиторий для работы с попытками тестов в базе данных.
+ * Реализует интерфейс TestAttemptRepositoryInterface для операций CRUD и поиска
+ * попыток тестов.
+ */
 public class TestAttemptRepository implements TestAttemptRepositoryInterface {
 
-	private static final Logger logger = LoggerFactory.getLogger(TestAttemptRepository.class);
-	private final DatabaseConfig dbConfig;
-
-	// SQL запросы для таблицы test_attempt_b (без certificate_id и без
-	// attempt_version)
-	private static final String INSERT_SQL = """
-			INSERT INTO tests.test_attempt_b (student_id, test_id, date_of_attempt, point)
-			VALUES (?, ?, ?, ?)
-			RETURNING id
-			""";
-
-	private static final String UPDATE_SQL = """
-			UPDATE tests.test_attempt_b
-			SET student_id = ?, test_id = ?, date_of_attempt = ?, point = ?
-			WHERE id = ?
-			""";
-
-	private static final String SELECT_BY_ID = """
-			SELECT id, student_id, test_id, date_of_attempt, point
-			FROM tests.test_attempt_b
-			WHERE id = ?
-			""";
-
-	private static final String SELECT_ALL = """
-			SELECT id, student_id, test_id, date_of_attempt, point
-			FROM tests.test_attempt_b
-			ORDER BY date_of_attempt DESC
-			""";
-
-	private static final String SELECT_BY_STUDENT = """
-			SELECT id, student_id, test_id, date_of_attempt, point
-			FROM tests.test_attempt_b
-			WHERE student_id = ?
-			ORDER BY date_of_attempt DESC
-			""";
-
-	private static final String SELECT_BY_TEST = """
-			SELECT id, student_id, test_id, date_of_attempt, point
-			FROM tests.test_attempt_b
-			WHERE test_id = ?
-			ORDER BY date_of_attempt DESC
-			""";
-
-	private static final String SELECT_BY_STUDENT_AND_TEST = """
-			SELECT id, student_id, test_id, date_of_attempt, point
-			FROM tests.test_attempt_b
-			WHERE student_id = ? AND test_id = ?
-			ORDER BY date_of_attempt DESC
-			""";
-
-	private static final String DELETE_BY_ID = "DELETE FROM tests.test_attempt_b WHERE id = ?";
-
-	private static final String EXISTS_BY_ID = "SELECT 1 FROM tests.test_attempt_b WHERE id = ?";
-
-	private static final String COUNT_BY_STUDENT_AND_TEST = """
-			SELECT COUNT(*)
-			FROM tests.test_attempt_b
-			WHERE student_id = ? AND test_id = ?
-			""";
-
-	private static final String SELECT_BY_DATE = """
-			SELECT id, student_id, test_id, date_of_attempt, point
-			FROM tests.test_attempt_b
-			WHERE date_of_attempt = ?
-			ORDER BY date_of_attempt DESC
-			""";
-
-	private static final String SELECT_COMPLETED = """
-			SELECT id, student_id, test_id, date_of_attempt, point
-			FROM tests.test_attempt_b
-			WHERE point IS NOT NULL
-			ORDER BY date_of_attempt DESC
-			""";
-
-	private static final String SELECT_INCOMPLETE = """
-			SELECT id, student_id, test_id, date_of_attempt, point
-			FROM tests.test_attempt_b
-			WHERE point IS NULL
-			ORDER BY date_of_attempt DESC
-			""";
-
-	private static final String SELECT_BEST_ATTEMPT = """
-			SELECT id, student_id, test_id, date_of_attempt, point
-			FROM tests.test_attempt_b
-			WHERE student_id = ? AND test_id = ? AND point IS NOT NULL
-			ORDER BY point DESC, date_of_attempt DESC
-			LIMIT 1
-			""";
-
-	public TestAttemptRepository(DatabaseConfig dbConfig) {
-		this.dbConfig = dbConfig;
-	}
-
-	private Connection getConnection() throws SQLException {
-		return DriverManager.getConnection(
-				dbConfig.getUrl(),
-				dbConfig.getUser(),
-				dbConfig.getPassword());
-	}
-
-	@Override
-	public TestAttemptModel save(TestAttemptModel attempt) {
-		logger.info("Сохранение новой попытки теста для студента: {}", attempt.getStudentId());
-
-		attempt.validate();
-
-		try (Connection conn = getConnection();
-				PreparedStatement stmt = conn.prepareStatement(INSERT_SQL)) {
-
-			stmt.setObject(1, attempt.getStudentId());
-			stmt.setObject(2, attempt.getTestId());
-			stmt.setDate(3, Date.valueOf(attempt.getDateOfAttempt()));
-
-			if (attempt.getPoint() != null) {
-				stmt.setInt(4, attempt.getPoint());
-			} else {
-				stmt.setNull(4, Types.INTEGER);
-			}
-
-			// УБРАТЬ ЭТУ СТРОКУ - больше нет attemptVersion
-			// stmt.setString(5, attempt.getAttemptVersion());
-
-			ResultSet rs = stmt.executeQuery();
-			if (rs.next()) {
-				UUID generatedId = rs.getObject("id", UUID.class);
-				attempt.setId(generatedId);
-				logger.info("Попытка сохранена с ID: {}", generatedId);
-				return attempt;
-			}
-
-			throw new RuntimeException("Не удалось сохранить попытку");
-
-		} catch (SQLException e) {
-			logger.error("Ошибка при сохранении попытки", e);
-			throw new RuntimeException("Ошибка базы данных при сохранении попытки", e);
-		}
-	}
-
-	@Override
-	public TestAttemptModel update(TestAttemptModel attempt) {
-		logger.info("Обновление попытки с ID: {}", attempt.getId());
-
-		if (attempt.getId() == null) {
-			throw new IllegalArgumentException("Попытка не имеет ID");
-		}
-
-		attempt.validate();
-
-		try (Connection conn = getConnection();
-				PreparedStatement stmt = conn.prepareStatement(UPDATE_SQL)) {
-
-			stmt.setObject(1, attempt.getStudentId());
-			stmt.setObject(2, attempt.getTestId());
-			stmt.setDate(3, Date.valueOf(attempt.getDateOfAttempt()));
-
-			if (attempt.getPoint() != null) {
-				stmt.setInt(4, attempt.getPoint());
-			} else {
-				stmt.setNull(4, Types.INTEGER);
-			}
-
-			// УБРАТЬ ЭТУ СТРОКУ - больше нет attemptVersion
-			// stmt.setString(5, attempt.getAttemptVersion());
-
-			stmt.setObject(5, attempt.getId()); // Теперь это 5-й параметр
-
-			int updatedRows = stmt.executeUpdate();
-			if (updatedRows == 0) {
-				throw new RuntimeException("Попытка с ID " + attempt.getId() + " не найдена");
-			}
-
-			logger.info("Попытка обновлена: {}", attempt.getId());
-			return attempt;
-
-		} catch (SQLException e) {
-			logger.error("Ошибка при обновлении попытки", e);
-			throw new RuntimeException("Ошибка базы данных при обновлении попытки", e);
-		}
-	}
-
-	@Override
-	public Optional<TestAttemptModel> findById(UUID id) {
-		logger.debug("Поиск попытки по ID: {}", id);
-
-		try (Connection conn = getConnection();
-				PreparedStatement stmt = conn.prepareStatement(SELECT_BY_ID)) {
-
-			stmt.setObject(1, id);
-			ResultSet rs = stmt.executeQuery();
-
-			if (rs.next()) {
-				TestAttemptModel attempt = mapRowToTestAttempt(rs);
-				return Optional.of(attempt);
-			}
-
-			return Optional.empty();
-
-		} catch (SQLException e) {
-			logger.error("Ошибка при поиске попытки по ID: {}", id, e);
-			throw new RuntimeException("Ошибка базы данных при поиске попытки", e);
-		}
-	}
-
-	@Override
-	public List<TestAttemptModel> findAll() {
-		logger.debug("Получение всех попыток");
-		List<TestAttemptModel> attempts = new ArrayList<>();
-
-		try (Connection conn = getConnection();
-				PreparedStatement stmt = conn.prepareStatement(SELECT_ALL);
-				ResultSet rs = stmt.executeQuery()) {
-
-			while (rs.next()) {
-				attempts.add(mapRowToTestAttempt(rs));
-			}
-
-			logger.debug("Найдено {} попыток", attempts.size());
-			return attempts;
-
-		} catch (SQLException e) {
-			logger.error("Ошибка при получении всех попыток", e);
-			throw new RuntimeException("Ошибка базы данных при получении попыток", e);
-		}
-	}
-
-	@Override
-	public List<TestAttemptModel> findByStudentId(UUID studentId) {
-		logger.debug("Поиск попыток по студенту: {}", studentId);
-		List<TestAttemptModel> attempts = new ArrayList<>();
-
-		try (Connection conn = getConnection();
-				PreparedStatement stmt = conn.prepareStatement(SELECT_BY_STUDENT)) {
-
-			stmt.setObject(1, studentId);
-			ResultSet rs = stmt.executeQuery();
-
-			while (rs.next()) {
-				attempts.add(mapRowToTestAttempt(rs));
-			}
-
-			logger.debug("Найдено {} попыток для студента {}", attempts.size(), studentId);
-			return attempts;
-
-		} catch (SQLException e) {
-			logger.error("Ошибка при поиске попыток по студенту: {}", studentId, e);
-			throw new RuntimeException("Ошибка базы данных при поиске попыток по студенту", e);
-		}
-	}
-
-	@Override
-	public List<TestAttemptModel> findByTestId(UUID testId) {
-		logger.debug("Поиск попыток по тесту: {}", testId);
-		List<TestAttemptModel> attempts = new ArrayList<>();
-
-		try (Connection conn = getConnection();
-				PreparedStatement stmt = conn.prepareStatement(SELECT_BY_TEST)) {
-
-			stmt.setObject(1, testId);
-			ResultSet rs = stmt.executeQuery();
-
-			while (rs.next()) {
-				attempts.add(mapRowToTestAttempt(rs));
-			}
-
-			logger.debug("Найдено {} попыток для теста {}", attempts.size(), testId);
-			return attempts;
-
-		} catch (SQLException e) {
-			logger.error("Ошибка при поиске попыток по тесту: {}", testId, e);
-			throw new RuntimeException("Ошибка базы данных при поиске попыток", e);
-		}
-	}
-
-	@Override
-	public List<TestAttemptModel> findByStudentAndTest(UUID studentId, UUID testId) {
-		logger.debug("Поиск попыток студента {} по тесту {}", studentId, testId);
-		List<TestAttemptModel> attempts = new ArrayList<>();
-
-		try (Connection conn = getConnection();
-				PreparedStatement stmt = conn.prepareStatement(SELECT_BY_STUDENT_AND_TEST)) {
-
-			stmt.setObject(1, studentId);
-			stmt.setObject(2, testId);
-			ResultSet rs = stmt.executeQuery();
-
-			while (rs.next()) {
-				attempts.add(mapRowToTestAttempt(rs));
-			}
-
-			logger.debug("Найдено {} попыток", attempts.size());
-			return attempts;
-
-		} catch (SQLException e) {
-			logger.error("Ошибка при поиске попыток студента по тесту", e);
-			throw new RuntimeException("Ошибка базы данных при поиске попыток", e);
-		}
-	}
-
-	@Override
-	public boolean deleteById(UUID id) {
-		logger.info("Удаление попытки с ID: {}", id);
-
-		try (Connection conn = getConnection();
-				PreparedStatement stmt = conn.prepareStatement(DELETE_BY_ID)) {
-
-			stmt.setObject(1, id);
-			int deletedRows = stmt.executeUpdate();
-
-			boolean deleted = deletedRows > 0;
-			logger.info("Попытка с ID {} удалена: {}", id, deleted);
-			return deleted;
-
-		} catch (SQLException e) {
-			logger.error("Ошибка при удалении попытки с ID: {}", id, e);
-			throw new RuntimeException("Ошибка базы данных при удалении попытки", e);
-		}
-	}
-
-	@Override
-	public boolean existsById(UUID id) {
-		logger.debug("Проверка существования попытки с ID: {}", id);
-
-		try (Connection conn = getConnection();
-				PreparedStatement stmt = conn.prepareStatement(EXISTS_BY_ID)) {
-
-			stmt.setObject(1, id);
-			ResultSet rs = stmt.executeQuery();
-
-			boolean exists = rs.next();
-			logger.debug("Попытка с ID {} существует: {}", id, exists);
-			return exists;
-
-		} catch (SQLException e) {
-			logger.error("Ошибка при проверке существования попытки с ID: {}", id, e);
-			throw new RuntimeException("Ошибка базы данных при проверке попытки", e);
-		}
-	}
-
-	@Override
-	public int countAttemptsByStudentAndTest(UUID studentId, UUID testId) {
-		logger.debug("Подсчет попыток студента {} по тесту {}", studentId, testId);
-
-		try (Connection conn = getConnection();
-				PreparedStatement stmt = conn.prepareStatement(COUNT_BY_STUDENT_AND_TEST)) {
-
-			stmt.setObject(1, studentId);
-			stmt.setObject(2, testId);
-			ResultSet rs = stmt.executeQuery();
-
-			if (rs.next()) {
-				return rs.getInt(1);
-			}
-
-			return 0;
-
-		} catch (SQLException e) {
-			logger.error("Ошибка при подсчёте попыток", e);
-			throw new RuntimeException("Ошибка базы данных при подсчёте попыток", e);
-		}
-	}
-
-	@Override
-	public List<TestAttemptModel> findByDate(LocalDate date) {
-		logger.debug("Поиск попыток за дату: {}", date);
-		List<TestAttemptModel> attempts = new ArrayList<>();
-
-		try (Connection conn = getConnection();
-				PreparedStatement stmt = conn.prepareStatement(SELECT_BY_DATE)) {
-
-			stmt.setDate(1, Date.valueOf(date));
-			ResultSet rs = stmt.executeQuery();
-
-			while (rs.next()) {
-				attempts.add(mapRowToTestAttempt(rs));
-			}
-
-			logger.debug("Найдено {} попыток за {}", attempts.size(), date);
-			return attempts;
-
-		} catch (SQLException e) {
-			logger.error("Ошибка при поиске попыток по дате: {}", date, e);
-			throw new RuntimeException("Ошибка базы данных при поиске попыток по дате", e);
-		}
-	}
-
-	@Override
-	public List<TestAttemptModel> findCompletedAttempts() {
-		logger.debug("Поиск завершенных попыток");
-		List<TestAttemptModel> attempts = new ArrayList<>();
-
-		try (Connection conn = getConnection();
-				PreparedStatement stmt = conn.prepareStatement(SELECT_COMPLETED);
-				ResultSet rs = stmt.executeQuery()) {
-
-			while (rs.next()) {
-				attempts.add(mapRowToTestAttempt(rs));
-			}
-
-			logger.debug("Найдено {} завершенных попыток", attempts.size());
-			return attempts;
-
-		} catch (SQLException e) {
-			logger.error("Ошибка при поиске завершённых попыток", e);
-			throw new RuntimeException("Ошибка базы данных при поиске завершённых попыток", e);
-		}
-	}
-
-	@Override
-	public List<TestAttemptModel> findIncompleteAttempts() {
-		logger.debug("Поиск незавершенных попыток");
-		List<TestAttemptModel> attempts = new ArrayList<>();
-
-		try (Connection conn = getConnection();
-				PreparedStatement stmt = conn.prepareStatement(SELECT_INCOMPLETE);
-				ResultSet rs = stmt.executeQuery()) {
-
-			while (rs.next()) {
-				attempts.add(mapRowToTestAttempt(rs));
-			}
-
-			logger.debug("Найдено {} незавершенных попыток", attempts.size());
-			return attempts;
-
-		} catch (SQLException e) {
-			logger.error("Ошибка при поиске незавершённых попыток", e);
-			throw new RuntimeException("Ошибка базы данных при поиске незавершённых попыток", e);
-		}
-	}
-
-	// @Override
-	// public Optional<TestAttemptModel> findBestAttemptByStudentAndTest(UUID
-	// studentId, UUID testId) {
-	// logger.debug("Поиск лучшей попытки студента {} по тесту {}", studentId,
-	// testId);
-
-	// try (Connection conn = getConnection();
-	// PreparedStatement stmt = conn.prepareStatement(SELECT_BEST_ATTEMPT)) {
-
-	// stmt.setObject(1, studentId);
-	// stmt.setObject(2, testId);
-	// ResultSet rs = stmt.executeQuery();
-
-	// if (rs.next()) {
-	// TestAttemptModel attempt = mapRowToTestAttempt(rs);
-	// return Optional.of(attempt);
-	// }
-
-	// return Optional.empty();
-
-	// } catch (SQLException e) {
-	// logger.error("Ошибка при поиске лучшей попытки", e);
-	// throw new RuntimeException("Ошибка базы данных при поиске лучшей попытки",
-	// e);
-	// }
-	// }
-
-	/**
-	 * Маппит текущую строку {@link ResultSet} в доменную модель
-	 * {@link TestAttemptModel}.
-	 * Теперь только 5 параметров (без attemptVersion).
-	 */
-	private TestAttemptModel mapRowToTestAttempt(ResultSet rs) throws SQLException {
-		return new TestAttemptModel(
-				rs.getObject("id", UUID.class),
-				rs.getObject("student_id", UUID.class),
-				rs.getObject("test_id", UUID.class),
-				rs.getDate("date_of_attempt").toLocalDate(),
-				rs.getObject("point", Integer.class)
-		// УБРАТЬ attemptVersion: rs.getString("attempt_version")
-		);
-	}
+    private final DatabaseConfig dbConfig;
+
+    /**
+     * Конструктор репозитория.
+     *
+     * @param dbConfig конфигурация базы данных, содержащая параметры подключения
+     */
+    public TestAttemptRepository(DatabaseConfig dbConfig) {
+        this.dbConfig = dbConfig;
+    }
+
+    /**
+     * Устанавливает соединение с базой данных.
+     *
+     * @return активное соединение с базой данных
+     * @throws SQLException если произошла ошибка при установке соединения
+     */
+    private Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(
+                dbConfig.getUrl(),
+                dbConfig.getUser(),
+                dbConfig.getPassword());
+    }
+
+    /**
+     * Сохраняет новую попытку теста в базе данных.
+     *
+     * @param testAttempt объект TestAttemptModel для сохранения
+     * @return сохраненный объект TestAttemptModel с присвоенным идентификатором
+     * @throws RuntimeException если не удалось сохранить попытку или произошла SQL-ошибка
+     */
+    @Override
+    public TestAttemptModel save(TestAttemptModel testAttempt) {
+        testAttempt.validate();
+
+        String sql = """
+                INSERT INTO testing.test_attempt_b 
+                (student_id, test_id, date_of_attempt, point, certificate_id, 
+                 attempt_version, attempt_snapshot, completed)
+                VALUES (?, ?, ?, ?, ?, ?::json, ?, ?)
+                RETURNING id
+                """;
+
+        try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setObject(1, testAttempt.getStudentId());
+            stmt.setObject(2, testAttempt.getTestId());
+            
+            if (testAttempt.getDateOfAttempt() != null)
+                stmt.setDate(3, Date.valueOf(testAttempt.getDateOfAttempt()));
+            else
+                stmt.setNull(3, Types.DATE);
+
+            if (testAttempt.getPoint() != null)
+                stmt.setInt(4, testAttempt.getPoint());
+            else
+                stmt.setNull(4, Types.INTEGER);
+
+            stmt.setObject(5, testAttempt.getCertificateId());
+            stmt.setString(6, testAttempt.getAttemptVersion());
+            stmt.setString(7, testAttempt.getAttemptSnapshot());
+            stmt.setBoolean(8, testAttempt.getCompleted());
+
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                testAttempt.setId(rs.getObject("id", UUID.class));
+                return testAttempt;
+            }
+
+            throw new RuntimeException("Не удалось сохранить попытку теста");
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка при сохранении попытки теста", e);
+        }
+    }
+
+    /**
+     * Обновляет существующую попытку теста в базе данных.
+     *
+     * @param testAttempt объект TestAttemptModel с обновленными данными
+     * @return обновленный объект TestAttemptModel
+     * @throws IllegalArgumentException если попытка не имеет идентификатора
+     * @throws RuntimeException если попытка не найдена или произошла SQL-ошибка
+     */
+    @Override
+    public TestAttemptModel update(TestAttemptModel testAttempt) {
+        if (testAttempt.getId() == null) {
+            throw new IllegalArgumentException("Попытка теста должна иметь ID");
+        }
+
+        testAttempt.validate();
+
+        String sql = """
+                UPDATE testing.test_attempt_b
+                SET student_id = ?, test_id = ?, date_of_attempt = ?, point = ?, 
+                    certificate_id = ?, attempt_version = ?, attempt_snapshot = ?, 
+                    completed = ?
+                WHERE id = ?
+                """;
+
+        try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setObject(1, testAttempt.getStudentId());
+            stmt.setObject(2, testAttempt.getTestId());
+            
+            if (testAttempt.getDateOfAttempt() != null)
+                stmt.setDate(3, Date.valueOf(testAttempt.getDateOfAttempt()));
+            else
+                stmt.setNull(3, Types.DATE);
+
+            if (testAttempt.getPoint() != null)
+                stmt.setInt(4, testAttempt.getPoint());
+            else
+                stmt.setNull(4, Types.INTEGER);
+
+            stmt.setObject(5, testAttempt.getCertificateId());
+            stmt.setString(6, testAttempt.getAttemptVersion());
+            stmt.setString(7, testAttempt.getAttemptSnapshot());
+            stmt.setBoolean(8, testAttempt.getCompleted());
+            stmt.setObject(9, testAttempt.getId());
+
+            int updated = stmt.executeUpdate();
+            if (updated == 0)
+                throw new RuntimeException("Попытка теста с ID " + testAttempt.getId() + " не найдена");
+
+            return testAttempt;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка при обновлении попытки теста", e);
+        }
+    }
+
+    /**
+     * Находит попытку теста по её идентификатору.
+     *
+     * @param id уникальный идентификатор попытки
+     * @return Optional с найденной попыткой или пустой Optional, если попытка не найдена
+     * @throws RuntimeException если произошла SQL-ошибка
+     */
+    @Override
+    public Optional<TestAttemptModel> findById(UUID id) {
+        String sql = """
+                SELECT id, student_id, test_id, date_of_attempt, point, 
+                       certificate_id, attempt_version, attempt_snapshot, completed
+                FROM testing.test_attempt_b
+                WHERE id = ?
+                """;
+
+        try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setObject(1, id);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next())
+                return Optional.of(mapRowToTestAttempt(rs));
+
+            return Optional.empty();
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка при поиске попытки теста по ID", e);
+        }
+    }
+
+    /**
+     * Получает все попытки тестов из базы данных.
+     *
+     * @return список всех попыток, отсортированных по дате (новые сначала)
+     * @throws RuntimeException если произошла SQL-ошибка
+     */
+    @Override
+    public List<TestAttemptModel> findAll() {
+        String sql = """
+                SELECT id, student_id, test_id, date_of_attempt, point, 
+                       certificate_id, attempt_version, attempt_snapshot, completed
+                FROM testing.test_attempt_b
+                ORDER BY date_of_attempt DESC NULLS LAST
+                """;
+
+        List<TestAttemptModel> attempts = new ArrayList<>();
+
+        try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next())
+                attempts.add(mapRowToTestAttempt(rs));
+
+            return attempts;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка при получении всех попыток тестов", e);
+        }
+    }
+
+    /**
+     * Удаляет попытку теста по её идентификатору.
+     *
+     * @param id уникальный идентификатор попытки для удаления
+     * @return true если попытка была удалена, false если попытка не найдена
+     * @throws RuntimeException если произошла SQL-ошибка
+     */
+    @Override
+    public boolean deleteById(UUID id) {
+        String sql = "DELETE FROM testing.test_attempt_b WHERE id = ?";
+
+        try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setObject(1, id);
+            return stmt.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка при удалении попытки теста", e);
+        }
+    }
+
+    /**
+     * Проверяет существование попытки теста по идентификатору.
+     *
+     * @param id уникальный идентификатор попытки
+     * @return true если попытка существует, false если нет
+     * @throws RuntimeException если произошла SQL-ошибка
+     */
+    @Override
+    public boolean existsById(UUID id) {
+        String sql = "SELECT 1 FROM testing.test_attempt_b WHERE id = ?";
+
+        try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setObject(1, id);
+            return stmt.executeQuery().next();
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка при проверке существования попытки теста", e);
+        }
+    }
+
+    /**
+     * Находит все попытки теста для указанного студента.
+     *
+     * @param studentId идентификатор студента
+     * @return список попыток студента, отсортированных по дате (новые сначала)
+     * @throws RuntimeException если произошла SQL-ошибка
+     */
+    @Override
+    public List<TestAttemptModel> findByStudentId(UUID studentId) {
+        String sql = """
+                SELECT id, student_id, test_id, date_of_attempt, point, 
+                       certificate_id, attempt_version, attempt_snapshot, completed
+                FROM testing.test_attempt_b
+                WHERE student_id = ?
+                ORDER BY date_of_attempt DESC NULLS LAST
+                """;
+
+        List<TestAttemptModel> attempts = new ArrayList<>();
+
+        try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setObject(1, studentId);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next())
+                attempts.add(mapRowToTestAttempt(rs));
+
+            return attempts;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка при поиске попыток теста по student_id", e);
+        }
+    }
+
+    /**
+     * Находит все попытки для указанного теста.
+     *
+     * @param testId идентификатор теста
+     * @return список попыток теста, отсортированных по дате (новые сначала)
+     * @throws RuntimeException если произошла SQL-ошибка
+     */
+    @Override
+    public List<TestAttemptModel> findByTestId(UUID testId) {
+        String sql = """
+                SELECT id, student_id, test_id, date_of_attempt, point, 
+                       certificate_id, attempt_version, attempt_snapshot, completed
+                FROM testing.test_attempt_b
+                WHERE test_id = ?
+                ORDER BY date_of_attempt DESC NULLS LAST
+                """;
+
+        List<TestAttemptModel> attempts = new ArrayList<>();
+
+        try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setObject(1, testId);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next())
+                attempts.add(mapRowToTestAttempt(rs));
+
+            return attempts;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка при поиске попыток теста по test_id", e);
+        }
+    }
+
+    /**
+     * Находит все попытки для указанного студента и теста.
+     *
+     * @param studentId идентификатор студента
+     * @param testId идентификатор теста
+     * @return список попыток, отсортированных по дате (новые сначала)
+     * @throws RuntimeException если произошла SQL-ошибка
+     */
+    @Override
+    public List<TestAttemptModel> findByStudentIdAndTestId(UUID studentId, UUID testId) {
+        String sql = """
+                SELECT id, student_id, test_id, date_of_attempt, point, 
+                       certificate_id, attempt_version, attempt_snapshot, completed
+                FROM testing.test_attempt_b
+                WHERE student_id = ? AND test_id = ?
+                ORDER BY date_of_attempt DESC NULLS LAST
+                """;
+
+        List<TestAttemptModel> attempts = new ArrayList<>();
+
+        try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setObject(1, studentId);
+            stmt.setObject(2, testId);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next())
+                attempts.add(mapRowToTestAttempt(rs));
+
+            return attempts;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка при поиске попыток теста по student_id и test_id", e);
+        }
+    }
+
+    /**
+     * Подсчитывает количество попыток для указанного студента.
+     *
+     * @param studentId идентификатор студента
+     * @return количество попыток студента
+     * @throws RuntimeException если произошла SQL-ошибка
+     */
+    @Override
+    public int countByStudentId(UUID studentId) {
+        String sql = "SELECT COUNT(*) FROM testing.test_attempt_b WHERE student_id = ?";
+
+        try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setObject(1, studentId);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next())
+                return rs.getInt(1);
+
+            return 0;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка при подсчёте попыток теста для студента", e);
+        }
+    }
+
+    /**
+     * Подсчитывает количество попыток для указанного теста.
+     *
+     * @param testId идентификатор теста
+     * @return количество попыток теста
+     * @throws RuntimeException если произошла SQL-ошибка
+     */
+    @Override
+    public int countByTestId(UUID testId) {
+        String sql = "SELECT COUNT(*) FROM testing.test_attempt_b WHERE test_id = ?";
+
+        try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setObject(1, testId);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next())
+                return rs.getInt(1);
+
+            return 0;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка при подсчёте попыток теста", e);
+        }
+    }
+
+    /**
+     * Находит все завершенные попытки.
+     *
+     * @return список завершенных попыток
+     * @throws RuntimeException если произошла SQL-ошибка
+     */
+    @Override
+    public List<TestAttemptModel> findCompletedAttempts() {
+        String sql = """
+                SELECT id, student_id, test_id, date_of_attempt, point, 
+                       certificate_id, attempt_version, attempt_snapshot, completed
+                FROM testing.test_attempt_b
+                WHERE completed = true
+                ORDER BY date_of_attempt DESC
+                """;
+
+        List<TestAttemptModel> attempts = new ArrayList<>();
+
+        try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next())
+                attempts.add(mapRowToTestAttempt(rs));
+
+            return attempts;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка при поиске завершенных попыток теста", e);
+        }
+    }
+
+    /**
+     * Преобразует строку ResultSet в объект TestAttemptModel.
+     *
+     * @param rs ResultSet, содержащий данные попытки
+     * @return объект TestAttemptModel, созданный из данных ResultSet
+     * @throws SQLException если произошла ошибка при чтении данных из ResultSet
+     */
+    private TestAttemptModel mapRowToTestAttempt(ResultSet rs) throws SQLException {
+        Date date = rs.getDate("date_of_attempt");
+        LocalDate localDate = date != null ? date.toLocalDate() : null;
+        
+        return new TestAttemptModel(
+                rs.getObject("id", UUID.class),
+                rs.getObject("student_id", UUID.class),
+                rs.getObject("test_id", UUID.class),
+                localDate,
+                rs.getObject("point", Integer.class),
+                rs.getObject("certificate_id", UUID.class),
+                rs.getString("attempt_version"),
+                rs.getString("attempt_snapshot"),
+                rs.getBoolean("completed"));
+    }
 }

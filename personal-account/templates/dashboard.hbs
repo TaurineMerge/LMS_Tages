@@ -109,13 +109,13 @@
             <h5 class="mb-4"><p class="bi bi-lightning me-2"></p>Быстрые действия</h5>
             <div class="row g-3">
                 <div class="col-6">
-                    <a href="/account/profile" class="btn btn-outline-primary w-100 py-3">
+                    <a href="{{ prefix }}/profile" class="btn btn-outline-primary w-100 py-3">
                         <p class="bi bi-person-gear d-block mb-2" style="font-size: 24px;"></p>
                         Редактировать профиль
                     </a>
                 </div>
                 <div class="col-6">
-                    <a href="/account/certificates" class="btn btn-outline-success w-100 py-3">
+                    <a href="{{ prefix }}/certificates" class="btn btn-outline-success w-100 py-3">
                         <p class="bi bi-download d-block mb-2" style="font-size: 24px;"></p>
                         Скачать сертификаты
                     </a>
@@ -127,7 +127,7 @@
                     </a>
                 </div>
                 <div class="col-6">
-                    <a href="/account/visits" class="btn btn-outline-warning w-100 py-3">
+                    <a href="{{ prefix }}/visits" class="btn btn-outline-warning w-100 py-3">
                         <p class="bi bi-calendar3 d-block mb-2" style="font-size: 24px;"></p>
                         История посещений
                     </a>
@@ -138,42 +138,40 @@
 </div>
 
 <!-- Handlebars Templates -->
-{% raw %}
 <script id="certificate-item-template" type="text/x-handlebars-template">
-    {{#each certificates}}
+    {% raw %}{{#each certificates}}{% endraw %}
     <div class="d-flex align-items-center mb-3 p-2 bg-light rounded">
         <div class="icon success me-3" style="width: 40px; height: 40px; font-size: 16px;">
             <p class="bi bi-award-fill"></p>
         </div>
         <div class="flex-grow-1">
-            <h6 class="mb-0">Курс #{{course_id}}</h6>
-            <small class="text-muted">{{formatDate created_at}}</small>
+            <h6 class="mb-0">Курс #{% raw %}{{course_id}}{% endraw %}</h6>
+            <small class="text-muted">{% raw %}{{formatDate created_at}}{% endraw %}</small>
         </div>
-        <a href="/account/certificates/{{id}}" class="btn btn-sm btn-outline-primary">
+        <a href="{{ prefix }}/certificates/{% raw %}{{id}}{% endraw %}" class="btn btn-sm btn-outline-primary">
             <p class="bi bi-eye"></p>
         </a>
     </div>
-    {{else}}
+    {% raw %}{{else}}{% endraw %}
     <p class="text-muted text-center">Сертификатов пока нет</p>
-    {{/each}}
+    {% raw %}{{/each}}{% endraw %}
 </script>
 
 <script id="visit-item-template" type="text/x-handlebars-template">
-    {{#each visits}}
+    {% raw %}{{#each visits}}{% endraw %}
     <div class="d-flex align-items-center mb-3 p-2 bg-light rounded">
         <div class="icon warning me-3" style="width: 40px; height: 40px; font-size: 16px;">
             <p class="bi bi-play-circle"></p>
         </div>
         <div class="flex-grow-1">
-            <h6 class="mb-0">Урок #{{lesson_id}}</h6>
-            <small class="text-muted">{{formatDate visited_at}}</small>
+            <h6 class="mb-0">Урок #{% raw %}{{lesson_id}}{% endraw %}</h6>
+            <small class="text-muted">{% raw %}{{formatDate created_at}}{% endraw %}</small>
         </div>
     </div>
-    {{else}}
+    {% raw %}{{else}}{% endraw %}
     <p class="text-muted text-center">Посещений пока нет</p>
-    {{/each}}
+    {% raw %}{{/each}}{% endraw %}
 </script>
-{% endraw %}
 {% endblock %}
 
 {% block extra_js %}

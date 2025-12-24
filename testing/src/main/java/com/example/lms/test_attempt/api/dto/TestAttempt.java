@@ -1,120 +1,80 @@
 package com.example.lms.test_attempt.api.dto;
 
 import java.io.Serializable;
-import java.sql.Date;
-import java.util.UUID;
 
 /**
- * DTO для передачи данных о попытке прохождения теста через API.
- * <p>
- * Используется для:
- * <ul>
- * <li>ответов контроллера</li>
- * <li>получения данных от клиента</li>
- * </ul>
- *
- * Это упрощённое представление доменной модели
- * {@code TestAttemptModel}, предназначенное только для коммуникации
- * по сети. DTO не содержит бизнес-логики.
+ * DTO для представления попытки прохождения теста.
  */
 public class TestAttempt implements Serializable {
+    private static final long serialVersionUID = 1L;
+    
+    private String id;
+    private String student_id;
+    private String test_id;
+    private String date_of_attempt; // ИЗМЕНЕНО: было LocalDate, стало String
+    private Integer point;
+    private String certificate_id;
+    private String attempt_version;
+    private String attempt_snapshot;
+    private Boolean completed;
 
-	private static final long serialVersionUID = 1L;
+    public TestAttempt() {
+    }
 
-	/** Уникальный идентификатор попытки. */
-	private UUID id;
+    public TestAttempt(String id, String student_id, String test_id, String date_of_attempt,
+                      Integer point, String certificate_id, String attempt_version,
+                      String attempt_snapshot, Boolean completed) {
+        this.id = id;
+        this.student_id = student_id;
+        this.test_id = test_id;
+        this.date_of_attempt = date_of_attempt;
+        this.point = point;
+        this.certificate_id = certificate_id;
+        this.attempt_version = attempt_version;
+        this.attempt_snapshot = attempt_snapshot;
+        this.completed = completed != null ? completed : false;
+    }
 
-	/** Дата прохождения попытки (java.sql.Date для совместимости с БД). */
-	private Date date_of_attempt;
+    // Getters and Setters
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
+    
+    public String getStudent_id() { return student_id; }
+    public void setStudent_id(String student_id) { this.student_id = student_id; }
+    
+    public String getTest_id() { return test_id; }
+    public void setTest_id(String test_id) { this.test_id = test_id; }
+    
+    public String getDate_of_attempt() { return date_of_attempt; }
+    public void setDate_of_attempt(String date_of_attempt) { this.date_of_attempt = date_of_attempt; }
+    
+    public Integer getPoint() { return point; }
+    public void setPoint(Integer point) { this.point = point; }
+    
+    public String getCertificate_id() { return certificate_id; }
+    public void setCertificate_id(String certificate_id) { this.certificate_id = certificate_id; }
+    
+    public String getAttempt_version() { return attempt_version; }
+    public void setAttempt_version(String attempt_version) { this.attempt_version = attempt_version; }
+    
+    public String getAttempt_snapshot() { return attempt_snapshot; }
+    public void setAttempt_snapshot(String attempt_snapshot) { this.attempt_snapshot = attempt_snapshot; }
+    
+    public Boolean getCompleted() { return completed; }
+    public void setCompleted(Boolean completed) { 
+        this.completed = completed != null ? completed : false; 
+    }
 
-	/** Количество набранных баллов; может быть null, если попытка не завершена. */
-	private Integer point;
-
-	/**
-	 * Строковое представление результата (например: "passed", "failed",
-	 * "incomplete").
-	 */
-	private String result;
-
-	/**
-	 * Пустой конструктор необходим для сериализации и десериализации
-	 * (Jackson/Javalin).
-	 */
-	public TestAttempt() {
-	}
-
-	/**
-	 * Полный конструктор DTO.
-	 *
-	 * @param id              идентификатор попытки
-	 * @param date_of_attempt дата прохождения
-	 * @param point           набранные баллы
-	 * @param result          строковый статус результата
-	 */
-	public TestAttempt(UUID id, Date date_of_attempt, Integer point, String result) {
-		this.id = id;
-		this.date_of_attempt = date_of_attempt;
-		this.point = point;
-		this.result = result;
-	}
-
-	// --------------------------------------------------------------------
-	// GETTERS / SETTERS
-	// --------------------------------------------------------------------
-
-	public UUID getId() {
-		return id;
-	}
-
-	public void setId(UUID id) {
-		this.id = id;
-	}
-
-	/** @return дата попытки */
-	public Date getDate_of_attempt() {
-		return date_of_attempt;
-	}
-
-	/**
-	 * Устанавливает дату прохождения попытки.
-	 *
-	 * @param date дата попытки
-	 */
-	public void setDate_of_attempt(Date date) {
-		this.date_of_attempt = date;
-	}
-
-	/** @return набранные баллы */
-	public Integer getPoint() {
-		return point;
-	}
-
-	/** @param point новые баллы */
-	public void setPoint(Integer point) {
-		this.point = point;
-	}
-
-	/** @return результат попытки */
-	public String getResult() {
-		return result;
-	}
-
-	/** @param result новый текст результата */
-	public void setResult(String result) {
-		this.result = result;
-	}
-
-	// --------------------------------------------------------------------
-	// toString()
-	// --------------------------------------------------------------------
-
-	@Override
-	public String toString() {
-		return "TestAttempt{" +
-				"id=" + id +
-				", date_of_attempt=" + date_of_attempt +
-				", point=" + point +
-				", result='" + result + '\'' +
-				'}';
-	}
+    @Override
+    public String toString() {
+        return "TestAttempt{" +
+                "id='" + id + '\'' +
+                ", student_id='" + student_id + '\'' +
+                ", test_id='" + test_id + '\'' +
+                ", date_of_attempt='" + date_of_attempt + '\'' +
+                ", point=" + point +
+                ", certificate_id='" + certificate_id + '\'' +
+                ", completed=" + completed +
+                '}';
+    }
 }

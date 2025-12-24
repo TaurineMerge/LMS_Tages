@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Вход - Личный кабинет</title>
-    <link href="/static/css/main.css" rel="stylesheet"/>
+    <link href="{{ prefix }}/static/css/main.css" rel="stylesheet"/>
     </head>
 <body>
     {% include 'includes/sprite.html' %} 
@@ -17,10 +17,10 @@
         <h1 class="primary-page__title">Добро пожаловать в личный кабинет LMS Tages!</h2>
 
         <div class="primary-page__buttons">
-            <a type="button" href="/account/api/v1/auth/login" class="button button--secondary">
+            <a type="button" href="{{ prefix }}/api/v1/auth/login" class="button button--secondary">
                 Войти через Keycloak
             </a>
-            <a type="button" href="/account/register" class="button button--primary">
+            <a type="button" href="{{ prefix }}/register" class="button button--primary">
                 Зарегистрироваться
             </a>
         </div>

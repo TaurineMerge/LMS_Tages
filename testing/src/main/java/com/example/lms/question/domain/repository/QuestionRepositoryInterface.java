@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.example.lms.question.api.domain.model.QuestionModel;
+import com.example.lms.question.domain.model.QuestionModel;
 
 /**
  * Репозиторий для работы с вопросами тестов.

@@ -193,6 +193,25 @@ async def logout(body: Optional[Logout_Request] = None):
 
 
 @router.get(
+    "/logout",
+    response_model=api_response[message_response],
+    summary="Logout user via GET",
+    description="Logs out the user by clearing cookies (for use in templates).",
+)
+@router.get("/logout")
+@traced("router.auth.logout_get")
+async def logout_get():
+    """Logout user via GET request (for simple links)."""
+    from app.config import get_settings
+
+    settings = get_settings()
+    response = RedirectResponse(url=f"{settings.url_prefix}/")
+    response.delete_cookie(key="access_token", path="/")
+    response.delete_cookie(key="refresh_token", path="/")
+    return response
+
+
+@router.get(
     "/me",
     response_model=api_response[user_info_response],
     summary="Get current user info",

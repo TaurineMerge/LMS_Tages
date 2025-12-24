@@ -41,7 +41,7 @@ services:
     networks:
       - keycloak-network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U keycloaks -d keycloaks" ]
+      test: ["CMD-SHELL", "pg_isready -U keycloaks -d keycloaks"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -61,12 +61,12 @@ services:
       KC_METRICS_ENABLED: true
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
-      KC_PROXY: "none"
-      KC_HOSTNAME: "localhost"
+      KC_PROXY: "reencrypt"
       KC_HOSTNAME_PORT: "80"
       KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
       KC_HTTP_RELATIVE_PATH: "/auth"
       KC_BASE_URL: "http://localhost/auth"
+      KC_HOSTNAME: "localhost"
     command:
       - start-dev
       - --http-port=8080
@@ -82,7 +82,11 @@ services:
       keycloak-db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /auth/health/ready HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && grep -q '200 OK' <&3 || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /auth/health/ready HTTP/1.1\r\nHost: localhost\r\n\r\n' >&3 && grep -q '200 OK' <&3 || exit 1",
+        ]
       interval: 15s
       timeout: 10s
       retries: 10
@@ -96,30 +100,40 @@ services:
     image: postgres:15
     container_name: app-db
     environment:
-      POSTGRES_DB: appdb
-      POSTGRES_USER: appuser
-      POSTGRES_PASSWORD: password
-    # ports:
-    #   - "5432:5432"
+      POSTGRES_USER: ${APP_DB_SUPERUSER}
+      POSTGRES_PASSWORD: ${APP_DB_SUPERUSER_PASSWORD}
+      PGPORT: ${APP_DB_INTERNAL_PORT}
+    env_file:
+      - ./.env
     volumes:
       - app_data:/var/lib/postgresql/data
       - ./init-sql:/docker-entrypoint-initdb.d:ro
     networks:
       - app-network
-    ports: []
+    ports:
+      - "5432:5432"
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U appuser -d appdb" ]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${APP_DB_SUPERUSER} -p ${APP_DB_INTERNAL_PORT}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
+
   public-side:
     build: ./publicSide
     container_name: public-side
-    # ports: 
-    #   - "3000:3000"
-    env_file:
-      - ./publicSide/.env.prod
+    environment:
+      DB_NAME: ${KNOWLEDGE_BASE_DB_NAME}
+      DB_USER: ${KNOWLEDGE_BASE_RO_USER}
+      DB_PASSWORD: ${KNOWLEDGE_BASE_RO_PASSWORD}
+      DB_HOST: ${APP_DB_HOST}
+      DB_PORT: ${APP_DB_INTERNAL_PORT}
+      OTEL_EXPORTER_OTLP_ENDPOINT: "otel-collector:4317"
+    ports: []
     networks:
       - app-network
     depends_on:
@@ -128,28 +142,28 @@ services:
       keycloak:
         condition: service_started
     restart: unless-stopped
+
   admin-panel:
     build: ./adminPanel
     container_name: admin-panel
     env_file:
       - ./adminPanel/.env.prod
     environment:
-      # Database
-      DATABASE_URL: "postgresql://appuser:password@app-db:5432/appdb?sslmode=disable"
+      DB_NAME: ${KNOWLEDGE_BASE_DB_NAME}
+      DB_USER: ${KNOWLEDGE_BASE_ADMIN_USER}
+      DB_PASSWORD: ${KNOWLEDGE_BASE_ADMIN_PASSWORD}
+      DB_HOST: ${APP_DB_HOST}
+      DB_PORT: ${APP_DB_INTERNAL_PORT}
       DATABASE_POOL_MIN_SIZE: "5"
       DATABASE_POOL_MAX_SIZE: "20"
-      # Keycloak
       KEYCLOAK_ISSUER_URL: "http://keycloak:8080/auth/realms/teacher"
       KEYCLOAK_CLIENT_ID: "teacher-client"
       KEYCLOAK_CLIENT_SECRET: "TEACHER_SECRET"
       KEYCLOAK_APP_NAME: "LMS Admin Application"
-      # OpenTelemetry
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
       OTEL_SERVICE_NAME: "admin-panel"
-      # Server
       API_ADDRESS: ":4000"
-      # CORS
       CORS_ALLOW_ORIGINS: "*"
       CORS_ALLOW_CREDENTIALS: "false"
     ports: []
@@ -165,12 +179,12 @@ services:
   personal-account:
     build: ./personal-account
     container_name: personal-account
-    ports: []
     env_file:
       - ./personal-account/.env
     environment:
       OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}"
       OTEL_SERVICE_NAME: "${OTEL_SERVICE_NAME:-personal-account-api}"
+    ports: []
     networks:
       - app-network
     depends_on:
@@ -178,14 +192,34 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_started
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: redis-server --appendonly yes
+    ports: []
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   testing:
     build: ./testing
     container_name: testing
-    ports: []
     env_file:
       - ./testing/.env
+    volumes:
+      - ./docs:/app/docs
+    ports: []
     networks:
       - app-network
     depends_on:
@@ -212,7 +246,7 @@ services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.94.0
     container_name: otel-collector
-    command: [ "--config=/etc/otel-collector-config.yaml" ]
+    command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ./observability/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
     ports:
@@ -236,4 +270,6 @@ volumes:
   keycloak_data:
     driver: local
   app_data:
+    driver: local
+  redis_data:
     driver: local
