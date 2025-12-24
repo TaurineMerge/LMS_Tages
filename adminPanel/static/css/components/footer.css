@@ -7,15 +7,128 @@
     text-align: center;
 }
 
-.footer__container {
+/*.footer__container {
     max-width: 1800px;
     margin: 0 auto;
     padding: 0 2rem;
 }
+*/
 
-/* Основной контейнер для прижатия футера */
-.page-wrapper {
+.footer__top {
+    margin-bottom: 40px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 30px;
+}
+
+.footer__subtitle {
+    color: #fff;
+    margin-bottom: 30px;
+    font-size: 16px;
+    font-weight: 600;
+    text-transform: uppercase;
+    text-align: center;
+}
+
+.footer__contacts-sides {
+    display: flex;
+    justify-content: space-between;
+    gap: 30px;
+}
+
+.footer__side {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    min-height: 100vh; /* Минимальная высота = высота окна */
+    gap: 15px;
+    min-width: 250px;
+}
+
+.footer__side--left {
+    align-items: flex-start;
+    text-align: left;
+}
+
+.footer__side--right {
+    align-items: flex-end;
+    text-align: right;
+}
+
+.footer__contact-item {
+    display: flex;
+    align-items: baseline;
+    gap: 15px;
+    line-height: 1.5;
+}
+
+.footer__contact-name {
+    color: #ff9800;
+    font-weight: 600;
+    min-width: 120px;
+}
+
+.footer__side--left .footer__contact-name {
+    text-align: right;
+}
+
+.footer__side--right .footer__contact-name {
+    text-align: left;
+}
+
+.footer__contact-info {
+    color: #fff;
+    flex: 1;
+}
+
+.footer__bottom {
+    padding-top: 20px;
+    text-align: center;
+}
+
+.footer__copyright {
+    color: #999;
+    font-size: 14px;
+}
+
+@media (max-width: 768px) {
+    .footer__contacts-sides {
+        flex-direction: column;
+        gap: 25px;
+    }
+    
+    .footer__side--left,
+    .footer__side--right {
+        align-items: center;
+        text-align: center;
+    }
+    
+    .footer__contact-item {
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        text-align: center;
+    }
+    
+    .footer__contact-name {
+        min-width: auto;
+        text-align: center !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .footer {
+        padding: 30px 15px 15px;
+    }
+    
+    .footer__subtitle {
+        font-size: 14px;
+        margin-bottom: 20px;
+    }
+    
+    .footer__contact-name {
+        font-size: 14px;
+    }
+    
+    .footer__contact-info {
+        font-size: 13px;
+    }
 }
