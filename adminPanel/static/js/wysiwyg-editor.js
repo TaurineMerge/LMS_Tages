@@ -184,7 +184,7 @@ class WYSIWYGEditor {
             if (!img.style.display) img.style.display = 'block';
             if (!img.style.margin) img.style.margin = '10px 0';
             img.style.cursor = 'pointer';
-            img.className = 'wysiwyg-image';
+            img.classList.add('wysiwyg-image');
             
             // Добавляем обработчик клика для редактирования
             img.onclick = (e) => {
@@ -980,11 +980,13 @@ class WYSIWYGEditor {
     
     editImageSize(img) {
         const currentWidth = img.style.width ? parseInt(img.style.width) : img.naturalWidth || 300;
-        let currentFloat = 'left';
+        let currentAlign = 'left';
         if (img.classList.contains('wysiwyg-float-right')) {
-            currentFloat = 'right';
+            currentAlign = 'right';
+        } else if (img.style.margin === '0 auto') {
+            currentAlign = 'none';
         } else if (img.classList.contains('wysiwyg-block')) {
-            currentFloat = 'none';
+            currentAlign = 'none';
         }
         
         // Создаем модальное окно для редактирования
@@ -1009,9 +1011,9 @@ class WYSIWYGEditor {
             <div style="margin-bottom: 15px;">
                 <label>Выравнивание: 
                     <select id="img-align">
-                        <option value="left" ${currentFloat === 'left' ? 'selected' : ''}>Слева (текст справа)</option>
-                        <option value="right" ${currentFloat === 'right' ? 'selected' : ''}>Справа (текст слева)</option>
-                        <option value="none" ${currentFloat === 'none' ? 'selected' : ''}>По центру (блок)</option>
+                        <option value="left" ${currentAlign === 'left' ? 'selected' : ''}>Слева (текст справа)</option>
+                        <option value="right" ${currentAlign === 'right' ? 'selected' : ''}>Справа (текст слева)</option>
+                        <option value="none" ${currentAlign === 'none' ? 'selected' : ''}>По центру (блок)</option>
                     </select>
                 </label>
             </div>
@@ -1032,16 +1034,20 @@ class WYSIWYGEditor {
             if (newWidth && !isNaN(newWidth) && newWidth > 0) {
                 img.style.width = newWidth + 'px';
                 
-                // Удаляем старые классы выравнивания
+                // Удаляем старые стили выравнивания
                 img.classList.remove('wysiwyg-float-left', 'wysiwyg-float-right', 'wysiwyg-block');
+                img.style.margin = '';
+                img.style.display = '';
                 
-                // Добавляем новый класс выравнивания
+                // Добавляем новый стиль выравнивания
                 if (newAlign === 'left') {
                     img.classList.add('wysiwyg-float-left');
                 } else if (newAlign === 'right') {
                     img.classList.add('wysiwyg-float-right');
                 } else {
                     img.classList.add('wysiwyg-block');
+                    img.style.display = 'block';
+                    img.style.margin = '0 auto';
                 }
                 
                 this.updateHiddenInput();
