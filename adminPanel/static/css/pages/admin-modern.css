@@ -972,6 +972,38 @@
     margin: 0.5rem 0 0 0;
 }
 
+.current-image {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--gray-50);
+    border-radius: 8px;
+    border: 1px solid var(--gray-200);
+}
+
+.current-image p {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--gray-900);
+    margin: 0 0 0.5rem 0;
+}
+
+.image-preview {
+    position: relative;
+    display: inline-block;
+}
+
+.image-preview span {
+    font-size: 3rem;
+    color: var(--gray-400);
+    display: block;
+}
+
+.image-preview img {
+    display: none;
+    border-radius: 8px;
+    border: 1px solid var(--gray-200);
+}
+
 /* Select Wrapper */
 .form-field__select-wrapper {
     position: relative;

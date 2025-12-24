@@ -105,7 +105,10 @@
                         {{#if course.ImageKey}}
                         <div class="current-image">
                             <p>Текущее изображение:</p>
-                            <img src="{{course.ImageURL}}" alt="Course Image" style="max-width: 200px; max-height: 200px;" />
+                            <div class="image-preview">
+                                <span>🖼️</span>
+                                <img src="{{course.ImageURL}}" onload="this.style.display='block'; this.previousElementSibling.style.display='none';" onerror="this.closest('.current-image').style.display='none';" style="max-width: 200px; max-height: 200px;" />
+                            </div>
                         </div>
                         {{/if}}
                     </div>
