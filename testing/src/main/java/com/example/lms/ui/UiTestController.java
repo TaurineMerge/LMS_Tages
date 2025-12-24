@@ -13,14 +13,19 @@ import com.example.lms.test_attempt.domain.service.TestAttemptService;
 
 import io.javalin.http.Context;
 
-import java.time.LocalDate;
 import java.util.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * UI-контроллер страницы прохождения теста + завершение + результаты.
+ * UI-контроллер прохождения теста (без JS).
+ *
+ * Функционал:
+ * - single/multi определяется по количеству ответов со score>0
+ * - если "Ответить" без выбора -> редирект на take с errorQ/errorType, показываем сообщение под вопросом
+ * - "Завершить" без модалки: если есть пропуски -> ведём на /finish (страница подтверждения)
+ *   если пропусков нет -> сразу POST /finish
  */
 public class UiTestController {
 
@@ -45,24 +50,37 @@ public class UiTestController {
     }
 
     // =========================================================
-    // TAKE PAGE
+    // RETRY
     // =========================================================
 
+    /**
+     * POST /ui/tests/{testId}/retry
+     */
+    public void startNewAttempt(Context ctx) {
+        UUID testId = parseUuidOr400(ctx, ctx.pathParam("testId"), "testId");
+        if (testId == null) return;
+
+        UUID studentId = resolveOrCreateStudentId(ctx);
+
+        UUID newAttemptId = testAttemptService.createNewAttempt(studentId, testId);
+        ctx.redirect("/testing/ui/tests/" + testId + "/take?attemptId=" + newAttemptId);
+    }
+
+    // =========================================================
+    // TAKE
+    // =========================================================
+
+    /**
+     * GET /ui/tests/{testId}/take?attemptId=...
+     */
     public void showTakePage(Context ctx) {
         String testIdStr = ctx.pathParam("testId");
-
-        UUID testIdUuid;
-        try {
-            testIdUuid = UUID.fromString(testIdStr);
-        } catch (IllegalArgumentException e) {
-            ctx.status(400).contentType("text/plain; charset=utf-8")
-                    .result("Некорректный UUID testId: " + testIdStr);
-            return;
-        }
+        UUID testId = parseUuidOr400(ctx, testIdStr, "testId");
+        if (testId == null) return;
 
         Test testDto;
         try {
-            testDto = testService.getTestById(testIdStr); // у тебя getTestById(String)
+            testDto = testService.getTestById(testIdStr);
         } catch (Exception e) {
             ctx.status(404).contentType("text/plain; charset=utf-8")
                     .result("Тест не найден: " + testIdStr);
@@ -71,39 +89,47 @@ public class UiTestController {
 
         UUID studentId = resolveOrCreateStudentId(ctx);
 
-        Map<String, String> selectedAnswerByQuestion =
-                loadSelectedAnswers(studentId, testIdUuid, LocalDate.now());
+        UUID attemptId = tryParseUuid(ctx.queryParam("attemptId"));
+        if (attemptId == null) {
+            UUID newAttemptId = testAttemptService.createNewAttempt(studentId, testId);
+            ctx.redirect("/testing/ui/tests/" + testId + "/take?attemptId=" + newAttemptId);
+            return;
+        }
 
-        List<Question> questions = questionService.getQuestionsByTestId(testIdUuid);
+        // параметры для серверной валидации без JS
+        UUID errorQ = tryParseUuid(ctx.queryParam("errorQ"));
+        String errorType = ctx.queryParam("errorType"); // single|multi
+
+        List<Question> questions = questionService.getQuestionsByTestId(testId);
+
+        int completedCount = testAttemptService.countCompletedAttempts(studentId, testId);
+        int attemptNo = completedCount + 1;
+
+        // init attempt_version, если пустой
+        List<TestAttemptService.QuestionInit> init = new ArrayList<>();
+        for (Question q : questions) {
+            UUID qid = safeUuid(q.getId(), "вопроса", ctx);
+            if (qid == null) return;
+            init.add(new TestAttemptService.QuestionInit(qid, q.getOrder()));
+        }
+        testAttemptService.initAttemptVersionIfEmpty(attemptId, attemptNo, init);
+
+        Map<String, List<String>> selectedAnswerByQuestion = loadSelectedAnswers(attemptId);
 
         List<Map<String, Object>> questionViews = new ArrayList<>();
         List<Map<String, Object>> missingQuestions = new ArrayList<>();
-
         int answeredCount = 0;
 
         for (Question q : questions) {
-
-            UUID questionId;
-            try {
-                Object qIdObj = q.getId();
-                if (qIdObj instanceof UUID) {
-                    questionId = (UUID) qIdObj;
-                } else {
-                    questionId = UUID.fromString(String.valueOf(qIdObj));
-                }
-            } catch (Exception ex) {
-                ctx.status(500).contentType("text/plain; charset=utf-8")
-                        .result("Некорректный UUID вопроса: " + q.getId());
-                return;
-            }
+            UUID questionId = safeUuid(q.getId(), "вопроса", ctx);
+            if (questionId == null) return;
 
             String qIdStr = questionId.toString();
-            String selectedAnswerId = selectedAnswerByQuestion.get(qIdStr);
-            boolean answered = (selectedAnswerId != null);
+            List<String> selectedAnswerIds = selectedAnswerByQuestion.getOrDefault(qIdStr, Collections.emptyList());
+            boolean answered = selectedAnswerIds != null && !selectedAnswerIds.isEmpty();
 
-            if (answered) {
-                answeredCount++;
-            } else {
+            if (answered) answeredCount++;
+            else {
                 Map<String, Object> miss = new HashMap<>();
                 miss.put("id", qIdStr);
                 miss.put("order", q.getOrder());
@@ -113,19 +139,24 @@ public class UiTestController {
             List<Answer> answers = answerService.getAnswersByQuestionId(questionId);
 
             int maxPoints = 0;
+            int positiveCount = 0;
             for (Answer a : answers) {
-                try {
-                    Integer score = a.getScore(); // если нет getScore() — скажи, поправлю
-                    maxPoints += (score == null ? 0 : score);
-                } catch (Exception ignored) {}
+                int sc = extractAnswerScore(a);
+                if (sc > 0) positiveCount++;
+                maxPoints += Math.max(0, sc);
             }
 
+            boolean multi = positiveCount > 1;
+            String inputType = multi ? "checkbox" : "radio";
+            String inputName = multi ? "answer_ids" : "answer_id";
+            String hint = multi ? "Можно выбрать несколько вариантов" : "Выберите один вариант";
+
             List<Map<String, Object>> answerViews = new ArrayList<>();
-            String selectedAnswerText = null;
+            List<String> selectedTexts = new ArrayList<>();
 
             for (Answer a : answers) {
                 String aIdStr = String.valueOf(a.getId());
-                boolean selected = answered && aIdStr.equals(selectedAnswerId);
+                boolean selected = answered && selectedAnswerIds.contains(aIdStr);
 
                 Map<String, Object> av = new HashMap<>();
                 av.put("id", aIdStr);
@@ -133,8 +164,7 @@ public class UiTestController {
                 av.put("selected", selected);
                 av.put("disabled", answered);
 
-                if (selected) selectedAnswerText = a.getText();
-
+                if (selected) selectedTexts.add(a.getText());
                 answerViews.add(av);
             }
 
@@ -145,9 +175,21 @@ public class UiTestController {
             qView.put("answers", answerViews);
 
             qView.put("answered", answered);
-            qView.put("selectedAnswerText", selectedAnswerText);
-
+            qView.put("selectedAnswerText", selectedTexts.isEmpty() ? null : String.join(", ", selectedTexts));
             qView.put("maxPoints", maxPoints);
+
+            qView.put("multi", multi);
+            qView.put("hint", hint);
+            qView.put("inputType", inputType);
+            qView.put("inputName", inputName);
+
+            // Сообщение ошибки (без JS)
+            if (!answered && errorQ != null && errorQ.equals(questionId)) {
+                String msg = "multi".equalsIgnoreCase(errorType)
+                        ? "Выберите хотя бы один вариант ответа."
+                        : "Выберите один вариант ответа.";
+                qView.put("validationError", msg);
+            }
 
             qView.put("buttonText", answered ? "Ответ принят" : "Ответить");
             qView.put("buttonDisabled", answered);
@@ -162,12 +204,14 @@ public class UiTestController {
         Map<String, Object> model = new HashMap<>();
         model.put("test", testDto);
         model.put("questions", questionViews);
+
         model.put("student_id", studentId.toString());
+        model.put("attempt_id", attemptId.toString());
+        model.put("attempt_no", attemptNo);
 
         model.put("totalQuestions", totalQuestions);
         model.put("answeredCount", answeredCount);
 
-        // ✅ для всплывающего окна
         model.put("missingCount", missingCount);
         model.put("missingQuestions", missingQuestions);
         model.put("allAnswered", missingCount == 0);
@@ -177,97 +221,125 @@ public class UiTestController {
         ctx.result(html);
     }
 
-
+    /**
+     * POST /ui/tests/{testId}/questions/{questionId}/answer
+     * Без JS:
+     * - если ничего не выбрали -> редирект назад на take с errorQ/errorType и якорем
+     */
     public void submitAnswer(Context ctx) {
-        String testIdStr = ctx.pathParam("testId");
-        String questionIdStr = ctx.pathParam("questionId");
-        String answerIdStr = ctx.formParam("answer_id");
+        UUID testId = parseUuidOr400(ctx, ctx.pathParam("testId"), "testId");
+        if (testId == null) return;
 
-        if (answerIdStr == null || answerIdStr.isBlank()) {
+        UUID questionId = parseUuidOr400(ctx, ctx.pathParam("questionId"), "questionId");
+        if (questionId == null) return;
+
+        UUID attemptId = tryParseUuid(ctx.formParam("attempt_id"));
+        if (attemptId == null) {
             ctx.status(400).contentType("text/plain; charset=utf-8")
-                    .result("Не выбран ответ (answer_id пустой)");
+                    .result("Нет attempt_id (hidden)");
             return;
         }
 
-        UUID testId;
-        UUID questionId;
-        UUID answerId;
+        // multi
+        List<String> answerIdsRaw = ctx.formParams("answer_ids");
+        // single
+        String answerIdSingle = ctx.formParam("answer_id");
 
-        try { testId = UUID.fromString(testIdStr); }
-        catch (IllegalArgumentException e) {
-            ctx.status(400).contentType("text/plain; charset=utf-8")
-                    .result("Некорректный UUID testId: " + testIdStr);
+        boolean hasMulti = (answerIdsRaw != null && !answerIdsRaw.isEmpty());
+        boolean hasSingle = (answerIdSingle != null && !answerIdSingle.isBlank());
+
+        if (!hasMulti && !hasSingle) {
+            boolean isMulti = isMultiQuestion(questionId);
+
+            ctx.redirect("/testing/ui/tests/" + testId
+                    + "/take?attemptId=" + attemptId
+                    + "&errorQ=" + questionId
+                    + "&errorType=" + (isMulti ? "multi" : "single")
+                    + "#q_" + questionId);
             return;
         }
 
-        try { questionId = UUID.fromString(questionIdStr); }
-        catch (IllegalArgumentException e) {
-            ctx.status(400).contentType("text/plain; charset=utf-8")
-                    .result("Некорректный UUID questionId: " + questionIdStr);
-            return;
+        List<String> chosenIds = hasMulti ? answerIdsRaw : List.of(answerIdSingle);
+
+        List<UUID> answerIds = new ArrayList<>();
+        for (String s : chosenIds) {
+            UUID id = tryParseUuid(s);
+            if (id == null) {
+                ctx.status(400).contentType("text/plain; charset=utf-8")
+                        .result("Некорректный UUID answerId: " + s);
+                return;
+            }
+            answerIds.add(id);
         }
 
-        try { answerId = UUID.fromString(answerIdStr); }
-        catch (IllegalArgumentException e) {
-            ctx.status(400).contentType("text/plain; charset=utf-8")
-                    .result("Некорректный UUID answerId: " + answerIdStr);
-            return;
+        resolveStudentIdForPost(ctx);
+
+        // ====== NEW: считаем баллы по каждому выбранному ответу ======
+        List<Answer> allAnswers = answerService.getAnswersByQuestionId(questionId);
+        Map<String, Integer> scoreByAnswerId = new HashMap<>();
+        for (Answer a : allAnswers) {
+            scoreByAnswerId.put(String.valueOf(a.getId()), Math.max(0, extractAnswerScore(a)));
         }
 
-        UUID studentId = resolveStudentIdForPost(ctx);
+        List<Integer> answerPoints = new ArrayList<>();
+        int earnedPoints = 0;
+        for (UUID aid : answerIds) {
+            int p = scoreByAnswerId.getOrDefault(aid.toString(), 0);
+            answerPoints.add(p);
+            earnedPoints += p;
+        }
 
         try {
-            testAttemptService.saveAnswer(studentId, testId, questionId, answerId);
+            // ⚠️ теперь вызываем overload, который умеет сохранять answerPoints + earnedPoints
+            testAttemptService.saveAnswers(attemptId, questionId, answerIds, answerPoints, earnedPoints);
         } catch (Exception e) {
             ctx.status(500).contentType("text/plain; charset=utf-8")
                     .result("Ошибка при сохранении ответа: " + e.getMessage());
             return;
         }
 
-        // якорь — чтобы не скроллило в начало
-        ctx.redirect("/testing/ui/tests/" + testId + "/take#q_" + questionId);
+        ctx.redirect("/testing/ui/tests/" + testId + "/take?attemptId=" + attemptId + "#q_" + questionId);
     }
 
+
     // =========================================================
-    // FINISH FLOW
+    // FINISH
     // =========================================================
 
     /**
-     * GET /ui/tests/{testId}/finish
-     * Показывает подтверждение, если есть неотвеченные вопросы.
+     * GET /ui/tests/{testId}/finish?attemptId=...
+     * Страница подтверждения (без JS).
      */
     public void showFinishPage(Context ctx) {
         String testIdStr = ctx.pathParam("testId");
+        UUID testId = parseUuidOr400(ctx, testIdStr, "testId");
+        if (testId == null) return;
 
-        UUID testIdUuid;
-        try {
-            testIdUuid = UUID.fromString(testIdStr);
-        } catch (IllegalArgumentException e) {
-            ctx.status(400).contentType("text/plain; charset=utf-8")
-                    .result("Некорректный UUID testId: " + testIdStr);
+        UUID attemptId = tryParseUuid(ctx.queryParam("attemptId"));
+        if (attemptId == null) {
+            ctx.status(400).contentType("text/plain; charset=utf-8").result("Нет attemptId в query");
             return;
         }
 
         Test testDto;
-        try {
-            testDto = testService.getTestById(testIdStr);
-        } catch (Exception e) {
-            ctx.status(404).contentType("text/plain; charset=utf-8")
-                    .result("Тест не найден: " + testIdStr);
+        try { testDto = testService.getTestById(testIdStr); }
+        catch (Exception e) {
+            ctx.status(404).contentType("text/plain; charset=utf-8").result("Тест не найден");
             return;
         }
 
         UUID studentId = resolveOrCreateStudentId(ctx);
 
-        List<Question> questions = questionService.getQuestionsByTestId(testIdUuid);
-        Map<String, String> selected = loadSelectedAnswers(studentId, testIdUuid, LocalDate.now());
+        List<Question> questions = questionService.getQuestionsByTestId(testId);
+        Map<String, List<String>> selected = loadSelectedAnswers(attemptId);
 
         List<Map<String, Object>> missing = new ArrayList<>();
         for (Question q : questions) {
             UUID qid = safeUuid(q.getId(), "вопроса", ctx);
             if (qid == null) return;
 
-            if (!selected.containsKey(qid.toString())) {
+            List<String> aids = selected.getOrDefault(qid.toString(), Collections.emptyList());
+            if (aids == null || aids.isEmpty()) {
                 Map<String, Object> m = new HashMap<>();
                 m.put("id", qid.toString());
                 m.put("order", q.getOrder());
@@ -282,6 +354,8 @@ public class UiTestController {
         Map<String, Object> model = new HashMap<>();
         model.put("test", testDto);
         model.put("student_id", studentId.toString());
+        model.put("attempt_id", attemptId.toString());
+
         model.put("totalQuestions", total);
         model.put("answeredCount", answeredCount);
         model.put("missingCount", missingCount);
@@ -295,220 +369,147 @@ public class UiTestController {
 
     /**
      * POST /ui/tests/{testId}/finish
-     * Если force=true — завершает даже при незаполненных вопросах.
-     * После завершения — редирект на результаты.
      */
     public void finishAttempt(Context ctx) {
-        String testIdStr = ctx.pathParam("testId");
+        UUID testId = parseUuidOr400(ctx, ctx.pathParam("testId"), "testId");
+        if (testId == null) return;
 
-        UUID testIdUuid;
-        try {
-            testIdUuid = UUID.fromString(testIdStr);
-        } catch (IllegalArgumentException e) {
-            ctx.status(400).contentType("text/plain; charset=utf-8")
-                    .result("Некорректный UUID testId: " + testIdStr);
+        UUID attemptId = tryParseUuid(ctx.formParam("attempt_id"));
+        if (attemptId == null) {
+            ctx.status(400).contentType("text/plain; charset=utf-8").result("Нет attempt_id");
             return;
         }
 
-        UUID studentId = resolveStudentIdForPost(ctx);
         boolean force = "true".equalsIgnoreCase(ctx.formParam("force"));
+        resolveStudentIdForPost(ctx);
 
-        List<Question> questions = questionService.getQuestionsByTestId(testIdUuid);
-        Map<String, String> selected = loadSelectedAnswers(studentId, testIdUuid, LocalDate.now());
+        List<Question> questions = questionService.getQuestionsByTestId(testId);
+        Map<String, List<String>> selected = loadSelectedAnswers(attemptId);
 
-        // проверяем незаполненные
         int missingCount = 0;
         for (Question q : questions) {
             UUID qid = safeUuid(q.getId(), "вопроса", ctx);
             if (qid == null) return;
-            if (!selected.containsKey(qid.toString())) missingCount++;
+
+            List<String> aids = selected.getOrDefault(qid.toString(), Collections.emptyList());
+            if (aids == null || aids.isEmpty()) missingCount++;
         }
 
         if (missingCount > 0 && !force) {
-            // если пришли без force — отправляем на confirm-страницу
-            ctx.redirect("testing/ui/tests/" + testIdUuid + "/finish");
+            ctx.redirect("/testing/ui/tests/" + testId + "/finish?attemptId=" + attemptId);
             return;
         }
 
-        // считаем баллы по выбранным ответам
         int points = 0;
-        int maxPossible = 0;
-
-        List<Map<String, Object>> resultRows = new ArrayList<>();
 
         for (Question q : questions) {
             UUID qid = safeUuid(q.getId(), "вопроса", ctx);
             if (qid == null) return;
 
-            String qidStr = qid.toString();
-            String selectedAid = selected.get(qidStr);
+            List<String> selectedAids = selected.getOrDefault(qid.toString(), Collections.emptyList());
+            if (selectedAids == null || selectedAids.isEmpty()) continue;
 
             List<Answer> answers = answerService.getAnswersByQuestionId(qid);
-
-            // maxPossible по твоей логике "сумма score всех ответов"
-            int qMax = 0;
-            for (Answer a : answers) qMax += Math.max(0, extractAnswerScore(a));
-            maxPossible += qMax;
-
-            int earned = 0;
-            String selectedText = null;
-
-            if (selectedAid != null) {
-                for (Answer a : answers) {
-                    String aid = String.valueOf(a.getId());
-                    if (aid.equals(selectedAid)) {
-                        earned = Math.max(0, extractAnswerScore(a));
-                        selectedText = a.getText();
-                        break;
-                    }
+            for (Answer a : answers) {
+                if (selectedAids.contains(String.valueOf(a.getId()))) {
+                    points += Math.max(0, extractAnswerScore(a));
                 }
-                points += earned;
             }
-
-            Map<String, Object> row = new HashMap<>();
-            row.put("order", q.getOrder());
-            row.put("text", q.getTextOfQuestion());
-            row.put("answered", selectedAid != null);
-            row.put("selectedText", selectedText);
-            row.put("earned", earned);
-            row.put("maxPoints", qMax);
-            resultRows.add(row);
         }
 
-        // сохраняем point в попытку (на сегодня)
         try {
-            testAttemptService.completeAttemptForToday(studentId, testIdUuid, points);
-        } catch (Exception ignored) {
-            // если вдруг не сохранится — результаты всё равно показываем
-        }
+            testAttemptService.completeAttemptById(attemptId, points);
+        } catch (Exception ignored) {}
 
-        // кладем результаты в cookie? не нужно — просто редирект на results (там пересчитаем)
-        ctx.redirect("/testing/ui/tests/" + testIdUuid + "/results");
-    }
-
-    /**
-     * GET /ui/tests/{testId}/results
-     */
-    public void showResultsPage(Context ctx) {
-        String testIdStr = ctx.pathParam("testId");
-
-        UUID testIdUuid;
-        try {
-            testIdUuid = UUID.fromString(testIdStr);
-        } catch (IllegalArgumentException e) {
-            ctx.status(400).contentType("text/plain; charset=utf-8")
-                    .result("Некорректный UUID testId: " + testIdStr);
-            return;
-        }
-
-        Test testDto;
-        try {
-            testDto = testService.getTestById(testIdStr);
-        } catch (Exception e) {
-            ctx.status(404).contentType("text/plain; charset=utf-8")
-                    .result("Тест не найден: " + testIdStr);
-            return;
-        }
-
-        UUID studentId = resolveOrCreateStudentId(ctx);
-
-        List<Question> questions = questionService.getQuestionsByTestId(testIdUuid);
-        Map<String, String> selected = loadSelectedAnswers(studentId, testIdUuid, LocalDate.now());
-
-        int points = 0;
-        int maxPossible = 0;
-        int answeredCount = 0;
-
-        List<Map<String, Object>> rows = new ArrayList<>();
-
-        for (Question q : questions) {
-            UUID qid = safeUuid(q.getId(), "вопроса", ctx);
-            if (qid == null) return;
-
-            String selectedAid = selected.get(qid.toString());
-            List<Answer> answers = answerService.getAnswersByQuestionId(qid);
-
-            int qMax = 0;
-            for (Answer a : answers) qMax += Math.max(0, extractAnswerScore(a));
-            maxPossible += qMax;
-
-            int earned = 0;
-            String selectedText = null;
-
-            if (selectedAid != null) {
-                answeredCount++;
-                for (Answer a : answers) {
-                    if (String.valueOf(a.getId()).equals(selectedAid)) {
-                        earned = Math.max(0, extractAnswerScore(a));
-                        selectedText = a.getText();
-                        break;
-                    }
-                }
-                points += earned;
-            }
-
-            Map<String, Object> row = new HashMap<>();
-            row.put("order", q.getOrder());
-            row.put("text", q.getTextOfQuestion());
-            row.put("answered", selectedAid != null);
-            row.put("selectedText", selectedText);
-            row.put("earned", earned);
-            row.put("maxPoints", qMax);
-            rows.add(row);
-        }
-
-        Integer minPoint = extractMinPoint(testDto);
-        boolean passed = (minPoint == null) ? false : points >= minPoint;
-
-        Map<String, Object> model = new HashMap<>();
-        model.put("test", testDto);
-        model.put("student_id", studentId.toString());
-
-        model.put("points", points);
-        model.put("maxPossible", maxPossible);
-
-        model.put("totalQuestions", questions.size());
-        model.put("answeredCount", answeredCount);
-
-        model.put("minPoint", minPoint);
-        model.put("passed", passed);
-
-        model.put("rows", rows);
-
-        String html = HbsRenderer.render("test-results", model);
-        ctx.contentType("text/html; charset=utf-8");
-        ctx.result(html);
+        ctx.redirect("/testing/ui/tests/" + testId + "/results?attemptId=" + attemptId);
     }
 
     // =========================================================
     // Helpers
     // =========================================================
 
-    private Map<String, String> loadSelectedAnswers(UUID studentId, UUID testId, LocalDate date) {
-        Map<String, String> map = new HashMap<>();
+    private boolean isMultiQuestion(UUID questionId) {
         try {
-            Optional<String> jsonOpt = testAttemptService.getAttemptVersion(studentId, testId, date);
-            if (jsonOpt.isEmpty() || jsonOpt.get() == null || jsonOpt.get().isBlank()) return map;
-
-            JsonNode root = OBJECT_MAPPER.readTree(jsonOpt.get());
-            JsonNode answers = root.path("answers");
-
-            // формат: answers: [{question, answer}, ...]
-            if (answers.isArray()) {
-                for (JsonNode item : answers) {
-                    String q = item.path("question").asText(null);
-                    String a = item.path("answer").asText(null);
-                    if (q != null && a != null) map.put(q, a);
-                }
-                return map;
+            List<Answer> answers = answerService.getAnswersByQuestionId(questionId);
+            int positiveCount = 0;
+            for (Answer a : answers) {
+                if (extractAnswerScore(a) > 0) positiveCount++;
+                if (positiveCount > 1) return true;
             }
+        } catch (Exception ignored) {}
+        return false;
+    }
 
-            // fallback на старый объект-словарь
-            if (answers.isObject()) {
-                Iterator<Map.Entry<String, JsonNode>> it = answers.fields();
-                while (it.hasNext()) {
-                    var e = it.next();
-                    map.put(e.getKey(), e.getValue() == null ? null : e.getValue().asText());
+    private int readAttemptNoFromJson(UUID attemptId) {
+        try {
+            Optional<String> jsonOpt = testAttemptService.getAttemptVersionByAttemptId(attemptId);
+            if (jsonOpt.isEmpty()) return 0;
+
+            String json = jsonOpt.get();
+            if (json == null || json.isBlank()) return 0;
+
+            JsonNode root = OBJECT_MAPPER.readTree(json);
+            JsonNode n = root.get("attemptNo");
+            if (n != null && n.isInt()) return n.asInt();
+            if (n != null && n.isTextual()) {
+                try { return Integer.parseInt(n.asText()); } catch (Exception ignored) {}
+            }
+        } catch (Exception ignored) {}
+        return 0;
+    }
+
+    private Integer extractMinPoint(Test testDto) {
+        try {
+            Object v = testDto.getClass().getMethod("getMin_point").invoke(testDto);
+            return (v == null) ? null : ((Number) v).intValue();
+        } catch (Exception ignored1) {
+            try {
+                Object v = testDto.getClass().getMethod("getMinPoint").invoke(testDto);
+                return (v == null) ? null : ((Number) v).intValue();
+            } catch (Exception ignored2) {
+                return null;
+            }
+        }
+    }
+
+    private Map<String, List<String>> loadSelectedAnswers(UUID attemptId) {
+        Map<String, List<String>> map = new HashMap<>();
+        try {
+            Optional<String> jsonOpt = testAttemptService.getAttemptVersionByAttemptId(attemptId);
+            if (jsonOpt.isEmpty()) return map;
+
+            String json = jsonOpt.get();
+            if (json == null || json.isBlank()) return map;
+
+            JsonNode root = OBJECT_MAPPER.readTree(json);
+            JsonNode answers = root.path("answers");
+            if (!answers.isArray()) return map;
+
+            for (JsonNode item : answers) {
+                if (item == null || !item.isObject()) continue;
+
+                String qid = item.path("questionId").asText(null);
+                if (qid == null || qid.isBlank()) continue;
+
+                JsonNode arr = item.get("answerIds");
+                if (arr != null && arr.isArray() && arr.size() > 0) {
+                    List<String> ids = new ArrayList<>();
+                    for (JsonNode n : arr) {
+                        String v = n.asText(null);
+                        if (v != null && !v.isBlank()) ids.add(v);
+                    }
+                    if (!ids.isEmpty()) {
+                        map.put(qid, ids);
+                        continue;
+                    }
+                }
+
+                JsonNode single = item.get("answerId");
+                if (single != null && !single.isNull()) {
+                    String aid = single.asText(null);
+                    if (aid != null && !aid.isBlank()) {
+                        map.put(qid, List.of(aid));
+                    }
                 }
             }
         } catch (Exception ignored) {}
@@ -555,6 +556,15 @@ public class UiTestController {
         catch (IllegalArgumentException e) { return null; }
     }
 
+    private UUID parseUuidOr400(Context ctx, String raw, String field) {
+        UUID id = tryParseUuid(raw);
+        if (id == null) {
+            ctx.status(400).contentType("text/plain; charset=utf-8")
+                    .result("Некорректный UUID " + field + ": " + raw);
+        }
+        return id;
+    }
+
     private UUID safeUuid(Object idObj, String entity, Context ctx) {
         try {
             if (idObj instanceof UUID) return (UUID) idObj;
@@ -566,31 +576,112 @@ public class UiTestController {
         }
     }
 
-    /**
-     * Достаём score максимально безопасно (на случай если DTO названо иначе).
-     */
     private int extractAnswerScore(Answer a) {
         try {
             Object v = a.getClass().getMethod("getScore").invoke(a);
             if (v == null) return 0;
             return ((Number) v).intValue();
         } catch (Exception ignored) {
-            // если нет метода getScore — будет 0 (и не упадёт компиляция)
             return 0;
         }
     }
 
-    private Integer extractMinPoint(Test testDto) {
-        try {
-            Object v = testDto.getClass().getMethod("getMin_point").invoke(testDto);
-            return (v == null) ? null : ((Number) v).intValue();
-        } catch (Exception ignored1) {
-            try {
-                Object v = testDto.getClass().getMethod("getMinPoint").invoke(testDto);
-                return (v == null) ? null : ((Number) v).intValue();
-            } catch (Exception ignored2) {
-                return null;
-            }
+    /**
+     * GET /ui/tests/{testId}/results?attemptId=...
+     */
+    public void showResultsPage(Context ctx) {
+        String testIdStr = ctx.pathParam("testId");
+        UUID testId = parseUuidOr400(ctx, testIdStr, "testId");
+        if (testId == null) return;
+
+        UUID attemptId = tryParseUuid(ctx.queryParam("attemptId"));
+        if (attemptId == null) {
+            ctx.status(400).contentType("text/plain; charset=utf-8")
+                    .result("Нет attemptId в query");
+            return;
         }
+
+        Test testDto;
+        try {
+            testDto = testService.getTestById(testIdStr);
+        } catch (Exception e) {
+            ctx.status(404).contentType("text/plain; charset=utf-8")
+                    .result("Тест не найден");
+            return;
+        }
+
+        UUID studentId = resolveOrCreateStudentId(ctx);
+
+        List<Question> questions = questionService.getQuestionsByTestId(testId);
+        Map<String, List<String>> selected = loadSelectedAnswers(attemptId);
+
+        int points = 0;
+        int maxPossible = 0;
+        int answeredCount = 0;
+
+        List<Map<String, Object>> rows = new ArrayList<>();
+
+        for (Question q : questions) {
+            UUID qid = safeUuid(q.getId(), "вопроса", ctx);
+            if (qid == null) return;
+
+            List<Answer> answers = answerService.getAnswersByQuestionId(qid);
+
+            int qMax = 0;
+            for (Answer a : answers) qMax += Math.max(0, extractAnswerScore(a));
+            maxPossible += qMax;
+
+            List<String> selectedAids = selected.getOrDefault(qid.toString(), Collections.emptyList());
+
+            int earned = 0;
+            List<String> selectedTexts = new ArrayList<>();
+
+            if (selectedAids != null && !selectedAids.isEmpty()) {
+                answeredCount++;
+                for (Answer a : answers) {
+                    if (selectedAids.contains(String.valueOf(a.getId()))) {
+                        earned += Math.max(0, extractAnswerScore(a));
+                        selectedTexts.add(a.getText());
+                    }
+                }
+                points += earned;
+            }
+
+            Map<String, Object> row = new HashMap<>();
+            row.put("order", q.getOrder());
+            row.put("text", q.getTextOfQuestion());
+            row.put("answered", selectedAids != null && !selectedAids.isEmpty());
+            row.put("selectedText", selectedTexts.isEmpty() ? null : String.join(", ", selectedTexts));
+            row.put("earned", earned);
+            row.put("maxPoints", qMax);
+            rows.add(row);
+        }
+
+        Integer minPoint = extractMinPoint(testDto);
+        boolean passed = (minPoint != null) && points >= minPoint;
+
+        int attemptNo = readAttemptNoFromJson(attemptId);
+
+        Map<String, Object> model = new HashMap<>();
+        model.put("test", testDto);
+        model.put("student_id", studentId.toString());
+        model.put("attempt_id", attemptId.toString());
+        model.put("attempt_no", attemptNo);
+
+        model.put("points", points);
+        model.put("maxPossible", maxPossible);
+
+        model.put("totalQuestions", questions.size());
+        model.put("answeredCount", answeredCount);
+
+        model.put("minPoint", minPoint);
+        model.put("passed", passed);
+
+        model.put("rows", rows);
+
+        String html = HbsRenderer.render("test-results", model);
+        ctx.contentType("text/html; charset=utf-8");
+        ctx.result(html);
     }
+
 }

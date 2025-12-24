@@ -3,69 +3,80 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Завершение — {{test.title}}</title>
+  <title>{{test.title}} — завершение</title>
   <style>
-    :root{--bg:#fff;--text:#0b0b0b;--muted:#5f5f5f;--border:#e6e6e6;--orange:#ff6a00;--weak:rgba(255,106,0,.10);--shadow:0 8px 22px rgba(0,0,0,.08);--r:16px;}
+    :root{
+      --bg:#fff; --text:#0b0b0b; --muted:#5f5f5f; --border:#e6e6e6;
+      --orange:#ff6a00; --orange-weak:rgba(255,106,0,.10); --orange-weak-2:rgba(255,106,0,.06);
+      --shadow:0 6px 18px rgba(0,0,0,.06); --radius:16px;
+    }
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial}
-    .wrap{max-width:820px;margin:0 auto;padding:28px 18px 50px}
-    .card{border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);padding:18px;background:#fff}
-    .title{margin:0 0 8px 0;font-size:22px;letter-spacing:-.01em}
-    .muted{color:var(--muted);line-height:1.55}
-    .warn{margin-top:14px;padding:14px 14px;border-radius:14px;border:1px solid rgba(255,106,0,.45);background:var(--weak)}
-    .list{margin:10px 0 0 0;padding-left:18px;color:#2a2a2a}
-    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
-    .btn{padding:11px 16px;border-radius:12px;border:1px solid var(--text);background:var(--text);color:#fff;cursor:pointer;font-weight:800;text-decoration:none}
-    .btn-outline{padding:11px 16px;border-radius:12px;border:1px solid rgba(255,106,0,.85);background:transparent;color:var(--text);cursor:pointer;font-weight:800;text-decoration:none}
-    .btn-danger{padding:11px 16px;border-radius:12px;border:1px solid rgba(255,106,0,.85);background:var(--orange);color:#fff;cursor:pointer;font-weight:900}
-    .chip{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--border);border-radius:999px;background:#fff;font-size:13px}
-    .dot{width:8px;height:8px;border-radius:999px;background:var(--orange)}
+    .topbar{position:sticky;top:0;z-index:5;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:12px 0;margin-bottom:14px;}
+    .topbar-inner{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:980px;margin:0 auto;padding:0 18px;}
+    .title{margin:0;font-size:18px;letter-spacing:-.01em}
+    .muted{color:var(--muted);font-size:13px}
+    .actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+    .btn-outline{padding:11px 16px;border-radius:12px;border:1px solid rgba(255,106,0,.85);background:transparent;color:var(--text);text-decoration:none;font-weight:800;box-shadow:0 0 0 3px rgba(255,106,0,.10);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;user-select:none;}
+    .btn-outline:hover{box-shadow:0 0 0 3px rgba(255,106,0,.16);}
+    .btn-danger{padding:11px 16px;border-radius:12px;border:1px solid rgba(255,106,0,.85);background:var(--orange);color:#fff;cursor:pointer;font-weight:900;}
+    .container{max-width:980px;margin:0 auto;padding:0 18px 60px}
+    .card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin:14px 0;}
+    .warn{margin-top:10px;padding:12px;border-radius:14px;border:1px solid rgba(255,106,0,.45);background:var(--orange-weak);color:#2a2a2a;line-height:1.55;}
+    ul{margin:10px 0 0 0;padding-left:18px;}
+    li{margin:6px 0;}
+    a.link{color:var(--text);text-decoration:none;border-bottom:1px dashed rgba(0,0,0,.35)}
+    a.link:hover{border-bottom-color:rgba(255,106,0,.85)}
   </style>
 </head>
+
 <body>
-  <div class="wrap">
-    <div class="card">
-      <h1 class="title">Завершить прохождение теста</h1>
-      <div class="muted">{{test.title}}</div>
-
-      <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
-        <div class="chip"><span class="dot"></span>Отвечено: <b>{{answeredCount}}</b> / <b>{{totalQuestions}}</b></div>
-        {{#if test.min_point}}<div class="chip">Проходной: <b>{{test.min_point}}</b></div>{{/if}}
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div>
+        <div class="title">{{test.title}}</div>
+        <div class="muted">Отвечено: <b>{{answeredCount}}</b> / <b>{{totalQuestions}}</b> · Пропущено: <b>{{missingCount}}</b></div>
       </div>
-
-      {{#if allAnswered}}
-        <div class="warn">
-          <b>Все ответы сохранены.</b>
-          <div class="muted" style="margin-top:6px;">
-            Можно завершать попытку и смотреть результаты.
-          </div>
-        </div>
-      {{else}}
-        <div class="warn">
-          <b>Есть вопросы без ответа: {{missingCount}}.</b>
-          <div class="muted" style="margin-top:6px;">
-            Если завершить попытку сейчас, эти ответы останутся пустыми и в результатах дадут <b>0 баллов</b>.
-          </div>
-          <ul class="list">
-            {{#each missingQuestions}}
-              <li>Вопрос {{order}}</li>
-            {{/each}}
-          </ul>
-        </div>
-      {{/if}}
 
       <div class="actions">
-        <a class="btn-outline" href="/ui/tests/{{test.id}}/take">Вернуться к тесту</a>
+        <a class="btn-outline" href="/testing/ui/tests/{{test.id}}/take?attemptId={{attempt_id}}">
+          Продолжить тестирование
+        </a>
+      </div>
+    </div>
+  </div>
 
-        <form method="post" action="/ui/tests/{{test.id}}/finish" style="margin:0;">
-          <input type="hidden" name="student_id" value="{{student_id}}" />
-          <input type="hidden" name="force" value="{{#if allAnswered}}true{{else}}true{{/if}}" />
-          <button type="submit" class="{{#if allAnswered}}btn{{else}}btn-danger{{/if}}">
-            {{#if allAnswered}}Завершить и открыть результаты{{else}}Завершить всё равно{{/if}}
-          </button>
+  <div class="container">
+    <div class="card">
+      <div class="title" style="font-weight:900;">Точно завершить попытку и посмотреть результаты?</div>
+
+      {{#if allAnswered}}
+        <div class="warn">Все вопросы отвечены — можно сразу смотреть результаты.</div>
+      {{else}}
+        <div class="warn">
+          Есть вопросы без ответа. Если завершить сейчас — результаты будут рассчитаны по выбранным ответам.
+        </div>
+
+        <ul>
+          {{#each missingQuestions}}
+            <li>
+              <a class="link" href="/testing/ui/tests/{{../test.id}}/take?attemptId={{../attempt_id}}#q_{{id}}">
+                Перейти к вопросу №{{order}}
+              </a>
+            </li>
+          {{/each}}
+        </ul>
+      {{/if}}
+
+      <div class="actions" style="margin-top:14px; justify-content:flex-end;">
+        <form method="post" action="/testing/ui/tests/{{test.id}}/finish" style="margin:0;">
+          <input type="hidden" name="attempt_id" value="{{attempt_id}}"/>
+          <input type="hidden" name="student_id" value="{{student_id}}"/>
+          <input type="hidden" name="force" value="true"/>
+          <button class="btn-danger" type="submit">Завершить и посмотреть результаты</button>
         </form>
       </div>
-
     </div>
   </div>
 </body>

@@ -19,11 +19,25 @@ import com.example.lms.shared.storage.StorageServiceInterface;
 import com.example.lms.shared.storage.dto.UploadResult;
 
 /**
- * Сервис для работы с попытками тестов.
+ * Сервис для попыток тестов.
  *
- * ✅ Сохранён весь функционал HEAD (DTO ↔ Model + CRUD/поиск),
- * ✅ и добавлена UI-часть (attempt_version JSON, saveAnswer,
- * completeAttemptForToday).
+ * UI-логика:
+ * - attempt_version хранится по attemptId (PK)
+ * - attempt_version инициализируется сразу всеми вопросами
+ * - attemptNo пишем в JSON
+ *
+ * Формат attempt_version (АКТУАЛЬНЫЙ):
+ * {
+ *   "attemptNo": 1,
+ *   "answers": [
+ *     {"order":1,"questionId":"...","answerIds":[],"answerPoints":[],"earnedPoints":0},
+ *     ...
+ *   ]
+ * }
+ *
+ * Важно:
+ * - answerId (legacy) НЕ пишем вообще
+ * - но при чтении старых данных можем встретить answerId и не падаем
  */
 public class TestAttemptService {
 
@@ -38,9 +52,10 @@ public class TestAttemptService {
         this.storageService = storageService;
     }
 
-    // ---------------------------------------------------------------------
-    // DTO -> MODEL (как в HEAD)
-    // ---------------------------------------------------------------------
+    // =========================================================
+    // DTO <-> MODEL
+    // =========================================================
+
     private TestAttemptModel toModel(TestAttempt dto) {
         LocalDate date = null;
         if (dto.getDate_of_attempt() != null && !dto.getDate_of_attempt().isEmpty()) {
@@ -63,9 +78,6 @@ public class TestAttemptService {
                 dto.getCompleted());
     }
 
-    // ---------------------------------------------------------------------
-    // MODEL -> DTO (как в HEAD)
-    // ---------------------------------------------------------------------
     private TestAttempt toDto(TestAttemptModel model) {
         String dateStr = (model.getDateOfAttempt() == null) ? null : model.getDateOfAttempt().toString();
 
@@ -81,9 +93,10 @@ public class TestAttemptService {
                 model.getCompleted());
     }
 
-    // ---------------------------------------------------------------------
-    // PUBLIC API METHODS (как в HEAD)
-    // ---------------------------------------------------------------------
+    // =========================================================
+    // CRUD / Queries
+    // =========================================================
+
     public List<TestAttempt> getAllTestAttempts() {
         return repository.findAll().stream().map(this::toDto).toList();
     }
@@ -252,125 +265,202 @@ public class TestAttemptService {
         return repository.findCompletedAttempts().stream().map(this::toDto).toList();
     }
 
-    // ---------------------------------------------------------------------
-    // UI METHODS (чтобы UI часть работала)
-    // ---------------------------------------------------------------------
+    // =========================================================
+    // UI helpers types
+    // =========================================================
+
+    public static class QuestionInit {
+        public final UUID questionId;
+        public final Integer order;
+
+        public QuestionInit(UUID questionId, Integer order) {
+            this.questionId = questionId;
+            this.order = order;
+        }
+    }
+
+    // =========================================================
+    // UI API (attemptId)
+    // =========================================================
 
     /**
-     * ✅ UI: получить attempt_version (JSON).
+     * Создать новую попытку (attemptId = PK).
+     *
+     * Важно: НЕ ставим date_of_attempt автоматически, иначе при UNIQUE(student_id,test_id,date_of_attempt)
+     * повторная попытка в тот же день будет падать.
      */
-    public Optional<String> getAttemptVersion(UUID studentId, UUID testId, LocalDate date) {
-        if (date == null) {
-            date = LocalDate.now();
-        }
-        return repository.findAttemptVersion(studentId, testId, date.toString());
+    public UUID createNewAttempt(UUID studentId, UUID testId) {
+        TestAttemptModel m = new TestAttemptModel(studentId, testId);
+        m.setDateOfAttempt(LocalDate.now()); 
+        m.setCompleted(false);
+        m.validate();
+        TestAttemptModel saved = repository.save(m);
+        return saved.getId();
+
     }
 
     /**
-     * UI: Сохраняет ответ студента на конкретный вопрос в attempt_version (JSON).
-     *
-     * Формат attempt_version:
-     * {
-     * "answers": [
-     * { "question": "<questionUuid>", "answer": "<answerUuid>" }
-     * ]
-     * }
-     *
-     * Правило "без возможности исправления":
-     * если в answers уже есть запись с question == questionId, повтор игнорируем.
+     * Считает только завершённые попытки (completed=true ИЛИ point != null).
      */
-    public void saveAnswer(UUID studentId, UUID testId, UUID questionId, UUID answerId) {
-        String today = LocalDate.now().toString();
+    public int countCompletedAttempts(UUID studentId, UUID testId) {
+        return (int) repository.findByStudentIdAndTestId(studentId, testId).stream()
+                .filter(a -> Boolean.TRUE.equals(a.getCompleted()) || a.getPoint() != null)
+                .count();
+    }
+
+    public Optional<String> getAttemptVersionByAttemptId(UUID attemptId) {
+        return repository.findAttemptVersionByAttemptId(attemptId);
+    }
+
+    /**
+     * Инициализируем JSON, если attempt_version пустой.
+     *
+     * Формат:
+     * {
+     *   "attemptNo": 1,
+     *   "answers": [
+     *     {"order":1,"questionId":"...","answerIds":[],"answerPoints":[],"earnedPoints":0},
+     *     ...
+     *   ]
+     * }
+     */
+    public void initAttemptVersionIfEmpty(UUID attemptId, int attemptNo, List<QuestionInit> questions) {
+        String existing = repository.findAttemptVersionByAttemptId(attemptId).orElse(null);
+        if (existing != null && !existing.isBlank()) return;
 
         try {
-            String existingJson = repository.findAttemptVersion(studentId, testId, today).orElse(null);
+            ObjectNode root = OBJECT_MAPPER.createObjectNode();
+            root.put("attemptNo", attemptNo);
 
-            ObjectNode root = toObjectNodeOrEmpty(existingJson);
-            ArrayNode answersArray = ensureAnswersArray(root);
+            ArrayNode answers = OBJECT_MAPPER.createArrayNode();
+            for (QuestionInit q : questions) {
+                ObjectNode item = OBJECT_MAPPER.createObjectNode();
+                if (q.order != null) item.put("order", q.order);
+                item.put("questionId", q.questionId.toString());
+
+                // ✅ только новый формат
+                item.set("answerIds", OBJECT_MAPPER.createArrayNode());
+                item.set("answerPoints", OBJECT_MAPPER.createArrayNode());
+                item.put("earnedPoints", 0);
+
+                answers.add(item);
+            }
+            root.set("answers", answers);
+
+            String json = OBJECT_MAPPER.writeValueAsString(root);
+            repository.updateAttemptVersionByAttemptId(attemptId, json);
+        } catch (Exception e) {
+            logger.error("Ошибка при init attempt_version", e);
+            throw new RuntimeException("Ошибка init attempt_version", e);
+        }
+    }
+
+    /**
+     * Оставляем старую сигнатуру для совместимости компиляции (если где-то ещё вызывается).
+     * Баллы по ответам не запишет (0), но хотя бы сохранит answerIds.
+     */
+    public void saveAnswers(UUID attemptId, UUID questionId, List<UUID> answerIds) {
+        saveAnswers(attemptId, questionId, answerIds, List.of(), 0);
+    }
+
+    /**
+     * Multi API: сохраняем выбранные ответы + баллы.
+     * Если уже есть ответ(ы) — повтор игнорируем.
+     *
+     * Пишем:
+     * - answerIds: [...]
+     * - answerPoints: [...]
+     * - earnedPoints: N
+     */
+    public void saveAnswers(UUID attemptId,
+                            UUID questionId,
+                            List<UUID> answerIds,
+                            List<Integer> answerPoints,
+                            int earnedPoints) {
+        try {
+            String json = repository.findAttemptVersionByAttemptId(attemptId).orElse(null);
+            ObjectNode root = toObjectNodeOrEmpty(json);
+            ArrayNode answers = ensureAnswersArray(root);
 
             String q = questionId.toString();
-            String a = answerId.toString();
 
-            for (JsonNode item : answersArray) {
+            ArrayNode idsNode = OBJECT_MAPPER.createArrayNode();
+            for (UUID id : answerIds) idsNode.add(id.toString());
+
+            ArrayNode ptsNode = OBJECT_MAPPER.createArrayNode();
+            if (answerPoints != null && answerPoints.size() == answerIds.size()) {
+                for (Integer p : answerPoints) ptsNode.add(Math.max(0, p == null ? 0 : p));
+            } else {
+                // если points не передали или размер не совпал — пишем нули по количеству ответов
+                for (int i = 0; i < answerIds.size(); i++) ptsNode.add(0);
+                earnedPoints = 0;
+            }
+
+            for (JsonNode item : answers) {
                 if (item != null && item.isObject()) {
-                    JsonNode qNode = item.get("question");
-                    if (qNode != null && q.equals(qNode.asText())) {
-                        logger.info(
-                                "Ответ уже сохранён (student={}, test={}, date={}, question={}). Повтор игнорируем.",
-                                studentId, testId, today, questionId);
+                    String qid = item.path("questionId").asText(null);
+                    if (q.equals(qid)) {
+                        ObjectNode obj = (ObjectNode) item;
+
+                        // если уже отвечено — игнор
+                        JsonNode existingIds = obj.get("answerIds");
+                        if (existingIds != null && existingIds.isArray() && existingIds.size() > 0) {
+                            logger.info("Ответ уже был выбран (attemptId={}, questionId={}) — игнор", attemptId, questionId);
+                            return;
+                        }
+
+                        obj.set("answerIds", idsNode);
+                        obj.set("answerPoints", ptsNode);
+                        obj.put("earnedPoints", Math.max(0, earnedPoints));
+
+                        // на всякий: если в старых данных был answerId — удалим, чтобы формат стал единым
+                        obj.remove("answerId");
+
+                        String updated = OBJECT_MAPPER.writeValueAsString(root);
+                        repository.updateAttemptVersionByAttemptId(attemptId, updated);
                         return;
                     }
                 }
             }
 
-            ObjectNode entry = OBJECT_MAPPER.createObjectNode();
-            entry.put("question", q);
-            entry.put("answer", a);
-            answersArray.add(entry);
+            // если вопроса нет — добавим
+            ObjectNode newItem = OBJECT_MAPPER.createObjectNode();
+            newItem.put("questionId", q);
+            newItem.set("answerIds", idsNode);
+            newItem.set("answerPoints", ptsNode);
+            newItem.put("earnedPoints", Math.max(0, earnedPoints));
+            answers.add(newItem);
 
-            String updatedJson = OBJECT_MAPPER.writeValueAsString(root);
-            repository.upsertAttemptVersion(studentId, testId, today, updatedJson);
-
-            logger.info("Ответ сохранён (student={}, test={}, date={}, question={}, answer={})",
-                    studentId, testId, today, questionId, answerId);
+            String updated = OBJECT_MAPPER.writeValueAsString(root);
+            repository.updateAttemptVersionByAttemptId(attemptId, updated);
 
         } catch (Exception e) {
-            logger.error("Ошибка при сохранении ответа в attempt_version", e);
-            throw new RuntimeException("Ошибка при сохранении ответа", e);
+            logger.error("Ошибка saveAnswers(with points)", e);
+            throw new RuntimeException("Ошибка сохранения ответа", e);
         }
     }
 
     /**
-     * UI: завершить попытку за сегодня (если записи за сегодня нет — создаём).
+     * Завершить попытку по attemptId.
+     *
+     * Важно: date_of_attempt здесь НЕ проставляем автоматически.
      */
-    public void completeAttemptForToday(UUID studentId, UUID testId, int points) {
-        LocalDate today = LocalDate.now();
-
-        List<TestAttemptModel> attempts = repository.findByStudentIdAndTestId(studentId, testId);
-
-        TestAttemptModel todayAttempt = null;
-        for (TestAttemptModel a : attempts) {
-            if (a.getDateOfAttempt() != null && today.equals(a.getDateOfAttempt())) {
-                todayAttempt = a;
-                break;
-            }
-        }
-
-        if (todayAttempt == null) {
-            todayAttempt = new TestAttemptModel(studentId, testId);
-            todayAttempt.validate();
-            todayAttempt = repository.save(todayAttempt);
-        }
-
-        todayAttempt.completeAttempt(points);
-        todayAttempt.validate();
-        repository.update(todayAttempt);
+    public void completeAttemptById(UUID attemptId, int points) {
+        TestAttemptModel model = repository.findById(attemptId).orElseThrow();
+        model.completeAttempt(points);
+        model.validate();
+        repository.update(model);
     }
 
-    // ---------------------------------------------------------------------
+    // =========================================================
     // JSON helpers
-    // ---------------------------------------------------------------------
+    // =========================================================
 
     private ArrayNode ensureAnswersArray(ObjectNode root) {
         JsonNode answers = root.get("answers");
-
         if (answers != null && answers.isArray()) {
             return (ArrayNode) answers;
         }
-
-        if (answers != null && answers.isObject()) {
-            ArrayNode arr = OBJECT_MAPPER.createArrayNode();
-            answers.fields().forEachRemaining(entry -> {
-                ObjectNode item = OBJECT_MAPPER.createObjectNode();
-                item.put("question", entry.getKey());
-                JsonNode v = entry.getValue();
-                item.put("answer", v == null ? null : v.asText());
-                arr.add(item);
-            });
-            root.set("answers", arr);
-            return arr;
-        }
-
         ArrayNode arr = OBJECT_MAPPER.createArrayNode();
         root.set("answers", arr);
         return arr;
@@ -382,11 +472,8 @@ public class TestAttemptService {
         }
         try {
             JsonNode node = OBJECT_MAPPER.readTree(json);
-            if (node != null && node.isObject()) {
-                return (ObjectNode) node;
-            }
-        } catch (Exception ignored) {
-        }
+            if (node != null && node.isObject()) return (ObjectNode) node;
+        } catch (Exception ignored) {}
         return OBJECT_MAPPER.createObjectNode();
     }
 
@@ -419,4 +506,7 @@ public class TestAttemptService {
             // Не падаем, продолжаем работу (снепшот остается в БД)
         }
     }
+    // ---------------------------------------------------------------------
+    // BACKWARD COMPATIBILITY (for TestAttemptController)
+    // ---------------------------------------------------------------------
 }
