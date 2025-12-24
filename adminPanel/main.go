@@ -370,8 +370,10 @@ func main() {
 	categoryWebHandler := webhandlers.NewCategoryWebHandler(categoryService)
 	courseWebHandler := webhandlers.NewCourseWebHandler(courseService, categoryService, settings.TestModule)
 	lessonWebHandler := webhandlers.NewLessonWebHandler(lessonService, courseService, categoryService)
+	homeWebHandler := webhandlers.NewHomeWebHandler(categoryService, courseService, lessonService)
 
 	// Register web routes
+	web.Get("/", homeWebHandler.RenderHome)
 	web.Get("/categories", categoryWebHandler.RenderCategoriesEditor)
 	web.Get("/categories/new", categoryWebHandler.RenderNewCategoryForm)
 	web.Post("/categories/create", categoryWebHandler.CreateCategory)

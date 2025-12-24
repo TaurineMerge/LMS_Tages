@@ -1,0 +1,228 @@
+/* ========================================
+   HOME PAGE STYLES
+   Стили для главной страницы админ-панели
+   ======================================== */
+
+.accent {
+    color: var(--accent-color);
+}
+
+.home {
+    padding: 60px 32px;
+}
+
+.home__header {
+    margin-bottom: 60px;
+}
+
+.home__header-title {
+    font-size: 36px;
+    font-weight: 400;
+    color: var(--main-text-color);
+    margin-bottom: 20px;
+    line-height: var(--line-height-tight);
+}
+
+.home__header-description {
+    font-size: 18px;
+    color: var(--main-text-color);
+    line-height: var(--line-height-relaxed);
+    font-weight: 300;
+    margin: 0;
+}
+
+.home__abilities,
+.home__management,
+.home__stats,
+.home__quick-actions {
+    margin-bottom: 60px;
+}
+
+.home__abilities-title,
+.home__management-title,
+.home__stats-title,
+.home__quick-actions-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--accent-color);
+    margin: 0 0 24px 0;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--accent-color);
+}
+
+.home__management-description {
+    font-size: 16px;
+    line-height: var(--line-height-relaxed);
+    color: var(--main-text-color);
+    margin: 0 0 20px 0;
+}
+
+/* Lists */
+.home__abilities-list,
+.home__management-list,
+.home__stats-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.home__abilities-item,
+.home__management-item,
+.home__stats-item {
+    font-size: 16px;
+    line-height: var(--line-height-relaxed);
+    color: var(--main-text-color);
+    padding-left: 24px;
+    position: relative;
+}
+
+.home__abilities-item::before,
+.home__management-item::before,
+.home__stats-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 10px;
+    width: 6px;
+    height: 6px;
+    background-color: var(--accent-color);
+    border-radius: 50%;
+}
+
+/* Quick Actions Grid */
+.home__quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.dashboard-card {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.dashboard-card__icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.dashboard-card__title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 0.5rem;
+}
+
+.dashboard-card__description {
+    color: var(--gray-600);
+    font-size: 0.9375rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+}
+
+.dashboard-card--disabled {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .home__quick-actions-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .home {
+        padding: 40px 16px;
+    }
+
+    .home__header {
+        margin-bottom: 40px;
+    }
+
+    .home__header-title {
+        font-size: 28px;
+        margin-bottom: 16px;
+    }
+
+    .home__header-description {
+        font-size: 16px;
+    }
+
+    .home__abilities,
+    .home__management,
+    .home__stats,
+    .home__quick-actions {
+        margin-bottom: 40px;
+    }
+
+    .home__abilities-title,
+    .home__management-title,
+    .home__stats-title,
+    .home__quick-actions-title {
+        font-size: 24px;
+    }
+
+    .home__quick-actions-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .home__abilities-item,
+    .home__management-item,
+    .home__stats-item {
+        font-size: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .home {
+        padding: 30px 12px;
+    }
+
+    .home__header-title {
+        font-size: 24px;
+    }
+
+    .home__header-description {
+        font-size: 15px;
+    }
+
+    .home__abilities-title,
+    .home__management-title,
+    .home__stats-title,
+    .home__quick-actions-title {
+        font-size: 20px;
+        margin-bottom: 16px;
+    }
+
+    .home__abilities-item,
+    .home__management-item,
+    .home__stats-item {
+        font-size: 14px;
+        padding-left: 20px;
+    }
+
+    .home__abilities-list,
+    .home__management-list,
+    .home__stats-list {
+        gap: 10px;
+    }
+}
