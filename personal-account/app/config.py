@@ -60,8 +60,8 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "production"
 
     # Keycloak Authentication
-    KEYCLOAK_SERVER_URL: str = "http://keycloak:8080"
-    KEYCLOAK_PUBLIC_URL: str = "http://localhost:8080"
+    KEYCLOAK_SERVER_URL: str = "http://keycloak:8080/auth"
+    KEYCLOAK_PUBLIC_URL: str = "http://localhost/auth"
     KEYCLOAK_REALM: str = "student"
     KEYCLOAK_ADMIN_REALM: str = "teacher"
     KEYCLOAK_CLIENT_ID: str = "personal-account-client"
