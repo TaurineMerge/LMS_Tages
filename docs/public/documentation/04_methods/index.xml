@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Роли on LMS Documentation</title>
+    <link>//localhost:1313/documentation/04_methods/</link>
+    <description>Recent content in Роли on LMS Documentation</description>
+    <generator>Hugo</generator>
+    <language>ru-ru</language>
+    <atom:link href="//localhost:1313/documentation/04_methods/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>/answer</title>
+      <link>//localhost:1313/documentation/04_methods/04_testing/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/documentation/04_methods/04_testing/</guid>
+      <description>&lt;p&gt;Методы, реализуемые в рамках сущности answer.&lt;/p&gt;&#xA;&lt;h2 id=&#34;общее-описание&#34;&gt;Общее описание&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Архитектура: &lt;strong&gt;REST&lt;/strong&gt;&lt;/li&gt;&#xA;&lt;li&gt;Протокол взаимодействия: &lt;strong&gt;HTTPS&lt;/strong&gt;&lt;/li&gt;&#xA;&lt;li&gt;Методы: &lt;strong&gt;GET, PUT, DELETE, POST&lt;/strong&gt;&lt;/li&gt;&#xA;&lt;li&gt;Формат входных данных: &lt;strong&gt;PATH&lt;/strong&gt;&lt;/li&gt;&#xA;&lt;li&gt;Формат выходных данных: &lt;strong&gt;JSON (body)&lt;/strong&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;все-доступные-методы&#34;&gt;Все доступные методы&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;POST   /answers                                    - создание ответа (teacher)&lt;/li&gt;&#xA;&lt;li&gt;GET    /answers/by-question?questionId={id}        - получить все ответы вопроса (student, teacher)&lt;/li&gt;&#xA;&lt;li&gt;DELETE /answers/by-question?questionId={id}        - удалить все ответы вопроса (teacher)&lt;/li&gt;&#xA;&lt;li&gt;GET    /answers/by-question/correct?questionId={id} - получить правильные ответы (student, teacher)&lt;/li&gt;&#xA;&lt;li&gt;GET    /answers/by-question/count?questionId={id}   - подсчет ответов (student, teacher)&lt;/li&gt;&#xA;&lt;li&gt;GET    /answers/by-question/count-correct?questionId={id} - подсчет правильных ответов (student, teacher)&lt;/li&gt;&#xA;&lt;li&gt;&lt;/li&gt;&#xA;&lt;li&gt;GET    /answers/{id}                               - получить ответ по ID (student, teacher)&lt;/li&gt;&#xA;&lt;li&gt;PUT    /answers/{id}                               - обновить ответ (teacher)&lt;/li&gt;&#xA;&lt;li&gt;DELETE /answers/{id}                               - удалить ответ (teacher)&lt;/li&gt;&#xA;&lt;li&gt;GET    /answers/{id}/correct                       - проверить правильность ответа (student, teacher)&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
+    </item>
+    <item>
+      <title></title>
+      <link>//localhost:1313/documentation/04_methods/01_publicside/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/documentation/04_methods/01_publicside/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title></title>
+      <link>//localhost:1313/documentation/04_methods/02_adminpanel/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/documentation/04_methods/02_adminpanel/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title></title>
+      <link>//localhost:1313/documentation/04_methods/03_personal_account/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/documentation/04_methods/03_personal_account/</guid>
+      <description></description>
+    </item>
+  </channel>
+</rss>

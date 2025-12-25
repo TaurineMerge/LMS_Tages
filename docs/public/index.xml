@@ -107,6 +107,13 @@
       <description>&lt;h2 id=&#34;словарь-содержащий-тест-целиком&#34;&gt;Словарь, содержащий тест целиком&lt;/h2&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th style=&#34;text-align: left&#34;&gt;Attribute&lt;/th&gt;&#xA;          &lt;th style=&#34;text-align: left&#34;&gt;Type&lt;/th&gt;&#xA;          &lt;th style=&#34;text-align: left&#34;&gt;DB column&lt;/th&gt;&#xA;          &lt;th style=&#34;text-align: center&#34;&gt;MUST&lt;/th&gt;&#xA;          &lt;th style=&#34;text-align: center&#34;&gt;Not Null&lt;/th&gt;&#xA;          &lt;th style=&#34;text-align: left&#34;&gt;Comments&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td style=&#34;text-align: left&#34;&gt;id&lt;/td&gt;&#xA;          &lt;td style=&#34;text-align: left&#34;&gt;uuid&lt;/td&gt;&#xA;          &lt;td style=&#34;text-align: left&#34;&gt;id&lt;/td&gt;&#xA;          &lt;td style=&#34;text-align: center&#34;&gt;:white_check_mark:&lt;/td&gt;&#xA;          &lt;td style=&#34;text-align: center&#34;&gt;:white_check_mark:&lt;/td&gt;&#xA;          &lt;td style=&#34;text-align: left&#34;&gt;Уникальный идентификатор теста&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td style=&#34;text-align: left&#34;&gt;course_id&lt;/td&gt;&#xA;          &lt;td style=&#34;text-align: left&#34;&gt;uuid&lt;/td&gt;&#xA;          &lt;td style=&#34;text-align: left&#34;&gt;course_id&lt;/td&gt;&#xA;          &lt;td style=&#34;text-align: center&#34;&gt;:white_check_mark:&lt;/td&gt;&#xA;          &lt;td style=&#34;text-align: center&#34;&gt;:white_check_mark:&lt;/td&gt;&#xA;          &lt;td style=&#34;text-align: left&#34;&gt;Внешний ключ на курс&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td style=&#34;text-align: left&#34;&gt;title&lt;/td&gt;&#xA;          &lt;td style=&#34;text-align: left&#34;&gt;varchar&lt;/td&gt;&#xA;          &lt;td style=&#34;text-align: left&#34;&gt;title&lt;/td&gt;&#xA;          &lt;td style=&#34;text-align: center&#34;&gt;:x:&lt;/td&gt;&#xA;          &lt;td style=&#34;text-align: center&#34;&gt;:x:&lt;/td&gt;&#xA;          &lt;td style=&#34;text-align: left&#34;&gt;Название теста&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td style=&#34;text-align: left&#34;&gt;min_point&lt;/td&gt;&#xA;          &lt;td style=&#34;text-align: left&#34;&gt;integer&lt;/td&gt;&#xA;          &lt;td style=&#34;text-align: left&#34;&gt;min_point&lt;/td&gt;&#xA;          &lt;td style=&#34;text-align: center&#34;&gt;:x:&lt;/td&gt;&#xA;          &lt;td style=&#34;text-align: center&#34;&gt;:x:&lt;/td&gt;&#xA;          &lt;td style=&#34;text-align: left&#34;&gt;Минимальное количество баллов для прохождения&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td style=&#34;text-align: left&#34;&gt;description&lt;/td&gt;&#xA;          &lt;td style=&#34;text-align: left&#34;&gt;text&lt;/td&gt;&#xA;          &lt;td style=&#34;text-align: left&#34;&gt;description&lt;/td&gt;&#xA;          &lt;td style=&#34;text-align: center&#34;&gt;:x:&lt;/td&gt;&#xA;          &lt;td style=&#34;text-align: center&#34;&gt;:x:&lt;/td&gt;&#xA;          &lt;td style=&#34;text-align: left&#34;&gt;Описание теста&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;&#xA;&lt;h2 id=&#34;быстрый-доступ&#34;&gt;Быстрый доступ&lt;/h2&gt;&#xA;&lt;p&gt;&lt;a href=&#34;//localhost:1313/documentation/02_info_model/&#34;&gt;← На главную&lt;/a&gt;&lt;/p&gt;</description>
     </item>
     <item>
+      <title>/answer</title>
+      <link>//localhost:1313/documentation/04_methods/04_testing/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/documentation/04_methods/04_testing/</guid>
+      <description>&lt;p&gt;Методы, реализуемые в рамках сущности answer.&lt;/p&gt;&#xA;&lt;h2 id=&#34;общее-описание&#34;&gt;Общее описание&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Архитектура: &lt;strong&gt;REST&lt;/strong&gt;&lt;/li&gt;&#xA;&lt;li&gt;Протокол взаимодействия: &lt;strong&gt;HTTPS&lt;/strong&gt;&lt;/li&gt;&#xA;&lt;li&gt;Методы: &lt;strong&gt;GET, PUT, DELETE, POST&lt;/strong&gt;&lt;/li&gt;&#xA;&lt;li&gt;Формат входных данных: &lt;strong&gt;PATH&lt;/strong&gt;&lt;/li&gt;&#xA;&lt;li&gt;Формат выходных данных: &lt;strong&gt;JSON (body)&lt;/strong&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;все-доступные-методы&#34;&gt;Все доступные методы&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;POST   /answers                                    - создание ответа (teacher)&lt;/li&gt;&#xA;&lt;li&gt;GET    /answers/by-question?questionId={id}        - получить все ответы вопроса (student, teacher)&lt;/li&gt;&#xA;&lt;li&gt;DELETE /answers/by-question?questionId={id}        - удалить все ответы вопроса (teacher)&lt;/li&gt;&#xA;&lt;li&gt;GET    /answers/by-question/correct?questionId={id} - получить правильные ответы (student, teacher)&lt;/li&gt;&#xA;&lt;li&gt;GET    /answers/by-question/count?questionId={id}   - подсчет ответов (student, teacher)&lt;/li&gt;&#xA;&lt;li&gt;GET    /answers/by-question/count-correct?questionId={id} - подсчет правильных ответов (student, teacher)&lt;/li&gt;&#xA;&lt;li&gt;&lt;/li&gt;&#xA;&lt;li&gt;GET    /answers/{id}                               - получить ответ по ID (student, teacher)&lt;/li&gt;&#xA;&lt;li&gt;PUT    /answers/{id}                               - обновить ответ (teacher)&lt;/li&gt;&#xA;&lt;li&gt;DELETE /answers/{id}                               - удалить ответ (teacher)&lt;/li&gt;&#xA;&lt;li&gt;GET    /answers/{id}/correct                       - проверить правильность ответа (student, teacher)&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
+    </item>
+    <item>
       <title>User Journey для системы тестирования</title>
       <link>//localhost:1313/test/diagrams/user-journey/</link>
       <pubDate>Wed, 15 Jan 2025 00:00:00 +0000</pubDate>
@@ -272,6 +279,27 @@
       <link>//localhost:1313/admin/documentation/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>//localhost:1313/admin/documentation/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title></title>
+      <link>//localhost:1313/documentation/04_methods/01_publicside/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/documentation/04_methods/01_publicside/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title></title>
+      <link>//localhost:1313/documentation/04_methods/02_adminpanel/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/documentation/04_methods/02_adminpanel/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title></title>
+      <link>//localhost:1313/documentation/04_methods/03_personal_account/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/documentation/04_methods/03_personal_account/</guid>
       <description></description>
     </item>
     <item>
