@@ -8,8 +8,9 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/clients/testing"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/config"
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/api/v1"
+	v1 "github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/api/v1"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/web"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/middleware"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/repository"
@@ -44,6 +45,7 @@ func main() {
 		config.WithDevFromEnv(),
 		config.WithOIDCFromEnv(),
 		config.WithMinioFromEnv(),
+		config.WithTestingFromEnv(),
 	)
 	if err != nil {
 		slog.Error("Failed to initialize config", "error", err)
@@ -100,6 +102,13 @@ func main() {
 	slog.Info("S3 service initialized")
 
 	// 7. Initialize Services
+	testingClient, err := testing.NewClient(cfg.TestingService.BaseURL, "./doc/schemas/external/testing/get_test_response.json")
+	if err != nil {
+		slog.Error("Failed to initialize testing client", "error", err)
+		os.Exit(1)
+	}
+	slog.Info("Testing client initialized")
+
 	lessonRepo := repository.NewLessonRepository(dbPool)
 	categoryRepo := repository.NewCategoryRepository(dbPool)
 	courseRepo := repository.NewCourseRepository(dbPool)
@@ -107,6 +116,8 @@ func main() {
 	lessonService := service.NewLessonService(lessonRepo)
 	categoryService := service.NewCategoryService(categoryRepo)
 	courseService := service.NewCourseService(courseRepo, categoryRepo, s3Service)
+	testService := service.NewTestService(testingClient)
+	slog.Info("All services initialized")
 
 	// 8. Initialize Fiber App and Global Middleware
 	engine := template.NewEngine(&cfg.App)
@@ -130,7 +141,7 @@ func main() {
 		Config:              &cfg.App,
 		HomeHandler:         web.NewHomeHandler(categoryService, courseService),
 		CategoryPageHandler: web.NewCategoryHandler(categoryService, courseService),
-		CoursesHandler:      web.NewCoursesHandler(courseService, categoryService, lessonService),
+		CoursesHandler:      web.NewCoursesHandler(courseService, categoryService, lessonService, testService, cfg.TestingService),
 		WebLessonHandler:    web.NewLessonHandler(lessonService, courseService, categoryService),
 		AuthHandler:         authHandler,
 		AuthMiddleware:      authMiddleware,

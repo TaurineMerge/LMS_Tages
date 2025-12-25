@@ -127,6 +127,7 @@ services:
       MINIO_BUCKET: ${MINIO_BUCKET_IMAGES:-images}
       MINIO_USE_SSL: "false"
       MINIO_PUBLIC_URL: "http://localhost:9000"
+      TESTING_SERVICE_BASE_URL: "http://localhost"
     ports:
       - "3000:3000"
     extra_hosts:
@@ -248,6 +249,7 @@ services:
     networks:
       - app-network
     restart: unless-stopped
+  
   minio:
     build: ./minio
     container_name: minio

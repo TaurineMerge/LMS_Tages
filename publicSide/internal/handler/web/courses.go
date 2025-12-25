@@ -1,8 +1,10 @@
 package web
 
 import (
+	"errors"
 	"log/slog"
 
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/config"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/service"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/viewmodel"
@@ -17,14 +19,24 @@ type CoursesHandler struct {
 	courseService   service.CourseService
 	categoryService service.CategoryService
 	lessonService   service.LessonService
+	testService     service.TestService
+	testingConfig   config.TestingServiceConfig
 }
 
 // NewCoursesHandler creates a new instance of CoursesHandler.
-func NewCoursesHandler(courseService service.CourseService, categoryService service.CategoryService, lessonService service.LessonService) *CoursesHandler {
+func NewCoursesHandler(
+	courseService service.CourseService,
+	categoryService service.CategoryService,
+	lessonService service.LessonService,
+	testService service.TestService,
+	testingConfig config.TestingServiceConfig,
+) *CoursesHandler {
 	return &CoursesHandler{
 		courseService:   courseService,
 		categoryService: categoryService,
 		lessonService:   lessonService,
+		testService:     testService,
+		testingConfig:   testingConfig,
 	}
 }
 
@@ -104,10 +116,34 @@ func (h *CoursesHandler) RenderCoursePage(c *fiber.Ctx) error {
 		return err
 	}
 
+	// Fetch test details
+	var testVM *viewmodel.TestViewModel
+	var testIsNotFound, testServiceIsUnavailable bool
+
+	testData, err := h.testService.GetTest(c.UserContext(), categoryID, courseID)
+	if err != nil {
+		var appErr *apperrors.AppError
+		var unavailableErr *apperrors.ServiceUnavailableError
+
+		if errors.As(err, &appErr) && appErr.HTTPStatus == 404 {
+			testIsNotFound = true
+		} else if errors.As(err, &unavailableErr) {
+			testServiceIsUnavailable = true
+		} else {
+			slog.Error("Unexpected error fetching test details", "error", err, "courseID", courseID)
+			return err
+		}
+	} else {
+		testVM = viewmodel.NewTestViewModel(testData, h.testingConfig.BaseURL)
+	}
+
 	vm := viewmodel.NewCoursePageViewModel(
 		categoryDTO,
 		courseDTO,
 		lessonsDTOs,
+		testVM,
+		testIsNotFound,
+		testServiceIsUnavailable,
 	)
 
 	russifyCourseDetailLevel(vm.Course)

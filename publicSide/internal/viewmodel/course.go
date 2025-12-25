@@ -74,13 +74,26 @@ func NewCoursesPageViewModel(categoryDTO response.CategoryDTO, coursesDTO []resp
 }
 
 type CoursePageViewModel struct {
-	PageHeader *PageHeaderViewModel
-	Course     *CourseDetailViewModel
+	PageHeader        *PageHeaderViewModel
+	Course            *CourseDetailViewModel
+	Test              *TestViewModel
+	TestIsNotFound    bool
+	TestServiceIsUnavailable bool
 }
 
-func NewCoursePageViewModel(categoryDTO response.CategoryDTO, courseDTO response.CourseDTO, lessonsDTO []response.LessonDTO) *CoursePageViewModel {
+func NewCoursePageViewModel(
+	categoryDTO response.CategoryDTO,
+	courseDTO response.CourseDTO,
+	lessonsDTO []response.LessonDTO,
+	testVM *TestViewModel,
+	testIsNotFound bool,
+	TestServiceIsUnavailable bool,
+) *CoursePageViewModel {
 	return &CoursePageViewModel{
 		PageHeader: NewPageHeaderViewModel("Курс: "+courseDTO.Title, BreadcrumbsForCoursePage(categoryDTO, courseDTO)),
 		Course:     NewCourseDetailViewModel(&courseDTO, lessonsDTO),
+		Test:              testVM,
+		TestIsNotFound:    testIsNotFound,
+		TestServiceIsUnavailable: TestServiceIsUnavailable,
 	}
 }

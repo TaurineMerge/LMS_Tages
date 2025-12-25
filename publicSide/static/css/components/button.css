@@ -27,3 +27,9 @@
     background-color: transparent;
     color: var(--accent-color-hover);
 }
+
+.button--inactive {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
