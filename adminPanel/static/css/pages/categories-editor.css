@@ -135,13 +135,12 @@
 }
 
 .table__link {
-    color: var(--orange-500);
-    text-decoration: none;
-    font-weight: 600;
+    color: var(--orange-300);
+    font-weight: 500;
 }
 
 .table__link:hover {
-    text-decoration: underline;
+    color: var(--orange-500);
 }
 
 .table__actions {
@@ -358,8 +357,8 @@
 }
 
 .button--primary {
-    background-color: var(--orange-500);
-    color: white;
+    background-color: var(--orange-300);
+    color: var(--gray-800);
 }
 
 .button--primary:hover {

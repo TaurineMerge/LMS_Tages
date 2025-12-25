@@ -19,13 +19,12 @@
    MAIN CONTENT AREA
    ======================================== */
 .admin-content {
-    max-width: 1400px;
+        width: 100%;
+    min-height: 90vh;
     margin: 0 auto;
-    padding: 2rem 2.5rem;
-}
-
-.admin-content--full {
-    max-width: 1400px;
+    padding: 2.5rem 2rem;
+    display: flex;
+    flex-direction: column;
 }
 
 .admin-content--centered {
@@ -98,7 +97,7 @@
 .content-title {
     font-size: 1.75rem;
     font-weight: 800;
-    color: var(--gray-900);
+    color: var(--orange-500);
     margin: 0 0 0.35rem 0;
     letter-spacing: -0.02em;
 }
@@ -240,7 +239,7 @@
 }
 
 .entity-card:hover {
-    transform: translateY(-4px);
+    /* transform: translateY(-4px); */
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
 }
 
@@ -358,14 +357,21 @@
 }
 
 .entity-card__action-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--gray-50) 0%, #e5e7eb 100%);
+    color: var(--gray-700);
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-family);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    width: 100%;
+
     padding: 0.875rem 1.25rem;
-    background: linear-gradient(135deg, var(--gray-50) 0%, #e5e7eb 100%);
-    color: var(--gray-900);
-    text-decoration: none;
+
+
+
     border-radius: 10px;
     font-weight: 600;
     font-size: 0.9375rem;
@@ -373,8 +379,8 @@
 }
 
 .entity-card__action-btn:hover {
-    background: linear-gradient(135deg, var(--orange-100) 0%, #fed7aa 100%);
-    color: var(--orange-500);
+    background: linear-gradient(135deg, var(--orange-500) 0%, #e85527 100%);
+    color: white;
 }
 
 .entity-card__arrow {
@@ -588,13 +594,13 @@
 
 .lesson-item:hover {
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
-    transform: translateX(4px);
+    /* transform: translateX(4px); */
 }
 
 .lesson-item__number {
     width: 44px;
     height: 44px;
-    background: linear-gradient(135deg, var(--lavender-100) 0%, #e0e7ff 100%);
+    background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
     border-radius: 12px;
     display: flex;
     align-items: center;
@@ -1111,13 +1117,14 @@
 }
 
 .btn--primary {
-    background: linear-gradient(135deg, var(--orange-500) 0%, #e85527 100%);
-    color: white;
-    box-shadow: 0 4px 14px rgba(255, 102, 54, 0.3);
+    background: var(--gray-100);
+    color: var(--gray-800);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
 }
 
 .btn--primary:hover {
-    transform: translateY(-2px);
+    background: linear-gradient(135deg, var(--orange-500) 0%, #e85527 100%);
+    color: white;
     box-shadow: 0 6px 20px rgba(255, 102, 54, 0.4);
 }
 
@@ -1140,6 +1147,33 @@
     font-size: 1.125rem;
 }
 
+.entity-card--category .entity-card__action-btn {
+    background: linear-gradient(135deg, var(--gray-50) 0%, #e5e7eb 100%);
+    color: var(--gray-700);
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-family);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.875rem 1.25rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    transition: all 0.2s ease;
+}
+
+.entity-card--category .entity-card__action-btn:hover {
+    background: linear-gradient(135deg, var(--orange-500) 0%, #e85527 100%);
+    color: white;
+}
+
+.entity-card--category .entity-card__action-btn:hover .entity-card__arrow {
+    color: white;
+    transform: translateX(4px);
+}
 /* ========================================
    RESPONSIVE DESIGN
    ======================================== */
