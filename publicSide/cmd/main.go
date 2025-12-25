@@ -77,11 +77,11 @@ func main() {
 		ClientSecret: cfg.OIDC.ClientSecret,
 		RedirectURL:  cfg.OIDC.RedirectURL,
 		Endpoint:     provider.Endpoint(),
-		Scopes:       []string{oidc.ScopeOpenID, "profile", "email"},
+		Scopes:       []string{oidc.ScopeOpenID, "profile", "email", oidc.ScopeOfflineAccess},
 	}
 
 	authHandler := web.NewAuthHandler(provider, oauth2Config)
-	authMiddleware := web.NewAuthMiddleware(provider, cfg.OIDC.ClientID)
+	authMiddleware := web.NewAuthMiddleware(provider, cfg.OIDC.ClientID, oauth2Config)
 
 	// 5. Initialize Database
 	dbPool, err := database.NewConnection(&cfg.Database)

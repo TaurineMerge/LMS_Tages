@@ -6,21 +6,24 @@ import (
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/gofiber/fiber/v2"
+	"golang.org/x/oauth2" // Added import
 
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
 )
 
 // AuthMiddleware contains dependencies for auth middleware.
 type AuthMiddleware struct {
-	provider *oidc.Provider
-	clientID string
+	provider     *oidc.Provider
+	clientID     string
+	oauth2Config *oauth2.Config // Added oauth2Config
 }
 
 // NewAuthMiddleware creates a new AuthMiddleware.
-func NewAuthMiddleware(provider *oidc.Provider, clientID string) *AuthMiddleware {
+func NewAuthMiddleware(provider *oidc.Provider, clientID string, oauth2Config *oauth2.Config) *AuthMiddleware {
 	return &AuthMiddleware{
-		provider: provider,
-		clientID: clientID,
+		provider:     provider,
+		clientID:     clientID,
+		oauth2Config: oauth2Config, // Initialize new field
 	}
 }
 

@@ -4,6 +4,7 @@ package domain
 const (
 	UserContextKey      = "user"
 	SessionTokenCookie  = "session_token"
+	RefreshTokenCookie  = "refresh_token"
 )
 
 type UserClaims struct {
