@@ -231,12 +231,12 @@ public class TestFormController {
             Boolean isNew = Boolean.parseBoolean(ctx.formParam("isNew"));
             
             // Валидация формы перед сохранением
-            TestFormData formData = parseTestFormData(ctx);
-            if (!validateFormData(formData, ctx)) {
+            String validationError = validateForm(ctx);
+            if (validationError != null) {
                 // Если валидация не прошла, показываем форму снова с ошибками
                 Map<String, Object> model = new HashMap<>();
                 model.put("title", "Ошибка валидации");
-                model.put("error", "Пожалуйста, заполните все обязательные поля правильно");
+                model.put("error", validationError);
                 model.put("test", getTestFromForm(ctx));
                 model.put("questions", getQuestionsFromForm(ctx));
                 model.put("page", "test-editor");
@@ -273,54 +273,63 @@ public class TestFormController {
     }
     
     /**
-     * Валидация данных формы на сервере
+     * Валидация данных формы на сервере (полная проверка, как на клиенте)
      */
-    private boolean validateFormData(TestFormData formData, Context ctx) {
+    private String validateForm(Context ctx) {
         // 1. Проверка названия теста
         String title = ctx.formParam("title");
         if (title == null || title.trim().isEmpty()) {
-            return false;
+            return "Название теста обязательно для заполнения";
         }
         
         // 2. Проверка минимального балла
         String minPointStr = ctx.formParam("min_point");
         if (minPointStr == null || minPointStr.trim().isEmpty()) {
-            return false;
+            return "Минимальный балл обязательно для заполнения";
         }
+        
+        int minPoint;
         try {
-            int minPoint = Integer.parseInt(minPointStr);
-            if (minPoint < 0) {
-                return false;
-            }
+            minPoint = Integer.parseInt(minPointStr);
         } catch (NumberFormatException e) {
-            return false;
+            return "Минимальный балл должен быть числом";
+        }
+        
+        if (minPoint < 0) {
+            return "Минимальный балл не может быть отрицательным";
         }
         
         // 3. Проверка вопросов
+        TestFormData formData = parseTestFormData(ctx);
         if (formData.getQuestions() == null || formData.getQuestions().isEmpty()) {
-            return false;
+            return "Тест должен содержать хотя бы один вопрос";
         }
         
         // 4. Проверка каждого вопроса
+        int questionIndex = 0;
         for (TestFormData.QuestionFormData question : formData.getQuestions()) {
+            questionIndex++;
+            
             // Проверка текста вопроса
             if (question.getTextOfQuestion() == null || 
                 question.getTextOfQuestion().trim().isEmpty()) {
-                return false;
+                return "Вопрос " + questionIndex + " не может быть пустым";
             }
             
             // Проверка ответов
             if (question.getAnswers() == null || question.getAnswers().size() < 2) {
-                return false;
+                return "Вопрос " + questionIndex + " должен содержать минимум 2 ответа";
             }
             
             // Проверка, что есть хотя бы один ответ с баллами > 0
             boolean hasPositiveScore = false;
             boolean hasEmptyAnswerText = false;
+            int emptyAnswerCount = 0;
             
             for (TestFormData.AnswerFormData answer : question.getAnswers()) {
                 if (answer.getText() == null || answer.getText().trim().isEmpty()) {
                     hasEmptyAnswerText = true;
+                    emptyAnswerCount++;
                 }
                 
                 if (answer.getScore() != null && answer.getScore() > 0) {
@@ -328,13 +337,36 @@ public class TestFormController {
                 }
             }
             
-            // Если есть пустые ответы или нет правильного ответа
-            if (hasEmptyAnswerText || !hasPositiveScore) {
-                return false;
+            // Если есть пустые ответы
+            if (hasEmptyAnswerText) {
+                return "Вопрос " + questionIndex + ": некоторые ответы пустые";
+            }
+            
+            // Если нет правильного ответа
+            if (!hasPositiveScore) {
+                return "Вопрос " + questionIndex + ": должен быть хотя бы один правильный ответ (баллы > 0)";
             }
         }
         
-        return true;
+        // 5. Проверка, что минимальный балл не превышает максимальный балл за тест
+        // Рассчитываем максимальный балл за тест
+        int maxTotalPoints = 0;
+        for (TestFormData.QuestionFormData question : formData.getQuestions()) {
+            if (question.getAnswers() != null) {
+                for (TestFormData.AnswerFormData answer : question.getAnswers()) {
+                    Integer score = answer.getScore() != null ? answer.getScore() : 0;
+                    if (score > 0) {
+                        maxTotalPoints += score;
+                    }
+                }
+            }
+        }
+        
+        if (minPoint > maxTotalPoints) {
+            return "Минимальный порог (" + minPoint + ") не может быть больше максимального количества баллов за тест (" + maxTotalPoints + ")";
+        }
+        
+        return null; // Валидация пройдена
     }
     
     /**

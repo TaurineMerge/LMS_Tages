@@ -1,0 +1,577 @@
+// ============================================
+// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ (будут установлены из шаблона)
+// ============================================
+let questionCounter = window.initialQuestionCounter || 1;
+let answerCounter = window.initialAnswerCounter || {};
+
+// ============================================
+// ОСНОВНАЯ ФУНКЦИЯ ПРОВЕРКИ БАЛЛОВ И ВОПРОСОВ
+// ============================================
+function validateForm() {
+    // 1. Проверка названия теста
+    const titleInput = document.getElementById('title');
+    if (titleInput && !titleInput.value.trim()) {
+        alert('Название теста обязательно для заполнения');
+        titleInput.focus();
+        return false;
+    }
+    
+    // 2. Проверка минимального балла
+    const minScoreInput = document.getElementById('min_point');
+    const totalPointsDisplay = document.getElementById('total-test-points');
+    
+    if (minScoreInput && totalPointsDisplay) {
+        const minScore = parseFloat(minScoreInput.value) || 0;
+        const maxScore = parseFloat(totalPointsDisplay.textContent) || 0;
+        
+        // Проверка, что минимальный балл не отрицательный
+        if (minScore < 0) {
+            alert('Минимальный балл не может быть отрицательным');
+            minScoreInput.focus();
+            return false;
+        }
+        
+        // Проверка, что минимальный порог не больше максимального
+        if (minScore > maxScore) {
+            alert(`Ошибка: Минимальный порог (${minScore}) не может быть больше максимального количества баллов за тест (${maxScore})`);
+            minScoreInput.focus();
+            return false;
+        }
+    }
+    
+    // 3. Проверка всех вопросов
+    const questions = document.querySelectorAll('.question-card');
+    
+    // Проверка, что есть хотя бы один вопрос
+    if (questions.length === 0) {
+        alert('Тест должен содержать хотя бы один вопрос');
+        return false;
+    }
+    
+    let hasEmptyQuestions = false;
+    
+    questions.forEach((questionCard, index) => {
+        const textarea = questionCard.querySelector('textarea[name^="question"]');
+        const questionNumber = index + 1;
+        
+        // Проверка текста вопроса
+        if (!textarea || !textarea.value.trim()) {
+            alert(`Вопрос ${questionNumber} не может быть пустым`);
+            textarea?.focus();
+            hasEmptyQuestions = true;
+            return;
+        }
+        
+        // Проверка ответов в вопросе
+        const answersContainer = questionCard.querySelector('.answers-container');
+        if (answersContainer) {
+            const answerInputs = answersContainer.querySelectorAll('input[type="text"]');
+            
+            // Проверка, что есть хотя бы 2 ответа
+            if (answerInputs.length < 2) {
+                alert(`Вопрос ${questionNumber} должен содержать минимум 2 ответа`);
+                hasEmptyQuestions = true;
+                return;
+            }
+            
+            let hasEmptyAnswers = false;
+            let hasAnswersWithText = false;
+            
+            answerInputs.forEach((answerInput, answerIndex) => {
+                if (!answerInput.value.trim()) {
+                    hasEmptyAnswers = true;
+                } else {
+                    hasAnswersWithText = true;
+                }
+            });
+            
+            if (hasEmptyAnswers) {
+                alert(`Вопрос ${questionNumber}: некоторые ответы пустые`);
+                answerInputs[0]?.focus();
+                hasEmptyQuestions = true;
+                return;
+            }
+            
+            if (!hasAnswersWithText) {
+                alert(`Вопрос ${questionNumber} должен содержать хотя бы один ответ с текстом`);
+                answerInputs[0]?.focus();
+                hasEmptyQuestions = true;
+                return;
+            }
+            
+            // Проверка, что есть хотя бы один ответ с баллами > 0
+            const pointsInputs = answersContainer.querySelectorAll('.answer-points-input');
+            let hasPositivePoints = false;
+            
+            pointsInputs.forEach(pointsInput => {
+                const points = parseFloat(pointsInput.value) || 0;
+                if (points > 0) {
+                    hasPositivePoints = true;
+                }
+            });
+            
+            if (!hasPositivePoints) {
+                alert(`Вопрос ${questionNumber}: должен быть хотя бы один правильный ответ (баллы > 0)`);
+                pointsInputs[0]?.focus();
+                hasEmptyQuestions = true;
+                return;
+            }
+        }
+    });
+    
+    if (hasEmptyQuestions) {
+        return false;
+    }
+    
+    return true;
+}
+
+// ============================================
+// ПЕРЕХВАТ ОТПРАВКИ ФОРМЫ
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('testForm');
+    
+    // Перехватываем отправку формы
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            // Проверяем всю форму перед отправкой
+            if (!validateForm()) {
+                event.preventDefault(); // Отменяем отправку
+                return false;
+            }
+            
+            return true; // Продолжаем отправку
+        });
+    }
+    
+    // Инициализация счетчиков ответов
+    document.querySelectorAll('.question-card').forEach((card, index) => {
+        const questionIndex = parseInt(card.dataset.questionIndex);
+        const answerCount = card.querySelectorAll('.answer-group').length;
+        answerCounter[questionIndex] = answerCount;
+    });
+    
+    // Настройка обработчиков событий для полей ввода баллов
+    document.querySelectorAll('.answer-points-input').forEach(input => {
+        input.addEventListener('input', function() {
+            const questionCard = this.closest('.question-card');
+            const questionIndex = parseInt(questionCard.dataset.questionIndex);
+            calculateAnswerPoints(questionIndex);
+            updateAllPointsCalculations();
+        });
+    });
+    
+    // Начальный расчет баллов
+    updateAllPointsCalculations();
+    
+    // Добавляем обработчик для кнопки добавления вопроса
+    const addQuestionBtn = document.getElementById('add-question-btn');
+    if (addQuestionBtn) {
+        addQuestionBtn.addEventListener('click', addNewQuestion);
+    }
+});
+
+// ============================================
+// ОСНОВНЫЕ ФУНКЦИИ
+// ============================================
+
+// Функция расчета суммы баллов за ответы в вопросе
+function calculateAnswerPoints(questionIndex) {
+    const questionCard = document.querySelector(`[data-question-index="${questionIndex}"]`);
+    if (!questionCard) return 0;
+    
+    const answerInputs = questionCard.querySelectorAll('.answer-points-input');
+    let total = 0;
+    
+    answerInputs.forEach(input => {
+        const value = parseFloat(input.value) || 0;
+        total += value;
+    });
+    
+    const totalDisplay = questionCard.querySelector('.total-answers-points');
+    if (totalDisplay) {
+        totalDisplay.textContent = total.toFixed(1);
+    }
+    
+    return total;
+}
+
+// Функция для обновления всех расчетов баллов
+function updateAllPointsCalculations() {
+    let totalTestPoints = 0;
+    
+    document.querySelectorAll('.question-card').forEach(card => {
+        const questionIndex = parseInt(card.dataset.questionIndex);
+        const questionPoints = calculateAnswerPoints(questionIndex);
+        totalTestPoints += questionPoints;
+    });
+    
+    const totalPointsDisplay = document.getElementById('total-test-points');
+    if (totalPointsDisplay) {
+        totalPointsDisplay.textContent = totalTestPoints.toFixed(1);
+    }
+    
+    return totalTestPoints;
+}
+
+// Функция для добавления ответа
+function addAnswer(questionIndex) {
+    const answersContainer = document.getElementById(`answers-${questionIndex}`);
+    if (!answersContainer) return;
+    
+    const answerIndex = answerCounter[questionIndex] || answersContainer.children.length;
+    
+    const firstAnswer = answersContainer.querySelector('.answer-group');
+    if (!firstAnswer) return;
+    
+    const newAnswer = firstAnswer.cloneNode(true);
+    
+    const textInput = newAnswer.querySelector('input[type="text"]');
+    const pointsInput = newAnswer.querySelector('.answer-points-input');
+    const removeBtn = newAnswer.querySelector('.remove-answer-btn');
+    
+    if (textInput) {
+        textInput.name = `question[${questionIndex}][answers][${answerIndex}][text]`;
+        textInput.value = '';
+        textInput.placeholder = `Текст ответа ${answerIndex + 1}`;
+    }
+    
+    if (pointsInput) {
+        pointsInput.name = `question[${questionIndex}][answers][${answerIndex}][points]`;
+        pointsInput.value = '0';
+        
+        // Добавляем обработчик для нового поля
+        pointsInput.addEventListener('input', function() {
+            calculateAnswerPoints(questionIndex);
+            updateAllPointsCalculations();
+        });
+    }
+    
+    if (removeBtn) {
+        removeBtn.onclick = function() {
+            removeAnswer(questionIndex, answerIndex);
+        };
+    }
+    
+    answersContainer.appendChild(newAnswer);
+    answerCounter[questionIndex] = (answerCounter[questionIndex] || 0) + 1;
+    
+    calculateAnswerPoints(questionIndex);
+    updateAllPointsCalculations();
+}
+
+// Функция для удаления ответа
+function removeAnswer(questionIndex, answerIndex) {
+    const answersContainer = document.getElementById(`answers-${questionIndex}`);
+    if (!answersContainer) return;
+    
+    const answerElements = answersContainer.querySelectorAll('.answer-group');
+    
+    if (answerElements.length <= 2) {
+        alert('Вопрос должен содержать минимум 2 ответа');
+        return;
+    }
+    
+    if (answerIndex < answerElements.length) {
+        answerElements[answerIndex].remove();
+        
+        // Обновляем индексы оставшихся ответов
+        const remainingAnswers = answersContainer.querySelectorAll('.answer-group');
+        remainingAnswers.forEach((element, newIndex) => {
+            const textInput = element.querySelector('input[type="text"]');
+            const pointsInput = element.querySelector('.answer-points-input');
+            const removeBtn = element.querySelector('.remove-answer-btn');
+            
+            if (textInput) {
+                textInput.name = `question[${questionIndex}][answers][${newIndex}][text]`;
+                textInput.placeholder = `Текст ответа ${newIndex + 1}`;
+            }
+            
+            if (pointsInput) {
+                pointsInput.name = `question[${questionIndex}][answers][${newIndex}][points]`;
+            }
+            
+            if (removeBtn) {
+                removeBtn.onclick = function() {
+                    removeAnswer(questionIndex, newIndex);
+                };
+            }
+        });
+        
+        answerCounter[questionIndex] = remainingAnswers.length;
+        calculateAnswerPoints(questionIndex);
+        updateAllPointsCalculations();
+    }
+}
+
+// Функция для удаления вопроса
+function removeQuestion(questionIndex) {
+    const questions = document.querySelectorAll('.question-card');
+    if (questions.length <= 1) {
+        alert('Тест должен содержать хотя бы один вопрос');
+        return;
+    }
+    
+    if (confirm('Вы уверены, что хотите удалить этот вопрос?')) {
+        const questionCard = document.querySelector(`[data-question-index="${questionIndex}"]`);
+        if (questionCard) {
+            questionCard.remove();
+            delete answerCounter[questionIndex];
+            renumberQuestions();
+            updateAllPointsCalculations();
+        }
+    }
+}
+
+// Функция перемещения вопроса вверх
+function moveQuestionUp(questionIndex) {
+    const questionCard = document.querySelector(`[data-question-index="${questionIndex}"]`);
+    const prevCard = questionCard?.previousElementSibling;
+    
+    if (prevCard && prevCard.classList.contains('question-card')) {
+        questionCard.parentNode.insertBefore(questionCard, prevCard);
+        renumberQuestions();
+    }
+}
+
+// Функция перемещения вопроса вниз
+function moveQuestionDown(questionIndex) {
+    const questionCard = document.querySelector(`[data-question-index="${questionIndex}"]`);
+    const nextCard = questionCard?.nextElementSibling;
+    
+    if (nextCard && nextCard.classList.contains('question-card')) {
+        questionCard.parentNode.insertBefore(nextCard, questionCard);
+        renumberQuestions();
+    }
+}
+
+// Переиндексация вопросов
+function renumberQuestions() {
+    const remainingQuestions = document.querySelectorAll('.question-card');
+    questionCounter = 0;
+    
+    remainingQuestions.forEach((questionCard, index) => {
+        const newIndex = index;
+        questionCounter++;
+        questionCard.dataset.questionIndex = newIndex;
+        
+        // Обновляем заголовок
+        const title = questionCard.querySelector('h3');
+        if (title) title.textContent = `Вопрос ${newIndex + 1}`;
+        
+        // Обновляем textarea вопроса
+        const textarea = questionCard.querySelector('textarea[name^="question"]');
+        if (textarea) {
+            textarea.name = `question[${newIndex}][text]`;
+        }
+        
+        // Обновляем кнопки управления через обработчики событий
+        const moveUpBtn = questionCard.querySelector('.btn-move-up');
+        if (moveUpBtn) {
+            moveUpBtn.onclick = function() {
+                moveQuestionUp(newIndex);
+            };
+        }
+        
+        const moveDownBtn = questionCard.querySelector('.btn-move-down');
+        if (moveDownBtn) {
+            moveDownBtn.onclick = function() {
+                moveQuestionDown(newIndex);
+            };
+        }
+        
+        const removeBtn = questionCard.querySelector('.remove-question-btn');
+        if (removeBtn) {
+            removeBtn.onclick = function() {
+                removeQuestion(newIndex);
+            };
+        }
+        
+        const addAnswerBtn = questionCard.querySelector('.add-answer-btn');
+        if (addAnswerBtn) {
+            addAnswerBtn.onclick = function() {
+                addAnswer(newIndex);
+            };
+        }
+        
+        // Обновляем ID контейнера ответов
+        const answersContainer = questionCard.querySelector('.answers-container');
+        if (answersContainer) answersContainer.id = `answers-${newIndex}`;
+        
+        // Обновляем ответы
+        const answerGroups = questionCard.querySelectorAll('.answer-group');
+        answerGroups.forEach((group, answerIndex) => {
+            const textInput = group.querySelector('input[type="text"]');
+            const pointsInput = group.querySelector('.answer-points-input');
+            const removeAnswerBtn = group.querySelector('.remove-answer-btn');
+            
+            if (textInput) {
+                textInput.name = `question[${newIndex}][answers][${answerIndex}][text]`;
+                textInput.placeholder = `Текст ответа ${answerIndex + 1}`;
+            }
+            
+            if (pointsInput) {
+                pointsInput.name = `question[${newIndex}][answers][${answerIndex}][points]`;
+            }
+            
+            if (removeAnswerBtn) {
+                removeAnswerBtn.onclick = function() {
+                    removeAnswer(newIndex, answerIndex);
+                };
+            }
+        });
+    });
+    
+    // Обновляем счетчики
+    answerCounter = {};
+    remainingQuestions.forEach((card, index) => {
+        const questionIndex = parseInt(card.dataset.questionIndex);
+        const answerCount = card.querySelectorAll('.answer-group').length;
+        answerCounter[questionIndex] = answerCount;
+    });
+}
+
+// Функция добавления нового вопроса
+function addNewQuestion() {
+    const newQuestionIndex = questionCounter;
+    
+    // Находим первый вопрос и клонируем его
+    const firstQuestionCard = document.querySelector('.question-card');
+    if (!firstQuestionCard) return;
+    
+    const newQuestionCard = firstQuestionCard.cloneNode(true);
+    
+    // Обновляем атрибуты
+    newQuestionCard.dataset.questionIndex = newQuestionIndex;
+    
+    // Обновляем заголовок
+    const title = newQuestionCard.querySelector('h3');
+    if (title) title.textContent = `Вопрос ${newQuestionIndex + 1}`;
+    
+    // Очищаем текстовые поля
+    const textarea = newQuestionCard.querySelector('textarea[name^="question"]');
+    if (textarea) {
+        textarea.name = `question[${newQuestionIndex}][text]`;
+        textarea.value = '';
+    }
+    
+    // Обновляем кнопки через обработчики событий
+    const moveUpBtn = newQuestionCard.querySelector('.btn-move-up');
+    if (moveUpBtn) {
+        moveUpBtn.onclick = function() {
+            moveQuestionUp(newQuestionIndex);
+        };
+    }
+    
+    const moveDownBtn = newQuestionCard.querySelector('.btn-move-down');
+    if (moveDownBtn) {
+        moveDownBtn.onclick = function() {
+            moveQuestionDown(newQuestionIndex);
+        };
+    }
+    
+    const removeBtn = newQuestionCard.querySelector('.remove-question-btn');
+    if (removeBtn) {
+        removeBtn.onclick = function() {
+            removeQuestion(newQuestionIndex);
+        };
+    }
+    
+    const addAnswerBtn = newQuestionCard.querySelector('.add-answer-btn');
+    if (addAnswerBtn) {
+        addAnswerBtn.onclick = function() {
+            addAnswer(newQuestionIndex);
+        };
+    }
+    
+    // Обновляем ID контейнера ответов
+    const answersContainer = newQuestionCard.querySelector('.answers-container');
+    if (answersContainer) {
+        answersContainer.id = `answers-${newQuestionIndex}`;
+        
+        // Очищаем контейнер ответов
+        answersContainer.innerHTML = '';
+        
+        // Добавляем 2 пустых ответа
+        const firstAnswer = firstQuestionCard.querySelector('.answer-group');
+        if (firstAnswer) {
+            for (let i = 0; i < 2; i++) {
+                const newAnswer = firstAnswer.cloneNode(true);
+                
+                const textInput = newAnswer.querySelector('input[type="text"]');
+                const pointsInput = newAnswer.querySelector('.answer-points-input');
+                const removeAnswerBtn = newAnswer.querySelector('.remove-answer-btn');
+                
+                if (textInput) {
+                    textInput.name = `question[${newQuestionIndex}][answers][${i}][text]`;
+                    textInput.value = '';
+                    textInput.placeholder = `Текст ответа ${i + 1}`;
+                }
+                
+                if (pointsInput) {
+                    pointsInput.name = `question[${newQuestionIndex}][answers][${i}][points]`;
+                    pointsInput.value = '0';
+                    
+                    pointsInput.addEventListener('input', function() {
+                        calculateAnswerPoints(newQuestionIndex);
+                        updateAllPointsCalculations();
+                    });
+                }
+                
+                if (removeAnswerBtn) {
+                    removeAnswerBtn.onclick = function() {
+                        removeAnswer(newQuestionIndex, i);
+                    };
+                }
+                
+                answersContainer.appendChild(newAnswer);
+            }
+        }
+    }
+    
+    // Сбрасываем сумму баллов
+    const pointsDisplay = newQuestionCard.querySelector('.total-answers-points');
+    if (pointsDisplay) {
+        pointsDisplay.textContent = '0';
+    }
+    
+    // Добавляем новый вопрос
+    const questionsContainer = document.getElementById('questions-container');
+    if (questionsContainer) {
+        questionsContainer.appendChild(newQuestionCard);
+    }
+    
+    // Обновляем счетчики
+    questionCounter++;
+    answerCounter[newQuestionIndex] = 2;
+    
+    // Переиндексация
+    renumberQuestions();
+    updateAllPointsCalculations();
+}
+
+// Экспорт функций для глобального доступа
+window.TestBuilder = {
+    validateForm,
+    calculateAnswerPoints,
+    updateAllPointsCalculations,
+    addAnswer,
+    removeAnswer,
+    removeQuestion,
+    moveQuestionUp,
+    moveQuestionDown,
+    addNewQuestion,
+    renumberQuestions
+};
+
+// Для обратной совместимости с inline onclick
+window.validateForm = validateForm;
+window.calculateAnswerPoints = calculateAnswerPoints;
+window.updateAllPointsCalculations = updateAllPointsCalculations;
+window.addAnswer = addAnswer;
+window.removeAnswer = removeAnswer;
+window.removeQuestion = removeQuestion;
+window.moveQuestionUp = moveQuestionUp;
+window.moveQuestionDown = moveQuestionDown;
+window.addNewQuestion = addNewQuestion;
