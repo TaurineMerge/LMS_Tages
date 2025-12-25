@@ -16,6 +16,7 @@ from app.config import get_settings
 from app.core.security import JWTValidator, TokenPayload, get_current_user
 from app.schemas.student import student_update
 from app.services import stats_service, stats_worker
+from app.services.certificate import certificate_service
 from app.services.keycloak import keycloak_service
 from app.services.student import student_service
 from app.telemetry import traced
@@ -265,10 +266,58 @@ async def update_profile_form(
 @router.get("/certificates", response_class=HTMLResponse)
 @traced("pages.certificates")
 async def certificates_page(request: Request):
-    """Render certificates page."""
+    """Render certificates page.
+
+    This page displays user certificates and allows generating new ones.
+    """
+    # Get token from cookie
+    access_token = request.cookies.get("access_token")
+    if not access_token:
+        # Redirect to login if not authenticated
+        return RedirectResponse(url="/api/v1/auth/login", status_code=302)
+
+    # Decode token to get user info
+    try:
+        token_payload = await jwt_validator.validate_token(access_token)
+        student_id = token_payload.sub
+    except Exception:
+        # Token invalid, redirect to login
+        return RedirectResponse(url="/api/v1/auth/login", status_code=302)
+
+    # Fetch certificates from backend
+    try:
+        certificates = await certificate_service.get_certificates(student_id=UUID(student_id))
+
+        # Convert to dict for easy manipulation
+        certificates = [cert.model_dump() for cert in certificates]
+
+        # Add download URLs
+        from app.services.storage_service import storage_service
+
+        for cert in certificates:
+            if cert.get("pdf_s3_key"):
+                try:
+                    cert["download_url"] = await storage_service.get_certificate_download_url(cert["pdf_s3_key"])
+                except Exception as e:
+                    logger.error(f"Failed to get download URL for certificate {cert['id']}: {e}")
+                    cert["download_url"] = None
+            else:
+                cert["download_url"] = None
+
+        logger.info("Certificates for user %s: %d", student_id, len(certificates))
+    except Exception as e:
+        logger.error(f"Failed to fetch certificates for user {student_id}: {e}")
+        certificates = []
+
     return _render_template_safe(
         "certificates.hbs",
-        {"request": request, "active_page": "certificates", **get_keycloak_urls()},
+        {
+            "request": request,
+            "active_page": "certificates",
+            "certificates": certificates,
+            "student_id": student_id,
+            **get_keycloak_urls(),
+        },
     )
 
 
@@ -367,6 +416,37 @@ async def statistics_refresh(request: Request):
         logger.error(f"Failed to refresh stats: {e}")
 
     return RedirectResponse(url=f"{settings.url_prefix}/statistics", status_code=303)
+
+
+@router.post("/certificates/generate")
+@traced("pages.certificates_generate")
+async def certificates_generate(request: Request):
+    """Generate certificates for successful attempts and redirect back."""
+    # Get token from cookie
+    access_token = request.cookies.get("access_token")
+    if not access_token:
+        # Redirect to login if not authenticated
+        return RedirectResponse(url="/api/v1/auth/login", status_code=302)
+
+    # Decode token to get user info
+    try:
+        token_payload = await jwt_validator.validate_token(access_token)
+        student_id = token_payload.sub
+    except Exception:
+        # Token invalid, redirect to login
+        return RedirectResponse(url="/api/v1/auth/login", status_code=302)
+
+    # Generate certificates
+    try:
+        from app.services.stats_processor import stats_processor
+
+        result = await stats_processor.check_and_generate_certificates_for_student(UUID(student_id))
+        logger.info("Certificate generation result for student %s: %s", student_id, result)
+    except Exception as e:
+        logger.error(f"Failed to generate certificates for user {student_id}: {e}")
+
+    settings = get_settings()
+    return RedirectResponse(url=f"{settings.url_prefix}/certificates", status_code=303)
 
 
 @router.get("/register", response_class=HTMLResponse)

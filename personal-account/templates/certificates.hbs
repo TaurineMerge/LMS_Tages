@@ -9,19 +9,53 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h5 class="mb-0"><p class="bi bi-award me-2"></p>Мои сертификаты</h5>
         <div class="d-flex gap-2">
-            <pnput type="text" class="form-control" id="search-certificates" placeholder="Поиск..." style="width: 200px;">
-            <select class="form-select" id="filter-course" style="width: 150px;">
-                <option value="">Все курсы</option>
-            </select>
+            <form action="{{ prefix }}/certificates/generate" method="POST" style="display: inline;">
+                <button type="submit" class="btn btn-primary">
+                    <p class="bi bi-plus-circle me-2"></p>Сгенерировать сертификаты
+                </button>
+            </form>
         </div>
     </div>
     
     <div id="certificates-container">
-        <div class="loading-spinner">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Загрузка...</span>
+        {% if certificates %}
+        <div class="row">
+            {% for certificate in certificates %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100 certificate-card" data-id="{{ certificate.id }}">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <p class="bi bi-award-fill text-warning" style="font-size: 64px;"></p>
+                        </div>
+                        <h5 class="card-title">Сертификат</h5>
+                        <p class="text-muted mb-2">Курс #{{ certificate.course_id }}</p>
+                        <small class="text-muted d-block mb-3">
+                            <p class="bi bi-calendar me-1"></p>{{ certificate.created_at.strftime('%d.%m.%Y') if certificate.created_at else 'Неизвестно' }}
+                        </small>
+                        <button class="btn btn-sm btn-outline-primary view-certificate" data-id="{{ certificate.id }}">
+                            <p class="bi bi-eye me-1"></p>Просмотреть
+                        </button>
+                        {% if certificate.download_url %}
+                        <a href="{{ certificate.download_url }}" download="certificate-{{ certificate.certificate_number or certificate.id }}.pdf" class="btn btn-sm btn-outline-success ms-2">
+                            <p class="bi bi-download me-1"></p>Скачать
+                        </a>
+                        {% else %}
+                        <button class="btn btn-sm btn-outline-secondary ms-2" disabled>
+                            <p class="bi bi-download me-1"></p>PDF недоступен
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
+            {% endfor %}
         </div>
+        {% else %}
+        <div class="text-center py-5">
+            <p class="bi bi-award text-muted" style="font-size: 64px;"></p>
+            <h5 class="mt-3 text-muted">У вас пока нет сертификатов</h5>
+            <p class="text-muted">Завершите курсы, чтобы получить сертификаты</p>
+        </div>
+        {% endif %}
     </div>
 </div>
 
@@ -38,7 +72,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-                <button type="button" class="btn btn-primary" id="download-certificate">
+                <button type="button" class="btn btn-primary" id="download-certificate" disabled>
                     <p class="bi bi-download me-2"></p>Скачать PDF
                 </button>
             </div>
@@ -66,6 +100,15 @@
                     <button class="btn btn-sm btn-outline-primary view-certificate" data-id="{{id}}">
                         <p class="bi bi-eye me-1"></p>Просмотреть
                     </button>
+                    {{#if download_url}}
+                    <a href="{{download_url}}" download="certificate-{{certificate_number}}.pdf" class="btn btn-sm btn-outline-success ms-2">
+                        <p class="bi bi-download me-1"></p>Скачать
+                    </a>
+                    {{else}}
+                    <button class="btn btn-sm btn-outline-secondary ms-2" disabled>
+                        <p class="bi bi-download me-1"></p>PDF недоступен
+                    </button>
+                    {{/if}}
                 </div>
             </div>
         </div>
@@ -166,12 +209,42 @@
         const certificate = allCertificates.find(c => c.id === id);
         if (!certificate) return;
         
-        const html = certificatePreviewTemplate({
-            ...certificate,
-            student_name: currentUser?.name || currentUser?.preferred_username || 'Студент'
-        });
+        // If we have a download URL, show PDF preview
+        if (certificate.download_url) {
+            const html = `
+                <div class="text-center">
+                    <iframe src="${certificate.download_url}" 
+                            width="100%" 
+                            height="500px" 
+                            style="border: 1px solid #ddd; border-radius: 8px;">
+                        <p>Ваш браузер не поддерживает просмотр PDF. 
+                           <a href="${certificate.download_url}" target="_blank">Скачать PDF</a>
+                        </p>
+                    </iframe>
+                </div>
+            `;
+            document.getElementById('certificate-preview').innerHTML = html;
+            
+            // Update download button
+            const downloadBtn = document.getElementById('download-certificate');
+            downloadBtn.onclick = () => {
+                const link = document.createElement('a');
+                link.href = certificate.download_url;
+                link.download = `certificate-${certificate.certificate_number || certificate.id}.pdf`;
+                link.click();
+            };
+        } else {
+            // Fallback to HTML preview if no PDF URL
+            const html = certificatePreviewTemplate({
+                ...certificate,
+                student_name: currentUser?.name || currentUser?.preferred_username || 'Студент'
+            });
+            document.getElementById('certificate-preview').innerHTML = html;
+            
+            // Disable download button
+            document.getElementById('download-certificate').disabled = true;
+        }
         
-        document.getElementById('certificate-preview').innerHTML = html;
         new bootstrap.Modal(document.getElementById('certificateModal')).show();
     }
 

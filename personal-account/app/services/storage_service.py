@@ -440,3 +440,6 @@ def get_storage_service() -> StorageService:
     if _storage_service_instance is None:
         _storage_service_instance = StorageService()
     return _storage_service_instance
+
+
+storage_service = StorageService()

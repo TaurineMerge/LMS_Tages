@@ -3,7 +3,7 @@
 from typing import Any
 from uuid import UUID
 
-from app.database import execute_returning, fetch_all, fetch_one, fetch_one_value
+from app.database import execute, execute_returning, fetch_all, fetch_one, fetch_one_value
 from app.db import queries as q
 from app.repositories.base import base_repository
 from app.telemetry import traced
@@ -42,9 +42,22 @@ class certificate_repository(base_repository):
         Returns:
             List of attempt dictionaries with student_id, course_id, id, score, max_score, course_name
         """
-        return await fetch_all(q.GET_PASSING_ATTEMPTS_WITHOUT_CERTIFICATES)
 
-    @traced()
+    @traced("certificate.get_passing_attempts_without_certificates_for_student", record_args=True, record_result=True)
+    async def get_passing_attempts_without_certificates_for_student(self, student_id: UUID) -> list[dict]:
+        """Get passing test attempts that don't have certificates yet for a specific student.
+
+        Returns attempts where score >= passing_score and no certificate exists
+        for the test_attempt_id.
+
+        Args:
+            student_id: UUID of the student
+
+        Returns:
+            List of attempt dictionaries with student_id, course_id, id, score, max_score, course_name
+        """
+        return await fetch_all(q.GET_PASSING_ATTEMPTS_WITHOUT_CERTIFICATES_FOR_STUDENT, {"student_id": student_id})
+
     async def get_by_student(self, student_id: UUID) -> list[dict[str, Any]]:
         """Get all certificates for a student."""
         return await fetch_all(q.CERTIFICATES_BY_STUDENT, {"student_id": student_id})
@@ -91,6 +104,16 @@ class certificate_repository(base_repository):
             "pdf_s3_key": s3_key,  # Или snapshot_s3_key, в зависимости от логики
         }
         return await execute_returning(q.CERTIFICATE_UPDATE_S3_KEY, params)
+
+    @traced()
+    async def update_test_attempt_certificate_id(self, test_attempt_id: UUID, certificate_id: UUID) -> bool:
+        """Update certificate_id in test attempt."""
+        params = {
+            "test_attempt_id": test_attempt_id,
+            "certificate_id": certificate_id,
+        }
+        result = await execute(q.UPDATE_TEST_ATTEMPT_CERTIFICATE_ID, params)
+        return result is not None
 
 
 # Singleton instance

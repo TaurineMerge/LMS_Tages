@@ -34,6 +34,12 @@ class StatsService:
 
         logger.debug("Getting stats and certificates for student %s", student_id)
 
+        # Try to get from Redis cache first
+        cached_data = await self.repo.get_cached_full_data(student_id)
+        if cached_data:
+            logger.debug("Returning cached data for student %s", student_id)
+            return cached_data
+
         # Get statistics
         stats = await self.repo.get_user_stats(student_id)
 
@@ -43,8 +49,21 @@ class StatsService:
         # Get recent attempts
         attempts = await self.repo.get_student_attempts(student_id)
 
+        # Get raw data for charts
+        raw_user_stats = await self.repo.get_raw_user_stats(student_id)
+        raw_attempts = await self.repo.get_raw_attempts(student_id)
+
         # Combine results
-        result = {"statistics": stats, "certificates": certificates, "attempts": attempts}
+        result = {
+            "statistics": stats,
+            "certificates": certificates,
+            "attempts": attempts,
+            "raw_user_stats": raw_user_stats,
+            "raw_attempts": raw_attempts,
+        }
+
+        # Cache the complete result
+        await self.repo.save_full_data_to_redis(student_id, result)
 
         return result
 
@@ -61,7 +80,6 @@ class StatsService:
             Fresh aggregated statistics with certificates
         """
         stats = await self.repo.calculate_and_save_aggregated(student_id)
-        await self.repo.save_to_redis(student_id, stats)
 
         # Get certificates grouped by course
         certificates = await certificate_service.get_certificates_by_student_grouped(student_id)
@@ -69,7 +87,20 @@ class StatsService:
         # Get recent attempts
         attempts = await self.repo.get_student_attempts(student_id)
 
+        # Get raw data for charts
+        raw_user_stats = await self.repo.get_raw_user_stats(student_id)
+        raw_attempts = await self.repo.get_raw_attempts(student_id)
+
         # Combine results
-        result = {"statistics": stats, "certificates": certificates, "attempts": attempts}
+        result = {
+            "statistics": stats,
+            "certificates": certificates,
+            "attempts": attempts,
+            "raw_user_stats": raw_user_stats,
+            "raw_attempts": raw_attempts,
+        }
+
+        # Cache the complete result
+        await self.repo.save_full_data_to_redis(student_id, result)
 
         return result

@@ -1,6 +1,6 @@
 """Certificate schemas."""
 
-from datetime import date
+from datetime import date, datetime
 from typing import Any
 from uuid import UUID
 
@@ -34,12 +34,17 @@ class certificate_response(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    certificate_number: int
-    created_at: date
-    content: str | None = None
     student_id: UUID
-    course_id: UUID
-    test_attempt_id: UUID | None = None
+    certificate_number: int
+    pdf_s3_key: str | None = None
+    snapshot_s3_key: str | None = None
+    created_at: datetime  # Изменено с date на datetime
+    updated_at: datetime  # Изменено с date на datetime
+    course_id: UUID | None = None  # Добавлено поле course_id
+    course_name: str | None = None
+    score: int | None = None
+    max_score: int | None = None
+    date_of_attempt: datetime | None = None  # Или date, если нужно
 
 
 class certificate_download(BaseModel):

@@ -66,6 +66,25 @@ ORDER BY ta.date_of_attempt DESC
 LIMIT 100
 """
 
+GET_PASSING_ATTEMPTS_WITHOUT_CERTIFICATES_FOR_STUDENT = """
+SELECT 
+    ta.id,
+    ta.student_id,
+    ta.test_id as course_id,
+    ta.point as score,
+    td.min_point as max_score,
+    cb.title as course_name
+FROM tests.test_attempt_b ta
+JOIN tests.test_d td ON ta.test_id = td.id
+JOIN knowledge_base.course_b cb ON td.course_id = cb.id
+WHERE ta.passed = true
+AND ta.completed = true
+AND ta.certificate_id IS NULL  -- certificates are generated here, so testing doesn't set it
+AND ta.student_id = :student_id
+ORDER BY ta.date_of_attempt DESC
+LIMIT 100
+"""
+
 CERTIFICATE_INSERT = """
     INSERT INTO personal_account.certificate_b
         (student_id, certificate_number, pdf_s3_key, snapshot_s3_key)
@@ -81,6 +100,12 @@ CERTIFICATE_UPDATE_S3_KEY = """
     SET pdf_s3_key = :pdf_s3_key  -- Или snapshot_s3_key
     WHERE id = :id
     RETURNING *
+    """
+
+UPDATE_TEST_ATTEMPT_CERTIFICATE_ID = """
+    UPDATE tests.test_attempt_b
+    SET certificate_id = :certificate_id
+    WHERE id = :test_attempt_id
     """
 
 CERTIFICATES_BY_STUDENT = """
@@ -136,6 +161,28 @@ SELECT
     ta.passed,
     ta.completed,
     ta.result,
+    td.title as test_title,
+    cb.title as course_name,
+    cb.id as course_id
+FROM tests.test_attempt_b ta
+JOIN tests.test_d td ON ta.test_id = td.id
+JOIN knowledge_base.course_b cb ON td.course_id = cb.id
+WHERE ta.student_id = :student_id
+ORDER BY ta.date_of_attempt DESC
+LIMIT 50
+"""
+
+STUDENT_ATTEMPTS_WITH_CERTIFICATES = """
+SELECT
+    ta.id,
+    ta.student_id,
+    ta.test_id,
+    ta.date_of_attempt,
+    ta.point,
+    ta.passed,
+    ta.completed,
+    ta.result,
+    ta.certificate_id,
     td.title as test_title,
     cb.title as course_name,
     cb.id as course_id
@@ -330,4 +377,36 @@ SELECT
 FROM tests.test_attempt_b
 WHERE student_id = :student_id
 GROUP BY student_id
+"""
+
+# Raw data queries for charts and analytics
+RAW_USER_STATS_BY_STUDENT = """
+SELECT
+    id,
+    student_id,
+    payload,
+    received_at,
+    processed,
+    error_message
+FROM integration.raw_user_stats
+WHERE student_id = :student_id
+ORDER BY received_at DESC
+LIMIT 100
+"""
+
+RAW_ATTEMPTS_BY_STUDENT = """
+SELECT
+    id,
+    external_attempt_id,
+    student_id,
+    test_id,
+    payload,
+    received_at,
+    processed,
+    processing_attempts,
+    error_message
+FROM integration.raw_attempts
+WHERE student_id = :student_id
+ORDER BY received_at DESC
+LIMIT 200
 """

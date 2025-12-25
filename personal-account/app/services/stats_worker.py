@@ -58,12 +58,6 @@ class StatsWorker:
             id="process_raws",
             replace_existing=True,
         )
-        self.scheduler.add_job(
-            self._wrap(self._generate_certificates),
-            IntervalTrigger(seconds=60),  # Check for certificates every minute
-            id="generate_certificates",
-            replace_existing=True,
-        )
         if not self.scheduler.running:
             self.scheduler.start()
             logger.info(
@@ -157,21 +151,3 @@ class StatsWorker:
         attempts_result = await self.processor.process_raw_attempts()
         logger.info("Processed attempts: %s", attempts_result)
         logger.info("Completed raw processing")
-
-    @traced("stats_worker._generate_certificates", record_args=True, record_result=True)
-    async def _generate_certificates(self) -> None:
-        """Generate certificates for successful test attempts.
-
-        Runs periodically to check for passing attempts without certificates
-        and generate certificates for them.
-        """
-        logger.info("Starting certificate generation check")
-        try:
-            result = await self.processor.check_and_generate_certificates()
-            logger.info(
-                "Certificate generation completed: generated=%d, failed=%d",
-                result.get("certificates_generated", 0),
-                result.get("failed", 0),
-            )
-        except Exception:
-            logger.exception("Failed to check and generate certificates")

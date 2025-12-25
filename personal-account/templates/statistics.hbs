@@ -90,6 +90,7 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Балл</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -102,7 +103,7 @@
                                 {{ attempt.course_name }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ attempt.date_of_attempt.strftime('%d.%m.%Y') }}
+                                {{ attempt.date_of_attempt[8:10] }}.{{ attempt.date_of_attempt[5:7] }}.{{ attempt.date_of_attempt[0:4] }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 {% if attempt.point is not none %}
@@ -126,6 +127,21 @@
                                 </span>
                                 {% endif %}
                             </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                {% if attempt.passed and attempt.certificate_id %}
+                                <button onclick="downloadCertificate('{{ attempt.certificate_id }}')" 
+                                        class="inline-flex items-center px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded transition-colors">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    Скачать сертификат
+                                </button>
+                                {% elif attempt.passed %}
+                                <span class="text-sm text-gray-400">Сертификат генерируется...</span>
+                                {% else %}
+                                <span class="text-sm text-gray-400">-</span>
+                                {% endif %}
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -139,5 +155,25 @@
 {% endblock %}
 
 {% block extra_js %}
-{# JavaScript удален, так как статистика теперь рендерится на сервере #}
+<script>
+function downloadCertificate(certificateId) {
+    // Создаем ссылку для скачивания
+    const link = document.createElement('a');
+    link.href = `/api/v1/certificates/${certificateId}/download`;
+    link.download = `certificate-${certificateId}.pdf`;
+    link.style.display = 'none';
+    
+    // Добавляем на страницу и кликаем
+    document.body.appendChild(link);
+    link.click();
+    
+    // Удаляем ссылку
+    document.body.removeChild(link);
+}
+
+// Можно также добавить обработку ошибок
+window.addEventListener('load', function() {
+    // Если нужно, можно добавить дополнительную логику
+});
+</script>
 {% endblock %}
