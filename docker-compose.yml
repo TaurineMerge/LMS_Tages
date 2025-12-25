@@ -63,6 +63,9 @@ services:
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
       KC_PROXY: edge
+      KC_PROXY: "edge"
+      KC_HOSTNAME_PORT: "80"
+      KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
       KC_HTTP_RELATIVE_PATH: "/auth"
     command: ["start-dev", "--import-realm"]
     ports: []
@@ -100,6 +103,7 @@ services:
       - ./init-sql/00-init-dbs.sh:/docker-entrypoint-initdb.d/00-init-dbs.sh:ro
       - ./init-sql/01-run-all-sub-scripts.sh:/docker-entrypoint-initdb.d/01-run-all-sub-scripts.sh:ro
       - ./init-sql:/docker-entrypoint-initdb.d/init-sql:ro
+
     networks:
       - app-network
     ports:
