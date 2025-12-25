@@ -1,0 +1,271 @@
+"""Example router for certificate endpoints.
+
+This is a complete example of how to integrate the certificate system
+into your FastAPI application. Add this to your routers directory.
+"""
+
+import logging
+from uuid import UUID
+
+from fastapi import APIRouter, HTTPException, Query
+
+from app.exceptions import not_found_error
+from app.schemas.certificate import (
+    certificate_download,
+    certificate_list_item,
+    certificate_response,
+)
+from app.services.certificate import certificate_service
+from app.services.storage_service import StorageError, get_storage_service
+from app.telemetry import traced
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(
+    prefix="/certificates",
+    tags=["certificates"],
+)
+
+
+@traced()
+@router.get(
+    "/{student_id}",
+    response_model=list[certificate_list_item],
+    summary="List student certificates",
+    description="Get all certificates issued to a specific student",
+)
+async def list_certificates(
+    student_id: UUID,
+    course_id: UUID | None = Query(None, description="Optional course filter"),
+) -> list[certificate_list_item]:
+    """List certificates for a student with optional course filter.
+
+    Args:
+        student_id: UUID of the student
+        course_id: Optional course UUID to filter by
+
+    Returns:
+        List of certificates for the student
+
+    Raises:
+        HTTPException: 404 if no certificates found
+    """
+    try:
+        certificates = await certificate_service.get_certificates(
+            student_id=student_id,
+            course_id=course_id,
+        )
+
+        if not certificates:
+            raise not_found_error("Certificates", str(student_id))
+
+        return [certificate_list_item(**c.model_dump()) for c in certificates]
+
+    except Exception as e:
+        logger.exception("Failed to list certificates for student %s", student_id)
+        raise HTTPException(status_code=500, detail="Failed to list certificates") from e
+
+
+@traced()
+@router.get(
+    "/{certificate_id}",
+    response_model=certificate_response,
+    summary="Get certificate details",
+    description="Get detailed information about a specific certificate",
+)
+async def get_certificate(certificate_id: UUID) -> certificate_response:
+    """Get certificate by ID.
+
+    Args:
+        certificate_id: UUID of the certificate
+
+    Returns:
+        Certificate response with all details
+
+    Raises:
+        HTTPException: 404 if certificate not found
+    """
+    try:
+        certificate = await certificate_service.get_certificate(certificate_id)
+        return certificate
+
+    except Exception as e:
+        if "not found" in str(e).lower():
+            raise HTTPException(status_code=404, detail="Certificate not found") from e
+        logger.exception("Failed to get certificate %s", certificate_id)
+        raise HTTPException(status_code=500, detail="Failed to get certificate") from e
+
+
+@traced()
+@router.get(
+    "/{certificate_id}/download",
+    response_model=certificate_download,
+    summary="Download certificate",
+    description="Get a presigned URL to download the certificate PDF",
+)
+async def download_certificate(
+    certificate_id: UUID,
+    expiration: int = Query(3600, description="URL expiration in seconds", ge=300, le=86400),
+) -> certificate_download:
+    """Get presigned URL for certificate download.
+
+    The returned URL is valid for the specified duration (default 1 hour).
+    This approach avoids directly serving files and reduces server load.
+
+    Args:
+        certificate_id: UUID of the certificate
+        expiration: URL expiration time in seconds (300 - 86400)
+
+    Returns:
+        Certificate info with presigned download URL
+
+    Raises:
+        HTTPException: 404 if certificate not found, 500 if S3 error
+    """
+    try:
+        # Get certificate from database
+        certificate = await certificate_service.get_certificate(certificate_id)
+
+        if not certificate.content:  # content field stores S3 key
+            raise HTTPException(
+                status_code=404,
+                detail="Certificate file not found in storage",
+            )
+
+        # Generate presigned URL
+        storage_service = get_storage_service()
+        download_url = await storage_service.get_certificate_url(
+            s3_key=certificate.content,
+            expiration=expiration,
+        )
+
+        return certificate_download(
+            id=certificate.id,
+            certificate_number=certificate.certificate_number,
+            student_id=certificate.student_id,
+            course_id=certificate.course_id,
+            created_at=certificate.created_at,
+            download_url=download_url,
+        )
+
+    except HTTPException:
+        raise
+    except StorageError as e:
+        logger.error("S3 storage error for certificate %s: %s", certificate_id, e)
+        raise HTTPException(status_code=500, detail="Failed to generate download URL") from e
+    except Exception as e:
+        logger.exception("Failed to download certificate %s", certificate_id)
+        raise HTTPException(status_code=500, detail="Failed to download certificate") from e
+
+
+@traced()
+@router.get(
+    "/course/{course_id}",
+    response_model=list[certificate_list_item],
+    summary="List course certificates",
+    description="Get all certificates issued for a specific course",
+)
+async def list_course_certificates(course_id: UUID) -> list[certificate_list_item]:
+    """List all certificates for a course.
+
+    Args:
+        course_id: UUID of the course
+
+    Returns:
+        List of certificates for the course
+
+    Raises:
+        HTTPException: 404 if no certificates found
+    """
+    try:
+        certificates = await certificate_service.get_certificates(course_id=course_id)
+
+        if not certificates:
+            raise HTTPException(
+                status_code=404,
+                detail="No certificates found for this course",
+            )
+
+        return [certificate_list_item(**c.model_dump()) for c in certificates]
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Failed to list course certificates for %s", course_id)
+        raise HTTPException(status_code=500, detail="Failed to list certificates") from e
+
+
+@traced()
+@router.get(
+    "/{student_id}/latest",
+    response_model=certificate_response | None,
+    summary="Get latest certificate",
+    description="Get the most recently issued certificate for a student",
+)
+async def get_latest_certificate(student_id: UUID) -> certificate_response | None:
+    """Get the most recent certificate for a student.
+
+    Args:
+        student_id: UUID of the student
+
+    Returns:
+        Latest certificate or None if no certificates exist
+
+    Raises:
+        HTTPException: 500 on server error
+    """
+    try:
+        certificates = await certificate_service.get_certificates(student_id=student_id)
+
+        if not certificates:
+            return None
+
+        # Sort by created_at descending and return first
+        latest = sorted(certificates, key=lambda c: c.created_at, reverse=True)[0]
+        return latest
+
+    except Exception as e:
+        logger.exception("Failed to get latest certificate for student %s", student_id)
+        raise HTTPException(status_code=500, detail="Failed to get certificate") from e
+
+
+# Health check endpoint
+@traced()
+@router.get(
+    "/health",
+    summary="Certificate service health",
+    description="Check if certificate service and storage are healthy",
+)
+async def certificate_health() -> dict[str, str]:
+    """Check certificate service health.
+
+    Verifies:
+    - Database connection
+    - S3/MinIO connection
+    - Keycloak connection
+
+    Returns:
+        Health status object
+    """
+    try:
+        storage = get_storage_service()
+
+        # Try to list certificates (minimal S3 operation)
+        try:
+            await storage.list_certificates(prefix="certificates")
+            s3_status = "healthy"
+        except Exception as e:
+            logger.warning("S3 health check failed: %s", e)
+            s3_status = "unhealthy"
+
+        return {
+            "status": "healthy" if s3_status == "healthy" else "degraded",
+            "s3_status": s3_status,
+        }
+
+    except Exception as e:
+        logger.exception("Certificate service health check failed")
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+        }

@@ -3,7 +3,7 @@
 from datetime import date
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, FieldValidationInfo, field_validator
+from pydantic import BaseModel, ConfigDict, FieldValidationInfo, HttpUrl, field_validator
 
 from app.schemas.validators import ensure_safe_string
 
@@ -39,3 +39,28 @@ class certificate_response(BaseModel):
     student_id: UUID
     course_id: UUID
     test_attempt_id: UUID | None = None
+
+
+class certificate_download(BaseModel):
+    """Schema for certificate download response."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    certificate_number: int
+    student_id: UUID
+    course_id: UUID
+    download_url: HttpUrl | None = None
+    created_at: date
+
+
+class certificate_list_item(BaseModel):
+    """Schema for certificate list item."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    certificate_number: int
+    created_at: date
+    course_id: UUID
+    student_id: UUID

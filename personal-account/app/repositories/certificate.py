@@ -59,6 +59,15 @@ class certificate_repository(base_repository):
         """Get certificate by its unique number."""
         return await fetch_one(q.CERTIFICATE_BY_NUMBER, {"certificate_number": certificate_number})
 
+    @traced()
+    async def update_s3_key(self, certificate_id: UUID, s3_key: str) -> dict[str, Any] | None:
+        """Update S3 key for certificate."""
+        params = {
+            "id": certificate_id,
+            "content": s3_key,
+        }
+        return await execute_returning(q.CERTIFICATE_UPDATE_S3_KEY, params)
+
 
 # Singleton instance
 certificate_repository = certificate_repository()
