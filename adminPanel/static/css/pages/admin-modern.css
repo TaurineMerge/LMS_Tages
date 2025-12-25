@@ -1117,14 +1117,14 @@
 }
 
 .btn--primary {
-    background: var(--gray-100);
-    color: var(--gray-800);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+    background: linear-gradient(135deg, var(--orange-500) 0%, #e85527 100%);
+    color: white;
+    box-shadow: 0 4px 14px rgba(255, 102, 54, 0.3);
 }
 
 .btn--primary:hover {
-    background: linear-gradient(135deg, var(--orange-500) 0%, #e85527 100%);
-    color: white;
+    transform: translateY(+2px);
+
     box-shadow: 0 6px 20px rgba(255, 102, 54, 0.4);
 }
 
