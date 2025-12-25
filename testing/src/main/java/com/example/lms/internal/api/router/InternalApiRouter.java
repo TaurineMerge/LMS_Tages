@@ -45,11 +45,11 @@ public class InternalApiRouter {
 				get(withRealm(READ_ACCESS_REALMS, internalApiController::getAttemptDetail));
 			});
 
-			path("/course/{courseId}/test", () -> {
+			path("/categories/{categoryId}/courses/{courseId}/test", () -> {
 				get(withRealm(READ_ACCESS_REALMS, internalApiController::getCourseTest));
 			});
 
-			path("/course/{courseId}/draft", () -> {
+			path("/categories/{categoryId}/courses/{courseId}/draft", () -> {
 				get(withRealm(READ_ACCESS_REALMS, internalApiController::getCourseDraft));
 			});
 

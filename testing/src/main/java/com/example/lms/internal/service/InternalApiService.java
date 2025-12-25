@@ -109,7 +109,7 @@ public class InternalApiService {
 
 		List<Test> tests = testService.getTestsByCourseId(courseId.toString());
 		if (tests.isEmpty()) {
-			return new CourseTestResponse(null, courseId, "not_found");
+			return new CourseTestResponse(null,"not_found");
 		}
 
 		// Assuming one test per course, take the first one
@@ -121,7 +121,7 @@ public class InternalApiService {
 				test.getMin_point(),
 				test.getDescription());
 
-		return new CourseTestResponse(testData, courseId, "success");
+		return new CourseTestResponse(testData, "success");
 	}
 
 	public CourseDraftResponse getDraftByCourseId(UUID courseId) {
@@ -129,7 +129,7 @@ public class InternalApiService {
 
 		List<Draft> drafts = draftService.getDraftsByCourseId(courseId);
 		if (drafts.isEmpty()) {
-			return new CourseDraftResponse(null, courseId, "not_found");
+			return new CourseDraftResponse(null, "not_found");
 		}
 
 		// Assuming one draft per course, take the first one
@@ -142,7 +142,7 @@ public class InternalApiService {
 				draft.getMin_point(),
 				draft.getDescription());
 
-		return new CourseDraftResponse(draftData, courseId, "success");
+		return new CourseDraftResponse(draftData, "success");
 	}
 
 	// ------------------------------------------------------------------

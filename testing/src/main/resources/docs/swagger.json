@@ -1617,7 +1617,7 @@
         }
       }
     },
-    "/internal/course/{courseId}/test": {
+    "/internal/categories/{categoryId}/courses/{courseId}/test": {
       "get": {
         "tags": ["Internal"],
         "summary": "Получить тест для курса",
@@ -1654,7 +1654,7 @@
         }
       }
     },
-    "/internal/course/{courseId}/draft": {
+    "/internal/categries/{categoryId}/courses/{courseId}/draft": {
       "get": {
         "tags": ["Internal"],
         "summary": "Получить черновик для курса",
@@ -2208,12 +2208,6 @@
         "data": {
           "$ref": "#/definitions/TestData"
         },
-        "courseId": {
-          "type": "string",
-          "format": "uuid",
-          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-          "description": "Идентификатор курса (UUID v4)"
-        },
         "status": {
           "type": "string",
           "description": "Статус операции: 'success' или 'not_found'"
@@ -2225,12 +2219,6 @@
       "properties": {
         "data": {
           "$ref": "#/definitions/DraftData"
-        },
-        "courseId": {
-          "type": "string",
-          "format": "uuid",
-          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-          "description": "Идентификатор курса (UUID v4)"
         },
         "status": {
           "type": "string",

@@ -16,11 +16,6 @@ public class CourseDraftResponse implements Serializable {
 	private DraftData data;
 
 	/**
-	 * ID курса.
-	 */
-	private UUID courseId;
-
-	/**
 	 * Статус ответа.
 	 */
 	private String status;
@@ -28,9 +23,8 @@ public class CourseDraftResponse implements Serializable {
 	public CourseDraftResponse() {
 	}
 
-	public CourseDraftResponse(DraftData data, UUID courseId, String status) {
+	public CourseDraftResponse(DraftData data, String status) {
 		this.data = data;
-		this.courseId = courseId;
 		this.status = status;
 	}
 
@@ -40,14 +34,6 @@ public class CourseDraftResponse implements Serializable {
 
 	public void setData(DraftData data) {
 		this.data = data;
-	}
-
-	public UUID getCourseId() {
-		return courseId;
-	}
-
-	public void setCourseId(UUID courseId) {
-		this.courseId = courseId;
 	}
 
 	public String getStatus() {

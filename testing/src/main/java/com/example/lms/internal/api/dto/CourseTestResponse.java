@@ -15,10 +15,6 @@ public class CourseTestResponse implements Serializable {
 	 */
 	private TestData data;
 
-	/**
-	 * ID курса.
-	 */
-	private UUID courseId;
 
 	/**
 	 * Статус ответа.
@@ -28,9 +24,8 @@ public class CourseTestResponse implements Serializable {
 	public CourseTestResponse() {
 	}
 
-	public CourseTestResponse(TestData data, UUID courseId, String status) {
+	public CourseTestResponse(TestData data, String status) {
 		this.data = data;
-		this.courseId = courseId;
 		this.status = status;
 	}
 
@@ -42,13 +37,6 @@ public class CourseTestResponse implements Serializable {
 		this.data = data;
 	}
 
-	public UUID getCourseId() {
-		return courseId;
-	}
-
-	public void setCourseId(UUID courseId) {
-		this.courseId = courseId;
-	}
 
 	public String getStatus() {
 		return status;
