@@ -4,8 +4,8 @@ import "adminPanel/models"
 
 // LessonResponse - ответ API с одним уроком
 type LessonResponse struct {
-	Status string                `json:"status"`
-	Data   models.LessonDetailed `json:"data"`
+	Status string        `json:"status"`
+	Data   models.Lesson `json:"data"`
 }
 
 // LessonListResponse - ответ со списком уроков

@@ -77,12 +77,12 @@ func (r *LessonRepository) CountByCourseID(ctx context.Context, courseID string)
 }
 
 // GetByID получает урок по его уникальному идентификатору
-func (r *LessonRepository) GetByID(ctx context.Context, lessonID string) (*models.LessonDetailed, error) {
+func (r *LessonRepository) GetByID(ctx context.Context, lessonID string) (*models.Lesson, error) {
 	query := `SELECT id, title, course_id, content, created_at, updated_at FROM knowledge_base.lesson_d WHERE id = $1`
 
 	row := r.db.Pool.QueryRow(ctx, query, lessonID)
 
-	var lesson models.LessonDetailed
+	var lesson models.Lesson
 	var content *string
 
 	err := row.Scan(&lesson.ID, &lesson.Title, &lesson.CourseID, &content, &lesson.CreatedAt, &lesson.UpdatedAt)
@@ -101,7 +101,7 @@ func (r *LessonRepository) GetByID(ctx context.Context, lessonID string) (*model
 }
 
 // Create создает новый урок в базе данных
-func (r *LessonRepository) Create(ctx context.Context, courseID string, lesson request.LessonCreate) (*models.LessonDetailed, error) {
+func (r *LessonRepository) Create(ctx context.Context, courseID string, lesson request.LessonCreate) (*models.Lesson, error) {
 	query := `
 	       INSERT INTO knowledge_base.lesson_d (title, course_id, content)
 	       VALUES ($1, $2, $3)
@@ -110,7 +110,7 @@ func (r *LessonRepository) Create(ctx context.Context, courseID string, lesson r
 
 	row := r.db.Pool.QueryRow(ctx, query, lesson.Title, courseID, lesson.Content)
 
-	var newLesson models.LessonDetailed
+	var newLesson models.Lesson
 	var content *string
 
 	err := row.Scan(&newLesson.ID, &newLesson.Title, &newLesson.CourseID, &content, &newLesson.CreatedAt, &newLesson.UpdatedAt)
@@ -126,7 +126,7 @@ func (r *LessonRepository) Create(ctx context.Context, courseID string, lesson r
 }
 
 // Update обновляет существующий урок в базе данных
-func (r *LessonRepository) Update(ctx context.Context, lessonID string, lesson request.LessonUpdate) (*models.LessonDetailed, error) {
+func (r *LessonRepository) Update(ctx context.Context, lessonID string, lesson request.LessonUpdate) (*models.Lesson, error) {
 	query := `
 	       UPDATE knowledge_base.lesson_d 
 	       SET 
@@ -138,7 +138,7 @@ func (r *LessonRepository) Update(ctx context.Context, lessonID string, lesson r
        `
 	row := r.db.Pool.QueryRow(ctx, query, lesson.Title, lesson.Content, lessonID)
 
-	var updatedLesson models.LessonDetailed
+	var updatedLesson models.Lesson
 	var content *string
 
 	err := row.Scan(&updatedLesson.ID, &updatedLesson.Title, &updatedLesson.CourseID, &content, &updatedLesson.CreatedAt, &updatedLesson.UpdatedAt)
