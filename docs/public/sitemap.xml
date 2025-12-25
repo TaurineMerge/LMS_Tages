@@ -5,13 +5,43 @@
     <loc>//localhost:1313/documentation/01_overviews/</loc>
     <lastmod>2025-12-15T00:00:00+00:00</lastmod>
   </url><url>
+    <loc>//localhost:1313/documentation/03_role_model/01_roles/</loc>
+  </url><url>
     <loc>//localhost:1313/documentation/01_overviews/01_overview/</loc>
+  </url><url>
+    <loc>//localhost:1313/documentation/03_role_model/</loc>
   </url><url>
     <loc>//localhost:1313/documentation/02_info_model/01_entities/</loc>
   </url><url>
     <loc>//localhost:1313/documentation/02_info_model/02_dictionaries/</loc>
   </url><url>
+    <loc>//localhost:1313/documentation/02_info_model/</loc>
+  </url><url>
     <loc>//localhost:1313/documentation/01_overviews/02_requiments/</loc>
+  </url><url>
+    <loc>//localhost:1313/documentation/02_info_model/02_dictionaries/01_answer_d/</loc>
+  </url><url>
+    <loc>//localhost:1313/documentation/02_info_model/02_dictionaries/02_category_d/</loc>
+  </url><url>
+    <loc>//localhost:1313/documentation/02_info_model/01_entities/01_certificate_b/</loc>
+  </url><url>
+    <loc>//localhost:1313/documentation/02_info_model/02_dictionaries/03_content_d/</loc>
+  </url><url>
+    <loc>//localhost:1313/documentation/02_info_model/01_entities/02_course_b/</loc>
+  </url><url>
+    <loc>//localhost:1313/documentation/02_info_model/01_entities/03_draft_b/</loc>
+  </url><url>
+    <loc>//localhost:1313/documentation/02_info_model/02_dictionaries/04_lesson_d/</loc>
+  </url><url>
+    <loc>//localhost:1313/documentation/02_info_model/02_dictionaries/05_question_d/</loc>
+  </url><url>
+    <loc>//localhost:1313/documentation/02_info_model/01_entities/04_student_s/</loc>
+  </url><url>
+    <loc>//localhost:1313/documentation/02_info_model/01_entities/05_test_attempt_b/</loc>
+  </url><url>
+    <loc>//localhost:1313/documentation/02_info_model/02_dictionaries/06_test_d/</loc>
+  </url><url>
+    <loc>//localhost:1313/documentation/02_info_model/03_datastorage/</loc>
   </url><url>
     <loc>//localhost:1313/test/diagrams/user-journey/</loc>
     <lastmod>2025-01-15T00:00:00+00:00</lastmod>
@@ -148,28 +178,6 @@
     <loc>//localhost:1313/account/documentation/</loc>
   </url><url>
     <loc>//localhost:1313/admin/documentation/</loc>
-  </url><url>
-    <loc>//localhost:1313/documentation/02_info_model/01_entities/01_certificate_b/</loc>
-  </url><url>
-    <loc>//localhost:1313/documentation/02_info_model/01_entities/02_course_b/</loc>
-  </url><url>
-    <loc>//localhost:1313/documentation/02_info_model/01_entities/03_draft_b/</loc>
-  </url><url>
-    <loc>//localhost:1313/documentation/02_info_model/01_entities/04_student_s/</loc>
-  </url><url>
-    <loc>//localhost:1313/documentation/02_info_model/01_entities/05_test_attempt_b/</loc>
-  </url><url>
-    <loc>//localhost:1313/documentation/02_info_model/02_dictionaries/01_answer_d/</loc>
-  </url><url>
-    <loc>//localhost:1313/documentation/02_info_model/02_dictionaries/02_category_d/</loc>
-  </url><url>
-    <loc>//localhost:1313/documentation/02_info_model/02_dictionaries/03_content_d/</loc>
-  </url><url>
-    <loc>//localhost:1313/documentation/02_info_model/02_dictionaries/04_lesson_d/</loc>
-  </url><url>
-    <loc>//localhost:1313/documentation/02_info_model/02_dictionaries/05_queston_d/</loc>
-  </url><url>
-    <loc>//localhost:1313/documentation/02_info_model/02_dictionaries/06_test_d/</loc>
   </url><url>
     <loc>//localhost:1313/glossary/</loc>
   </url><url>

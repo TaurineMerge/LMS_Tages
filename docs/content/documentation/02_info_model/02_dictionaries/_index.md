@@ -11,22 +11,22 @@ weight: 1
 Описание используемых сущностей сервиса LMS
 
 ### 📚 [answer_d](/documentation/02_info_model/02_dictionaries/01_answer_d/)
-Обзор проекта целиком
+Ответы
 
 ### 🏗️ [category_d](/documentation/02_info_model/02_dictionaries/02_category_d/)
-Бизнес-требования к системе
+Категории
 
 ### 🗃️ [content_d](/documentation/02_info_model/02_dictionaries/03_content_d/)
-Используемая архитектура
+Контент для тестов
 
 ### 🗃️ [lesson_d](/documentation/02_info_model/02_dictionaries/04_lesson_d/)
-Используемая архитектура
+Уроки
 
 ### 🗃️ [question_d](/documentation/02_info_model/02_dictionaries/05_question_d/)
-Используемая архитектура
+Вопросы
 
 ### 🗃️ [test_d](/documentation/02_info_model/02_dictionaries/06_test_d)
-Используемая архитектура
+Тесты
 
-## Быстрый доступ
+### Быстрый доступ
 [← На главную](/documentation/02_info_model/)

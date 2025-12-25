@@ -241,7 +241,6 @@ erDiagram
         UUID id PK "not null, default gen_random_uuid()"
         VARCHAR(255) title "not null"
         UUID course_id FK "not null"
-        VARCHAR(20) visibility "not null, check: ['draft', 'public'], default 'draft'"
         TEXT content "not null, default 'draft'"
         TIMESTAMP created_at "not null, default NOW()"
         TIMESTAMP updated_at "not null, default NOW()"
@@ -295,7 +294,7 @@ erDiagram
         <footer class="site-footer">
     <div class="footer-container">
         <div class="footer-content">
-            <p>LMS Documentation • Обновлено: <span id="update-date">20.1224.242448</span></p>
+            <p>LMS Documentation • Обновлено: <span id="update-date">11.1225.252522</span></p>
             <p class="footer-copyright">© 2025 LMS Tages. Все права защищены.</p>
         </div>
     </div>

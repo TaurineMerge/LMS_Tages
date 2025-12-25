@@ -9,16 +9,16 @@ weight: 3
 
 ## Сущность студент
 
-| Attribute |    Type     | DB column |        MUST        |      Not Null      | Comments                                    |
-|:----------|:-----------:|:----------|:------------------:|:------------------:|:--------------------------------------------|
-| id        | smallserial | id        | :white_check_mark: | :white_check_mark: | Уникальный идентификатор студента                        |
-| name      |    text     | name      | :x: | :x: | Имя студента |
-| surname   |    text     | name      | :x: | :x: | Фамилия студента |
-| burthday      |    date     | name      | :x: | :x: | Дата рождения студента |
-| avatar      |    text     | name      | :x: | :x: | Ссылка на аватар студента |
-| contacts     |    text     | name      | :x: | :x: | Контактная информация в формате JSON |
-| email     |    text     | name      | :white_check_mark: | :white_check_mark: | Email студента|
-| phone      |    text     | name      | :x: | :x: | Телефон студента |
+| Attribute | Type     | DB column | MUST               | Not Null           | Comments                                   |
+|:----------|:--------:|:----------|:------------------:|:------------------:|:-------------------------------------------|
+| id        | uuid     | id        | :white_check_mark: | :white_check_mark: | Уникальный идентификатор студента          |
+| name      | varchar  | name      | :x:                | :x:                | Имя студента                               |
+| surname   | varchar  | surname   | :x:                | :x:                | Фамилия студента                           |
+| birth_date| date     | birth_date| :x:                | :x:                | Дата рождения студента                     |
+| avatar    | varchar  | avatar    | :x:                | :x:                | Ссылка на аватар студента                  |
+| contacts  | json     | contacts  | :x:                | :x:                | Контактная информация в формате JSON       |
+| email     | varchar  | email     | :white_check_mark: | :white_check_mark: | Email студента                             |
+| phone     | varchar  | phone     | :x:                | :x:                | Телефон студента                           |
 
 
 ## Быстрый доступ

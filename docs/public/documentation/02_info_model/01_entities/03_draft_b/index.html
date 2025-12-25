@@ -210,7 +210,7 @@
   <thead>
       <tr>
           <th style="text-align: left">Attribute</th>
-          <th style="text-align: center">Type</th>
+          <th style="text-align: left">Type</th>
           <th style="text-align: left">DB column</th>
           <th style="text-align: center">MUST</th>
           <th style="text-align: center">Not Null</th>
@@ -219,24 +219,24 @@
   </thead>
   <tbody>
       <tr>
-          <td style="text-align: left">id	uuid</td>
-          <td style="text-align: center">id</td>
-          <td style="text-align: left">:white_check_mark:</td>
+          <td style="text-align: left">id</td>
+          <td style="text-align: left">uuid</td>
+          <td style="text-align: left">id</td>
           <td style="text-align: center">:white_check_mark:</td>
-          <td style="text-align: center">Уникальный идентификатор черновика</td>
-          <td></td>
+          <td style="text-align: center">:white_check_mark:</td>
+          <td style="text-align: left">Уникальный идентификатор черновика</td>
       </tr>
       <tr>
           <td style="text-align: left">title</td>
-          <td style="text-align: center">varchar	title</td>
-          <td style="text-align: left">:x:</td>
+          <td style="text-align: left">varchar</td>
+          <td style="text-align: left">title</td>
           <td style="text-align: center">:x:</td>
-          <td style="text-align: center">Название черновика теста</td>
-          <td></td>
+          <td style="text-align: center">:x:</td>
+          <td style="text-align: left">Название черновика теста</td>
       </tr>
       <tr>
           <td style="text-align: left">min_point</td>
-          <td style="text-align: center">integer</td>
+          <td style="text-align: left">integer</td>
           <td style="text-align: left">min_point</td>
           <td style="text-align: center">:x:</td>
           <td style="text-align: center">:x:</td>
@@ -244,19 +244,19 @@
       </tr>
       <tr>
           <td style="text-align: left">description</td>
-          <td style="text-align: center">text</td>
+          <td style="text-align: left">text</td>
           <td style="text-align: left">description</td>
           <td style="text-align: center">:x:</td>
           <td style="text-align: center">:x:</td>
           <td style="text-align: left">Описание черновика теста</td>
       </tr>
       <tr>
-          <td style="text-align: left">est_id	uuid</td>
-          <td style="text-align: center">test_id</td>
-          <td style="text-align: left">:x:</td>
-          <td style="text-align: center">:x:	Внешний ключ на опубликованный тест</td>
-          <td></td>
-          <td></td>
+          <td style="text-align: left">test_id</td>
+          <td style="text-align: left">uuid</td>
+          <td style="text-align: left">test_id</td>
+          <td style="text-align: center">:x:</td>
+          <td style="text-align: center">:x:</td>
+          <td style="text-align: left">Внешний ключ на опубликованный тест</td>
       </tr>
   </tbody>
 </table>
@@ -286,7 +286,7 @@
         <footer class="site-footer">
     <div class="footer-container">
         <div class="footer-content">
-            <p>LMS Documentation • Обновлено: <span id="update-date">20.1224.242428</span></p>
+            <p>LMS Documentation • Обновлено: <span id="update-date">11.1225.252522</span></p>
             <p class="footer-copyright">© 2025 LMS Tages. Все права защищены.</p>
         </div>
     </div>
