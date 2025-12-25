@@ -45,7 +45,8 @@ func (s *testService) GetTest(ctx context.Context, categoryID, courseID string) 
 		if errors.Is(err, testing.ErrTestNotFound) {
 			return nil, apperrors.NewNotFound("Test")
 		}
-		if errors.Is(err, testing.ErrServiceUnavailable) {
+		if errors.Is(err, testing.ErrServiceUnavailable) ||
+			errors.Is(err, testing.ErrInvalidResponse) {
 			slog.Error("Testing service is unavailable", "error", err)
 			return nil, apperrors.NewServiceUnavailable("Testing")
 		}

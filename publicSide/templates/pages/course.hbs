@@ -44,18 +44,18 @@
                 </div>
                 <div class="course-details__test">
                     <h2 class="course-details__test-title">Тест по курсу</h2>
-                    {{#if Context.Test}}
-                        <p class="course-details__test-description">{{Context.Test.Description}}</p>
+                    {{#if Test}}
+                        <p class="course-details__test-description">{{Test.Description}}</p>
                         <div class="course-details__test-actions">
-                            <a href="{{Context.Test.Ref}}" class="button {{#unless User.ID}}button--inactive{{/unless}}">Перейти к тесту</a>
+                            <a href="{{Test.Ref}}" class="button {{#unless User.ID}}button--inactive{{/unless}}">Перейти к тесту</a>
                             {{#unless User.ID}}
                                 <p class="course-details__test-login-message">Необходимо войти, чтобы пройти тест.</p>
                             {{/unless}}
                         </div>
-                    {{else if Context.TestIsNotFound}}
-                        <p>Для этого курса еще не создан тест.</p>
-                    {{else if Context.TestServiceIsUnavailable}}
-                        <p>Сервис тестирования временно недоступен. Пожалуйста, попробуйте обновить страницу позже.</p>
+                    {{else if TestIsNotFound}}
+                        <p class="course-details__test-description">Для этого курса еще не создан тест.</p>
+                    {{else if TestServiceIsUnavailable}}
+                        <p class="course-details__test-description course-details__test-description--error">Сервис тестирования временно недоступен. Пожалуйста, попробуйте обновить страницу позже.</p>
                     {{/if}}
                 </div>
             </main>

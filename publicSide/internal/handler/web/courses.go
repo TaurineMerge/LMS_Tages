@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log/slog"
 
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/clients/testing"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/config"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/service"
@@ -134,7 +135,7 @@ func (h *CoursesHandler) RenderCoursePage(c *fiber.Ctx) error {
 			return err
 		}
 	} else {
-		testVM = viewmodel.NewTestViewModel(testData, h.testingConfig.BaseURL)
+		testVM = viewmodel.NewTestViewModel(testData, testing.GetUITestURL(h.testingConfig.BaseURL, categoryID, courseID))
 	}
 
 	vm := viewmodel.NewCoursePageViewModel(

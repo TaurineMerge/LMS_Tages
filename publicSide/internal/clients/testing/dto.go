@@ -1,9 +1,5 @@
 package testing
 
-const (
-	STATUS_OK = "success"
-	STATUS_NOT_FOUND = "not_found"
-)
 // TestResponse is the top-level structure for the GetTest API response.
 type TestResponse struct {
 	Data   *TestData `json:"data"`
