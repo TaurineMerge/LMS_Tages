@@ -49,7 +49,7 @@ func (m *AuthMiddleware) WithUser(c *fiber.Ctx) error {
 	idToken, err := verifier.Verify(ctx, rawIDToken)
 	if err != nil {
 		// If token is expired, try to refresh it
-		if !errors.Is(err, oidc.ErrTokenExpired) {
+		if !errors.Is(err, &oidc.TokenExpiredError{}) {
 			slog.Debug("Failed to verify token, but not because it's expired", "error", err)
 			clearAuthCookies(c) // Clear invalid tokens
 			return c.Next()

@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/gofiber/fiber/v2"
 	"golang.org/x/oauth2"
@@ -101,7 +102,7 @@ func (h *AuthHandler) Callback(c *fiber.Ctx) error {
 
 	// 6. Set the ID token and Refresh token in secure, long-lived session cookies
 	c.Cookie(&fiber.Cookie{
-		Name:     "session_token",
+		Name:     domain.SessionTokenCookie,
 		Value:    rawIDToken,
 		Expires:  idToken.Expiry,
 		HTTPOnly: true,
@@ -135,8 +136,18 @@ func (h *AuthHandler) Callback(c *fiber.Ctx) error {
 
 // Logout clears the session cookie and redirects to the home page.
 func (h *AuthHandler) Logout(c *fiber.Ctx) error {
+	// Clear session token
 	c.Cookie(&fiber.Cookie{
-		Name:     "session_token",
+		Name:     domain.SessionTokenCookie,
+		Value:    "",
+		Expires:  time.Now().Add(-1 * time.Hour),
+		HTTPOnly: true,
+		Secure:   c.Protocol() == "https",
+		SameSite: "Lax",
+	})
+	// Clear refresh token
+	c.Cookie(&fiber.Cookie{
+		Name:     domain.RefreshTokenCookie,
 		Value:    "",
 		Expires:  time.Now().Add(-1 * time.Hour),
 		HTTPOnly: true,
