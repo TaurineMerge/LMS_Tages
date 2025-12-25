@@ -19,13 +19,12 @@
    MAIN CONTENT AREA
    ======================================== */
 .admin-content {
-    max-width: 1400px;
+    width: 100%;
+    min-height: 90vh;
     margin: 0 auto;
-    padding: 2rem 2.5rem;
-}
-
-.admin-content--full {
-    max-width: 1400px;
+    padding: 2.5rem 2rem;
+    display: flex;
+    flex-direction: column;
 }
 
 .admin-content--centered {
