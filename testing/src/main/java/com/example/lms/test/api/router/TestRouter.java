@@ -9,7 +9,6 @@ import com.example.lms.shared.router.RouterUtils;
 import static com.example.lms.shared.router.RouterUtils.READ_ACCESS_REALMS;
 import static com.example.lms.shared.router.RouterUtils.TEACHER_REALM;
 import static com.example.lms.shared.router.RouterUtils.applyStandardAfterMiddleware;
-import static com.example.lms.shared.router.RouterUtils.applyStandardBeforeMiddleware;
 import static com.example.lms.shared.router.RouterUtils.validateController;
 import static com.example.lms.shared.router.RouterUtils.withRealm;
 import com.example.lms.test.api.controller.TestController;
@@ -54,8 +53,6 @@ public class TestRouter {
 		validateController(testController, "TestController");
 
 		path("/tests", () -> {
-			// Стандартные middleware
-			applyStandardBeforeMiddleware(logger);
 
 			// Список и создание тестов
 			get(withRealm(READ_ACCESS_REALMS, testController::getTests));

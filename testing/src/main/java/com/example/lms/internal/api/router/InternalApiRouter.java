@@ -6,6 +6,10 @@ import org.slf4j.LoggerFactory;
 import com.example.lms.internal.api.controller.InternalApiController;
 
 import static io.javalin.apibuilder.ApiBuilder.*;
+
+import java.util.Arrays;
+import java.util.List;
+
 import static com.example.lms.shared.router.RouterUtils.*;
 
 /**
@@ -31,39 +35,34 @@ public class InternalApiRouter {
 
 		path("/internal", () -> {
 
-			path("/categories/{categoryId}/courses/{courseId}/test", () -> {
-				get(internalApiController::getCourseTest);
+			// Публичные маршруты (без авторизации)
+    		get("/health", ctx -> {
+        		ctx.result("OK");
+    		});
+    
+    		get("/categories/{categoryId}/courses/{courseId}/test", 
+        		internalApiController::getCourseTest);
+
+			path("/users/{userId}", () -> {
+				path("/attempts", () -> {
+					get(withRealm(READ_ACCESS_REALMS, internalApiController::getUserAttempts));
+				});
+				path("/stats", () -> {
+					get(withRealm(READ_ACCESS_REALMS, internalApiController::getUserStats));
+				});
 			});
 
-			path("/", () -> {
-				// applyStandardBeforeMiddleware(logger)÷;
-
-				path("/users/{userId}", () -> {
-					path("/attempts", () -> {
-						get(withRealm(READ_ACCESS_REALMS, internalApiController::getUserAttempts));
-					});
-					path("/stats", () -> {
-						get(withRealm(READ_ACCESS_REALMS, internalApiController::getUserStats));
-					});
-				});
-
-				path("/attempts/{attemptId}", () -> {
-					get(withRealm(READ_ACCESS_REALMS, internalApiController::getAttemptDetail));
-				});
-
-
-				path("/categories/{categoryId}/courses/{courseId}/draft", () -> {
-					get(withRealm(READ_ACCESS_REALMS, internalApiController::getCourseDraft));
-				});
-
-				applyStandardAfterMiddleware(logger);
+			path("/attempts/{attemptId}", () -> {
+				get(withRealm(READ_ACCESS_REALMS, internalApiController::getAttemptDetail));
 			});
 
-			
-		});
 
-		get("/internal/health", ctx -> {
-			ctx.result("OK");
+			path("/categories/{categoryId}/courses/{courseId}/draft", () -> {
+				get(withRealm(READ_ACCESS_REALMS, internalApiController::getCourseDraft));
+			});
+
+			applyStandardAfterMiddleware(logger);
+
 		});
 	}
 }

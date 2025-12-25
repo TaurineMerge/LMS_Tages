@@ -68,9 +68,6 @@ public class AnswerRouter {
 
         path("/answers", () -> {
 
-            // Стандартные middleware: аутентификация и логирование
-            applyStandardBeforeMiddleware(logger);
-
             // Создание ответа
             post(withValidationAndRealm(
                     "/schemas/answer-schema.json",
