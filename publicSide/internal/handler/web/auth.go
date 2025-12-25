@@ -99,15 +99,27 @@ func (h *AuthHandler) Callback(c *fiber.Ctx) error {
 	}
 	slog.Info("User logged in successfully", "user", claims.Username, "email", claims.Email)
 
-	// 6. Set the ID token in a secure, long-lived session cookie
+	// 6. Set the ID token and Refresh token in secure, long-lived session cookies
 	c.Cookie(&fiber.Cookie{
 		Name:     "session_token",
 		Value:    rawIDToken,
-		Expires:  time.Now().Add(24 * time.Hour), // Or use idToken.Expiry
+		Expires:  idToken.Expiry,
 		HTTPOnly: true,
 		Secure:   c.Protocol() == "https",
 		SameSite: "Lax",
 	})
+
+	// Store refresh token
+	if tokens.RefreshToken != "" {
+		c.Cookie(&fiber.Cookie{
+			Name:     domain.RefreshTokenCookie,
+			Value:    tokens.RefreshToken,
+			Expires:  time.Now().Add(5 * 24 * time.Hour),
+			HTTPOnly: true,
+			Secure:   c.Protocol() == "https",
+			SameSite: "Lax",
+		})
+	}
 	
 	// 7. Clean up the state cookie
 	c.Cookie(&fiber.Cookie{
