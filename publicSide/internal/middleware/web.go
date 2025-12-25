@@ -4,6 +4,7 @@ package middleware
 import (
 	"errors"
 	"log/slog"
+	"strings"
 
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/viewmodel"
@@ -17,18 +18,20 @@ func WebErrorHandler(c *fiber.Ctx, err error) error {
 	if errors.As(err, &appErr) {
 		slog.Info("Handler error", "error", err)
 		appErr = err.(*apperrors.AppError)
+	} else if strings.Contains(err.Error(), "Cannot GET") {
+		appErr = apperrors.NewNotFound("Page").(*apperrors.AppError)
 	} else {
 		slog.Error("Unhandled web error", "error", err)
 		appErr = apperrors.NewInternal().(*apperrors.AppError)
 	}
 
 	return c.Status(appErr.HTTPStatus).Render("pages/error", fiber.Map{
-		"Header": viewmodel.NewHeader(),
-		"User":   viewmodel.NewUserViewModel(c.Locals(domain.UserContextKey).(domain.UserClaims)),
-		"Main":   viewmodel.NewMain("Home"),
-		"Title":   "Error",
-		"HTTPStatus":    appErr.HTTPStatus,
-		"Message": appErr.Message,
+		"Header":     viewmodel.NewHeader(),
+		"User":       viewmodel.NewUserViewModel(c.Locals(domain.UserContextKey).(domain.UserClaims)),
+		"Main":       viewmodel.NewMain("Home"),
+		"Title":      "Error",
+		"HTTPStatus": appErr.HTTPStatus,
+		"Message":    appErr.Message,
 	}, "layouts/main")
 }
 
