@@ -13,10 +13,9 @@ from fastapi.templating import Jinja2Templates
 from opentelemetry import trace
 
 from app.config import get_settings
-from app.core.security import JWTValidator
-from app.services import stats_service, stats_worker
-from app.core.security import TokenPayload, get_current_user
+from app.core.security import JWTValidator, TokenPayload, get_current_user
 from app.schemas.student import student_update
+from app.services import stats_service, stats_worker
 from app.services.keycloak import keycloak_service
 from app.services.student import student_service
 from app.telemetry import traced
@@ -150,31 +149,31 @@ async def root_page(request: Request):
     """
     Главная страница - доступна как /account и /account/.
     Логика:
-    1. Если у пользователя есть кука 'access_token' -> редирект в /dashboard
+    1. Если у пользователя есть кука 'access_token' -> редирект в /statistics
     2. Иначе -> показываем Лендинг
     """
     token = request.cookies.get("access_token")
 
     if token:
-        return RedirectResponse(url=f"{settings.url_prefix}/dashboard")
+        return RedirectResponse(url=f"{settings.url_prefix}/statistics")
 
     return _render_template_safe("index.hbs", {"request": request, **get_keycloak_urls()})
 
 
-@router.get("/dashboard", response_class=HTMLResponse)  # <-- Теперь дэшборд здесь
-@traced("pages.dashboard")
-async def dashboard_page(request: Request):
-    """Render dashboard page (Protected Area)."""
+# @router.get("/dashboard", response_class=HTMLResponse)  # <-- Теперь дэшборд здесь
+# @traced("pages.dashboard")
+# async def dashboard_page(request: Request):
+#    """Render dashboard page (Protected Area)."""
+#
+#   # (Опционально) Можно добавить проверку: если нет куки, редирект на /
+#   # token = request.cookies.get("access_token")
+# if not token:
+#   #     return RedirectResponse(url="/")
 
-    # (Опционально) Можно добавить проверку: если нет куки, редирект на /
-    # token = request.cookies.get("access_token")
-    # if not token:
-    #     return RedirectResponse(url="/")
-
-    return _render_template_safe(
-        "dashboard.hbs",
-        {"request": request, "active_page": "dashboard", **get_keycloak_urls()},
-    )
+#   return _render_template_safe(
+#       "dashboard.hbs",
+#       {"request": request, "active_page": "dashboard", **get_keycloak_urls()},
+#   )
 
 
 @router.get("/profile", response_class=HTMLResponse)
@@ -270,16 +269,6 @@ async def certificates_page(request: Request):
     return _render_template_safe(
         "certificates.hbs",
         {"request": request, "active_page": "certificates", **get_keycloak_urls()},
-    )
-
-
-@router.get("/visits", response_class=HTMLResponse)
-@traced("pages.visits")
-async def visits_page(request: Request):
-    """Render visits page."""
-    return _render_template_safe(
-        "visits.hbs",
-        {"request": request, "active_page": "visits", **get_keycloak_urls()},
     )
 
 

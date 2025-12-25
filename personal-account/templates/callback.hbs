@@ -87,7 +87,7 @@
                     
                     // Redirect to dashboard
                     setTimeout(() => {
-                        window.location.href = '{{ prefix }}/dashboard';
+                        window.location.href = '{{ prefix }}/statistics';
                     }, 1500);
                 } else {
                     throw new Error(data.detail || data.error || 'Ошибка обмена кода');
