@@ -13,12 +13,11 @@
 }
 
 .page-header__breadcrumbs a {
-    color: var(--orange-500);
-    text-decoration: none;
+    color: var(--orange-300);
 }
 
 .page-header__breadcrumbs a:hover {
-    text-decoration: underline;
+    color: var(--orange-500);
 }
 
 .page-header__separator {
