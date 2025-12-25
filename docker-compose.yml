@@ -62,7 +62,6 @@ services:
       KC_HOSTNAME: localhost
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
-      KC_PROXY: edge
       KC_PROXY: "edge"
       KC_HOSTNAME_PORT: "80"
       KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
