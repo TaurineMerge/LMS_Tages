@@ -30,30 +30,36 @@ public class InternalApiRouter {
 		validateController(internalApiController, "TestController");
 
 		path("/internal", () -> {
-			applyStandardBeforeMiddleware(logger);
-
-			path("/users/{userId}", () -> {
-				path("/attempts", () -> {
-					get(withRealm(READ_ACCESS_REALMS, internalApiController::getUserAttempts));
-				});
-				path("/stats", () -> {
-					get(withRealm(READ_ACCESS_REALMS, internalApiController::getUserStats));
-				});
-			});
-
-			path("/attempts/{attemptId}", () -> {
-				get(withRealm(READ_ACCESS_REALMS, internalApiController::getAttemptDetail));
-			});
 
 			path("/categories/{categoryId}/courses/{courseId}/test", () -> {
-				get(withRealm(READ_ACCESS_REALMS, internalApiController::getCourseTest));
+				get(internalApiController::getCourseTest);
 			});
 
-			path("/categories/{categoryId}/courses/{courseId}/draft", () -> {
-				get(withRealm(READ_ACCESS_REALMS, internalApiController::getCourseDraft));
+			path("/", () -> {
+				// applyStandardBeforeMiddleware(logger)÷;
+
+				path("/users/{userId}", () -> {
+					path("/attempts", () -> {
+						get(withRealm(READ_ACCESS_REALMS, internalApiController::getUserAttempts));
+					});
+					path("/stats", () -> {
+						get(withRealm(READ_ACCESS_REALMS, internalApiController::getUserStats));
+					});
+				});
+
+				path("/attempts/{attemptId}", () -> {
+					get(withRealm(READ_ACCESS_REALMS, internalApiController::getAttemptDetail));
+				});
+
+
+				path("/categories/{categoryId}/courses/{courseId}/draft", () -> {
+					get(withRealm(READ_ACCESS_REALMS, internalApiController::getCourseDraft));
+				});
+
+				applyStandardAfterMiddleware(logger);
 			});
 
-			applyStandardAfterMiddleware(logger);
+			
 		});
 
 		get("/internal/health", ctx -> {
