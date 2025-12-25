@@ -123,6 +123,30 @@ public class TestAttemptRepository implements TestAttemptRepositoryInterface {
             ORDER BY date_of_attempt DESC NULLS LAST
             """;
 
+    private static final String SELECT_LATEST_INCOMPLETE_BY_STUDENT_AND_TEST = """
+            SELECT id, student_id, test_id, date_of_attempt, point, certificate_id, attempt_version, attempt_snapshot, completed
+            FROM testing.test_attempt_b
+            WHERE student_id = ?
+              AND test_id = ?
+              AND COALESCE(completed, FALSE) = FALSE
+              AND point IS NULL
+            ORDER BY date_of_attempt DESC NULLS LAST, id DESC
+            LIMIT 1
+            """;
+
+    private static final String SELECT_LATEST_COMPLETED_BY_STUDENT_AND_TEST = """
+            SELECT id, student_id, test_id, date_of_attempt, point, certificate_id, attempt_version, attempt_snapshot, completed
+            FROM testing.test_attempt_b
+            WHERE student_id = ?
+              AND test_id = ?
+              AND (
+                    COALESCE(completed, FALSE) = TRUE
+                 OR point IS NOT NULL
+              )
+            ORDER BY date_of_attempt DESC NULLS LAST, id DESC
+            LIMIT 1
+            """;
+
     // --- UI: attempt_version by attemptId ---
     private static final String SELECT_ATTEMPT_VERSION_BY_ID = """
             SELECT attempt_version
@@ -530,6 +554,48 @@ public TestAttemptModel save(TestAttemptModel testAttempt) {
         } catch (SQLException e) {
             logger.error("Ошибка БД при поиске незавершённых попыток", e);
             throw new RuntimeException("Ошибка базы данных при поиске незавершённых попыток", e);
+        }
+    }
+
+    @Override
+    public Optional<TestAttemptModel> findLatestIncompleteByStudentAndTestId(UUID studentId, UUID testId) {
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(SELECT_LATEST_INCOMPLETE_BY_STUDENT_AND_TEST)) {
+
+            stmt.setObject(1, studentId);
+            stmt.setObject(2, testId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapRowToTestAttempt(rs));
+                }
+                return Optional.empty();
+            }
+
+        } catch (SQLException e) {
+            logger.error("Ошибка БД при поиске последней незавершённой попытки (studentId={}, testId={})", studentId, testId, e);
+            throw new RuntimeException("Ошибка базы данных при поиске последней незавершённой попытки", e);
+        }
+    }
+
+    @Override
+    public Optional<TestAttemptModel> findLatestCompletedByStudentAndTestId(UUID studentId, UUID testId) {
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(SELECT_LATEST_COMPLETED_BY_STUDENT_AND_TEST)) {
+
+            stmt.setObject(1, studentId);
+            stmt.setObject(2, testId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapRowToTestAttempt(rs));
+                }
+                return Optional.empty();
+            }
+
+        } catch (SQLException e) {
+            logger.error("Ошибка БД при поиске последней завершённой попытки (studentId={}, testId={})", studentId, testId, e);
+            throw new RuntimeException("Ошибка базы данных при поиске последней завершённой попытки", e);
         }
     }
 
