@@ -13,10 +13,9 @@ from fastapi.templating import Jinja2Templates
 from opentelemetry import trace
 
 from app.config import get_settings
-from app.core.security import JWTValidator
-from app.services import stats_service, stats_worker
-from app.core.security import TokenPayload, get_current_user
+from app.core.security import JWTValidator, TokenPayload, get_current_user
 from app.schemas.student import student_update
+from app.services import stats_service, stats_worker
 from app.services.keycloak import keycloak_service
 from app.services.student import student_service
 from app.telemetry import traced
@@ -311,11 +310,17 @@ async def statistics_page(request: Request):
         # logging.debug("Processing raws for user %s", student_id)
         # await stats_worker.process_raws(UUID(student_id))
         logging.debug("Getting stats for user %s", student_id)
-        stats = await stats_service.get_user_statistics(UUID(student_id))
-        logging.debug("Fetched stats for user %s: %s", student_id, stats)
+        stats_data = await stats_service.get_user_statistics(UUID(student_id))
+        logging.debug("Fetched stats for user %s: %s", student_id, stats_data)
+
+        # Extract statistics and certificates for template
+        stats = stats_data.get("statistics", {})
+        certificates = stats_data.get("certificates", {})
+        logger.info("Certificates for user %s: %s", student_id, certificates)
     except Exception as e:
         logger.error(f"Failed to fetch stats for user {student_id}: {e}")
         stats = {}
+        certificates = {}
 
     return _render_template_safe(
         "statistics.hbs",
@@ -323,6 +328,7 @@ async def statistics_page(request: Request):
             "request": request,
             "active_page": "statistics",
             "stats": stats,
+            "data": {"certificates": certificates},
             "student_id": student_id,
             **get_keycloak_urls(),
         },

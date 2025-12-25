@@ -26,10 +26,10 @@ class StorageService:
     """
 
     # Storage bucket and paths configuration
-    CERTIFICATES_BUCKET = "myminio"
-    CERTIFICATES_PATH = "certificates"
-    IMAGES_BUCKET = "myminio"
-    IMAGES_PATH = "images/python"
+    CERTIFICATES_BUCKET = "certificates"
+    CERTIFICATES_PATH = ""
+    IMAGES_BUCKET = "images"
+    IMAGES_PATH = "python"
 
     def __init__(self):
         """Initialize S3 client with MinIO credentials."""

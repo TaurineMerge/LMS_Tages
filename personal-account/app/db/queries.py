@@ -48,25 +48,74 @@ STUDENT_EMAIL_EXISTS = """
     """
 
 # Certificate queries -------------------------------------------------------
+GET_PASSING_ATTEMPTS_WITHOUT_CERTIFICATES = """
+SELECT 
+    ta.id,
+    ta.student_id,
+    ta.test_id as course_id,
+    ta.point as score,
+    td.min_point as max_score,
+    cb.title as course_name
+FROM tests.test_attempt_b ta
+JOIN tests.test_d td ON ta.test_id = td.id
+JOIN knowledge_base.course_b cb ON td.course_id = cb.id
+WHERE ta.passed = true
+AND ta.completed = true
+AND ta.certificate_id IS NULL  -- certificates are generated here, so testing doesn't set it
+ORDER BY ta.date_of_attempt DESC
+LIMIT 100
+"""
+
 CERTIFICATE_INSERT = """
     INSERT INTO personal_account.certificate_b
-        (content, student_id, course_id, test_attempt_id)
+        (student_id, certificate_number, pdf_s3_key, snapshot_s3_key)
     VALUES
-        (:content, :student_id, :course_id, :test_attempt_id)
+        (:student_id, :certificate_number, :pdf_s3_key, :snapshot_s3_key)
+    RETURNING *
+    """
+
+GET_MAX_CERTIFICATE_NUMBER = "SELECT MAX(certificate_number) FROM personal_account.certificate_b"
+
+CERTIFICATE_UPDATE_S3_KEY = """
+    UPDATE personal_account.certificate_b
+    SET pdf_s3_key = :pdf_s3_key  -- Или snapshot_s3_key
+    WHERE id = :id
     RETURNING *
     """
 
 CERTIFICATES_BY_STUDENT = """
-    SELECT * FROM personal_account.certificate_b
-    WHERE student_id = :student_id
-    ORDER BY created_at DESC
-    """
+SELECT
+    c.*,
+    ta.test_id,
+    t.course_id,
+    kb.title as course_name
+FROM personal_account.certificate_b c
+LEFT JOIN tests.test_attempt_b ta ON ta.certificate_id = c.id
+LEFT JOIN tests.test_d t ON t.id = ta.test_id
+LEFT JOIN knowledge_base.course_b kb ON kb.id = t.course_id
+WHERE c.student_id = :student_id
+ORDER BY c.created_at DESC
+"""
 
-CERTIFICATES_BY_COURSE = """
-    SELECT * FROM personal_account.certificate_b
-    WHERE course_id = :course_id
-    ORDER BY created_at DESC
-    """
+CERTIFICATES_BY_STUDENT_WITH_COURSE = """
+SELECT
+    c.*,
+    ta.test_id,
+    t.course_id,
+    kb.title as course_name
+FROM personal_account.certificate_b c
+LEFT JOIN tests.test_attempt_b ta ON ta.certificate_id = c.id
+LEFT JOIN tests.test_d t ON t.id = ta.test_id
+LEFT JOIN knowledge_base.course_b kb ON kb.id = t.course_id
+WHERE c.student_id = :student_id
+ORDER BY c.created_at DESC
+"""
+
+
+CERTIFICATES_BY_COURSE = (
+    "SELECT * FROM personal_account.certificate_b WHERE course_id = :course_id"  # Удалить, если course_id нет
+)
+
 
 CERTIFICATES_FILTERED_TEMPLATE = """
     SELECT * FROM personal_account.certificate_b

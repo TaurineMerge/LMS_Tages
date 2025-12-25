@@ -31,4 +31,3 @@ CREATE TABLE IF NOT EXISTS stats.student_stats_aggregated (
 
 -- Индексы для статистики
 CREATE INDEX IF NOT EXISTS idx_stats_updated_at ON stats.student_stats_aggregated(updated_at);
-

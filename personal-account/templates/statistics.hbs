@@ -44,6 +44,38 @@
             </button>
         </form>
     </div>
+
+    {% if data.certificates %}
+    <div class="mt-8">
+        <h2 class="text-xl font-bold mb-4">Мои сертификаты</h2>
+        {% for course_id, course_certificates in data.certificates.items() %}
+        <div class="bg-white rounded-lg shadow p-6 mb-4">
+            <h3 class="text-lg font-semibold mb-3">Сертификаты за курс {{ course_certificates[0].course_name or course_id }}</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for cert in course_certificates %}
+                <div class="certificate border border-gray-200 rounded p-4 hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-medium">Сертификат #{{ cert.certificate_number }}</span>
+                        <span class="text-sm text-gray-500">{{ cert.created_at.strftime('%d.%m.%Y') }}</span>
+                    </div>
+                    {% if cert.download_url %}
+                    <a href="{{ cert.download_url }}" target="_blank" 
+                       class="inline-flex items-center px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded transition-colors">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        Скачать PDF
+                    </a>
+                    {% else %}
+                    <span class="text-sm text-gray-400">Сертификат недоступен</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 </div>
 {% endif %}
 {% endblock %}

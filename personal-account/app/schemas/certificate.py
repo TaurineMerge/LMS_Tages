@@ -1,6 +1,7 @@
 """Certificate schemas."""
 
 from datetime import date
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, FieldValidationInfo, HttpUrl, field_validator
@@ -64,3 +65,18 @@ class certificate_list_item(BaseModel):
     created_at: date
     course_id: UUID
     student_id: UUID
+    download_url: HttpUrl | None = None
+
+
+class certificates_by_course(BaseModel):
+    """Schema for certificates grouped by course."""
+
+    course_id: str
+    certificates: list[certificate_list_item]
+
+
+class stats_response(BaseModel):
+    """Schema for stats API response including certificates."""
+
+    statistics: dict[str, Any]
+    certificates: dict[str, list[dict[str, Any]]]

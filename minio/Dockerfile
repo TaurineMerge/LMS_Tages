@@ -1,7 +1,7 @@
 FROM minio/minio:latest
 
-# Установка mc
-ADD https://dl.min.io/client/mc/release/linux-amd64/mc /usr/local/bin/mc
+# Копирование mc (скачайте mc вручную с https://dl.min.io/client/mc/release/linux-amd64/mc и положите в папку minio/)
+COPY mc /usr/local/bin/mc
 RUN chmod +x /usr/local/bin/mc
 
 # Копирование скриптов

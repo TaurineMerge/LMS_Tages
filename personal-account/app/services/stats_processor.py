@@ -4,6 +4,7 @@ import logging
 from uuid import UUID
 
 from app.clients.validation.contract_manager import ContractManager
+from app.repositories.certificate import certificate_repository
 from app.repositories.stats import stats_repository
 from app.repositories.student import student_repository
 from app.services.cert_service import CertificateGenerationError, get_certificate_service
@@ -21,6 +22,7 @@ class StatsProcessor:
     """
 
     def __init__(self, db=None):
+        self.certificate_repo = certificate_repository
         self.repo = stats_repository
         self.cm = ContractManager()
         self.student_repo = student_repository
@@ -97,52 +99,31 @@ class StatsProcessor:
 
     @traced("stats_processor.check_and_generate_certificates", record_args=True, record_result=True)
     async def check_and_generate_certificates(self) -> dict[str, int]:
-        """Check for successful test attempts and generate certificates.
+        """Check for passing attempts without certificates and generate them."""
+        stats = {"generated": 0, "failed": 0}
 
-        Fetches recent attempts with passing scores and generates certificates
-        if they don't already exist. Stores certificates in S3.
-
-        Returns:
-            Dict with counters: certificates_generated and failed.
-        """
-        stats = {"certificates_generated": 0, "failed": 0}
-
-        # Get recent attempts that passed (you need to implement this repo method)
-        # This should fetch attempts where score >= passing_score
-        passing_attempts = await self.repo.get_passing_attempts_without_certificates()
+        passing_attempts = await self.certificate_repo.get_passing_attempts_without_certificates()
 
         for attempt in passing_attempts:
             try:
-                student_id = UUID(attempt["student_id"])
-                course_id = UUID(attempt["course_id"])
-                test_attempt_id = UUID(attempt["id"])
-                score = attempt["score"]
-                max_score = attempt.get("max_score", 100)
-                course_name = attempt.get("course_name", "Course")
-
-                # Generate and store certificate
-                cert_id, _ = await self.certificate_service.generate_certificate(
-                    student_id=student_id,
-                    course_id=course_id,
-                    course_name=course_name,
-                    test_attempt_id=test_attempt_id,
-                    score=score,
-                    max_score=max_score,
+                # Generate certificate using cert_service
+                certificate_data = await self.certificate_service.generate_certificate(
+                    student_id=attempt["student_id"],
+                    course_id=attempt["course_id"],
+                    test_attempt_id=attempt["id"],
+                    score=attempt["score"],
+                    max_score=attempt["max_score"],
+                    course_name=attempt["course_name"],
                 )
 
-                logger.info(
-                    "Generated certificate for student %s, course %s: cert_id=%s",
-                    student_id,
-                    course_id,
-                    cert_id,
-                )
-                stats["certificates_generated"] += 1
+                # Save certificate record
+                await self.certificate_repo.create_certificate(certificate_data)
 
-            except Exception:
-                logger.exception(
-                    "Failed to generate certificate for attempt %s",
-                    attempt.get("id"),
-                )
+                stats["generated"] += 1
+                logger.info("Generated certificate for attempt %s", attempt["id"])
+
+            except Exception as e:
+                logger.error("Failed to generate certificate for attempt %s: %s", attempt["id"], e)
                 stats["failed"] += 1
 
         return stats
