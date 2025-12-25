@@ -1,7 +1,6 @@
 package web
 
 import (
-	"fmt"
 	"log/slog"
 
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
@@ -29,18 +28,15 @@ func NewCategoryHandler(categoriesService service.CategoryService, coursesServic
 
 // RenderCategories отображает страницу категорий.
 func (h *CategoryHandler) RenderCategories(c *fiber.Ctx) error {
-	const (
-		PAGE         = 1
-		LIMIT        = 10
-		COURSE_LIMIT = 5
-	)
+	const COURSE_LIMIT = 5
+	
 	var query request.PaginationQuery
 	if err := c.QueryParser(&query); err != nil {
 		return apperrors.NewInvalidRequest("Wrong query parameters")
 	}
 	ctx := c.UserContext()
 
-	categoriesDTOs, pagination, err := h.categoriesService.GetAllNotEmpty(ctx, PAGE, LIMIT)
+	categoriesDTOs, pagination, err := h.categoriesService.GetAllNotEmpty(ctx, query.Page, query.Limit)
 	if err != nil {
 		slog.Error("Failed to get categories for home page", "error", err)
 		categoriesDTOs = []response.CategoryDTO{}
@@ -56,9 +52,7 @@ func (h *CategoryHandler) RenderCategories(c *fiber.Ctx) error {
 		categories = append(categories, viewmodel.NewCategoryViewModel(cat, coursesDTOs, coursesPagination, COURSE_LIMIT))
 	}
 	vm := viewmodel.NewCategoriesPageViewMode(categories, pagination)
-	if len(vm.Categories) == 0 {
-		return apperrors.NewNotFound(fmt.Sprintf("Page %d", query.Page))
-	}
+	
 	return c.Render("pages/categories", fiber.Map{
 		"Header":  viewmodel.NewHeader(),
 		"User":    viewmodel.NewUserViewModel(c.Locals(domain.UserContextKey).(domain.UserClaims)),
