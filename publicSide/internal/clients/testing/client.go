@@ -12,7 +12,13 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v5"
 )
 
-const TEST_PATH = "/testing/internal/categories/%s/courses/%s/test"
+const (
+	TEST_API_PATH = "/testing/internal/categories/%s/courses/%s/test"
+	TEST_UI_PATH  = "/testing/categories/%s/courses/%s/test"
+
+	STATUS_OK        = "success"
+	STATUS_NOT_FOUND = "not_found"
+)
 
 // Client is a client for the testing service.
 type Client struct {
@@ -44,7 +50,7 @@ func NewClient(baseURL string, schemaPath string) (*Client, error) {
 
 // GetTest retrieves a test from the testing service.
 func (c *Client) GetTest(ctx context.Context, categoryID, courseID string) (*TestData, error) {
-	path := fmt.Sprintf(TEST_PATH, categoryID, courseID)
+	path := fmt.Sprintf(TEST_API_PATH, categoryID, courseID)
 	requestURL := c.baseURL.ResolveReference(&url.URL{Path: path})
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, requestURL.String(), nil)
@@ -65,7 +71,7 @@ func (c *Client) GetTest(ctx context.Context, categoryID, courseID string) (*Tes
 
 	var v interface{}
 	if err := json.Unmarshal(body, &v); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response for validation: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal response for validation: %w: %v", ErrInvalidResponse, err)
 	}
 
 	if err := c.schema.Validate(v); err != nil {
@@ -82,4 +88,9 @@ func (c *Client) GetTest(ctx context.Context, categoryID, courseID string) (*Tes
 	}
 
 	return testResponse.Data, nil
+}
+
+func GetUITestURL(baseURL, categoryId, courseId string) string {
+	url := fmt.Sprintf("%s/%s", baseURL, TEST_UI_PATH)
+	return fmt.Sprintf(url, categoryId, courseId)
 }

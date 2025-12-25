@@ -137,6 +137,11 @@
     color: var(--secondary-text-color);
 }
 
+.course-details__test-description--error {
+    font-weight: 600;
+    color: var(--error-color);
+}
+
 .course-details__test-actions {
     display: flex;
     flex-direction: column;
@@ -149,3 +154,5 @@
     color: var(--card-border-color);
     margin: 0;
 }
+
+
