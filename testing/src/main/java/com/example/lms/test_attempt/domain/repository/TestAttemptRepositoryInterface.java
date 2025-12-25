@@ -30,6 +30,18 @@ public interface TestAttemptRepositoryInterface {
     List<TestAttemptModel> findCompletedAttempts();
     List<TestAttemptModel> findIncompleteAttempts();
 
+    /**
+     * Возвращает последнюю (самую свежую) незавершённую попытку студента по тесту.
+     * Незавершённая = completed = false AND point IS NULL.
+     */
+    Optional<TestAttemptModel> findLatestIncompleteByStudentAndTestId(UUID studentId, UUID testId);
+
+    /**
+     * Возвращает последнюю (самую свежую) завершённую попытку студента по тесту.
+     * Завершённая = completed = true OR point IS NOT NULL.
+     */
+    Optional<TestAttemptModel> findLatestCompletedByStudentAndTestId(UUID studentId, UUID testId);
+
     // ---------------- UI: attempt_version by attemptId (PK) ----------------
     Optional<String> findAttemptVersionByAttemptId(UUID attemptId);
     void updateAttemptVersionByAttemptId(UUID attemptId, String attemptVersionJson);

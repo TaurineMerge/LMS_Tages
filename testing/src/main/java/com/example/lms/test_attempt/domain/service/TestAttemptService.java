@@ -308,6 +308,22 @@ public class TestAttemptService {
                 .count();
     }
 
+    /**
+     * Последняя незавершённая попытка студента по тесту (если есть).
+     * Незавершённая = completed=false AND point IS NULL.
+     */
+    public Optional<TestAttempt> getLatestIncompleteAttempt(UUID studentId, UUID testId) {
+        return repository.findLatestIncompleteByStudentAndTestId(studentId, testId).map(this::toDto);
+    }
+
+    /**
+     * Последняя завершённая попытка студента по тесту (если есть).
+     * Завершённая = completed=true OR point != null.
+     */
+    public Optional<TestAttempt> getLatestCompletedAttempt(UUID studentId, UUID testId) {
+        return repository.findLatestCompletedByStudentAndTestId(studentId, testId).map(this::toDto);
+    }
+
     public Optional<String> getAttemptVersionByAttemptId(UUID attemptId) {
         return repository.findAttemptVersionByAttemptId(attemptId);
     }

@@ -50,6 +50,104 @@ public class UiTestController {
     }
 
     // =========================================================
+    // COURSE ENTRYPOINT (category/course)
+    // =========================================================
+
+    /**
+     * "Умная" точка входа для кнопки "Пройти тест" на странице курса.
+     *
+     * Логика:
+     * - если есть незавершённая попытка (completed=false) по этому тесту -> редиректим на неё
+     * - иначе если есть завершённая попытка (completed=true) -> открываем результат последней завершённой
+     * - иначе создаём новую попытку и ведём в неё
+     *
+     * GET /ui/category/{categoryId}/course/{courseId}/test
+     */
+    public void startOrResumeFromCourse(Context ctx) {
+        String categoryId = ctx.pathParam("categoryId");
+        String courseIdStr = ctx.pathParam("courseId");
+
+        // 1) Находим тест по courseId (в проекте курс может иметь только 1 тест)
+        List<Test> tests;
+        try {
+            tests = testService.getTestsByCourseId(courseIdStr);
+        } catch (Exception e) {
+            ctx.status(404).contentType("text/plain; charset=utf-8")
+                    .result("Тест для курса не найден: courseId=" + courseIdStr);
+            return;
+        }
+
+        if (tests == null || tests.isEmpty() || tests.get(0).getId() == null) {
+            ctx.status(404).contentType("text/plain; charset=utf-8")
+                    .result("У курса нет теста: courseId=" + courseIdStr);
+            return;
+        }
+
+        UUID testId = tryParseUuid(String.valueOf(tests.get(0).getId()));
+        if (testId == null) {
+            ctx.status(500).contentType("text/plain; charset=utf-8")
+                    .result("Некорректный testId у курса: courseId=" + courseIdStr);
+            return;
+        }
+
+        // 2) studentId (пока cookie, позже интегрируем JWT)
+        UUID studentId = resolveOrCreateStudentId(ctx);
+
+        // 3) Если есть незавершённая попытка -> продолжаем её
+        UUID attemptId = testAttemptService.getLatestIncompleteAttempt(studentId, testId)
+                .map(a -> tryParseUuid(a.getId()))
+                .orElse(null);
+
+        if (attemptId != null) {
+            ctx.redirect("/testing/ui/category/" + categoryId + "/course/" + courseIdStr + "/attempt/" + attemptId);
+            return;
+        }
+
+        // 4) Иначе показываем результат последней завершённой (если есть)
+        UUID lastCompletedAttemptId = testAttemptService.getLatestCompletedAttempt(studentId, testId)
+                .map(a -> tryParseUuid(a.getId()))
+                .orElse(null);
+
+        if (lastCompletedAttemptId != null) {
+            ctx.redirect("/testing/ui/tests/" + testId + "/results?attemptId=" + lastCompletedAttemptId);
+            return;
+        }
+
+        // 5) Иначе создаём новую попытку
+        UUID newAttemptId = testAttemptService.createNewAttempt(studentId, testId);
+        ctx.redirect("/testing/ui/category/" + categoryId + "/course/" + courseIdStr + "/attempt/" + newAttemptId);
+    }
+
+    /**
+     * Открыть конкретную попытку в UI.
+     *
+     * GET /ui/category/{categoryId}/course/{courseId}/attempt/{attemptId}
+     *
+     * Сейчас просто редиректим на существующую страницу прохождения теста,
+     * т.к. templates и формы уже завязаны на /ui/tests/{testId}/...
+     */
+    public void openAttemptFromCourse(Context ctx) {
+        String attemptIdStr = ctx.pathParam("attemptId");
+        UUID attemptId = parseUuidOr400(ctx, attemptIdStr, "attemptId");
+        if (attemptId == null) return;
+
+        try {
+            // Берём testId из попытки, чтобы переиспользовать существующие страницы
+            com.example.lms.test_attempt.api.dto.TestAttempt attempt = testAttemptService.getTestAttemptById(attemptId);
+            UUID testId = tryParseUuid(attempt.getTest_id());
+            if (testId == null) {
+                ctx.status(500).contentType("text/plain; charset=utf-8")
+                        .result("Некорректный testId у попытки: attemptId=" + attemptIdStr);
+                return;
+            }
+            ctx.redirect("/testing/ui/tests/" + testId + "/take?attemptId=" + attemptId);
+        } catch (Exception e) {
+            ctx.status(404).contentType("text/plain; charset=utf-8")
+                    .result("Попытка не найдена: " + attemptIdStr);
+        }
+    }
+
+    // =========================================================
     // RETRY
     // =========================================================
 

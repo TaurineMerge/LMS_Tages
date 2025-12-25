@@ -9,6 +9,14 @@ public class UiRouter {
     public static void register(UiTestController uiTestController) {
         path("/ui", () -> {
 
+            // "умная" точка входа с курса
+            // /ui/category/{categoryId}/course/{courseId}/test
+            get("/category/{categoryId}/course/{courseId}/test", uiTestController::startOrResumeFromCourse);
+
+            // открыть конкретную попытку с курса
+            // /ui/category/{categoryId}/course/{courseId}/attempt/{attemptId}
+            get("/category/{categoryId}/course/{courseId}/attempt/{attemptId}", uiTestController::openAttemptFromCourse);
+
             // attemptId идёт query-параметром:
             // /ui/tests/{testId}/take?attemptId=...
             get("/tests/{testId}/take", uiTestController::showTakePage);
