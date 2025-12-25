@@ -103,14 +103,14 @@
                         </div>
                         <p class="form-field__hint">Загрузите изображение для курса (опционально)</p>
                         {{#if course.ImageKey}}
-                        <div class="current-image">
-                            <p>Текущее изображение:</p>
-                            <div class="image-preview">
-                                <span>🖼️</span>
-                                <img src="{{course.ImageURL}}" onload="this.style.display='block'; this.previousElementSibling.style.display='none';" onerror="this.closest('.current-image').style.display='none';" style="max-width: 200px; max-height: 200px;" />
-                            </div>
-                        </div>
-                        {{/if}}
+<div class="current-image">
+    <p>Текущее изображение:</p>
+    <div class="image-preview">
+        <span>🖼️</span>
+        <img src="{{s3Service.GetImageURL course.ImageKey}}" onload="this.style.display='block'; this.previousElementSibling.style.display='none';" onerror="this.closest('.current-image').style.display='none';" style="max-width: 200px; max-height: 200px;" />
+    </div>
+</div>
+{{/if}}
                     </div>
                 </div>
 

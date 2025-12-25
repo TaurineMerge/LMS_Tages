@@ -98,7 +98,7 @@
                             <div class="entity-card__image-placeholder">
                                 <span>🖼️</span>
                                 {{#if ImageKey}}
-                                <img src="{{ImageURL}}" onload="this.style.display='block'; this.previousElementSibling.style.display='none';" />
+                                <img src="{{../s3Service.GetImageURL ImageKey}}" onload="this.style.display='block'; this.previousElementSibling.style.display='none';" />
                                 {{/if}}
                             </div>
                             <h3 class="entity-card__title">{{Title}}</h3>

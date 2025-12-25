@@ -339,6 +339,13 @@ func main() {
 		log.Printf("✅ S3 bucket '%s' is ready", settings.Minio.Bucket)
 	}
 
+	engine.AddFunc("s3ImageURL", func(imageKey string) string {
+		if imageKey == "" {
+			return ""
+		}
+		return s3Service.GetImageURL(imageKey)
+	})
+
 	// Handlers
 	categoryHandler := handlers.NewCategoryHandler(categoryService)
 	courseHandler := handlers.NewCourseHandler(courseService)

@@ -20,8 +20,7 @@ type CourseView struct {
 	Visible     bool
 	CreatedAt   string
 	UpdatedAt   string
-	ImageKey    string
-	ImageURL    string
+	ImageKey    string // Только ключ, URL будет генерироваться в шаблоне
 	Tests       CourseTestsView
 }
 
@@ -142,13 +141,6 @@ func (h *CourseWebHandler) RenderCoursesEditor(c *fiber.Ctx) error {
 			CreatedAt:   formatDateTime(course.CreatedAt),
 			UpdatedAt:   formatDateTime(course.UpdatedAt),
 			ImageKey:    course.ImageKey,
-			ImageURL: func() string {
-				if course.ImageKey != "" {
-					return h.s3Service.GetImageURL(course.ImageKey)
-				} else {
-					return ""
-				}
-			}(),
 		})
 	}
 
@@ -160,6 +152,7 @@ func (h *CourseWebHandler) RenderCoursesEditor(c *fiber.Ctx) error {
 		"coursesCount":     totalCount,
 		"levelFilter":      levelFilter,
 		"visibilityFilter": visibilityFilter,
+		"s3Service":        h.s3Service, // Передаем s3Service в шаблон
 	}, "layouts/main")
 }
 
@@ -181,6 +174,7 @@ func (h *CourseWebHandler) RenderNewCourseForm(c *fiber.Ctx) error {
 		"title":        "Новый курс",
 		"categoryID":   categoryID,
 		"categoryName": category.Title,
+		"s3Service":    h.s3Service, // Передаем s3Service в шаблон
 	}, "layouts/main")
 }
 
@@ -221,13 +215,6 @@ func (h *CourseWebHandler) RenderEditCourseForm(c *fiber.Ctx) error {
 		CreatedAt:   formatDateTime(course.Data.CreatedAt),
 		UpdatedAt:   formatDateTime(course.Data.UpdatedAt),
 		ImageKey:    course.Data.ImageKey,
-		ImageURL: func() string {
-			if course.Data.ImageKey != "" {
-				return h.s3Service.GetImageURL(course.Data.ImageKey)
-			} else {
-				return ""
-			}
-		}(),
 	}
 
 	// Получить информацию о тестах
@@ -243,6 +230,7 @@ func (h *CourseWebHandler) RenderEditCourseForm(c *fiber.Ctx) error {
 		"categoryID":   categoryID,
 		"categoryName": category.Title,
 		"course":       courseView,
+		"s3Service":    h.s3Service, // Передаем s3Service в шаблон
 	}, "layouts/main")
 }
 
