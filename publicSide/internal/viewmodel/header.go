@@ -17,7 +17,7 @@ func NewHeader() *HeaderViewModel {
 	return &HeaderViewModel{
 		HomeRoute: routing.RouteHome,
 		CategoriesRoute: routing.RouteCategories,
-		ProfileRoute: routing.RouteProfile,
+		ProfileRoute: routing.ExternalServiceRouteProfile,
 		LoginRoute: routing.RouteLogin,
 		LogoutRoute: routing.RouteLogout,
 		RegRoute: routing.RouteReg,

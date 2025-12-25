@@ -18,7 +18,7 @@ const (
 	RouteAuthCallback = "/auth/callback"
 	RouteReg = "/reg"
 
-	RouteProfile = "account/profile"
+	ExternalServiceRouteProfile = "http://localhost/account/profile"
 
 	RouteAPIV1 = "/api/v1"
 
