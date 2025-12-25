@@ -6,7 +6,8 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel
 
-from app.core.security import TokenPayload, get_current_user
+from app.config import get_settings
+from app.core.security import TokenPayload, get_current_user, get_current_user_optional
 from app.schemas.common import (
     api_response,
     message_response,
@@ -22,6 +23,7 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 import logging
 
 logger = logging.getLogger(__name__)
+settings = get_settings()
 
 
 class Refresh_Token_Request(BaseModel):
@@ -163,51 +165,23 @@ async def refresh(body: Refresh_Token_Request):
     return api_response(data=token_data, message="Token refreshed successfully")
 
 
-@router.post(
-    "/logout",
-    response_model=api_response[message_response],
-    summary="Logout user",
-    description="Logs out the user by clearing server-side session and cookies.",
-)
+@router.post("/logout", summary="Logout user", description="Logs out the user and redirects to login page.")
 @traced("router.auth.logout")
-async def logout(body: Optional[Logout_Request] = None):
-    """Logout user.
+async def logout(request: Request, current_user: Optional[TokenPayload] = Depends(get_current_user_optional)):
+    # Получаем refresh_token из cookies
+    refresh_token = request.cookies.get("refresh_token")
 
-    Works with both:
-    1. Traditional: body with refresh_token for logout from other clients
-    2. Cookie-based: empty body, relies on server-side session invalidation
-    """
-    if body and body.refresh_token:
-        await auth_service.logout(body.refresh_token)
+    # Вызываем logout в Keycloak если токен есть
+    if refresh_token and current_user:
+        await auth_service.logout(refresh_token)
 
-    # Create response that clears cookies
-    response = JSONResponse(content=api_response(data=message_response(message="Logged out successfully")).model_dump())
+    # Редирект на страницу логина (303 для POST → GET)
+    response = RedirectResponse(url=f"{settings.url_prefix}/", status_code=status.HTTP_303_SEE_OTHER)
 
-    # Clear access_token cookie
-    response.delete_cookie(key="access_token", path="/")
+    # Безопасное удаление cookies
+    response.delete_cookie(key="access_token", path="/", secure=True, httponly=True, samesite="lax")
+    response.delete_cookie(key="refresh_token", path="/", secure=True, httponly=True, samesite="lax")
 
-    # Clear refresh_token cookie
-    response.delete_cookie(key="refresh_token", path="/")
-
-    return response
-
-
-@router.get(
-    "/logout",
-    response_model=api_response[message_response],
-    summary="Logout user via GET",
-    description="Logs out the user by clearing cookies (for use in templates).",
-)
-@router.get("/logout")
-@traced("router.auth.logout_get")
-async def logout_get():
-    """Logout user via GET request (for simple links)."""
-    from app.config import get_settings
-
-    settings = get_settings()
-    response = RedirectResponse(url=f"{settings.url_prefix}/")
-    response.delete_cookie(key="access_token", path="/")
-    response.delete_cookie(key="refresh_token", path="/")
     return response
 
 

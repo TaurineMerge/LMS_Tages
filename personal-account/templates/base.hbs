@@ -13,7 +13,7 @@
     <nav class="sidebar">
         <ul class="sidebar__nav">
             <li class="nav-item"> 
-                <a class="nav-link" href="{{ prefix }}/statistics">
+                <a class="nav-link" href="account/statistics">
                     <svg viewBox="0 0 24 24" class="nav-link--icon">
                         <use href="#chart"></use>
                     </svg>
@@ -21,7 +21,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="{{prefix}}/profile">
+                <a class="nav-link" href="account/profile">
                    <svg viewBox="0 0 24 24" class="nav-link--icon">
                         <use href="#profile"></use>
                     </svg>
@@ -29,7 +29,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="{{ prefix }}/certificates">
+                <a class="nav-link" href="account/certificates">
                     <svg viewBox="0 0 24 24" class="nav-link--icon">
                         <use href="#certificate"></use>
                     </svg>
@@ -39,12 +39,14 @@
         </ul>
         
         <div class="sidebar__logout">
-            <a class="nav-link" id="sidebar__logout--button" href="{{ prefix }}/logout">
-                   <svg viewBox="0 0 24 24" class="nav-link--icon">
+            <form action="{{ prefix }}/api/v1/auth/logout" method="post">
+                <button class="nav-link" id="sidebar__logout--button" type="submit">
+                    <svg viewBox="0 0 24 24" class="nav-link--icon">
                         <use href="#logout"></use>
                     </svg>
                     <p>Выйти</p>
-            </a>
+                </button>
+            </form>
         </div>
     </nav>
     </div>

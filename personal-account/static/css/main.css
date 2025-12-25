@@ -235,18 +235,22 @@ input {
     width: 24px;
 }
 
-.sidebar__logout {
+.sidebar .sidebar__logout {
     background: none;
 }
 
-.sidebar__logout svg,
-.sidebar__logout p {
+.sidebar .sidebar__logout .nav-link {
     color: var(--gray-500);
 }
 
 .sidebar .sidebar__logout .nav-link:hover{
     color: var(--orange-500);
     background-color: transparent;
+    transition: color 0.3s;
+}
+
+.sidebar .sidebar__logout .nav-link:hover svg {
+    color: var(--orange-500);
     transition: color 0.3s;
 }
 
