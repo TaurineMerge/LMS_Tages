@@ -230,6 +230,24 @@ public class TestFormController {
             Boolean isDraft = Boolean.parseBoolean(ctx.formParam("isDraft"));
             Boolean isNew = Boolean.parseBoolean(ctx.formParam("isNew"));
             
+            // Валидация формы перед сохранением
+            TestFormData formData = parseTestFormData(ctx);
+            if (!validateFormData(formData, ctx)) {
+                // Если валидация не прошла, показываем форму снова с ошибками
+                Map<String, Object> model = new HashMap<>();
+                model.put("title", "Ошибка валидации");
+                model.put("error", "Пожалуйста, заполните все обязательные поля правильно");
+                model.put("test", getTestFromForm(ctx));
+                model.put("questions", getQuestionsFromForm(ctx));
+                model.put("page", "test-editor");
+                model.put("isNew", isNew);
+                model.put("isDraft", isDraft);
+                model.put("entityId", entityId);
+                
+                renderTemplateWithBody(ctx, "test-editor", model);
+                return;
+            }
+            
             if (isDraft) {
                 // Сохранение черновика
                 saveDraftFromForm(ctx, entityId, isNew);
@@ -252,6 +270,71 @@ public class TestFormController {
             
             renderTemplateWithBody(ctx, "test-editor", model);
         }
+    }
+    
+    /**
+     * Валидация данных формы на сервере
+     */
+    private boolean validateFormData(TestFormData formData, Context ctx) {
+        // 1. Проверка названия теста
+        String title = ctx.formParam("title");
+        if (title == null || title.trim().isEmpty()) {
+            return false;
+        }
+        
+        // 2. Проверка минимального балла
+        String minPointStr = ctx.formParam("min_point");
+        if (minPointStr == null || minPointStr.trim().isEmpty()) {
+            return false;
+        }
+        try {
+            int minPoint = Integer.parseInt(minPointStr);
+            if (minPoint < 0) {
+                return false;
+            }
+        } catch (NumberFormatException e) {
+            return false;
+        }
+        
+        // 3. Проверка вопросов
+        if (formData.getQuestions() == null || formData.getQuestions().isEmpty()) {
+            return false;
+        }
+        
+        // 4. Проверка каждого вопроса
+        for (TestFormData.QuestionFormData question : formData.getQuestions()) {
+            // Проверка текста вопроса
+            if (question.getTextOfQuestion() == null || 
+                question.getTextOfQuestion().trim().isEmpty()) {
+                return false;
+            }
+            
+            // Проверка ответов
+            if (question.getAnswers() == null || question.getAnswers().size() < 2) {
+                return false;
+            }
+            
+            // Проверка, что есть хотя бы один ответ с баллами > 0
+            boolean hasPositiveScore = false;
+            boolean hasEmptyAnswerText = false;
+            
+            for (TestFormData.AnswerFormData answer : question.getAnswers()) {
+                if (answer.getText() == null || answer.getText().trim().isEmpty()) {
+                    hasEmptyAnswerText = true;
+                }
+                
+                if (answer.getScore() != null && answer.getScore() > 0) {
+                    hasPositiveScore = true;
+                }
+            }
+            
+            // Если есть пустые ответы или нет правильного ответа
+            if (hasEmptyAnswerText || !hasPositiveScore) {
+                return false;
+            }
+        }
+        
+        return true;
     }
     
     /**

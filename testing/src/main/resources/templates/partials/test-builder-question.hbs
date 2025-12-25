@@ -4,9 +4,8 @@
         <div class="question-controls">
             <button type="button" class="btn-move-up" onclick="moveQuestionUp({{questionIndex}})">↑</button>
             <button type="button" class="btn-move-down" onclick="moveQuestionDown({{questionIndex}})">↓</button>
-            {{#if questionIndex}}
+            <!-- УБИРАЕМ УСЛОВИЕ, кнопка всегда видна -->
             <button type="button" class="remove-question-btn" onclick="removeQuestion({{questionIndex}})">× Удалить</button>
-            {{/if}}
         </div>
         <textarea name="question[{{questionIndex}}][text]" placeholder="Введите текст вопроса" required>
             {{#if question}}{{question.question.text}}{{/if}}
