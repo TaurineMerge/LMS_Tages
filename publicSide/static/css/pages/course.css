@@ -107,17 +107,45 @@
     margin-bottom: 15px;
     color: var(--main-text-color);
 }
-/* 
-.course-details__description-text {
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: 20px;
-    align-items: start;
-} */
 
 .course-details__description-text p {
     font-size: 16px;
     line-height: 1.6;
     color: var(--secondary-text-color);
     margin-bottom: 15px;
+}
+
+.course-details__test {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    gap: 10px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid var(--card-border-color);
+}
+
+.course-details__test-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--main-text-color);
+}
+
+.course-details__test-description {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--secondary-text-color);
+}
+
+.course-details__test-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.course-details__test-login-message {
+    font-size: 10px;
+    color: var(--card-border-color);
+    margin: 0;
 }

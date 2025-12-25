@@ -18,6 +18,16 @@ func (e *AppError) Error() string {
 	return e.Message
 }
 
+// ServiceUnavailableError represents an error where a dependency service is unavailable.
+type ServiceUnavailableError struct {
+	ServiceName string
+}
+
+func (e *ServiceUnavailableError) Error() string {
+	return fmt.Sprintf("service %s is unavailable", e.ServiceName)
+}
+
+
 // Factory functions for creating specific application errors.
 
 // NewNotFound creates a new 404 Not Found error.
@@ -58,4 +68,9 @@ func NewInternal() error {
 		Code:       "INTERNAL_SERVER_ERROR",
 		Message:    "An unexpected internal error occurred",
 	}
+}
+
+// NewServiceUnavailable creates a new error indicating a dependency service is unavailable.
+func NewServiceUnavailable(serviceName string) error {
+	return &ServiceUnavailableError{ServiceName: serviceName}
 }

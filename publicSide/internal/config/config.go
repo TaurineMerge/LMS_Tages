@@ -19,6 +19,7 @@ type (
 		Log      LogConfig
 		OIDC     OIDCConfig
 		Minio    MinioConfig
+		TestingService TestingServiceConfig
 	}
 
 	// AppConfig holds general application settings.
@@ -71,6 +72,11 @@ type (
 		Bucket    string
 		UseSSL    bool
 		PublicURL string
+	}
+
+	// TestingServiceConfig holds settings for the external testing service.
+	TestingServiceConfig struct {
+		BaseURL string
 	}
 )
 
@@ -232,6 +238,18 @@ func WithMinioFromEnv() Option {
 			return err
 		}
 		cfg.Minio.PublicURL = getOptionalEnv("MINIO_PUBLIC_URL", "http://localhost:9000")
+		return nil
+	}
+}
+
+// WithTestingFromEnv configures the external testing service settings from environment variables.
+func WithTestingFromEnv() Option {
+	return func(cfg *Config) error {
+		var err error
+		cfg.TestingService.BaseURL, err = getRequiredEnv("TESTING_SERVICE_BASE_URL")
+		if err != nil {
+			return err
+		}
 		return nil
 	}
 }
