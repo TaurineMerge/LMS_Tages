@@ -2,7 +2,7 @@ FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
-# Установка системных зависимостей, необходимых для некоторых пакетов Python
+# Установка системных зависимостей, необходимых для некоторый пакетов Python
 RUN apt-get update \
     && apt-get install --no-install-recommends -y \
         build-essential \

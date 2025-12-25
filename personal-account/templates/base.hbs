@@ -22,11 +22,90 @@
     </nav>
 
     <div class="container mt-4">
+      {% include 'includes/sprite.html' %} 
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="sidebar__box">
+            <div class="sidebar__header">
+            <svg viewBox="0 0 31 30" class="logo">
+                <use href="#logo"></use>
+            </svg>
+            <p>E-tutor</p>
+        </div>
+        
+        <ul class="sidebar__nav">
+            <li class="nav-item"> 
+                <a class="nav-link" href="/account/dashboard">
+                    <svg viewBox="0 0 24 24" class="nav-link--icon">
+                        <use href="#chart"></use>
+                    </svg>
+                    <p>Дашборд</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/account/profile">
+                   <svg viewBox="0 0 24 24" class="nav-link--icon">
+                        <use href="#profile"></use>
+                    </svg>
+                    <p>Профиль</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/account/certificates">
+                    <svg viewBox="0 0 24 24" class="nav-link--icon">
+                        <use href="#certificate"></use>
+                    </svg>
+                    <p>Сертификаты</p>
+                </a>
+            </li>
+        </ul>
+        
+        </div>
+        
+        <div class="sidebar__logout">
+            <button class="nav-link" id="sidebar__logout--button">
+                   <svg viewBox="0 0 24 24" class="nav-link--icon">
+                        <use href="#logout"></use>
+                    </svg>
+                    <p>Выйти</p>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content">  
+        <!-- Page Content -->
         {% block content %}{% endblock %}
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/handlebars@4.7.8/dist/handlebars.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    
+    <script>
+       document.querySelector('#sidebar__logout--button').addEventListener('click', async (event) => {
+        event.preventDefault();
+
+        try {
+            const response = await fetch('/auth/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({}),
+            });
+
+            if (response.ok) {
+                window.location.href = '/';
+            } else {
+                console.error('Logout failed');
+            }
+        } catch (error) {
+            console.error('Error during logout:', error);
+        }
+    });
+    </script>
+    
     {% block extra_js %}{% endblock %}
 </body>
 </html>
