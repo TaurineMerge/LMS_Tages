@@ -313,14 +313,17 @@ async def statistics_page(request: Request):
         stats_data = await stats_service.get_user_statistics(UUID(student_id))
         logging.debug("Fetched stats for user %s: %s", student_id, stats_data)
 
-        # Extract statistics and certificates for template
+        # Extract statistics, certificates and attempts for template
         stats = stats_data.get("statistics", {})
         certificates = stats_data.get("certificates", {})
+        attempts = stats_data.get("attempts", [])
         logger.info("Certificates for user %s: %s", student_id, certificates)
+        logger.info("Attempts for user %s: %d", student_id, len(attempts))
     except Exception as e:
         logger.error(f"Failed to fetch stats for user {student_id}: {e}")
         stats = {}
         certificates = {}
+        attempts = []
 
     return _render_template_safe(
         "statistics.hbs",
@@ -328,7 +331,7 @@ async def statistics_page(request: Request):
             "request": request,
             "active_page": "statistics",
             "stats": stats,
-            "data": {"certificates": certificates},
+            "data": {"certificates": certificates, "attempts": attempts},
             "student_id": student_id,
             **get_keycloak_urls(),
         },

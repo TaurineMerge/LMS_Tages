@@ -40,8 +40,11 @@ class StatsService:
         # Get certificates grouped by course
         certificates = await certificate_service.get_certificates_by_student_grouped(student_id)
 
+        # Get recent attempts
+        attempts = await self.repo.get_student_attempts(student_id)
+
         # Combine results
-        result = {"statistics": stats, "certificates": certificates}
+        result = {"statistics": stats, "certificates": certificates, "attempts": attempts}
 
         return result
 
@@ -63,7 +66,10 @@ class StatsService:
         # Get certificates grouped by course
         certificates = await certificate_service.get_certificates_by_student_grouped(student_id)
 
+        # Get recent attempts
+        attempts = await self.repo.get_student_attempts(student_id)
+
         # Combine results
-        result = {"statistics": stats, "certificates": certificates}
+        result = {"statistics": stats, "certificates": certificates, "attempts": attempts}
 
         return result

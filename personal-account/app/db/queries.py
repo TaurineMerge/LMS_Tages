@@ -125,6 +125,28 @@ CERTIFICATES_FILTERED_TEMPLATE = """
 
 CERTIFICATE_BY_NUMBER = "SELECT * FROM personal_account.certificate_b WHERE certificate_number = :certificate_number"
 
+# Student attempts queries --------------------------------------------------
+STUDENT_ATTEMPTS = """
+SELECT
+    ta.id,
+    ta.student_id,
+    ta.test_id,
+    ta.date_of_attempt,
+    ta.point,
+    ta.passed,
+    ta.completed,
+    ta.result,
+    td.title as test_title,
+    cb.title as course_name,
+    cb.id as course_id
+FROM tests.test_attempt_b ta
+JOIN tests.test_d td ON ta.test_id = td.id
+JOIN knowledge_base.course_b cb ON td.course_id = cb.id
+WHERE ta.student_id = :student_id
+ORDER BY ta.date_of_attempt DESC
+LIMIT 50
+"""
+
 # Visit queries -------------------------------------------------------------
 VISIT_INSERT = """
     INSERT INTO personal_account.visit_students_for_lessons

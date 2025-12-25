@@ -205,5 +205,20 @@ class StatsRepository:
         await self.save_to_redis(student_id, stats)
         return stats
 
+    @traced("stats.get_student_attempts", record_args=True, record_result=True)
+    async def get_student_attempts(self, student_id: UUID) -> list[dict[str, Any]]:
+        """Get recent attempts for a student.
+
+        Args:
+            student_id: Student UUID
+
+        Returns:
+            List of attempt dictionaries
+        """
+        from app.database import fetch_all
+        from app.db import queries as q
+
+        return await fetch_all(q.STUDENT_ATTEMPTS, {"student_id": student_id})
+
 
 stats_repository = StatsRepository()
