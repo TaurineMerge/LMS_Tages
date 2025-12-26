@@ -30,64 +30,115 @@ func ErrorHandlerMiddleware() fiber.Handler {
 		if err != nil {
 			log.Printf("Error occurred: %v", err)
 
+			// Определяем тип запроса: API или веб
+			isAPIRequest := strings.HasPrefix(c.Path(), "/api/")
+
 			switch e := err.(type) {
 			case *exceptions.AppError:
-				return c.Status(e.StatusCode).JSON(dto.ErrorResponse{
-					Status: "error",
-					Error: dto.ErrorDetails{
-						Code:    e.Code,
-						Message: e.Message,
-					},
-				})
+				if isAPIRequest {
+					return c.Status(e.StatusCode).JSON(dto.ErrorResponse{
+						Status: "error",
+						Error: dto.ErrorDetails{
+							Code:    e.Code,
+							Message: e.Message,
+						},
+					})
+				} else {
+					return c.Status(e.StatusCode).Render("pages/error", fiber.Map{
+						"title":      "Ошибка",
+						"HTTPStatus": e.StatusCode,
+						"Message":    e.Message,
+					}, "layouts/main")
+				}
 
 			case *fiber.Error:
-				return c.Status(e.Code).JSON(dto.ErrorResponse{
-					Status: "error",
-					Error: dto.ErrorDetails{
-						Code:    getErrorCode(e.Code),
-						Message: e.Message,
-					},
-				})
+				if isAPIRequest {
+					return c.Status(e.Code).JSON(dto.ErrorResponse{
+						Status: "error",
+						Error: dto.ErrorDetails{
+							Code:    getErrorCode(e.Code),
+							Message: e.Message,
+						},
+					})
+				} else {
+					return c.Status(e.Code).Render("pages/error", fiber.Map{
+						"title":      "Ошибка",
+						"HTTPStatus": e.Code,
+						"Message":    e.Message,
+					}, "layouts/main")
+				}
 
 			default:
 				errMsg := strings.ToLower(err.Error())
 
 				switch {
 				case strings.Contains(errMsg, "no rows in result set"):
-					return c.Status(404).JSON(dto.ErrorResponse{
-						Status: "error",
-						Error: dto.ErrorDetails{
-							Code:    "NOT_FOUND",
-							Message: "Resource not found",
-						},
-					})
+					if isAPIRequest {
+						return c.Status(404).JSON(dto.ErrorResponse{
+							Status: "error",
+							Error: dto.ErrorDetails{
+								Code:    "NOT_FOUND",
+								Message: "Resource not found",
+							},
+						})
+					} else {
+						return c.Status(404).Render("pages/error", fiber.Map{
+							"title":      "Ошибка",
+							"HTTPStatus": 404,
+							"Message":    "Resource not found",
+						}, "layouts/main")
+					}
 
 				case strings.Contains(errMsg, "duplicate key"):
-					return c.Status(409).JSON(dto.ErrorResponse{
-						Status: "error",
-						Error: dto.ErrorDetails{
-							Code:    "ALREADY_EXISTS",
-							Message: "Resource already exists",
-						},
-					})
+					if isAPIRequest {
+						return c.Status(409).JSON(dto.ErrorResponse{
+							Status: "error",
+							Error: dto.ErrorDetails{
+								Code:    "ALREADY_EXISTS",
+								Message: "Resource already exists",
+							},
+						})
+					} else {
+						return c.Status(409).Render("pages/error", fiber.Map{
+							"title":      "Ошибка",
+							"HTTPStatus": 409,
+							"Message":    "Resource already exists",
+						}, "layouts/main")
+					}
 
 				case strings.Contains(errMsg, "violates foreign key constraint"):
-					return c.Status(400).JSON(dto.ErrorResponse{
-						Status: "error",
-						Error: dto.ErrorDetails{
-							Code:    "INVALID_REFERENCE",
-							Message: "Invalid reference",
-						},
-					})
+					if isAPIRequest {
+						return c.Status(400).JSON(dto.ErrorResponse{
+							Status: "error",
+							Error: dto.ErrorDetails{
+								Code:    "INVALID_REFERENCE",
+								Message: "Invalid reference",
+							},
+						})
+					} else {
+						return c.Status(400).Render("pages/error", fiber.Map{
+							"title":      "Ошибка",
+							"HTTPStatus": 400,
+							"Message":    "Invalid reference",
+						}, "layouts/main")
+					}
 
 				default:
-					return c.Status(500).JSON(dto.ErrorResponse{
-						Status: "error",
-						Error: dto.ErrorDetails{
-							Code:    "SERVER_ERROR",
-							Message: "Internal server error",
-						},
-					})
+					if isAPIRequest {
+						return c.Status(500).JSON(dto.ErrorResponse{
+							Status: "error",
+							Error: dto.ErrorDetails{
+								Code:    "SERVER_ERROR",
+								Message: "Internal server error",
+							},
+						})
+					} else {
+						return c.Status(500).Render("pages/error", fiber.Map{
+							"title":      "Ошибка",
+							"HTTPStatus": 500,
+							"Message":    "Internal server error",
+						}, "layouts/main")
+					}
 				}
 			}
 		}
