@@ -1,12 +1,14 @@
+// Package viewmodel содержит структуры, которые используются для передачи данных в шаблоны (views).
 package viewmodel
 
-// PageHeaderViewModel содержит все данные для partial'а page_header.hbs.
+// PageHeaderViewModel представляет данные для стандартного заголовка страницы,
+// включающего заголовок и "хлебные крошки".
 type PageHeaderViewModel struct {
 	Title       string
 	Breadcrumbs []Breadcrumb
 }
 
-// NewPageHeaderViewModel создает новый PageHeaderViewModel.
+// NewPageHeaderViewModel создает новую модель представления для заголовка страницы.
 func NewPageHeaderViewModel(title string, breadcrumbs []Breadcrumb) *PageHeaderViewModel {
 	return &PageHeaderViewModel{
 		Title:       title,

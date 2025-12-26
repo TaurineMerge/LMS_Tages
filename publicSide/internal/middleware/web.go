@@ -1,4 +1,4 @@
-// Package middleware provides HTTP middleware functions for the Fiber application.
+// Package middleware предоставляет промежуточные обработчики для Fiber.
 package middleware
 
 import (
@@ -12,15 +12,18 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// WebErrorHandler handles errors for web routes, rendering an HTML error page.
+// WebErrorHandler является обработчиком ошибок для веб-страниц (не API).
+// Он перехватывает ошибки и рендерит HTML-страницу с информацией об ошибке.
 func WebErrorHandler(c *fiber.Ctx, err error) error {
 	var appErr *apperrors.AppError
 	if errors.As(err, &appErr) {
 		slog.Info("Handler error", "error", err)
 		appErr = err.(*apperrors.AppError)
 	} else if strings.Contains(err.Error(), "Cannot GET") {
+		// Обработка стандартной ошибки Fiber для несуществующих маршрутов.
 		appErr = apperrors.NewNotFound("Page").(*apperrors.AppError)
 	} else {
+		// Все остальные ошибки считаются внутренними.
 		slog.Error("Unhandled web error", "error", err)
 		appErr = apperrors.NewInternal().(*apperrors.AppError)
 	}
@@ -35,8 +38,8 @@ func WebErrorHandler(c *fiber.Ctx, err error) error {
 	}, "layouts/main")
 }
 
-// NoCache is a middleware that sets headers to prevent browser caching.
-// Useful for development to ensure fresh assets are always served.
+// NoCache устанавливает заголовки, запрещающие кэширование на стороне клиента.
+// Используется в режиме разработки для гарантии загрузки свежих версий ассетов.
 func NoCache() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		c.Set("Cache-Control", "no-cache, no-store, must-revalidate")

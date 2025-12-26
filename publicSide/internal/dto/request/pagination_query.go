@@ -1,8 +1,8 @@
-// Package request contains Data Transfer Objects (DTOs) for incoming client requests.
+// Package request содержит структуры данных для разбора входящих HTTP-запросов.
 package request
 
-// PaginationQuery represents the pagination query parameters.
+// PaginationQuery представляет собой стандартные параметры запроса для пагинации.
 type PaginationQuery struct {
-	Page  int `query:"page"`
-	Limit int `query:"limit"`
+	Page  int `query:"page"`  // Номер страницы.
+	Limit int `query:"limit"` // Количество элементов на странице.
 }

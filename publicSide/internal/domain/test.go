@@ -1,10 +1,12 @@
+// Package domain определяет основные бизнес-сущности и модели данных,
+// которые используются во всем приложении.
 package domain
 
-// Test represents the domain model for a test.
+// Test представляет собой итоговый тест по курсу.
 type Test struct {
-	ID          string
-	CourseID    string
-	Title       string
-	MinPoint    int
-	Description string
+	ID          string // Уникальный идентификатор
+	CourseID    string // ID курса, к которому относится тест
+	Title       string // Название теста
+	MinPoint    int    // Минимальный балл для прохождения
+	Description string // Описание теста
 }

@@ -1,18 +1,20 @@
+// Package viewmodel содержит структуры, которые используются для передачи данных в шаблоны (views).
 package viewmodel
 
 import (
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
 )
 
+// TestViewModel представляет данные для отображения информации о тесте на странице курса.
 type TestViewModel struct {
 	Title       string
-	Ref         string
+	Ref         string // URL для перехода к прохождению теста.
 	Description string
 	MinPoint    int
 }
 
-// NewTestViewModel creates a new TestViewModel from a domain model.
-// It constructs the Ref URL to the external testing service.
+// NewTestViewModel создает новую модель представления для теста.
+// Возвращает nil, если переданный доменный объект теста равен nil.
 func NewTestViewModel(test *domain.Test, testURL string) *TestViewModel {
 	if test == nil {
 		return nil

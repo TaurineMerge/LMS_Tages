@@ -1,3 +1,4 @@
+// Package web содержит обработчики для рендеринга веб-страниц.
 package web
 
 import (
@@ -12,7 +13,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// CategoryHandler - обработчик для страниц категорий.
+// CategoryHandler обрабатывает HTTP-запросы, связанные со страницами категорий.
 type CategoryHandler struct {
 	categoriesService service.CategoryService
 	coursesService    service.CourseService
@@ -26,21 +27,25 @@ func NewCategoryHandler(categoriesService service.CategoryService, coursesServic
 	}
 }
 
-// RenderCategories отображает страницу категорий.
+// RenderCategories отображает страницу со списком категорий.
+// Для каждой категории также загружается небольшое превью курсов.
 func (h *CategoryHandler) RenderCategories(c *fiber.Ctx) error {
 	const COURSE_LIMIT = 5
-	
+
 	var query request.PaginationQuery
 	if err := c.QueryParser(&query); err != nil {
 		return apperrors.NewInvalidRequest("Wrong query parameters")
 	}
 	ctx := c.UserContext()
 
+	// Получаем только те категории, в которых есть курсы.
 	categoriesDTOs, pagination, err := h.categoriesService.GetAllNotEmpty(ctx, query.Page, query.Limit)
 	if err != nil {
 		slog.Error("Failed to get categories for home page", "error", err)
 		categoriesDTOs = []response.CategoryDTO{}
 	}
+
+	// Для каждой категории загружаем превью из нескольких курсов.
 	categories := make([]viewmodel.CategoryViewModel, 0, len(categoriesDTOs))
 	for _, cat := range categoriesDTOs {
 		coursesDTOs, coursesPagination, err := h.coursesService.GetCoursesByCategoryID(ctx, cat.ID, 1, COURSE_LIMIT, "", "")
@@ -52,7 +57,7 @@ func (h *CategoryHandler) RenderCategories(c *fiber.Ctx) error {
 		categories = append(categories, viewmodel.NewCategoryViewModel(cat, coursesDTOs, coursesPagination, COURSE_LIMIT))
 	}
 	vm := viewmodel.NewCategoriesPageViewMode(categories, pagination)
-	
+
 	return c.Render("pages/categories", fiber.Map{
 		"Header":  viewmodel.NewHeader(),
 		"User":    viewmodel.NewUserViewModel(c.Locals(domain.UserContextKey).(domain.UserClaims)),

@@ -1,3 +1,4 @@
+// Package service предоставляет бизнес-логику приложения.
 package service
 
 import (
@@ -12,23 +13,27 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-// TestService defines the interface for test-related business logic.
+// TestService определяет интерфейс для бизнес-логики, связанной с тестами.
 type TestService interface {
+	// GetTest получает информацию о тесте для указанного курса.
 	GetTest(ctx context.Context, categoryID, courseID string) (*domain.Test, error)
 }
 
+// testService является реализацией TestService.
 type testService struct {
 	testingClient *testing.Client
 }
 
-// NewTestService creates a new instance of the test service.
+// NewTestService создает новый экземпляр testService.
 func NewTestService(testingClient *testing.Client) TestService {
 	return &testService{
 		testingClient: testingClient,
 	}
 }
 
-// GetTest retrieves test details, calling the client and mapping the result to a domain model.
+// GetTest обращается к клиенту сервиса тестирования для получения данных о тесте.
+// Он обрабатывает различные типы ошибок от клиента (не найдено, сервис недоступен)
+// и преобразует их в стандартизированные ошибки приложения.
 func (s *testService) GetTest(ctx context.Context, categoryID, courseID string) (*domain.Test, error) {
 	tracer := otel.Tracer("service")
 	ctx, span := tracer.Start(ctx, "testService.GetTest")
@@ -39,7 +44,6 @@ func (s *testService) GetTest(ctx context.Context, categoryID, courseID string) 
 		attribute.String("course_id", courseID),
 	)
 
-	// Call the client to get the test DTO
 	testDTO, err := s.testingClient.GetTest(ctx, categoryID, courseID)
 	if err != nil {
 		if errors.Is(err, testing.ErrTestNotFound) {
@@ -50,18 +54,17 @@ func (s *testService) GetTest(ctx context.Context, categoryID, courseID string) 
 			slog.Error("Testing service is unavailable", "error", err)
 			return nil, apperrors.NewServiceUnavailable("Testing")
 		}
-		// For other errors like invalid response, log and return a generic error
+
 		slog.Error("Failed to get test from client", "error", err)
 		return nil, err
 	}
 
-	// Map DTO to domain model
 	domainTest := mapTestDataToDomain(testDTO)
 
 	return domainTest, nil
 }
 
-// mapTestDataToDomain converts a testing.TestData DTO to a domain.Test model.
+// mapTestDataToDomain преобразует DTO от клиента в доменную модель Test.
 func mapTestDataToDomain(dto *testing.TestData) *domain.Test {
 	if dto == nil {
 		return nil
