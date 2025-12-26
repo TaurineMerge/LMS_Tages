@@ -1,28 +1,17 @@
+// Пакет response содержит структуры для ответов API.
 package response
 
 import "adminPanel/models"
 
-// CategoryResponse - ответ API с одной категорией
-//
-// Используется для возврата данных об одной категории.
-//
-// Поля:
-//   - Status: статус ответа (обычно "success")
-//   - Data: объект категории с полной информацией
+// CategoryResponse представляет ответ API с одной категорией.
+// Содержит статус и данные категории.
 type CategoryResponse struct {
 	Status string          `json:"status"`
 	Data   models.Category `json:"data"`
 }
 
-// PaginatedCategoriesResponse - пагинированный ответ со списком категорий
-//
-// Используется для возврата списка категорий с информацией о пагинации.
-//
-// Поля:
-//   - Status: статус ответа (обычно "success")
-//   - Data: данные ответа, содержащие список категорий и информацию о пагинации
-//   - Data.Items: массив категорий
-//   - Data.Pagination: информация о пагинации
+// PaginatedCategoriesResponse представляет пагинированный ответ со списком категорий.
+// Включает список категорий и информацию о пагинации.
 type PaginatedCategoriesResponse struct {
 	Status string `json:"status"`
 	Data   struct {

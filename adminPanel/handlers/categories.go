@@ -1,3 +1,5 @@
+// Package handlers содержит HTTP-обработчики для API adminPanel.
+// Включает обработчики для категорий, курсов, уроков и других сущностей.
 package handlers
 
 import (
@@ -12,43 +14,22 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// CategoryHandler - HTTP обработчик для операций с категориями
-//
-// Обработчик предоставляет REST API для управления категориями курсов:
-//   - GET /categories - получение списка категорий
-//   - POST /categories - создание новой категории
-//   - GET /categories/:id - получение категории по ID
-//   - PUT /categories/:id - обновление категории
-//   - DELETE /categories/:id - удаление категории
-//
-// Особенности:
-//   - Валидация входных данных
-//   - Интеграция с OpenTelemetry для трассировки
-//   - Стандартизированный формат ответов
-//   - Централизованная обработка ошибок
+// CategoryHandler обрабатывает HTTP-запросы для категорий.
+// Содержит сервис для бизнес-логики и методы для маршрутов.
 type CategoryHandler struct {
 	categoryService *services.CategoryService
 }
 
-// NewCategoryHandler создает новый HTTP обработчик для категорий
-//
-// Параметры:
-//   - categoryService: сервис для работы с категориями
-//
-// Возвращает:
-//   - *CategoryHandler: указатель на новый обработчик
+// NewCategoryHandler создает новый экземпляр CategoryHandler.
+// Принимает сервис категорий.
 func NewCategoryHandler(categoryService *services.CategoryService) *CategoryHandler {
 	return &CategoryHandler{
 		categoryService: categoryService,
 	}
 }
 
-// RegisterRoutes регистрирует маршруты для категорий
-//
-// Регистрирует все необходимые маршруты в указанном роутере.
-//
-// Параметры:
-//   - router: роутер Fiber для регистрации маршрутов
+// RegisterRoutes регистрирует маршруты для категорий.
+// Создает группу /categories и привязывает методы к маршрутам.
 func (h *CategoryHandler) RegisterRoutes(router fiber.Router) {
 	categories := router.Group("/categories")
 
@@ -59,15 +40,8 @@ func (h *CategoryHandler) RegisterRoutes(router fiber.Router) {
 	categories.Delete("/:category_id", h.deleteCategory)
 }
 
-// getCategories обрабатывает GET /categories
-//
-// Возвращает список всех категорий с пагинацией.
-//
-// Параметры:
-//   - c: контекст Fiber
-//
-// Возвращает:
-//   - error: ошибка выполнения (если есть)
+// getCategories обрабатывает GET /categories.
+// Возвращает список всех категорий.
 func (h *CategoryHandler) getCategories(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	span := trace.SpanFromContext(ctx)
@@ -118,15 +92,8 @@ func (h *CategoryHandler) getCategories(c *fiber.Ctx) error {
 	return c.JSON(resp)
 }
 
-// getCategory обрабатывает GET /categories/:id
-//
-// Возвращает категорию по уникальному идентификатору.
-//
-// Параметры:
-//   - c: контекст Fiber
-//
-// Возвращает:
-//   - error: ошибка выполнения (если есть)
+// getCategory обрабатывает GET /categories/:category_id.
+// Возвращает категорию по ID.
 func (h *CategoryHandler) getCategory(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	span := trace.SpanFromContext(ctx)
@@ -182,15 +149,8 @@ func (h *CategoryHandler) getCategory(c *fiber.Ctx) error {
 	})
 }
 
-// createCategory обрабатывает POST /categories
-//
-// Создает новую категорию с валидацией данных через JSON Schema.
-//
-// Параметры:
-//   - c: контекст Fiber
-//
-// Возвращает:
-//   - error: ошибка выполнения (если есть)
+// createCategory обрабатывает POST /categories.
+// Создает новую категорию на основе JSON в теле запроса.
 func (h *CategoryHandler) createCategory(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	span := trace.SpanFromContext(ctx)
@@ -214,8 +174,6 @@ func (h *CategoryHandler) createCategory(c *fiber.Ctx) error {
 			))
 	}
 
-	// JSON Schema валидация уже выполнена middleware
-	// Парсим тело запроса в структуру
 	if err := c.BodyParser(&input); err != nil {
 		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
@@ -259,15 +217,8 @@ func (h *CategoryHandler) createCategory(c *fiber.Ctx) error {
 	})
 }
 
-// updateCategory обрабатывает PUT /categories/:id
-//
-// Обновляет существующую категорию с валидацией данных через JSON Schema.
-//
-// Параметры:
-//   - c: контекст Fiber
-//
-// Возвращает:
-//   - error: ошибка выполнения (если есть)
+// updateCategory обрабатывает PUT /categories/:category_id.
+// Обновляет категорию по ID на основе JSON в теле запроса.
 func (h *CategoryHandler) updateCategory(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	span := trace.SpanFromContext(ctx)
@@ -304,8 +255,6 @@ func (h *CategoryHandler) updateCategory(c *fiber.Ctx) error {
 			))
 	}
 
-	// JSON Schema валидация уже выполнена middleware
-	// Парсим тело запроса в структуру
 	if err := c.BodyParser(&input); err != nil {
 		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
@@ -349,16 +298,8 @@ func (h *CategoryHandler) updateCategory(c *fiber.Ctx) error {
 	})
 }
 
-// deleteCategory обрабатывает DELETE /categories/:id
-//
-// Удаляет категорию по уникальному идентификатору.
-// Перед удалением проверяет наличие связанных курсов.
-//
-// Параметры:
-//   - c: контекст Fiber
-//
-// Возвращает:
-//   - error: ошибка выполнения (если есть)
+// deleteCategory обрабатывает DELETE /categories/:category_id.
+// Удаляет категорию по ID.
 func (h *CategoryHandler) deleteCategory(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	span := trace.SpanFromContext(ctx)

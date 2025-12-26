@@ -1,3 +1,4 @@
+// Пакет web содержит обработчики для веб-интерфейса админ-панели.
 package web
 
 import (
@@ -9,7 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// LessonView представляет урок для отображения
+// LessonView представляет урок для отображения в веб-интерфейсе.
 type LessonView struct {
 	ID        string
 	CourseID  string
@@ -20,14 +21,14 @@ type LessonView struct {
 	UpdatedAt string
 }
 
-// LessonWebHandler обрабатывает веб-страницы для управления уроками
+// LessonWebHandler обрабатывает веб-страницы для управления уроками.
 type LessonWebHandler struct {
 	lessonService   *services.LessonService
 	courseService   *services.CourseService
 	categoryService *services.CategoryService
 }
 
-// NewLessonWebHandler создает новый обработчик веб-страниц уроков
+// NewLessonWebHandler создает новый обработчик веб-страниц уроков.
 func NewLessonWebHandler(
 	lessonService *services.LessonService,
 	courseService *services.CourseService,
@@ -40,13 +41,12 @@ func NewLessonWebHandler(
 	}
 }
 
-// RenderLessonsEditor отображает страницу со списком уроков курса
+// RenderLessonsEditor отображает страницу со списком уроков курса.
 func (h *LessonWebHandler) RenderLessonsEditor(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	categoryID := c.Params("category_id")
 	courseID := c.Params("course_id")
 
-	// Получаем категорию
 	category, err := h.categoryService.GetCategory(ctx, categoryID)
 	if err != nil {
 		return c.Status(404).Render("pages/lessons-editor", fiber.Map{
@@ -55,7 +55,6 @@ func (h *LessonWebHandler) RenderLessonsEditor(c *fiber.Ctx) error {
 		}, "layouts/main")
 	}
 
-	// Получаем курс
 	course, err := h.courseService.GetCourse(ctx, categoryID, courseID)
 	if err != nil {
 		return c.Status(404).Render("pages/lessons-editor", fiber.Map{
@@ -66,10 +65,9 @@ func (h *LessonWebHandler) RenderLessonsEditor(c *fiber.Ctx) error {
 		}, "layouts/main")
 	}
 
-	// Получаем уроки курса
 	queryParams := models.QueryList{
 		Page:  1,
-		Limit: 100, // Получаем все уроки для админки
+		Limit: 100,
 	}
 
 	lessonsResp, err := h.lessonService.GetLessons(ctx, courseID, queryParams)
@@ -84,7 +82,6 @@ func (h *LessonWebHandler) RenderLessonsEditor(c *fiber.Ctx) error {
 		}, "layouts/main")
 	}
 
-	// Преобразуем в LessonView
 	lessonViews := make([]LessonView, 0, len(lessonsResp.Data.Items))
 	for i, lesson := range lessonsResp.Data.Items {
 		log.Printf("[DEBUG] Lesson #%d: ID=%s, Title=%s", i+1, lesson.ID, lesson.Title)
@@ -109,13 +106,12 @@ func (h *LessonWebHandler) RenderLessonsEditor(c *fiber.Ctx) error {
 	}, "layouts/main")
 }
 
-// RenderNewLessonForm отображает форму создания нового урока
+// RenderNewLessonForm отображает форму создания нового урока.
 func (h *LessonWebHandler) RenderNewLessonForm(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	categoryID := c.Params("category_id")
 	courseID := c.Params("course_id")
 
-	// Получаем категорию
 	category, err := h.categoryService.GetCategory(ctx, categoryID)
 	if err != nil {
 		return c.Status(404).Render("pages/lesson-form", fiber.Map{
@@ -124,7 +120,6 @@ func (h *LessonWebHandler) RenderNewLessonForm(c *fiber.Ctx) error {
 		}, "layouts/main")
 	}
 
-	// Получаем курс
 	course, err := h.courseService.GetCourse(ctx, categoryID, courseID)
 	if err != nil {
 		return c.Status(404).Render("pages/lesson-form", fiber.Map{
@@ -144,14 +139,13 @@ func (h *LessonWebHandler) RenderNewLessonForm(c *fiber.Ctx) error {
 	}, "layouts/main")
 }
 
-// RenderEditLessonForm отображает форму редактирования урока
+// RenderEditLessonForm отображает форму редактирования урока.
 func (h *LessonWebHandler) RenderEditLessonForm(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	categoryID := c.Params("category_id")
 	courseID := c.Params("course_id")
 	lessonID := c.Params("lesson_id")
 
-	// Получаем категорию
 	category, err := h.categoryService.GetCategory(ctx, categoryID)
 	if err != nil {
 		return c.Status(404).Render("pages/lesson-form", fiber.Map{
@@ -160,7 +154,6 @@ func (h *LessonWebHandler) RenderEditLessonForm(c *fiber.Ctx) error {
 		}, "layouts/main")
 	}
 
-	// Получаем курс
 	course, err := h.courseService.GetCourse(ctx, categoryID, courseID)
 	if err != nil {
 		return c.Status(404).Render("pages/lesson-form", fiber.Map{
@@ -171,7 +164,6 @@ func (h *LessonWebHandler) RenderEditLessonForm(c *fiber.Ctx) error {
 		}, "layouts/main")
 	}
 
-	// Получаем урок
 	lesson, err := h.lessonService.GetLesson(ctx, lessonID, courseID)
 	if err != nil {
 		return c.Status(404).Render("pages/lesson-form", fiber.Map{
@@ -203,20 +195,17 @@ func (h *LessonWebHandler) RenderEditLessonForm(c *fiber.Ctx) error {
 	}, "layouts/main")
 }
 
-// CreateLesson обрабатывает создание нового урока
+// CreateLesson обрабатывает создание нового урока из формы.
 func (h *LessonWebHandler) CreateLesson(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	categoryID := c.Params("category_id")
 	courseID := c.Params("course_id")
 
-	// Получаем данные из формы
 	title := c.FormValue("title")
 	content := c.FormValue("content")
 
-	// Логирование для отладки
 	log.Printf("[DEBUG] CreateLesson: title=%s, content length=%d", title, len(content))
 
-	// Валидация
 	if title == "" {
 		category, _ := h.categoryService.GetCategory(ctx, categoryID)
 		course, _ := h.courseService.GetCourse(ctx, categoryID, courseID)
@@ -231,7 +220,6 @@ func (h *LessonWebHandler) CreateLesson(c *fiber.Ctx) error {
 		}, "layouts/main")
 	}
 
-	// Создаем урок
 	input := request.LessonCreate{
 		Title:   title,
 		Content: content,
@@ -252,26 +240,22 @@ func (h *LessonWebHandler) CreateLesson(c *fiber.Ctx) error {
 		}, "layouts/main")
 	}
 
-	// Перенаправляем на список уроков
 	return c.Redirect("/admin/categories/" + categoryID + "/courses/" + courseID + "/lessons")
 }
 
-// UpdateLesson обрабатывает обновление урока
+// UpdateLesson обрабатывает обновление урока из формы.
 func (h *LessonWebHandler) UpdateLesson(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	categoryID := c.Params("category_id")
 	courseID := c.Params("course_id")
 	lessonID := c.Params("lesson_id")
 
-	// Получаем данные из формы
 	title := c.FormValue("title")
 	content := c.FormValue("content")
 
-	// Логирование для отладки
 	log.Printf("[DEBUG] UpdateLesson: lessonID=%s, title=%s, content length=%d", lessonID, title, len(content))
 	log.Printf("[DEBUG] Content first 100 chars: %s", content[:min(100, len(content))])
 
-	// Валидация
 	if title == "" {
 		category, _ := h.categoryService.GetCategory(ctx, categoryID)
 		course, _ := h.courseService.GetCourse(ctx, categoryID, courseID)
@@ -300,7 +284,6 @@ func (h *LessonWebHandler) UpdateLesson(c *fiber.Ctx) error {
 		}, "layouts/main")
 	}
 
-	// Обновляем урок
 	input := request.LessonUpdate{
 		Title:   title,
 		Content: content,
@@ -335,11 +318,10 @@ func (h *LessonWebHandler) UpdateLesson(c *fiber.Ctx) error {
 		}, "layouts/main")
 	}
 
-	// Перенаправляем на список уроков
 	return c.Redirect("/admin/categories/" + categoryID + "/courses/" + courseID + "/lessons")
 }
 
-// DeleteLesson обрабатывает удаление урока
+// DeleteLesson обрабатывает удаление урока.
 func (h *LessonWebHandler) DeleteLesson(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	categoryID := c.Params("category_id")
@@ -348,10 +330,8 @@ func (h *LessonWebHandler) DeleteLesson(c *fiber.Ctx) error {
 
 	err := h.lessonService.DeleteLesson(ctx, lessonID, courseID)
 	if err != nil {
-		// Можно добавить flash-сообщение об ошибке
 		return c.Redirect("/admin/categories/" + categoryID + "/courses/" + courseID + "/lessons")
 	}
 
-	// Перенаправляем на список уроков
 	return c.Redirect("/admin/categories/" + categoryID + "/courses/" + courseID + "/lessons")
 }

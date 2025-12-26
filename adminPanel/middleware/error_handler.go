@@ -7,31 +7,19 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// AppError - базовая структура для всех ошибок приложения
-//
-// Содержит:
-//   - Message: текстовое описание ошибки
-//   - StatusCode: HTTP статус-код
-//   - Code: строковый код ошибки для программной обработки
+// AppError представляет пользовательскую ошибку приложения с кодом и статусом HTTP.
 type AppError struct {
 	Message    string `json:"error"`
 	StatusCode int    `json:"-"`
 	Code       string `json:"code"`
 }
 
+// Error реализует интерфейс error для AppError.
 func (e *AppError) Error() string {
 	return e.Message
 }
 
-// NewAppError создает новую ошибку приложения
-//
-// Параметры:
-//   - message: текстовое описание ошибки
-//   - statusCode: HTTP статус-код
-//   - code: строковый код ошибки
-//
-// Возвращает:
-//   - *AppError: указатель на новую ошибку
+// NewAppError создает новый экземпляр AppError с заданными параметрами.
 func NewAppError(message string, statusCode int, code string) *AppError {
 	return &AppError{
 		Message:    message,
@@ -40,14 +28,7 @@ func NewAppError(message string, statusCode int, code string) *AppError {
 	}
 }
 
-// NotFoundError создает ошибку "Ресурс не найден"
-//
-// Параметры:
-//   - resource: тип ресурса (например, "Course", "Category")
-//   - identifier: идентификатор ресурса (опционально)
-//
-// Возвращает:
-//   - *AppError: ошибка с кодом 404
+// NotFoundError создает ошибку 404 для не найденного ресурса.
 func NotFoundError(resource, identifier string) *AppError {
 	message := resource + " not found"
 	if identifier != "" {
@@ -56,98 +37,40 @@ func NotFoundError(resource, identifier string) *AppError {
 	return NewAppError(message, 404, "NOT_FOUND")
 }
 
-// ConflictError создает ошибку "Конфликт данных"
-//
-// Используется при попытке создать дубликат или нарушении
-// уникальности данных.
-//
-// Параметры:
-//   - message: описание конфликта
-//
-// Возвращает:
-//   - *AppError: ошибка с кодом 409
+// ConflictError создает ошибку 409 для конфликта ресурсов.
 func ConflictError(message string) *AppError {
 	return NewAppError(message, 409, "ALREADY_EXISTS")
 }
 
-// ValidationError создает ошибку "Ошибка валидации"
-//
-// Используется при нарушении правил валидации данных.
-//
-// Параметры:
-//   - message: описание ошибки валидации
-//
-// Возвращает:
-//   - *AppError: ошибка с кодом 422
+// ValidationError создает ошибку 422 для ошибок валидации.
 func ValidationError(message string) *AppError {
 	return NewAppError(message, 422, "VALIDATION_ERROR")
 }
 
-// UnauthorizedError создает ошибку "Неавторизованный доступ"
-//
-// Используется при отсутствии или невалидности аутентификации.
-//
-// Параметры:
-//   - message: описание ошибки авторизации
-//
-// Возвращает:
-//   - *AppError: ошибка с кодом 401
+// UnauthorizedError создает ошибку 401 для неавторизованного доступа.
 func UnauthorizedError(message string) *AppError {
 	return NewAppError(message, 401, "UNAUTHORIZED")
 }
 
-// InternalError создает ошибку "Внутренняя ошибка сервера"
-//
-// Используется для неожиданных ошибок, возникающих на сервере.
-//
-// Параметры:
-//   - message: описание внутренней ошибки
-//
-// Возвращает:
-//   - *AppError: ошибка с кодом 500
+// InternalError создает ошибку 500 для внутренних ошибок сервера.
 func InternalError(message string) *AppError {
 	return NewAppError(message, 500, "SERVER_ERROR")
 }
 
-// ErrorDetails - детализированная информация об ошибке
-//
-// Соответствует объекту error в Swagger спецификации.
-// Содержит код и сообщение об ошибке для стандартизированной обработки на клиенте.
-//
-// Поля:
-//   - Code: строковый код ошибки для программной обработки (например, "NOT_FOUND", "VALIDATION_ERROR")
-//   - Message: понятное человеку описание ошибки
+// ErrorDetails содержит детали ошибки для ответа API.
 type ErrorDetails struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
 }
 
-// ErrorResponse - ответ с ошибкой
-//
-// Соответствует error envelope в Swagger спецификации.
-// Используется для возврата ошибок API в стандартизированном формате.
-//
-// Поля:
-//   - Status: статус ответа (всегда "error")
-//   - Error: детализированная информация об ошибке
+// ErrorResponse представляет структуру ответа с ошибкой для API.
 type ErrorResponse struct {
 	Status string       `json:"status"`
 	Error  ErrorDetails `json:"error"`
 }
 
-// ErrorHandlerMiddleware - middleware для централизованной обработки ошибок
-//
-// Middleware перехватывает все ошибки, возникающие в ходе выполнения
-// запроса, и возвращает их в стандартизированном формате.
-//
-// Обрабатываемые типы ошибок:
-//   - AppError: кастомные ошибки приложения
-//   - fiber.Error: ошибки фреймворка Fiber
-//   - Database errors: ошибки базы данных (404, 409, 400)
-//   - Unknown errors: неизвестные ошибки (500)
-//
-// Возвращает:
-//   - fiber.Handler: middleware для использования в Fiber
+// ErrorHandlerMiddleware возвращает промежуточное ПО для обработки ошибок.
+// Преобразует ошибки в соответствующие HTTP-ответы для API или HTML.
 func ErrorHandlerMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		err := c.Next()
@@ -155,7 +78,6 @@ func ErrorHandlerMiddleware() fiber.Handler {
 		if err != nil {
 			log.Printf("Error occurred: %v", err)
 
-			// Определяем тип запроса: API или веб
 			isAPIRequest := strings.HasPrefix(c.Path(), "/api/")
 
 			switch e := err.(type) {
@@ -272,16 +194,7 @@ func ErrorHandlerMiddleware() fiber.Handler {
 	}
 }
 
-// getErrorCode преобразует HTTP статус-код в строковый код ошибки
-//
-// Функция возвращает соответствующий строковый код ошибки
-// для стандартных HTTP статусов.
-//
-// Параметры:
-//   - statusCode: HTTP статус-код
-//
-// Возвращает:
-//   - string: строковый код ошибки
+// getErrorCode возвращает строковый код ошибки по HTTP-статус коду.
 func getErrorCode(statusCode int) string {
 	switch statusCode {
 	case 400:

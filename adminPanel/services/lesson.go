@@ -16,14 +16,16 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// LessonService - сервис для работы с уроками
+// LessonService предоставляет бизнес-логику для работы с уроками.
+// Содержит репозитории для уроков и курсов, методы для CRUD операций.
 type LessonService struct {
 	lessonRepo   *repositories.LessonRepository
 	courseRepo   *repositories.CourseRepository
 	lessonTracer trace.Tracer
 }
 
-// NewLessonService создает новый сервис для работы с уроками
+// NewLessonService создает новый экземпляр LessonService.
+// Принимает репозитории для уроков и курсов, инициализирует трассировщик.
 func NewLessonService(
 	lessonRepo *repositories.LessonRepository,
 	courseRepo *repositories.CourseRepository,
@@ -35,7 +37,8 @@ func NewLessonService(
 	}
 }
 
-// GetLessons получает уроки курса с фильтрацией и пагинацией
+// GetLessons получает уроки для заданного курса с пагинацией и сортировкой из models.QueryList.
+// Проверяет существование курса и возвращает пагинированный ответ с уроками.
 func (s *LessonService) GetLessons(ctx context.Context, courseID string, queryParams models.QueryList) (*response.LessonListResponse, error) {
 	ctx, span := s.lessonTracer.Start(ctx, "LessonService.GetLessons")
 	defer span.End()
@@ -96,7 +99,8 @@ func (s *LessonService) GetLessons(ctx context.Context, courseID string, queryPa
 	}, nil
 }
 
-// GetLesson получает урок по его уникальному идентификатору
+// GetLesson получает урок по ID в заданном курсе.
+// Возвращает ответ с уроком или ошибку, если не найден.
 func (s *LessonService) GetLesson(ctx context.Context, lessonID, courseID string) (*response.LessonResponse, error) {
 	ctx, span := s.lessonTracer.Start(ctx, "LessonService.GetLesson")
 	defer span.End()
@@ -111,7 +115,6 @@ func (s *LessonService) GetLesson(ctx context.Context, lessonID, courseID string
 		return nil, middleware.NotFoundError("Lesson", lessonID)
 	}
 
-	// DEBUG: Логируем загруженный урок
 	fmt.Printf("[DEBUG] GetLesson: lessonID=%s, courseID=%s, title=%s, content length=%d\n",
 		lessonID, courseID, lesson.Title, len(lesson.Content))
 
@@ -121,7 +124,8 @@ func (s *LessonService) GetLesson(ctx context.Context, lessonID, courseID string
 	}, nil
 }
 
-// CreateLesson создает новый урок в указанном курсе
+// CreateLesson создает новый урок для заданного курса на основе данных из request.LessonCreate.
+// Проверяет существование курса и возвращает ответ с созданным уроком.
 func (s *LessonService) CreateLesson(ctx context.Context, courseID string, input request.LessonCreate) (*response.LessonResponse, error) {
 	ctx, span := s.lessonTracer.Start(ctx, "LessonService.CreateLesson")
 	defer span.End()
@@ -147,7 +151,8 @@ func (s *LessonService) CreateLesson(ctx context.Context, courseID string, input
 	}, nil
 }
 
-// UpdateLesson обновляет существующий урок
+// UpdateLesson обновляет урок по ID в курсе на основе данных из request.LessonUpdate.
+// Проверяет существование и возвращает ответ с обновленным уроком.
 func (s *LessonService) UpdateLesson(ctx context.Context, lessonID, courseID string, input request.LessonUpdate) (*response.LessonResponse, error) {
 	ctx, span := s.lessonTracer.Start(ctx, "LessonService.UpdateLesson")
 	defer span.End()
@@ -173,7 +178,8 @@ func (s *LessonService) UpdateLesson(ctx context.Context, lessonID, courseID str
 	}, nil
 }
 
-// DeleteLesson удаляет урок
+// DeleteLesson удаляет урок по ID в заданном курсе.
+// Проверяет существование перед удалением.
 func (s *LessonService) DeleteLesson(ctx context.Context, lessonID, courseID string) error {
 	ctx, span := s.lessonTracer.Start(ctx, "LessonService.DeleteLesson")
 	defer span.End()
@@ -200,6 +206,7 @@ func (s *LessonService) DeleteLesson(ctx context.Context, lessonID, courseID str
 }
 
 // parseSortParameter разбирает параметр сортировки.
+// Если начинается с "-", то DESC, иначе ASC. По умолчанию "created_at ASC".
 func parseSortParameter(sort string) (sortBy, sortOrder string) {
 	if sort == "" {
 		return "created_at", "ASC"

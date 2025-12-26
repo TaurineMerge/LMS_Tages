@@ -1,6 +1,7 @@
 package models
 
-// Lesson - модель урока для списков (без контента)
+// Lesson представляет урок в системе.
+// Встраивает BaseModel и содержит поля для заголовка, ID курса и контента урока.
 type Lesson struct {
 	BaseModel
 	Title    string `json:"title"`

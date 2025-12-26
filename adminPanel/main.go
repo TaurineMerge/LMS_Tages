@@ -1,24 +1,3 @@
-// Пакет main - точка входа для Admin Panel API
-//
-// Admin Panel - это веб-сервис для управления учебным контентом,
-// предоставляющий REST API для работы с категориями, курсами и уроками.
-//
-// Сервис включает в себя:
-//   - Аутентификацию через JWT-токены
-//   - OpenTelemetry для трассировки запросов
-//   - Swagger UI для документации API
-//   - Middleware для CORS, логирования и обработки ошибок
-//
-// Пример использования:
-//
-//	# Запуск сервера
-//	go run main.go
-//
-//	# Доступ к Swagger UI
-//	http://localhost:4000/swagger/
-//
-//	# Health check
-//	http://localhost:4000/health
 package main
 
 import (
@@ -55,18 +34,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// setupTracerProvider инициализирует провайдер трассировки OpenTelemetry
-//
-// Функция настраивает экспорт трасс в OTLP-коллектор и возвращает
-// TracerProvider для использования в приложении.
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//   - cfg: конфигурация OpenTelemetry
-//
-// Возвращает:
-//   - TracerProvider: провайдер для создания трасс
-//   - error: ошибка инициализации (если есть)
+// setupTracerProvider настраивает провайдер трассировки OpenTelemetry.
+// Возвращает TracerProvider или nil если трассировка отключена.
 func setupTracerProvider(ctx context.Context, cfg config.OTelConfig) (*tracesdk.TracerProvider, error) {
 	if !cfg.Enabled {
 		log.Println("ℹ️  OpenTelemetry tracing is disabled (OTEL_EXPORTER_OTLP_ENDPOINT not set)")
@@ -102,19 +71,8 @@ func setupTracerProvider(ctx context.Context, cfg config.OTelConfig) (*tracesdk.
 	return tp, nil
 }
 
-// tracingMiddleware создает middleware для трассировки HTTP-запросов
-//
-// Middleware добавляет в каждый запрос трассу с детальной информацией:
-//   - Метод и путь запроса
-//   - Заголовки и тело запроса/ответа
-//   - Время выполнения
-//   - Коды ответов и ошибки
-//
-// Параметры:
-//   - tracer: Tracer для создания спанов
-//
-// Возвращает:
-//   - fiber.Handler: middleware для использования в Fiber
+// tracingMiddleware возвращает промежуточное ПО для трассировки HTTP-запросов.
+// Создает span для каждого запроса и записывает метрики.
 func tracingMiddleware(tracer trace.Tracer) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		startTime := time.Now()
@@ -216,48 +174,40 @@ func tracingMiddleware(tracer trace.Tracer) fiber.Handler {
 	}
 }
 
-// main - точка входа приложения Admin Panel
-//
-// Функция выполняет:
-//   - Инициализацию конфигурации с валидацией
-//   - Настройку аутентификации
-//   - Подключение к базе данных
-//   - Настройку трассировки
-//   - Создание и настройку Fiber приложения
-//   - Регистрацию маршрутов
-//   - Запуск HTTP-сервера
-//
-// Используемые компоненты:
-//   - Fiber: веб-фреймворк
-//   - PostgreSQL: база данных
-//   - Keycloak: аутентификация
-//   - OpenTelemetry: трассировка
+// main является точкой входа в приложение Admin Panel.
+// Выполняет следующие шаги:
+// 1. Загружает и валидирует конфигурацию из переменных окружения.
+// 2. Инициализирует аутентификацию через Keycloak.
+// 3. Подключается к базе данных PostgreSQL.
+// 4. Настраивает трассировку OpenTelemetry (если включена).
+// 5. Создает шаблонизатор Handlebars с вспомогательными функциями.
+// 6. Инициализирует Fiber приложение с middleware (recover, logger, tracing, CORS, error handler).
+// 7. Настраивает маршруты для health check, Swagger, статических файлов.
+// 8. Создает репозитории, сервисы и обработчики для категорий, курсов, уроков и загрузки файлов.
+// 9. Регистрирует API маршруты с аутентификацией.
+// 10. Регистрирует веб-маршруты для админ-интерфейса.
+// 11. Запускает HTTP-сервер на указанном адресе.
 func main() {
 	ctx := context.Background()
 
-	// Загружаем конфигурацию
 	settings := config.NewSettings()
 
-	// Валидируем обязательные параметры
 	if err := settings.Validate(); err != nil {
 		log.Fatalf("❌ Configuration error: %v", err)
 	}
 
 	log.Printf("📋 Configuration loaded (debug=%v)", settings.Debug)
 
-	// Инициализируем аутентификацию
 	if err := middleware.InitAuth(); err != nil {
 		log.Fatalf("⚠️  Failed to initialize auth: %v", err)
 	}
 
-	// Подключаемся к базе данных
 	db, err := database.InitDB(settings)
 	if err != nil {
 		log.Fatalf("❌ Failed to initialize database: %v", err)
 	}
 	defer database.Close()
 
-	// Настраиваем трассировку
 	tp, err := setupTracerProvider(ctx, settings.OTel)
 	if err != nil {
 		log.Printf("⚠️  Failed to initialize tracing: %v", err)
@@ -269,10 +219,8 @@ func main() {
 		}()
 	}
 
-	// Создаём Fiber приложение
 	engine := handlebars.New("./templates", ".hbs")
 
-	// Регистрируем хелпер eq для сравнения строк
 	engine.AddFunc("eq", func(a, b string) bool {
 		return a == b
 	})
@@ -296,12 +244,10 @@ func main() {
 
 	app.Use(middleware.ErrorHandlerMiddleware())
 
-	// Health endpoints
 	healthHandler := handlers.NewHealthHandler(db)
 	app.Get("/health", healthHandler.HealthCheck)
 	app.Get("/health/db", healthHandler.DBHealthCheck)
 
-	// Documentation
 	app.Static("/doc", "./docs")
 
 	app.Get("/swagger/*", swagger.New(swagger.Config{
@@ -316,29 +262,26 @@ func main() {
 		},
 	}))
 
-	// Repositories
 	categoryRepo := repositories.NewCategoryRepository(db)
 	courseRepo := repositories.NewCourseRepository(db)
 	lessonRepo := repositories.NewLessonRepository(db)
 
-	// Services
 	categoryService := services.NewCategoryService(categoryRepo)
 	courseService := services.NewCourseService(courseRepo, categoryRepo)
 	lessonService := services.NewLessonService(lessonRepo, courseRepo)
 
-	// S3 Service
 	s3Service, err := services.NewS3Service(settings.Minio)
 	if err != nil {
 		log.Fatalf("❌ Failed to initialize S3 service: %v", err)
 	}
 
-	// Ensure bucket exists
 	if err := s3Service.EnsureBucketExists(ctx); err != nil {
 		log.Printf("⚠️  Failed to ensure S3 bucket exists: %v", err)
 	} else {
 		log.Printf("✅ S3 bucket '%s' is ready", settings.Minio.Bucket)
 	}
 
+	// Добавляем вспомогательную функцию для генерации URL изображений в шаблонах
 	engine.AddFunc("s3ImageURL", func(imageKey string) string {
 		if imageKey == "" {
 			return ""
@@ -346,40 +289,31 @@ func main() {
 		return s3Service.GetImageURL(imageKey)
 	})
 
-	// Handlers
 	categoryHandler := handlers.NewCategoryHandler(categoryService)
 	courseHandler := handlers.NewCourseHandler(courseService)
 	lessonHandler := handlers.NewLessonHandler(lessonService)
 	uploadHandler := handlers.NewUploadHandler(s3Service)
 
-	// API routes
 	api := app.Group("/api/v1")
 
-	// Upload routes (БЕЗ AUTH для удобства загрузки из редактора)
 	upload := api.Group("/upload")
 	uploadHandler.RegisterRoutes(upload)
 
-	// Protected API routes
 	api.Use(middleware.AuthMiddleware())
 	categoryHandler.RegisterRoutes(api)
 	courseHandler.RegisterRoutes(api)
 	lessons := api.Group("/categories/:category_id/courses/:course_id/lessons")
 	lessonHandler.RegisterRoutes(lessons)
 
-	// Статические файлы (CSS, изображения и т.д.)
 	app.Static("/static", "./static")
 
-	// Web routes (без auth для админки)
-	// Serve web pages under root (nginx adds /admin prefix), so routes will be available at /admin/...
 	web := app.Group("")
 
-	// Web handlers
 	categoryWebHandler := webhandlers.NewCategoryWebHandler(categoryService)
 	courseWebHandler := webhandlers.NewCourseWebHandler(courseService, categoryService, s3Service, settings.TestModule)
 	lessonWebHandler := webhandlers.NewLessonWebHandler(lessonService, courseService, categoryService)
 	homeWebHandler := webhandlers.NewHomeWebHandler(categoryService, courseService, lessonService)
 
-	// Register web routes
 	web.Get("/", homeWebHandler.RenderHome)
 	web.Get("/categories", categoryWebHandler.RenderCategoriesEditor)
 	web.Get("/categories/new", categoryWebHandler.RenderNewCategoryForm)
@@ -388,7 +322,6 @@ func main() {
 	web.Post("/categories/:id/update", categoryWebHandler.UpdateCategory)
 	web.Post("/categories/:id/delete", categoryWebHandler.DeleteCategory)
 
-	// Course web routes
 	web.Get("/categories/:category_id/courses", courseWebHandler.RenderCoursesEditor)
 	web.Get("/categories/:category_id/courses/new", courseWebHandler.RenderNewCourseForm)
 	web.Post("/categories/:category_id/courses/create", courseWebHandler.CreateCourse)
@@ -396,7 +329,6 @@ func main() {
 	web.Post("/categories/:category_id/courses/:course_id/update", courseWebHandler.UpdateCourse)
 	web.Post("/categories/:category_id/courses/:course_id/delete", courseWebHandler.DeleteCourse)
 
-	// Lesson web routes
 	web.Get("/categories/:category_id/courses/:course_id/lessons", lessonWebHandler.RenderLessonsEditor)
 	web.Get("/categories/:category_id/courses/:course_id/lessons/new", lessonWebHandler.RenderNewLessonForm)
 	web.Post("/categories/:category_id/courses/:course_id/lessons/create", lessonWebHandler.CreateLesson)
@@ -404,7 +336,6 @@ func main() {
 	web.Post("/categories/:category_id/courses/:course_id/lessons/:lesson_id/update", lessonWebHandler.UpdateLesson)
 	web.Post("/categories/:category_id/courses/:course_id/lessons/:lesson_id/delete", lessonWebHandler.DeleteLesson)
 
-	// Start server
 	log.Printf("🚀 Server starting on %s", settings.Server.Address)
 	log.Printf("📚 Swagger UI (via nginx): http://localhost/admin/swagger/")
 	log.Printf("📖 Swagger JSON (via nginx): http://localhost/admin/doc/swagger.json")

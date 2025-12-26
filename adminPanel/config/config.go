@@ -1,61 +1,5 @@
-// Package config предоставляет управление конфигурацией для Admin Panel.
-//
-// Пакет поддерживает загрузку конфигурации из переменных окружения с разумными
-// значениями по умолчанию и валидацией. Поддерживаются два способа конфигурации БД:
-//
-//   - DATABASE_URL: полная строка подключения (имеет приоритет)
-//   - Отдельные DB_* переменные: DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
-//
-// # Переменные окружения
-//
-// База данных:
-//
-//	DATABASE_URL           - Полная строка подключения PostgreSQL
-//	DB_HOST                - Хост базы данных (обязательно, если DATABASE_URL не задан)
-//	DB_PORT                - Порт базы данных (по умолчанию: 5432)
-//	DB_USER                - Пользователь БД (обязательно, если DATABASE_URL не задан)
-//	DB_PASSWORD            - Пароль БД (обязательно, если DATABASE_URL не задан)
-//	DB_NAME                - Имя базы данных (обязательно, если DATABASE_URL не задан)
-//	DB_SSLMODE             - Режим SSL (по умолчанию: disable)
-//	DATABASE_POOL_MIN_SIZE - Минимальный размер пула соединений (по умолчанию: 5)
-//	DATABASE_POOL_MAX_SIZE - Максимальный размер пула соединений (по умолчанию: 20)
-//
-// Сервер:
-//
-//	API_ADDRESS - Адрес для прослушивания (по умолчанию: :4000)
-//	APP_NAME    - Название приложения (по умолчанию: Admin Panel API)
-//	ROOT_PATH   - Корневой путь URL (по умолчанию: /admin)
-//	DEBUG       - Режим отладки (по умолчанию: false)
-//
-// Keycloak:
-//
-//	KEYCLOAK_ISSUER_URL    - URL издателя токенов для валидации
-//	KEYCLOAK_AUDIENCE      - Ожидаемая аудитория JWT
-//	KEYCLOAK_JWKS_URL      - URL эндпоинта JWKS (генерируется автоматически из issuer)
-//	KEYCLOAK_CLIENT_ID     - OAuth client ID
-//	KEYCLOAK_CLIENT_SECRET - OAuth client secret
-//	KEYCLOAK_APP_NAME      - Название приложения для OAuth
-//
-// CORS:
-//
-//	CORS_ALLOW_ORIGINS     - Разрешённые origins (по умолчанию: *)
-//	CORS_ALLOW_METHODS     - Разрешённые методы (по умолчанию: GET,POST,PUT,DELETE,OPTIONS)
-//	CORS_ALLOW_HEADERS     - Разрешённые заголовки
-//	CORS_ALLOW_CREDENTIALS - Разрешить credentials (по умолчанию: false)
-//	CORS_EXPOSE_HEADERS    - Экспонируемые заголовки (по умолчанию: Content-Length)
-//
-// OpenTelemetry:
-//
-//	OTEL_EXPORTER_OTLP_ENDPOINT - Эндпоинт OTLP коллектора
-//	OTEL_SERVICE_NAME           - Имя сервиса (по умолчанию: admin-panel)
-//	OTEL_EXPORTER_OTLP_PROTOCOL - Протокол OTLP (по умолчанию: grpc)
-//
-// # Использование
-//
-//	settings := config.NewSettings()
-//	if err := settings.Validate(); err != nil {
-//	    log.Fatalf("Ошибка конфигурации: %v", err)
-//	}
+// Package config предоставляет структуры и функции для загрузки и валидации конфигурации приложения adminPanel.
+// Он считывает настройки из переменных окружения и предоставляет удобный доступ к ним.
 package config
 
 import (
@@ -65,11 +9,9 @@ import (
 	"strings"
 )
 
-// DatabaseConfig содержит настройки подключения к PostgreSQL.
-//
-// Конфигурация может быть предоставлена либо через переменную окружения DATABASE_URL,
-// либо через отдельные DB_* переменные. Когда DATABASE_URL задан, он имеет приоритет
-// над отдельными переменными.
+// DatabaseConfig содержит настройки подключения к базе данных PostgreSQL.
+// Включает параметры хоста, порта, пользователя, пароля, имени базы данных,
+// режима SSL и размеров пула соединений.
 type DatabaseConfig struct {
 	Host        string
 	Port        int
@@ -81,9 +23,8 @@ type DatabaseConfig struct {
 	MaxPoolSize int
 }
 
-// URL возвращает строку подключения к PostgreSQL в стандартном формате.
-//
-// Формат: postgresql://user:password@host:port/dbname?sslmode=value
+// URL возвращает строку подключения к базе данных в формате PostgreSQL DSN.
+// Формирует URL на основе полей структуры, включая параметры sslmode.
 func (d *DatabaseConfig) URL() string {
 	return fmt.Sprintf(
 		"postgresql://%s:%s@%s:%d/%s?sslmode=%s",
@@ -91,7 +32,8 @@ func (d *DatabaseConfig) URL() string {
 	)
 }
 
-// OTelConfig содержит настройки трассировки OpenTelemetry.
+// OTelConfig содержит настройки для OpenTelemetry.
+// Включает endpoint для экспорта, имя сервиса, протокол и флаг включения.
 type OTelConfig struct {
 	Endpoint    string
 	ServiceName string
@@ -99,7 +41,8 @@ type OTelConfig struct {
 	Enabled     bool
 }
 
-// KeycloakConfig содержит настройки аутентификации через Keycloak.
+// KeycloakConfig содержит настройки для интеграции с Keycloak.
+// Включает URL issuer, audience, JWKS URL, client ID, secret и имя приложения.
 type KeycloakConfig struct {
 	IssuerURL    string
 	Audience     string
@@ -109,7 +52,8 @@ type KeycloakConfig struct {
 	AppName      string
 }
 
-// CORSConfig содержит настройки Cross-Origin Resource Sharing.
+// CORSConfig содержит настройки для Cross-Origin Resource Sharing (CORS).
+// Определяет разрешенные origins, методы, заголовки, credentials и exposed headers.
 type CORSConfig struct {
 	AllowOrigins     string
 	AllowMethods     string
@@ -118,33 +62,34 @@ type CORSConfig struct {
 	ExposeHeaders    string
 }
 
-// ServerConfig содержит настройки HTTP сервера.
+// ServerConfig содержит настройки сервера.
+// Включает адрес прослушивания, имя приложения и корневой путь API.
 type ServerConfig struct {
 	Address  string
 	AppName  string
 	RootPath string
 }
 
-// MinioConfig содержит настройки для подключения к MinIO (S3).
+// MinioConfig содержит настройки для подключения к MinIO (S3-compatible storage).
+// Включает endpoint, ключи доступа, имя bucket, флаг SSL и публичный URL.
 type MinioConfig struct {
 	Endpoint  string
 	AccessKey string
 	SecretKey string
 	Bucket    string
 	UseSSL    bool
-	PublicURL string // Публичный URL для доступа к изображениям через nginx
+	PublicURL string
 }
 
-// TestModuleConfig содержит настройки для внешнего модуля тестов
+// TestModuleConfig содержит настройки для тестового модуля.
+// Включает базовый URL и флаг включения модуля.
 type TestModuleConfig struct {
-	BaseURL string // Базовый URL модуля тестов
-	Enabled bool   // Включен ли модуль тестов
+	BaseURL string
+	Enabled bool
 }
 
-// Settings является главным контейнером конфигурации приложения.
-//
-// Объединяет все подсекции конфигурации и предоставляет методы
-// валидации и доступа к значениям конфигурации.
+// Settings объединяет все конфигурационные структуры в одну.
+// Содержит настройки базы данных, OTel, Keycloak, CORS, сервера, MinIO, тестового модуля и флаг отладки.
 type Settings struct {
 	Database   DatabaseConfig
 	OTel       OTelConfig
@@ -156,10 +101,8 @@ type Settings struct {
 	TestModule TestModuleConfig
 }
 
-// Validate проверяет обязательные параметры конфигурации
-//
-// Возвращает:
-//   - error: ошибка валидации (если есть)
+// Validate проверяет наличие обязательных переменных окружения для базы данных.
+// Возвращает ошибку, если отсутствуют DB_HOST, DB_USER, DB_PASSWORD или DB_NAME (или DATABASE_URL).
 func (s *Settings) Validate() error {
 	var missingVars []string
 
@@ -183,13 +126,8 @@ func (s *Settings) Validate() error {
 	return nil
 }
 
-// NewSettings создает и возвращает новую конфигурацию
-//
-// Функция читает параметры из переменных окружения.
-// Приоритет для базы данных: DATABASE_URL > отдельные DB_* переменные
-//
-// Возвращает:
-//   - *Settings: указатель на структуру конфигурации
+// NewSettings создает новый экземпляр Settings, загружая конфигурацию из переменных окружения.
+// Использует вспомогательные функции для загрузки каждой части конфигурации.
 func NewSettings() *Settings {
 	return &Settings{
 		Database:   loadDatabaseConfig(),
@@ -204,17 +142,7 @@ func NewSettings() *Settings {
 }
 
 // loadDatabaseConfig загружает конфигурацию базы данных из переменных окружения.
-//
-// Функция читает настройки подключения к PostgreSQL. Поддерживает два способа:
-//   - DATABASE_URL: полная строка подключения (приоритет)
-//   - Отдельные переменные: DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_SSLMODE
-//
-// Дополнительно загружает настройки пула соединений:
-//   - DATABASE_POOL_MIN_SIZE: минимальное количество соединений (по умолчанию: 5)
-//   - DATABASE_POOL_MAX_SIZE: максимальное количество соединений (по умолчанию: 20)
-//
-// Возвращает:
-//   - DatabaseConfig: структура с настройками подключения к БД
+// Если задана DATABASE_URL, парсит её; иначе использует отдельные переменные DB_HOST, DB_PORT и т.д.
 func loadDatabaseConfig() DatabaseConfig {
 	cfg := DatabaseConfig{
 		MinPoolSize: getEnvAsInt("DATABASE_POOL_MIN_SIZE", 5),
@@ -235,22 +163,9 @@ func loadDatabaseConfig() DatabaseConfig {
 	return cfg
 }
 
-// parseDatabaseURL разбирает строку подключения DATABASE_URL на отдельные компоненты.
-//
-// Поддерживаемые форматы URL:
-//   - postgresql://user:password@host:port/dbname?sslmode=disable
-//   - postgres://user:password@host:port/dbname
-//
-// Параметры:
-//   - url: строка подключения к PostgreSQL
-//
-// Возвращает:
-//   - host: имя хоста сервера БД
-//   - port: порт сервера БД (по умолчанию 5432)
-//   - user: имя пользователя
-//   - password: пароль пользователя
-//   - name: имя базы данных
-//   - sslmode: режим SSL (по умолчанию "disable")
+// parseDatabaseURL разбирает строку DATABASE_URL в формате PostgreSQL DSN.
+// Возвращает host, port, user, password, name базы данных и sslmode.
+// Если порт не указан, использует 5432; sslmode по умолчанию "disable".
 func parseDatabaseURL(url string) (host string, port int, user, password, name, sslmode string) {
 	port = 5432
 	sslmode = "disable"
@@ -302,17 +217,8 @@ func parseDatabaseURL(url string) (host string, port int, user, password, name, 
 	return
 }
 
-// loadOTelConfig загружает конфигурацию трассировки OpenTelemetry из переменных окружения.
-//
-// Читаемые переменные:
-//   - OTEL_EXPORTER_OTLP_ENDPOINT: URL эндпоинта OTLP коллектора
-//   - OTEL_SERVICE_NAME: имя сервиса для трасс (по умолчанию: "admin-panel")
-//   - OTEL_EXPORTER_OTLP_PROTOCOL: протокол экспорта (по умолчанию: "grpc")
-//
-// Трассировка автоматически включается, если OTEL_EXPORTER_OTLP_ENDPOINT задан.
-//
-// Возвращает:
-//   - OTelConfig: структура с настройками OpenTelemetry
+// loadOTelConfig загружает конфигурацию OpenTelemetry из переменных окружения.
+// Включает endpoint, service name, protocol и определяет, включен ли OTel (по наличию endpoint).
 func loadOTelConfig() OTelConfig {
 	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 	return OTelConfig{
@@ -323,21 +229,8 @@ func loadOTelConfig() OTelConfig {
 	}
 }
 
-// loadKeycloakConfig загружает конфигурацию аутентификации Keycloak из переменных окружения.
-//
-// Читаемые переменные:
-//   - KEYCLOAK_ISSUER_URL: URL издателя токенов для валидации JWT
-//   - KEYCLOAK_AUDIENCE: ожидаемый claim audience в JWT-токенах
-//   - KEYCLOAK_JWKS_URL: URL эндпоинта JWKS (если не задан, генерируется из issuer)
-//   - KEYCLOAK_CLIENT_ID: OAuth2 client ID для авторизации
-//   - KEYCLOAK_CLIENT_SECRET: OAuth2 client secret
-//   - KEYCLOAK_APP_NAME: название приложения для OAuth2
-//
-// Если KEYCLOAK_JWKS_URL не задан, он автоматически формируется как:
-// {KEYCLOAK_ISSUER_URL}/protocol/openid-connect/certs
-//
-// Возвращает:
-//   - KeycloakConfig: структура с настройками Keycloak
+// loadKeycloakConfig загружает конфигурацию Keycloak из переменных окружения.
+// Если JWKS_URL не задан, формирует его на основе issuer URL.
 func loadKeycloakConfig() KeycloakConfig {
 	issuer := os.Getenv("KEYCLOAK_ISSUER_URL")
 	jwksURL := os.Getenv("KEYCLOAK_JWKS_URL")
@@ -355,17 +248,8 @@ func loadKeycloakConfig() KeycloakConfig {
 	}
 }
 
-// loadCORSConfig загружает конфигурацию CORS из переменных окружения.
-//
-// Читаемые переменные:
-//   - CORS_ALLOW_ORIGINS: разрешённые origins через запятую (по умолчанию: "*")
-//   - CORS_ALLOW_METHODS: разрешённые HTTP методы (по умолчанию: "GET,POST,PUT,DELETE,OPTIONS")
-//   - CORS_ALLOW_HEADERS: разрешённые заголовки (по умолчанию: "Origin,Content-Type,Accept,Authorization")
-//   - CORS_ALLOW_CREDENTIALS: разрешить передачу credentials (по умолчанию: false)
-//   - CORS_EXPOSE_HEADERS: экспонируемые заголовки (по умолчанию: "Content-Length")
-//
-// Возвращает:
-//   - CORSConfig: структура с настройками CORS
+// loadCORSConfig загружает настройки CORS из переменных окружения.
+// Определяет разрешенные origins, методы, заголовки и т.д.
 func loadCORSConfig() CORSConfig {
 	return CORSConfig{
 		AllowOrigins:     getEnv("CORS_ALLOW_ORIGINS", "*"),
@@ -376,15 +260,8 @@ func loadCORSConfig() CORSConfig {
 	}
 }
 
-// loadServerConfig загружает конфигурацию HTTP сервера из переменных окружения.
-//
-// Читаемые переменные:
-//   - API_ADDRESS: адрес для прослушивания (по умолчанию: ":4000")
-//   - APP_NAME: название приложения (по умолчанию: "Admin Panel API")
-//   - ROOT_PATH: корневой путь URL (по умолчанию: "/admin")
-//
-// Возвращает:
-//   - ServerConfig: структура с настройками сервера
+// loadServerConfig загружает настройки сервера из переменных окружения.
+// Включает адрес, имя приложения и корневой путь.
 func loadServerConfig() ServerConfig {
 	return ServerConfig{
 		Address:  getEnv("API_ADDRESS", ":4000"),
@@ -393,17 +270,8 @@ func loadServerConfig() ServerConfig {
 	}
 }
 
-// loadMinioConfig загружает конфигурацию MinIO из переменных окружения.
-//
-// Читаемые переменные:
-//   - MINIO_ENDPOINT: эндпоинт MinIO (по умолчанию: "localhost:9000")
-//   - MINIO_ACCESS_KEY: ключ доступа MinIO (по умолчанию: "minioadmin")
-//   - MINIO_SECRET_KEY: секретный ключ MinIO (по умолчанию: "minioadmin")
-//   - MINIO_BUCKET: имя бакета MinIO (по умолчанию: "snapshots")
-//   - MINIO_USE_SSL: использовать SSL (по умолчанию: false)
-//
-// Возвращает:
-//   - MinioConfig: структура с настройками MinIO
+// loadMinioConfig загружает настройки MinIO из переменных окружения.
+// Включает endpoint, ключи, bucket, SSL и публичный URL.
 func loadMinioConfig() MinioConfig {
 	return MinioConfig{
 		Endpoint:  getEnv("MINIO_ENDPOINT", "localhost:9000"),
@@ -415,6 +283,8 @@ func loadMinioConfig() MinioConfig {
 	}
 }
 
+// loadTestModuleConfig загружает настройки тестового модуля из переменных окружения.
+// Включает базовый URL и флаг включения.
 func loadTestModuleConfig() TestModuleConfig {
 	return TestModuleConfig{
 		BaseURL: getEnv("TEST_MODULE_BASE_URL", "http://localhost:8080"),
@@ -422,13 +292,8 @@ func loadTestModuleConfig() TestModuleConfig {
 	}
 }
 
-// GetCORSOrigins возвращает список разрешенных origins для CORS
-//
-// Преобразует строку origins в слайс, разделяя по запятым
-// и удаляя пробелы. Поддерживает wildcard "*".
-//
-// Возвращает:
-//   - []string: слайс с origins
+// GetCORSOrigins возвращает список разрешенных origins для CORS.
+// Если AllowOrigins равно "*", возвращает ["*"]; иначе разбивает строку по запятым и удаляет пробелы.
 func (s *Settings) GetCORSOrigins() []string {
 	if s.CORS.AllowOrigins == "*" {
 		return []string{"*"}
@@ -440,22 +305,13 @@ func (s *Settings) GetCORSOrigins() []string {
 	return origins
 }
 
-// DatabaseURL возвращает URL подключения к базе данных
-// Deprecated: используйте Settings.Database.URL()
+// DatabaseURL возвращает строку подключения к базе данных, используя метод URL() структуры DatabaseConfig.
+// Это удобный метод для получения полного DSN.
 func (s *Settings) DatabaseURL() string {
 	return s.Database.URL()
 }
 
-// Вспомогательные функции
-
-// getEnv возвращает значение переменной окружения или значение по умолчанию
-//
-// Параметры:
-//   - key: имя переменной окружения
-//   - defaultValue: значение по умолчанию
-//
-// Возвращает:
-//   - string: значение переменной окружения или defaultValue
+// getEnv получает значение переменной окружения по ключу, возвращая defaultValue, если переменная не установлена.
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
@@ -463,14 +319,7 @@ func getEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
-// getEnvAsInt возвращает значение переменной окружения как int или значение по умолчанию
-//
-// Параметры:
-//   - key: имя переменной окружения
-//   - defaultValue: значение по умолчанию
-//
-// Возвращает:
-//   - int: значение переменной окружения или defaultValue
+// getEnvAsInt получает значение переменной окружения как int, возвращая defaultValue при ошибке или отсутствии.
 func getEnvAsInt(key string, defaultValue int) int {
 	if value := os.Getenv(key); value != "" {
 		if intValue, err := strconv.Atoi(value); err == nil {
@@ -480,14 +329,7 @@ func getEnvAsInt(key string, defaultValue int) int {
 	return defaultValue
 }
 
-// getEnvAsBool возвращает значение переменной окружения как bool или значение по умолчанию
-//
-// Параметры:
-//   - key: имя переменной окружения
-//   - defaultValue: значение по умолчанию
-//
-// Возвращает:
-//   - bool: значение переменной окружения или defaultValue
+// getEnvAsBool получает значение переменной окружения как bool, возвращая defaultValue при ошибке или отсутствии.
 func getEnvAsBool(key string, defaultValue bool) bool {
 	if value := os.Getenv(key); value != "" {
 		if boolValue, err := strconv.ParseBool(value); err == nil {

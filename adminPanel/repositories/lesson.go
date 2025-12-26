@@ -12,20 +12,23 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// LessonRepository - репозиторий для работы с уроками в базе данных
+// LessonRepository предоставляет методы для работы с уроками.
+// Содержит ссылку на базу данных для выполнения запросов.
 type LessonRepository struct {
 	db *database.Database
-	// Убираем BaseRepository, т.к. методы теперь специфичны
 }
 
-// NewLessonRepository создает новый репозиторий для уроков
+// NewLessonRepository создает новый экземпляр LessonRepository.
+// Принимает соединение с базой данных.
 func NewLessonRepository(db *database.Database) *LessonRepository {
 	return &LessonRepository{
 		db: db,
 	}
 }
 
-// GetAllByCourseID получает уроки по идентификатору курса с пагинацией и сортировкой
+// GetAllByCourseID получает все уроки для заданного курса с пагинацией и сортировкой.
+// Принимает courseID, limit, offset, sortBy (title, created_at, updated_at), sortOrder (ASC/DESC).
+// Возвращает список уроков.
 func (r *LessonRepository) GetAllByCourseID(ctx context.Context, courseID string, limit, offset int, sortBy, sortOrder string) ([]models.Lesson, error) {
 	allowedSortBy := map[string]bool{"title": true, "created_at": true, "updated_at": true}
 	if !allowedSortBy[sortBy] {
@@ -65,7 +68,8 @@ func (r *LessonRepository) GetAllByCourseID(ctx context.Context, courseID string
 	return lessons, nil
 }
 
-// CountByCourseID подсчитывает количество уроков по идентификатору курса
+// CountByCourseID подсчитывает количество уроков для заданного курса.
+// Возвращает количество уроков.
 func (r *LessonRepository) CountByCourseID(ctx context.Context, courseID string) (int, error) {
 	query := `SELECT COUNT(*) FROM knowledge_base.lesson_d WHERE course_id = $1`
 	var count int
@@ -76,7 +80,8 @@ func (r *LessonRepository) CountByCourseID(ctx context.Context, courseID string)
 	return count, nil
 }
 
-// GetByID получает урок по его уникальному идентификатору
+// GetByID получает урок по ID.
+// Возвращает урок или nil, если не найден.
 func (r *LessonRepository) GetByID(ctx context.Context, lessonID string) (*models.Lesson, error) {
 	query := `SELECT id, title, course_id, content, created_at, updated_at FROM knowledge_base.lesson_d WHERE id = $1`
 
@@ -100,7 +105,8 @@ func (r *LessonRepository) GetByID(ctx context.Context, lessonID string) (*model
 	return &lesson, nil
 }
 
-// Create создает новый урок в базе данных
+// Create создает новый урок для заданного курса на основе данных из request.LessonCreate.
+// Возвращает созданный урок.
 func (r *LessonRepository) Create(ctx context.Context, courseID string, lesson request.LessonCreate) (*models.Lesson, error) {
 	query := `
 	       INSERT INTO knowledge_base.lesson_d (title, course_id, content)
@@ -125,7 +131,8 @@ func (r *LessonRepository) Create(ctx context.Context, courseID string, lesson r
 	return &newLesson, nil
 }
 
-// Update обновляет существующий урок в базе данных
+// Update обновляет урок по ID на основе данных из request.LessonUpdate.
+// Возвращает обновленный урок.
 func (r *LessonRepository) Update(ctx context.Context, lessonID string, lesson request.LessonUpdate) (*models.Lesson, error) {
 	query := `
 	       UPDATE knowledge_base.lesson_d 
@@ -153,7 +160,8 @@ func (r *LessonRepository) Update(ctx context.Context, lessonID string, lesson r
 	return &updatedLesson, nil
 }
 
-// Delete удаляет урок по его уникальному идентификатору
+// Delete удаляет урок по ID.
+// Возвращает true, если урок был удален, false - если не найден.
 func (r *LessonRepository) Delete(ctx context.Context, lessonID string) (bool, error) {
 	query := `DELETE FROM knowledge_base.lesson_d WHERE id = $1`
 

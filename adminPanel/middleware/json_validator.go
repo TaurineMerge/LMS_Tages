@@ -1,5 +1,3 @@
-// Package middleware содержит middleware-функции для обработки HTTP-запросов.
-// Этот файл реализует валидацию с использованием JSON Schema.
 package middleware
 
 import (
@@ -15,11 +13,7 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v5"
 )
 
-// Примечание: embed не поддерживает относительные пути с ..
-// Схемы должны быть в поддиректории текущего пакета или использовать абсолютный путь
-// Вместо этого будем загружать схемы из файловой системы напрямую
-
-// SchemaValidator управляет компиляцией и кешированием JSON Schema.
+// SchemaValidator управляет загрузкой и компиляцией JSON-схем для валидации.
 type SchemaValidator struct {
 	compiler *jsonschema.Compiler
 	schemas  map[string]*jsonschema.Schema
@@ -32,6 +26,7 @@ var (
 )
 
 // GetValidator возвращает синглтон экземпляр SchemaValidator.
+// Инициализирует валидатор при первом вызове, загружая все схемы.
 func GetValidator() *SchemaValidator {
 	validatorOnce.Do(func() {
 		validator = &SchemaValidator{
@@ -40,7 +35,6 @@ func GetValidator() *SchemaValidator {
 		}
 		validator.compiler.Draft = jsonschema.Draft7
 
-		// Загружаем схемы из embed FS
 		if err := validator.loadSchemas(); err != nil {
 			panic(fmt.Sprintf("Failed to load schemas: %v", err))
 		}
@@ -48,9 +42,8 @@ func GetValidator() *SchemaValidator {
 	return validator
 }
 
-// loadSchemas загружает все JSON Schema из файловой системы.
+// loadSchemas загружает и добавляет JSON-схемы в компилятор из директории docs/schemas.
 func (v *SchemaValidator) loadSchemas() error {
-	// Получаем путь к директории проекта
 	schemasPath := filepath.Join("docs", "schemas")
 
 	schemaFiles := []string{
@@ -73,14 +66,16 @@ func (v *SchemaValidator) loadSchemas() error {
 			return fmt.Errorf("failed to read schema %s: %w", schemaFile, err)
 		}
 
-		// Добавляем схему в компилятор
 		if err := v.compiler.AddResource(schemaFile, bytes.NewReader(data)); err != nil {
 			return fmt.Errorf("failed to add schema %s: %w", schemaFile, err)
 		}
 	}
 
 	return nil
-} // GetSchema возвращает скомпилированную схему по имени.
+}
+
+// GetSchema возвращает скомпилированную схему по имени.
+// Кеширует схемы для повторного использования.
 func (v *SchemaValidator) GetSchema(schemaName string) (*jsonschema.Schema, error) {
 	v.mu.RLock()
 	schema, exists := v.schemas[schemaName]
@@ -93,12 +88,10 @@ func (v *SchemaValidator) GetSchema(schemaName string) (*jsonschema.Schema, erro
 	v.mu.Lock()
 	defer v.mu.Unlock()
 
-	// Проверяем еще раз после получения блокировки на запись
 	if schema, exists := v.schemas[schemaName]; exists {
 		return schema, nil
 	}
 
-	// Компилируем схему
 	compiled, err := v.compiler.Compile(schemaName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile schema %s: %w", schemaName, err)
@@ -108,19 +101,12 @@ func (v *SchemaValidator) GetSchema(schemaName string) (*jsonschema.Schema, erro
 	return compiled, nil
 }
 
-// ValidateJSONSchema middleware для валидации запроса с использованием JSON Schema.
-//
-// Параметры:
-//   - schemaName: имя файла схемы для валидации (например, "course_schema.json")
-//
-// Возвращает:
-//   - fiber.Handler: middleware-функцию для использования в Fiber приложении
+// ValidateJSONSchema возвращает промежуточное ПО для валидации тела запроса по JSON-схеме.
+// В случае ошибки валидации возвращает 422 с деталями ошибок.
 func ValidateJSONSchema(schemaName string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// Получаем валидатор
 		v := GetValidator()
 
-		// Получаем схему
 		schema, err := v.GetSchema(schemaName)
 		if err != nil {
 			return c.Status(500).JSON(response.ErrorResponse{
@@ -132,7 +118,6 @@ func ValidateJSONSchema(schemaName string) fiber.Handler {
 			})
 		}
 
-		// Парсим тело запроса в interface{}
 		var requestBody interface{}
 		if err := json.Unmarshal(c.Body(), &requestBody); err != nil {
 			return c.Status(400).JSON(response.ErrorResponse{
@@ -144,12 +129,10 @@ func ValidateJSONSchema(schemaName string) fiber.Handler {
 			})
 		}
 
-		// Валидируем через JSON Schema
 		if err := schema.Validate(requestBody); err != nil {
 			validationErrors := make(map[string]string)
 
 			if ve, ok := err.(*jsonschema.ValidationError); ok {
-				// Извлекаем детальные ошибки валидации
 				validationErrors = extractValidationErrors(ve)
 			} else {
 				validationErrors["_error"] = err.Error()
@@ -165,18 +148,16 @@ func ValidateJSONSchema(schemaName string) fiber.Handler {
 			})
 		}
 
-		// Сохраняем валидированное тело в Locals
 		c.Locals("validatedBody", requestBody)
 
 		return c.Next()
 	}
 }
 
-// extractValidationErrors извлекает ошибки валидации из ValidationError.
+// extractValidationErrors извлекает ошибки валидации из ValidationError в карту полей.
 func extractValidationErrors(ve *jsonschema.ValidationError) map[string]string {
 	errors := make(map[string]string)
 
-	// Основная ошибка
 	if ve.InstanceLocation != "" {
 		fieldName := ve.InstanceLocation
 		if fieldName == "" {
@@ -185,7 +166,6 @@ func extractValidationErrors(ve *jsonschema.ValidationError) map[string]string {
 		errors[fieldName] = ve.Message
 	}
 
-	// Вложенные ошибки
 	for _, cause := range ve.Causes {
 		fieldErrors := extractValidationErrors(cause)
 		for field, msg := range fieldErrors {

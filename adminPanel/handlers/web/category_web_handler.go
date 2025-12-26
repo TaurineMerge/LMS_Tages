@@ -1,3 +1,4 @@
+// Пакет web содержит обработчики для веб-интерфейса админ-панели.
 package web
 
 import (
@@ -8,7 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// CategoryView представляет категорию для отображения
+// CategoryView представляет категорию для отображения в веб-интерфейсе.
 type CategoryView struct {
 	ID        string
 	Title     string
@@ -16,23 +17,22 @@ type CategoryView struct {
 	UpdatedAt string
 }
 
-// CategoryWebHandler обрабатывает веб-страницы для управления категориями
+// CategoryWebHandler обрабатывает веб-страницы для управления категориями.
 type CategoryWebHandler struct {
 	categoryService *services.CategoryService
 }
 
-// NewCategoryWebHandler создает новый обработчик веб-страниц категорий
+// NewCategoryWebHandler создает новый обработчик веб-страниц категорий.
 func NewCategoryWebHandler(categoryService *services.CategoryService) *CategoryWebHandler {
 	return &CategoryWebHandler{
 		categoryService: categoryService,
 	}
 }
 
-// RenderCategoriesEditor отображает страницу со списком категорий
+// RenderCategoriesEditor отображает страницу со списком всех категорий.
 func (h *CategoryWebHandler) RenderCategoriesEditor(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 
-	// Получаем все категории
 	categories, err := h.categoryService.GetCategories(ctx)
 	if err != nil {
 		return c.Status(500).Render("pages/categories-editor", fiber.Map{
@@ -41,7 +41,6 @@ func (h *CategoryWebHandler) RenderCategoriesEditor(c *fiber.Ctx) error {
 		}, "layouts/main")
 	}
 
-	// Преобразуем в CategoryView
 	categoryViews := make([]CategoryView, 0, len(categories))
 	for _, cat := range categories {
 		categoryViews = append(categoryViews, CategoryView{
@@ -59,19 +58,18 @@ func (h *CategoryWebHandler) RenderCategoriesEditor(c *fiber.Ctx) error {
 	}, "layouts/main")
 }
 
-// RenderNewCategoryForm отображает форму создания новой категории
+// RenderNewCategoryForm отображает форму создания новой категории.
 func (h *CategoryWebHandler) RenderNewCategoryForm(c *fiber.Ctx) error {
 	return c.Render("pages/category-form", fiber.Map{
 		"title": "Новая категория",
 	}, "layouts/main")
 }
 
-// RenderEditCategoryForm отображает форму редактирования категории
+// RenderEditCategoryForm отображает форму редактирования категории.
 func (h *CategoryWebHandler) RenderEditCategoryForm(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	categoryID := c.Params("id")
 
-	// Получаем категорию
 	category, err := h.categoryService.GetCategory(ctx, categoryID)
 	if err != nil {
 		return c.Status(404).Render("pages/category-form", fiber.Map{
@@ -93,7 +91,7 @@ func (h *CategoryWebHandler) RenderEditCategoryForm(c *fiber.Ctx) error {
 	}, "layouts/main")
 }
 
-// CreateCategory обрабатывает создание новой категории
+// CreateCategory обрабатывает создание новой категории из формы.
 func (h *CategoryWebHandler) CreateCategory(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 
@@ -105,7 +103,6 @@ func (h *CategoryWebHandler) CreateCategory(c *fiber.Ctx) error {
 		}, "layouts/main")
 	}
 
-	// Создаем категорию
 	input := request.CategoryCreate{
 		Title: title,
 	}
@@ -118,18 +115,16 @@ func (h *CategoryWebHandler) CreateCategory(c *fiber.Ctx) error {
 		}, "layouts/main")
 	}
 
-	// Перенаправляем на список категорий (nginx проксирует /admin -> backend root)
 	return c.Redirect("/admin/categories")
 }
 
-// UpdateCategory обрабатывает обновление категории
+// UpdateCategory обрабатывает обновление категории из формы.
 func (h *CategoryWebHandler) UpdateCategory(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	categoryID := c.Params("id")
 
 	title := c.FormValue("title")
 	if title == "" {
-		// Получаем категорию для отображения в форме
 		category, _ := h.categoryService.GetCategory(ctx, categoryID)
 		var categoryView *CategoryView
 		if category != nil {
@@ -148,14 +143,12 @@ func (h *CategoryWebHandler) UpdateCategory(c *fiber.Ctx) error {
 		}, "layouts/main")
 	}
 
-	// Обновляем категорию
 	input := request.CategoryUpdate{
 		Title: title,
 	}
 
 	_, err := h.categoryService.UpdateCategory(ctx, categoryID, input)
 	if err != nil {
-		// Получаем категорию для отображения в форме
 		category, _ := h.categoryService.GetCategory(ctx, categoryID)
 		var categoryView *CategoryView
 		if category != nil {
@@ -174,26 +167,23 @@ func (h *CategoryWebHandler) UpdateCategory(c *fiber.Ctx) error {
 		}, "layouts/main")
 	}
 
-	// Перенаправляем на список категорий (nginx проксирует /admin -> backend root)
 	return c.Redirect("/admin/categories")
 }
 
-// DeleteCategory обрабатывает удаление категории
+// DeleteCategory обрабатывает удаление категории.
 func (h *CategoryWebHandler) DeleteCategory(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	categoryID := c.Params("id")
 
 	err := h.categoryService.DeleteCategory(ctx, categoryID)
 	if err != nil {
-		// Можно добавить flash-сообщение об ошибке
 		return c.Redirect("/admin/categories")
 	}
 
-	// Перенаправляем на список категорий
 	return c.Redirect("/admin/categories")
 }
 
-// formatDateTime форматирует время для отображения
+// formatDateTime форматирует время для отображения в интерфейсе.
 func formatDateTime(t time.Time) string {
 	return t.Format("02.01.2006 15:04")
 }

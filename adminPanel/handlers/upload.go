@@ -1,3 +1,5 @@
+// Пакет handlers содержит обработчики HTTP-запросов для различных операций,
+// включая загрузку файлов и управление категориями, курсами, уроками и здоровьем системы.
 package handlers
 
 import (
@@ -11,47 +13,37 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// UploadHandler - HTTP обработчик для загрузки файлов
+// UploadHandler обрабатывает запросы на загрузку изображений в S3-совместимое хранилище.
 type UploadHandler struct {
 	s3Service *services.S3Service
 }
 
-// NewUploadHandler создает новый HTTP обработчик для загрузки файлов
+// NewUploadHandler создает новый экземпляр UploadHandler с заданным сервисом S3.
 func NewUploadHandler(s3Service *services.S3Service) *UploadHandler {
 	return &UploadHandler{
 		s3Service: s3Service,
 	}
 }
 
-// RegisterRoutes регистрирует маршруты для загрузки файлов
+// RegisterRoutes регистрирует маршруты для загрузки изображений на переданном роутере.
 func (h *UploadHandler) RegisterRoutes(upload fiber.Router) {
 	upload.Post("/image", h.uploadImage)
 	upload.Post("/image-from-url", h.uploadImageFromURL)
 }
 
-// UploadImageResponse - структура ответа при успешной загрузке изображения
+// UploadImageResponse представляет ответ на запрос загрузки изображения.
 type UploadImageResponse struct {
 	Status   string `json:"status"`
 	ImageURL string `json:"image_url"`
 	Message  string `json:"message"`
 }
 
-// uploadImage обрабатывает POST /api/v1/upload/image
-// @Summary Загрузить изображение
-// @Description Загружает изображение в S3 хранилище и возвращает публичный URL
-// @Tags Upload
-// @Accept multipart/form-data
-// @Produce json
-// @Param image formData file true "Файл изображения (JPEG, PNG, GIF, WEBP, максимум 10 МБ)"
-// @Success 200 {object} UploadImageResponse
-// @Failure 400 {object} middleware.AppError "Неверный тип файла или размер"
-// @Failure 500 {object} middleware.AppError "Ошибка загрузки"
-// @Router /api/v1/upload/image [post]
+// uploadImage обрабатывает POST /upload/image.
+// Загружает изображение из multipart формы в S3-совместимое хранилище.
 func (h *UploadHandler) uploadImage(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	span := trace.SpanFromContext(ctx)
 
-	// Получаем файл из запроса
 	file, err := c.FormFile("image")
 	if err != nil {
 		return middleware.NewAppError(
@@ -66,7 +58,6 @@ func (h *UploadHandler) uploadImage(c *fiber.Ctx) error {
 		attribute.Int64("file.size", file.Size),
 	)
 
-	// Загружаем изображение в S3
 	imageURL, err := h.s3Service.UploadImage(ctx, file)
 	if err != nil {
 		return err
@@ -83,22 +74,13 @@ func (h *UploadHandler) uploadImage(c *fiber.Ctx) error {
 	})
 }
 
-// UploadImageFromURLRequest - структура запроса для загрузки изображения по URL
+// UploadImageFromURLRequest представляет запрос на загрузку изображения по URL.
 type UploadImageFromURLRequest struct {
 	URL string `json:"url" validate:"required,url"`
 }
 
-// uploadImageFromURL обрабатывает POST /api/v1/upload/image-from-url
-// @Summary Загрузить изображение по URL
-// @Description Скачивает изображение по URL и загружает в S3 хранилище
-// @Tags Upload
-// @Accept json
-// @Produce json
-// @Param body body UploadImageFromURLRequest true "URL изображения"
-// @Success 200 {object} UploadImageResponse
-// @Failure 400 {object} middleware.AppError "Неверный URL или тип файла"
-// @Failure 500 {object} middleware.AppError "Ошибка загрузки"
-// @Router /api/v1/upload/image-from-url [post]
+// uploadImageFromURL обрабатывает POST /upload/image-from-url.
+// Загружает изображение по указанному URL в S3-совместимое хранилище.
 func (h *UploadHandler) uploadImageFromURL(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	span := trace.SpanFromContext(ctx)
@@ -122,7 +104,6 @@ func (h *UploadHandler) uploadImageFromURL(c *fiber.Ctx) error {
 
 	span.SetAttributes(attribute.String("source.url", req.URL))
 
-	// Загружаем изображение по URL в S3
 	imageURL, err := h.s3Service.UploadImageFromURL(ctx, req.URL)
 	if err != nil {
 		return err

@@ -1,3 +1,4 @@
+// Пакет web содержит обработчики для веб-интерфейса админ-панели.
 package web
 
 import (
@@ -9,7 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// CourseView представляет курс для отображения
+// CourseView представляет курс для отображения в веб-интерфейсе.
 type CourseView struct {
 	ID          string
 	CategoryID  string
@@ -20,33 +21,31 @@ type CourseView struct {
 	Visible     bool
 	CreatedAt   string
 	UpdatedAt   string
-	ImageKey    string // Только ключ, URL будет генерироваться в шаблоне
+	ImageKey    string
 	Tests       CourseTestsView
 }
 
-// CourseTestsView представляет информацию о тестах курса
+// CourseTestsView представляет информацию о тестах курса.
 type CourseTestsView struct {
 	Draft     *TestView
 	Published *TestView
 }
 
-// TestView представляет тест для отображения
+// TestView представляет тест для отображения.
 type TestView struct {
 	ID string
 }
 
-// getCourseTests получает информацию о тестах для курса из внешнего модуля
+// getCourseTests получает информацию о тестах для курса.
 func (h *CourseWebHandler) getCourseTests(ctx context.Context, courseID string) (CourseTestsView, error) {
 	if !h.testModuleConfig.Enabled {
 		return CourseTestsView{}, nil
 	}
 
-	// TODO: Implement HTTP call to test module
-	// For now, return empty
 	return CourseTestsView{}, nil
 }
 
-// levelToRussian преобразует уровень сложности в русский текст
+// levelToRussian преобразует уровень сложности в русский текст.
 func levelToRussian(level string) string {
 	switch level {
 	case "easy":
@@ -60,7 +59,7 @@ func levelToRussian(level string) string {
 	}
 }
 
-// CourseWebHandler обрабатывает веб-страницы для управления курсами
+// CourseWebHandler обрабатывает веб-страницы для управления курсами.
 type CourseWebHandler struct {
 	courseService    *services.CourseService
 	categoryService  *services.CategoryService
@@ -68,7 +67,7 @@ type CourseWebHandler struct {
 	testModuleConfig config.TestModuleConfig
 }
 
-// NewCourseWebHandler создает новый обработчик веб-страниц курсов
+// NewCourseWebHandler создает новый обработчик веб-страниц курсов.
 func NewCourseWebHandler(courseService *services.CourseService, categoryService *services.CategoryService, s3Service *services.S3Service, testModuleConfig config.TestModuleConfig) *CourseWebHandler {
 	return &CourseWebHandler{
 		courseService:    courseService,
@@ -78,16 +77,14 @@ func NewCourseWebHandler(courseService *services.CourseService, categoryService 
 	}
 }
 
-// RenderCoursesEditor отображает страницу со списком курсов категории
+// RenderCoursesEditor отображает страницу со списком курсов категории.
 func (h *CourseWebHandler) RenderCoursesEditor(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	categoryID := c.Params("category_id")
 
-	// Получаем параметры фильтрации
 	levelFilter := c.Query("level", "all")
 	visibilityFilter := c.Query("visibility", "all")
 
-	// Получаем категорию
 	category, err := h.categoryService.GetCategory(ctx, categoryID)
 	if err != nil {
 		return c.Status(404).Render("pages/courses-editor", fiber.Map{
@@ -96,15 +93,12 @@ func (h *CourseWebHandler) RenderCoursesEditor(c *fiber.Ctx) error {
 		}, "layouts/main")
 	}
 
-	// Получаем курсы категории
 	filter := request.CourseFilter{
 		CategoryID: categoryID,
 	}
-	// Применяем фильтр по уровню
 	if levelFilter != "all" {
 		filter.Level = levelFilter
 	}
-	// Применяем фильтр по видимости
 	if visibilityFilter != "all" {
 		filter.Visibility = visibilityFilter
 	}
@@ -119,7 +113,6 @@ func (h *CourseWebHandler) RenderCoursesEditor(c *fiber.Ctx) error {
 		}, "layouts/main")
 	}
 
-	// Получаем общее количество курсов без фильтров для отображения total
 	totalFilter := request.CourseFilter{CategoryID: categoryID}
 	totalResp, _ := h.courseService.GetCourses(ctx, totalFilter)
 	totalCount := 0
@@ -127,7 +120,6 @@ func (h *CourseWebHandler) RenderCoursesEditor(c *fiber.Ctx) error {
 		totalCount = len(totalResp.Data.Items)
 	}
 
-	// Преобразуем в CourseView
 	courseViews := make([]CourseView, 0, len(coursesResp.Data.Items))
 	for _, course := range coursesResp.Data.Items {
 		courseViews = append(courseViews, CourseView{
@@ -152,16 +144,15 @@ func (h *CourseWebHandler) RenderCoursesEditor(c *fiber.Ctx) error {
 		"coursesCount":     totalCount,
 		"levelFilter":      levelFilter,
 		"visibilityFilter": visibilityFilter,
-		"s3Service":        h.s3Service, // Передаем s3Service в шаблон
+		"s3Service":        h.s3Service,
 	}, "layouts/main")
 }
 
-// RenderNewCourseForm отображает форму создания нового курса
+// RenderNewCourseForm отображает форму создания нового курса.
 func (h *CourseWebHandler) RenderNewCourseForm(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	categoryID := c.Params("category_id")
 
-	// Получаем категорию
 	category, err := h.categoryService.GetCategory(ctx, categoryID)
 	if err != nil {
 		return c.Status(404).Render("pages/course-form", fiber.Map{
@@ -174,17 +165,16 @@ func (h *CourseWebHandler) RenderNewCourseForm(c *fiber.Ctx) error {
 		"title":        "Новый курс",
 		"categoryID":   categoryID,
 		"categoryName": category.Title,
-		"s3Service":    h.s3Service, // Передаем s3Service в шаблон
+		"s3Service":    h.s3Service,
 	}, "layouts/main")
 }
 
-// RenderEditCourseForm отображает форму редактирования курса
+// RenderEditCourseForm отображает форму редактирования курса.
 func (h *CourseWebHandler) RenderEditCourseForm(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	categoryID := c.Params("category_id")
 	courseID := c.Params("course_id")
 
-	// Получаем категорию
 	category, err := h.categoryService.GetCategory(ctx, categoryID)
 	if err != nil {
 		return c.Status(404).Render("pages/course-form", fiber.Map{
@@ -193,7 +183,6 @@ func (h *CourseWebHandler) RenderEditCourseForm(c *fiber.Ctx) error {
 		}, "layouts/main")
 	}
 
-	// Получаем курс
 	course, err := h.courseService.GetCourse(ctx, categoryID, courseID)
 	if err != nil {
 		return c.Status(404).Render("pages/course-form", fiber.Map{
@@ -217,10 +206,8 @@ func (h *CourseWebHandler) RenderEditCourseForm(c *fiber.Ctx) error {
 		ImageKey:    course.Data.ImageKey,
 	}
 
-	// Получить информацию о тестах
 	tests, err := h.getCourseTests(ctx, course.Data.ID)
 	if err != nil {
-		// Логировать ошибку, но не прерывать рендеринг
 		tests = CourseTestsView{}
 	}
 	courseView.Tests = tests
@@ -230,16 +217,15 @@ func (h *CourseWebHandler) RenderEditCourseForm(c *fiber.Ctx) error {
 		"categoryID":   categoryID,
 		"categoryName": category.Title,
 		"course":       courseView,
-		"s3Service":    h.s3Service, // Передаем s3Service в шаблон
+		"s3Service":    h.s3Service,
 	}, "layouts/main")
 }
 
-// CreateCourse обрабатывает создание нового курса
+// CreateCourse обрабатывает создание нового курса из формы.
 func (h *CourseWebHandler) CreateCourse(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	categoryID := c.Params("category_id")
 
-	// Получаем категорию
 	category, err := h.categoryService.GetCategory(ctx, categoryID)
 	if err != nil {
 		return c.Status(404).Render("pages/course-form", fiber.Map{
@@ -267,11 +253,9 @@ func (h *CourseWebHandler) CreateCourse(c *fiber.Ctx) error {
 		visibility = "public"
 	}
 
-	// Обрабатываем загрузку изображения
 	var imageKey string
 	file, err := c.FormFile("image")
 	if err == nil && file != nil {
-		// Загружаем изображение в S3
 		imageKey, err = h.s3Service.UploadImageKey(ctx, file)
 		if err != nil {
 			return c.Status(400).Render("pages/course-form", fiber.Map{
@@ -283,7 +267,6 @@ func (h *CourseWebHandler) CreateCourse(c *fiber.Ctx) error {
 		}
 	}
 
-	// Создаем курс
 	input := request.CourseCreate{
 		Title:       title,
 		Description: description,
@@ -303,17 +286,15 @@ func (h *CourseWebHandler) CreateCourse(c *fiber.Ctx) error {
 		}, "layouts/main")
 	}
 
-	// Перенаправляем на список курсов
 	return c.Redirect("/admin/categories/" + categoryID + "/courses")
 }
 
-// UpdateCourse обрабатывает обновление курса
+// UpdateCourse обрабатывает обновление курса из формы.
 func (h *CourseWebHandler) UpdateCourse(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	categoryID := c.Params("category_id")
 	courseID := c.Params("course_id")
 
-	// Получаем категорию
 	category, err := h.categoryService.GetCategory(ctx, categoryID)
 	if err != nil {
 		return c.Status(404).Render("pages/course-form", fiber.Map{
@@ -328,7 +309,6 @@ func (h *CourseWebHandler) UpdateCourse(c *fiber.Ctx) error {
 	visibleStr := c.FormValue("visible")
 
 	if title == "" {
-		// Получаем курс для отображения в форме
 		course, _ := h.courseService.GetCourse(ctx, categoryID, courseID)
 		var courseView *CourseView
 		if course != nil {
@@ -359,14 +339,11 @@ func (h *CourseWebHandler) UpdateCourse(c *fiber.Ctx) error {
 		visibility = "public"
 	}
 
-	// Обрабатываем загрузку изображения
 	var imageKey string
 	file, err := c.FormFile("image")
 	if err == nil && file != nil {
-		// Загружаем изображение в S3
 		imageKey, err = h.s3Service.UploadImageKey(ctx, file)
 		if err != nil {
-			// Получаем курс для отображения в форме
 			course, _ := h.courseService.GetCourse(ctx, categoryID, courseID)
 			var courseView *CourseView
 			if course != nil {
@@ -393,7 +370,6 @@ func (h *CourseWebHandler) UpdateCourse(c *fiber.Ctx) error {
 		}
 	}
 
-	// Обновляем курс
 	input := request.CourseUpdate{
 		Title:       title,
 		Description: description,
@@ -405,7 +381,6 @@ func (h *CourseWebHandler) UpdateCourse(c *fiber.Ctx) error {
 
 	_, err = h.courseService.UpdateCourse(ctx, categoryID, courseID, input)
 	if err != nil {
-		// Получаем курс для отображения в форме
 		course, _ := h.courseService.GetCourse(ctx, categoryID, courseID)
 		var courseView *CourseView
 		if course != nil {
@@ -431,11 +406,10 @@ func (h *CourseWebHandler) UpdateCourse(c *fiber.Ctx) error {
 		}, "layouts/main")
 	}
 
-	// Перенаправляем на список курсов
 	return c.Redirect("/admin/categories/" + categoryID + "/courses")
 }
 
-// DeleteCourse обрабатывает удаление курса
+// DeleteCourse обрабатывает удаление курса.
 func (h *CourseWebHandler) DeleteCourse(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	categoryID := c.Params("category_id")
@@ -443,10 +417,8 @@ func (h *CourseWebHandler) DeleteCourse(c *fiber.Ctx) error {
 
 	err := h.courseService.DeleteCourse(ctx, categoryID, courseID)
 	if err != nil {
-		// Можно добавить flash-сообщение об ошибке
 		return c.Redirect("/admin/categories/" + categoryID + "/courses")
 	}
 
-	// Перенаправляем на список курсов
 	return c.Redirect("/admin/categories/" + categoryID + "/courses")
 }

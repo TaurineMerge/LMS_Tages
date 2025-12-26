@@ -14,19 +14,22 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// LessonHandler - HTTP обработчик для операций с уроками
+// LessonHandler обрабатывает HTTP-запросы для уроков.
+// Содержит сервис для бизнес-логики и методы для маршрутов.
 type LessonHandler struct {
 	lessonService *services.LessonService
 }
 
-// NewLessonHandler создает новый HTTP обработчик для уроков
+// NewLessonHandler создает новый экземпляр LessonHandler.
+// Принимает сервис уроков.
 func NewLessonHandler(lessonService *services.LessonService) *LessonHandler {
 	return &LessonHandler{
 		lessonService: lessonService,
 	}
 }
 
-// RegisterRoutes регистрирует маршруты для уроков
+// RegisterRoutes регистрирует маршруты для уроков.
+// Привязывает методы к маршрутам для группы уроков.
 func (h *LessonHandler) RegisterRoutes(lessons fiber.Router) {
 	lessons.Get("/", h.getLessons)
 	lessons.Post("/", middleware.ValidateJSONSchema("lesson-create.json"), h.createLesson)
@@ -35,7 +38,8 @@ func (h *LessonHandler) RegisterRoutes(lessons fiber.Router) {
 	lessons.Delete("/:lesson_id", h.deleteLesson)
 }
 
-// getLessons обрабатывает GET .../lessons
+// getLessons обрабатывает GET /lessons.
+// Возвращает список уроков для курса с пагинацией и сортировкой.
 func (h *LessonHandler) getLessons(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	span := trace.SpanFromContext(ctx)
@@ -62,7 +66,8 @@ func (h *LessonHandler) getLessons(c *fiber.Ctx) error {
 	return c.JSON(lessonsResponse)
 }
 
-// getLesson обрабатывает GET .../lessons/:lesson_id
+// getLesson обрабатывает GET /lessons/:id.
+// Возвращает урок по его ID.
 func (h *LessonHandler) getLesson(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	courseID := c.Params("course_id")
@@ -80,7 +85,8 @@ func (h *LessonHandler) getLesson(c *fiber.Ctx) error {
 	return c.JSON(lesson)
 }
 
-// createLesson обрабатывает POST .../lessons
+// createLesson обрабатывает POST /lessons.
+// Создает новый урок на основе данных из тела запроса.
 func (h *LessonHandler) createLesson(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	courseID := c.Params("course_id")
@@ -102,7 +108,8 @@ func (h *LessonHandler) createLesson(c *fiber.Ctx) error {
 	return c.Status(201).JSON(lesson)
 }
 
-// updateLesson обрабатывает PUT .../lessons/:lesson_id
+// updateLesson обрабатывает PUT /lessons/:id.
+// Обновляет существующий урок по его ID на основе данных из тела запроса.
 func (h *LessonHandler) updateLesson(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	courseID := c.Params("course_id")
@@ -125,7 +132,8 @@ func (h *LessonHandler) updateLesson(c *fiber.Ctx) error {
 	return c.JSON(lesson)
 }
 
-// deleteLesson обрабатывает DELETE .../lessons/:lesson_id
+// deleteLesson обрабатывает DELETE /lessons/:id.
+// Удаляет урок по его ID.
 func (h *LessonHandler) deleteLesson(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	courseID := c.Params("course_id")

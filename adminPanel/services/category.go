@@ -1,15 +1,5 @@
-// Package services реализует бизнес-логику для admin panel
-//
-// Пакет содержит сервисы для работы с сущностями:
-//   - CategoryService: работа с категориями
-//   - CourseService: работа с курсами
-//   - LessonService: работа с уроками
-//
-// Каждый сервис отвечает за:
-//   - Валидацию данных
-//   - Бизнес-логику операций
-//   - Интеграцию с репозиториями
-//   - Трассировку операций
+// Package services предоставляет бизнес-логику для приложения adminPanel.
+// Включает сервисы для работы с категориями, курсами, уроками и т.д.
 package services
 
 import (
@@ -27,48 +17,26 @@ import (
 	"go.opentelemetry.io/otel/codes"
 )
 
-// CategoryService - сервис для работы с категориями курсов
-//
-// Сервис предоставляет методы для управления категориями:
-//   - Получение списка категорий
-//   - Получение категории по ID
-//   - Создание новой категории
-//   - Обновление категории
-//   - Удаление категории
-//
-// Особенности:
-//   - Проверка уникальности названий
-//   - Контроль связанных курсов при удалении
-//   - Интеграция с OpenTelemetry для трассировки
+// CategoryService предоставляет бизнес-логику для работы с категориями.
+// Содержит репозиторий для доступа к данным и методы для CRUD операций.
 type CategoryService struct {
 	categoryRepo *repositories.CategoryRepository
 }
 
+// categoryTracer трассировщик для сервиса категорий.
+// Используется для отслеживания операций с категориями.
 var categoryTracer = otel.Tracer("admin-panel/category-service")
 
-// NewCategoryService создает новый сервис для работы с категориями
-//
-// Параметры:
-//   - categoryRepo: репозиторий для работы с категориями
-//
-// Возвращает:
-//   - *CategoryService: указатель на новый сервис
+// NewCategoryService создает новый экземпляр CategoryService.
+// Принимает репозиторий категорий.
 func NewCategoryService(categoryRepo *repositories.CategoryRepository) *CategoryService {
 	return &CategoryService{
 		categoryRepo: categoryRepo,
 	}
 }
 
-// GetCategories получает список всех категорий
-//
-// Метод возвращает все доступные категории, отсортированные по названию.
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//
-// Возвращает:
-//   - []models.Category: список категорий
-//   - error: ошибка выполнения (если есть)
+// GetCategories получает все категории, отсортированные по заголовку.
+// Возвращает список моделей Category.
 func (s *CategoryService) GetCategories(ctx context.Context) ([]models.Category, error) {
 	ctx, span := categoryTracer.Start(ctx, "CategoryService.GetCategories")
 	defer span.End()
@@ -96,15 +64,8 @@ func (s *CategoryService) GetCategories(ctx context.Context) ([]models.Category,
 	return categories, nil
 }
 
-// GetCategory получает категорию по уникальному идентификатору
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//   - id: уникальный идентификатор категории
-//
-// Возвращает:
-//   - *models.Category: указатель на категорию
-//   - error: ошибка выполнения (если есть)
+// GetCategory получает категорию по ID.
+// Возвращает модель Category или ошибку, если не найдена.
 func (s *CategoryService) GetCategory(ctx context.Context, id string) (*models.Category, error) {
 	ctx, span := categoryTracer.Start(ctx, "CategoryService.GetCategory")
 	span.SetAttributes(attribute.String("category.id", id))
@@ -133,17 +94,8 @@ func (s *CategoryService) GetCategory(ctx context.Context, id string) (*models.C
 	return category, nil
 }
 
-// CreateCategory создает новую категорию
-//
-// Перед созданием проверяет уникальность названия категории.
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//   - input: данные для создания категории
-//
-// Возвращает:
-//   - *models.Category: созданная категория
-//   - error: ошибка выполнения (если есть)
+// CreateCategory создает новую категорию на основе данных из request.CategoryCreate.
+// Проверяет уникальность заголовка и возвращает созданную категорию.
 func (s *CategoryService) CreateCategory(ctx context.Context, input request.CategoryCreate) (*models.Category, error) {
 	existing, err := s.categoryRepo.GetByTitle(ctx, input.Title)
 	if err != nil {
@@ -174,18 +126,8 @@ func (s *CategoryService) CreateCategory(ctx context.Context, input request.Cate
 	return category, nil
 }
 
-// UpdateCategory обновляет существующую категорию
-//
-// Проверяет существование категории и уникальность нового названия.
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//   - id: уникальный идентификатор категории
-//   - input: данные для обновления категории
-//
-// Возвращает:
-//   - *models.Category: обновленная категория
-//   - error: ошибка выполнения (если есть)
+// UpdateCategory обновляет категорию по ID на основе данных из request.CategoryUpdate.
+// Проверяет существование и уникальность заголовка, возвращает обновленную категорию.
 func (s *CategoryService) UpdateCategory(ctx context.Context, id string, input request.CategoryUpdate) (*models.Category, error) {
 	ctx, span := categoryTracer.Start(ctx, "CategoryService.UpdateCategory")
 	span.SetAttributes(
@@ -236,17 +178,8 @@ func (s *CategoryService) UpdateCategory(ctx context.Context, id string, input r
 	return category, nil
 }
 
-// DeleteCategory удаляет категорию по уникальному идентификатору
-//
-// Перед удалением проверяет наличие связанных курсов.
-// Категория с курсами не может быть удалена.
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//   - id: уникальный идентификатор категории
-//
-// Возвращает:
-//   - error: ошибка выполнения (если есть)
+// DeleteCategory удаляет категорию по ID.
+// Проверяет существование и отсутствие связанных курсов перед удалением.
 func (s *CategoryService) DeleteCategory(ctx context.Context, id string) error {
 	ctx, span := categoryTracer.Start(ctx, "CategoryService.DeleteCategory")
 	span.SetAttributes(attribute.String("category.id", id))

@@ -14,45 +14,22 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// CourseHandler - HTTP обработчик для операций с курсами
-//
-// Обработчик предоставляет REST API для управления курсами:
-//   - GET /categories/:category_id/courses - получение курсов категории
-//   - POST /categories/:category_id/courses - создание курса
-//   - GET /categories/:category_id/courses/:id - получение курса
-//   - PUT /categories/:category_id/courses/:id - обновление курса
-//   - DELETE /categories/:category_id/courses/:id - удаление курса
-//
-// Особенности:
-//   - Фильтрация курсов по уровню и видимости
-//   - Пагинация результатов
-//   - Валидация входных данных
-//   - Интеграция с OpenTelemetry для трассировки
-//   - Стандартизированный формат ответов
+// CourseHandler обрабатывает HTTP-запросы для курсов.
+// Содержит сервис для бизнес-логики и методы для маршрутов.
 type CourseHandler struct {
 	courseService *services.CourseService
 }
 
-// NewCourseHandler создает новый HTTP обработчик для курсов
-//
-// Параметры:
-//   - courseService: сервис для работы с курсами
-//
-// Возвращает:
-//   - *CourseHandler: указатель на новый обработчик
+// NewCourseHandler создает новый экземпляр CourseHandler.
+// Принимает сервис курсов.
 func NewCourseHandler(courseService *services.CourseService) *CourseHandler {
 	return &CourseHandler{
 		courseService: courseService,
 	}
 }
 
-// RegisterRoutes регистрирует маршруты для курсов
-//
-// Регистрирует все необходимые маршруты в указанном роутере.
-// Все маршруты включают в себя category_id в пути.
-//
-// Параметры:
-//   - router: роутер Fiber для регистрации маршрутов
+// RegisterRoutes регистрирует маршруты для курсов.
+// Создает группу /categories/:category_id/courses и привязывает методы к маршрутам.
 func (h *CourseHandler) RegisterRoutes(router fiber.Router) {
 	courses := router.Group("/categories/:category_id/courses")
 
@@ -63,16 +40,8 @@ func (h *CourseHandler) RegisterRoutes(router fiber.Router) {
 	courses.Delete("/:course_id", h.deleteCourse)
 }
 
-// getCourses обрабатывает GET /categories/:category_id/courses
-//
-// Возвращает список курсов категории с возможностью фильтрации
-// по уровню сложности и видимости, а также с пагинацией.
-//
-// Параметры:
-//   - c: контекст Fiber
-//
-// Возвращает:
-//   - error: ошибка выполнения (если есть)
+// getCourses обрабатывает GET /categories/:category_id/courses.
+// Возвращает список курсов для категории с фильтрами и пагинацией.
 func (h *CourseHandler) getCourses(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	span := trace.SpanFromContext(ctx)
@@ -133,15 +102,8 @@ func (h *CourseHandler) getCourses(c *fiber.Ctx) error {
 	return c.JSON(result)
 }
 
-// createCourse обрабатывает POST /categories/:category_id/courses
-//
-// Создает новый курс в указанной категории с валидацией данных.
-//
-// Параметры:
-//   - c: контекст Fiber
-//
-// Возвращает:
-//   - error: ошибка выполнения (если есть)
+// createCourse обрабатывает POST /categories/:category_id/courses.
+// Создает новый курс для категории на основе JSON в теле запроса.
 func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	span := trace.SpanFromContext(ctx)
@@ -190,7 +152,6 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 
 	input.CategoryID = categoryID
 
-	// JSON Schema валидация уже выполнена middleware
 	if input.Level != "" && !isValidLevel(input.Level) {
 		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
@@ -241,15 +202,8 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 	return c.Status(201).JSON(course)
 }
 
-// getCourse обрабатывает GET /categories/:category_id/courses/:id
-//
-// Возвращает курс по уникальному идентификатору.
-//
-// Параметры:
-//   - c: контекст Fiber
-//
-// Возвращает:
-//   - error: ошибка выполнения (если есть)
+// getCourse обрабатывает GET /categories/:category_id/courses/:course_id.
+// Возвращает курс по ID в категории.
 func (h *CourseHandler) getCourse(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	span := trace.SpanFromContext(ctx)
@@ -304,15 +258,8 @@ func (h *CourseHandler) getCourse(c *fiber.Ctx) error {
 	return c.JSON(course)
 }
 
-// updateCourse обрабатывает PUT /categories/:category_id/courses/:id
-//
-// Обновляет существующий курс с валидацией данных.
-//
-// Параметры:
-//   - c: контекст Fiber
-//
-// Возвращает:
-//   - error: ошибка выполнения (если есть)
+// updateCourse обрабатывает PUT /categories/:category_id/courses/:course_id.
+// Обновляет курс по ID в категории на основе JSON в теле запроса.
 func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	span := trace.SpanFromContext(ctx)
@@ -360,12 +307,10 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 		})
 	}
 
-	// Привязываем категорию из пути
 	if input.CategoryID == "" {
 		input.CategoryID = categoryID
 	}
 
-	// JSON Schema валидация уже выполнена middleware
 	if input.Level != "" && !isValidLevel(input.Level) {
 		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
@@ -416,15 +361,8 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 	return c.JSON(course)
 }
 
-// deleteCourse обрабатывает DELETE /categories/:category_id/courses/:id
-//
-// Удаляет курс по уникальному идентификатору.
-//
-// Параметры:
-//   - c: контекст Fiber
-//
-// Возвращает:
-//   - error: ошибка выполнения (если есть)
+// deleteCourse обрабатывает DELETE /categories/:category_id/courses/:course_id.
+// Удаляет курс по ID в категории.
 func (h *CourseHandler) deleteCourse(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	span := trace.SpanFromContext(ctx)
@@ -478,16 +416,8 @@ func (h *CourseHandler) deleteCourse(c *fiber.Ctx) error {
 	return c.SendStatus(204)
 }
 
-// isValidLevel проверяет валидность уровня сложности
-//
-// Проверяет, что уровень сложности является одним из допустимых:
-// "hard", "medium", "easy" (регистронезависимо).
-//
-// Параметры:
-//   - level: уровень сложности для проверки
-//
-// Возвращает:
-//   - bool: true, если уровень валиден
+// isValidLevel проверяет, является ли уровень сложности допустимым.
+// Допустимые значения: hard, medium, easy.
 func isValidLevel(level string) bool {
 	switch strings.ToLower(level) {
 	case "hard", "medium", "easy":
@@ -497,16 +427,8 @@ func isValidLevel(level string) bool {
 	}
 }
 
-// isValidVisibility проверяет валидность видимости
-//
-// Проверяет, что видимость является одной из допустимых:
-// "draft", "public", "private" (регистронезависимо).
-//
-// Параметры:
-//   - visibility: видимость для проверки
-//
-// Возвращает:
-//   - bool: true, если видимость валидна
+// isValidVisibility проверяет, является ли видимость допустимой.
+// Допустимые значения: draft, public, private.
 func isValidVisibility(visibility string) bool {
 	switch strings.ToLower(visibility) {
 	case "draft", "public", "private":

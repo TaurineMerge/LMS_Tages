@@ -5,39 +5,45 @@ import (
 	"fmt"
 )
 
-// Константы для типов контента
+// ContentTypeText константа для типа контента "text".
 const (
 	ContentTypeText  = "text"
 	ContentTypeImage = "image"
 )
 
-// Content - интерфейс для различных типов контента урока.
-// Требует от всех типов реализации метода Type().
+// Content интерфейс для различных типов контента.
+// Определяет метод Type(), возвращающий тип контента.
 type Content interface {
 	Type() string
 }
 
-// TextContent - структура для текстового контента.
+// TextContent представляет текстовый контент.
+// Содержит тип контента и данные текста с валидацией на максимальную длину 10000 символов.
 type TextContent struct {
 	ContentType string `json:"content_type"`
 	Data        string `json:"data" validate:"max=10000"`
 }
 
+// Type возвращает тип контента для TextContent.
 func (t TextContent) Type() string { return ContentTypeText }
 
-// ImageContent - структура для контента-изображения.
+// ImageContent представляет контент с изображением.
+// Содержит тип контента, URL изображения и альтернативный текст с валидацией.
 type ImageContent struct {
 	ContentType string `json:"content_type"`
 	URL         string `json:"url" validate:"required,url"`
 	Alt         string `json:"alt" validate:"max=255"`
 }
 
+// Type возвращает тип контента для ImageContent.
 func (i ImageContent) Type() string { return ContentTypeImage }
 
-// ContentSlice - кастомный тип для среза интерфейсов Content.
+// ContentSlice представляет срез контентов.
+// Реализует кастомный маршалинг и анмаршалинг JSON для поддержки полиморфизма.
 type ContentSlice []Content
 
-// UnmarshalJSON - кастомный десериализатор для ContentSlice.
+// UnmarshalJSON реализует кастомный анмаршалинг JSON для ContentSlice.
+// Разбирает массив JSON, определяя тип каждого элемента по полю content_type.
 func (cs *ContentSlice) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" {
 		*cs = nil
@@ -74,6 +80,8 @@ func (cs *ContentSlice) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// unmarshalContent анмаршалит конкретный контент на основе типа.
+// Принимает contentType и данные JSON, возвращает соответствующий Content.
 func unmarshalContent(contentType string, data []byte) (Content, error) {
 	switch contentType {
 	case ContentTypeText:
@@ -95,13 +103,13 @@ func unmarshalContent(contentType string, data []byte) (Content, error) {
 	}
 }
 
-// MarshalJSON - кастомный сериализатор для ContentSlice.
+// MarshalJSON реализует кастомный маршалинг JSON для ContentSlice.
+// Преобразует срез в массив JSON.
 func (cs ContentSlice) MarshalJSON() ([]byte, error) {
 	if cs == nil {
 		return []byte("null"), nil
 	}
 
-	// Просто сериализуем каждый элемент как есть
 	arr := make([]interface{}, len(cs))
 	for i, content := range cs {
 		arr[i] = content
