@@ -1,22 +1,29 @@
 <div class="footer-buttons">
+    <!-- Скрытые поля для сохранения query параметров -->
+    {{#if hiddenParams}}
+        {{#each hiddenParams}}
+            <input type="hidden" name="{{@key}}" value="{{this}}">
+        {{/each}}
+    {{/if}}
+    
     <!-- Кнопка для сохранения черновика -->
     {{#if isNew}}
-    <button type="submit" form="testForm" formaction="/testing/web/tests/draft" class="btn-secondary">
+    <button type="submit" form="testForm" formaction="/web/tests/draft" class="btn-secondary">
         Сохранить черновик
     </button>
     {{else}}
-    <button type="submit" form="testForm" formaction="/testing/web/tests/{{test.id}}/draft" class="btn-secondary">
+    <button type="submit" form="testForm" formaction="/web/tests/{{test.id}}/draft" class="btn-secondary">
         Сохранить черновик
     </button>
     {{/if}}
     
     <!-- Кнопка для сохранения/создания теста -->
-    <button type="submit" form="testForm" formaction="/testing/web/tests/save" class="btn-success">
+    <button type="submit" form="testForm" formaction="/web/tests/save" class="btn-success">
         {{#if isNew}}Создать тест{{else}}Сохранить изменения{{/if}}
     </button>
     
     {{#unless isNew}}
-    <button type="button" class="btn-secondary" onclick="window.location.href='/testing/web/tests/{{test.id}}/preview'">
+    <button type="button" class="btn-secondary" onclick="window.location.href='/web/tests/{{test.id}}/preview{{#if redirect}}?redirect={{redirect}}{{/if}}'">
         Предпросмотр
     </button>
     {{/unless}}
