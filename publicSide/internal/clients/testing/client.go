@@ -17,7 +17,7 @@ const (
 	// TEST_API_PATH - путь для внутреннего API-взаимодействия для получения информации о тесте.
 	TEST_API_PATH = "/testing/internal/categories/%s/courses/%s/test"
 	// TEST_UI_PATH - путь для пользовательского интерфейса для прохождения теста.
-	TEST_UI_PATH = "/testing/categories/%s/courses/%s/test"
+	TEST_UI_PATH = "/testing/ui/categories/%s/courses/%s/test"
 
 	// STATUS_OK - строковый литерал для успешного статуса ответа.
 	STATUS_OK = "success"
