@@ -1,0 +1,12 @@
+{
+  "configurations": [
+    {
+      "type": "debugpy",
+      "request": "launch",
+      "name": "Launch Program",
+      "program": "${workspaceFolder}/personal-account/main.py",
+      "cwd": "${workspaceFolder}/personal-account",
+        "python": "/home/wildberries/Work/tages-practice/LMS_Tages/personal-account/.venv/bin/python"
+    }
+  ]
+}

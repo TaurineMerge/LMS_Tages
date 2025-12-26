@@ -1,7 +1,9 @@
 """Authentication service using Keycloak."""
 
 import logging
+import uuid
 from typing import Any, Dict
+from urllib.parse import parse_qs, urlencode, urlparse
 
 from fastapi import HTTPException, status
 from fastapi.concurrency import run_in_threadpool
@@ -51,37 +53,6 @@ class AuthService:
         except Exception as e:
             logger.warning(f"Logout failed: {e}")
             # Logout is best-effort, don't raise
-
-    @traced("auth.register_user", record_args=True, record_result=True)
-    async def register_user(
-        self, username: str, email: str, password: str, first_name: str, last_name: str
-    ) -> Dict[str, str]:
-        """Registers a user in Keycloak."""
-        user_data = {
-            "username": username,
-            "email": email,
-            "firstName": first_name,
-            "lastName": last_name,
-            "enabled": True,
-            "credentials": [{"value": password, "type": "password", "temporary": False}],
-            "emailVerified": settings.KEYCLOAK_USER_EMAIL_VERIFIED_DEFAULT,
-        }
-
-        try:
-            # Создаем пользователя в Keycloak
-            user_id = await run_in_threadpool(keycloak_service.create_user, user_data)
-
-            logger.info(f"User registered successfully: {username}")
-
-            return {"user_id": user_id, "username": username, "email": email}
-        except Exception as e:
-            # Обработка ошибок Keycloak
-            error_msg = str(e)
-            if "409" in error_msg or "already exists" in error_msg.lower():
-                raise HTTPException(status_code=409, detail="User already exists")
-
-            logger.error(f"Registration failed: {e}")
-            raise HTTPException(status_code=500, detail="Registration failed")
 
 
 auth_service = AuthService()

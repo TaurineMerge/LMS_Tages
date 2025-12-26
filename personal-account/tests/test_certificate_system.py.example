@@ -1,0 +1,446 @@
+"""Unit tests for certificate system.
+
+This file contains comprehensive unit tests for all certificate system components.
+Copy these tests to your tests/ directory and adapt as needed.
+"""
+
+import pytest
+from io import BytesIO
+from uuid import UUID, uuid4
+from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import datetime, UTC
+
+from app.services.cert_service import (
+    CertificateService,
+    CertificateGenerationError,
+)
+from app.services.storage_service import (
+    StorageService,
+    StorageError,
+)
+from app.services.stats_processor import StatsProcessor
+
+
+class TestStorageService:
+    """Tests for StorageService"""
+
+    @pytest.fixture
+    def storage_service(self):
+        """Create storage service with mocked S3 client"""
+        with patch('app.services.storage_service.boto3.client'):
+            service = StorageService()
+            service.s3_client = MagicMock()
+            return service
+
+    @pytest.mark.asyncio
+    async def test_store_certificate_success(self, storage_service):
+        """Test successful certificate storage"""
+        # Arrange
+        cert_id = uuid4()
+        student_id = uuid4()
+        course_id = uuid4()
+        pdf_content = b'%PDF-1.4\ntest content'
+
+        # Act
+        s3_key = await storage_service.store_certificate(
+            certificate_id=cert_id,
+            student_id=student_id,
+            course_id=course_id,
+            pdf_content=pdf_content,
+        )
+
+        # Assert
+        assert s3_key == f"certificates/{course_id}/{student_id}/{cert_id}.pdf"
+        storage_service.s3_client.put_object.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_store_certificate_failure(self, storage_service):
+        """Test certificate storage failure handling"""
+        # Arrange
+        from botocore.exceptions import ClientError
+        
+        storage_service.s3_client.put_object.side_effect = ClientError(
+            {'Error': {'Code': 'NoSuchBucket'}},
+            'PutObject'
+        )
+
+        # Act & Assert
+        with pytest.raises(StorageError):
+            await storage_service.store_certificate(
+                certificate_id=uuid4(),
+                student_id=uuid4(),
+                course_id=uuid4(),
+                pdf_content=b'test',
+            )
+
+    @pytest.mark.asyncio
+    async def test_get_certificate_success(self, storage_service):
+        """Test successful certificate retrieval"""
+        # Arrange
+        s3_key = "certificates/course/student/cert.pdf"
+        pdf_content = b'%PDF-1.4\ntest content'
+
+        storage_service.s3_client.get_object.return_value = {
+            'Body': MagicMock(read=MagicMock(return_value=pdf_content))
+        }
+
+        # Act
+        content = await storage_service.get_certificate(s3_key)
+
+        # Assert
+        assert content == pdf_content
+        storage_service.s3_client.get_object.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_get_certificate_not_found(self, storage_service):
+        """Test certificate not found error"""
+        # Arrange
+        from botocore.exceptions import ClientError
+        
+        storage_service.s3_client.get_object.side_effect = ClientError(
+            {'Error': {'Code': 'NoSuchKey'}},
+            'GetObject'
+        )
+
+        # Act & Assert
+        with pytest.raises(StorageError):
+            await storage_service.get_certificate("nonexistent.pdf")
+
+    @pytest.mark.asyncio
+    async def test_get_certificate_url_success(self, storage_service):
+        """Test presigned URL generation"""
+        # Arrange
+        s3_key = "certificates/course/student/cert.pdf"
+        expected_url = "https://minio:9000/bucket/key?signature=..."
+
+        storage_service.s3_client.generate_presigned_url.return_value = expected_url
+
+        # Act
+        url = await storage_service.get_certificate_url(s3_key, expiration=3600)
+
+        # Assert
+        assert url == expected_url
+        storage_service.s3_client.generate_presigned_url.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_store_image_success(self, storage_service):
+        """Test image storage"""
+        # Arrange
+        image_content = b'\x89PNG\r\n\x1a\n...'  # PNG header
+        image_name = "logo.png"
+
+        # Act
+        s3_key = await storage_service.store_image(
+            image_name=image_name,
+            image_content=image_content,
+            content_type="image/png",
+        )
+
+        # Assert
+        assert s3_key == f"images/python/{image_name}"
+        storage_service.s3_client.put_object.assert_called_once()
+
+
+class TestCertificateService:
+    """Tests for CertificateService"""
+
+    @pytest.fixture
+    def certificate_service(self):
+        """Create certificate service with mocked dependencies"""
+        service = CertificateService(
+            storage_service=AsyncMock(),
+            certificate_repository_inst=AsyncMock(),
+            keycloak_service_inst=AsyncMock(),
+        )
+        return service
+
+    @pytest.mark.asyncio
+    async def test_generate_certificate_success(self, certificate_service):
+        """Test successful certificate generation"""
+        # Arrange
+        student_id = uuid4()
+        course_id = uuid4()
+        test_attempt_id = uuid4()
+        cert_id = uuid4()
+
+        certificate_service.keycloak_service.get_user_data.return_value = {
+            "name": "John",
+            "surname": "Doe",
+            "email": "john@example.com",
+        }
+
+        certificate_service.certificate_repo.create.return_value = {
+            "id": cert_id
+        }
+
+        certificate_service.storage_service.store_certificate.return_value = \
+            f"certificates/{course_id}/{student_id}/{cert_id}.pdf"
+
+        # Act
+        returned_cert_id, s3_key = await certificate_service.generate_certificate(
+            student_id=student_id,
+            course_id=course_id,
+            course_name="Advanced Python",
+            test_attempt_id=test_attempt_id,
+            score=95,
+            max_score=100,
+        )
+
+        # Assert
+        assert returned_cert_id == cert_id
+        assert "certificates" in s3_key
+        certificate_service.certificate_repo.create.assert_called_once()
+        certificate_service.storage_service.store_certificate.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_generate_certificate_student_not_found(self, certificate_service):
+        """Test certificate generation when student not found"""
+        # Arrange
+        certificate_service.keycloak_service.get_user_data.return_value = None
+
+        # Act & Assert
+        with pytest.raises(CertificateGenerationError):
+            await certificate_service.generate_certificate(
+                student_id=uuid4(),
+                course_id=uuid4(),
+                course_name="Test",
+                test_attempt_id=uuid4(),
+                score=100,
+                max_score=100,
+            )
+
+    @pytest.mark.asyncio
+    async def test_generate_certificate_storage_failure(self, certificate_service):
+        """Test rollback when S3 storage fails"""
+        # Arrange
+        student_id = uuid4()
+        course_id = uuid4()
+        cert_id = uuid4()
+
+        certificate_service.keycloak_service.get_user_data.return_value = {
+            "name": "John",
+            "surname": "Doe",
+            "email": "john@example.com",
+        }
+
+        certificate_service.certificate_repo.create.return_value = {
+            "id": cert_id
+        }
+
+        certificate_service.storage_service.store_certificate.side_effect = \
+            StorageError("S3 connection failed")
+
+        # Act & Assert
+        with pytest.raises(CertificateGenerationError):
+            await certificate_service.generate_certificate(
+                student_id=student_id,
+                course_id=course_id,
+                course_name="Test",
+                test_attempt_id=uuid4(),
+                score=100,
+                max_score=100,
+            )
+
+        # Verify rollback
+        certificate_service.certificate_repo.delete.assert_called_once_with(cert_id)
+
+    @pytest.mark.asyncio
+    async def test_fetch_student_data_success(self, certificate_service):
+        """Test successful student data fetching"""
+        # Arrange
+        student_id = uuid4()
+
+        certificate_service.keycloak_service.get_user_data.return_value = {
+            "name": "John",
+            "surname": "Doe",
+            "email": "john@example.com",
+        }
+
+        # Act
+        data = await certificate_service._fetch_student_data(student_id)
+
+        # Assert
+        assert data["name"] == "John"
+        assert data["surname"] == "Doe"
+        assert data["email"] == "john@example.com"
+
+    @pytest.mark.asyncio
+    async def test_pdf_generation(self, certificate_service):
+        """Test PDF content generation"""
+        # Act
+        pdf_content = await certificate_service._generate_pdf(
+            student_name="John Doe",
+            student_email="john@example.com",
+            course_name="Advanced Python",
+            score=95,
+            max_score=100,
+            issue_date=datetime.now(tz=UTC),
+        )
+
+        # Assert
+        assert isinstance(pdf_content, bytes)
+        assert pdf_content.startswith(b'%PDF')  # PDF header
+
+
+class TestStatsProcessor:
+    """Tests for StatsProcessor certificate generation"""
+
+    @pytest.fixture
+    def stats_processor(self):
+        """Create stats processor with mocked dependencies"""
+        processor = StatsProcessor()
+        processor.repo = AsyncMock()
+        processor.certificate_service = AsyncMock()
+        return processor
+
+    @pytest.mark.asyncio
+    async def test_check_and_generate_certificates_success(self, stats_processor):
+        """Test successful certificate generation in processor"""
+        # Arrange
+        student_id = uuid4()
+        course_id = uuid4()
+        test_attempt_id = uuid4()
+
+        stats_processor.repo.get_passing_attempts_without_certificates.return_value = [
+            {
+                "id": test_attempt_id,
+                "student_id": student_id,
+                "course_id": course_id,
+                "course_name": "Python 101",
+                "score": 85,
+                "max_score": 100,
+            }
+        ]
+
+        stats_processor.certificate_service.generate_certificate.return_value = \
+            (uuid4(), "certificates/course/student/cert.pdf")
+
+        # Act
+        result = await stats_processor.check_and_generate_certificates()
+
+        # Assert
+        assert result["certificates_generated"] == 1
+        assert result["failed"] == 0
+        stats_processor.certificate_service.generate_certificate.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_check_and_generate_certificates_failure(self, stats_processor):
+        """Test certificate generation failure handling"""
+        # Arrange
+        stats_processor.repo.get_passing_attempts_without_certificates.return_value = [
+            {
+                "id": uuid4(),
+                "student_id": uuid4(),
+                "course_id": uuid4(),
+                "course_name": "Python 101",
+                "score": 85,
+                "max_score": 100,
+            }
+        ]
+
+        stats_processor.certificate_service.generate_certificate.side_effect = \
+            CertificateGenerationError("PDF generation failed")
+
+        # Act
+        result = await stats_processor.check_and_generate_certificates()
+
+        # Assert
+        assert result["certificates_generated"] == 0
+        assert result["failed"] == 1
+
+    @pytest.mark.asyncio
+    async def test_check_and_generate_no_pending(self, stats_processor):
+        """Test when no certificates are pending"""
+        # Arrange
+        stats_processor.repo.get_passing_attempts_without_certificates.return_value = []
+
+        # Act
+        result = await stats_processor.check_and_generate_certificates()
+
+        # Assert
+        assert result["certificates_generated"] == 0
+        assert result["failed"] == 0
+        stats_processor.certificate_service.generate_certificate.assert_not_called()
+
+
+class TestIntegration:
+    """Integration tests for the complete flow"""
+
+    @pytest.mark.asyncio
+    async def test_certificate_generation_e2e(self):
+        """End-to-end test of certificate generation"""
+        # This test requires actual dependencies
+        # Run with: pytest -m integration
+        pytest.skip("Requires real S3/database - run manually")
+
+    @pytest.mark.asyncio
+    async def test_concurrent_certificate_generation(self):
+        """Test concurrent certificate generation"""
+        # Arrange
+        import asyncio
+
+        async def generate_cert(service, idx):
+            return await service.generate_certificate(
+                student_id=uuid4(),
+                course_id=uuid4(),
+                course_name=f"Course {idx}",
+                test_attempt_id=uuid4(),
+                score=90 + idx,
+                max_score=100,
+            )
+
+        # Act - would require real service
+        pytest.skip("Requires real service implementation")
+
+
+# =====================================================
+# Test Fixtures
+# =====================================================
+
+@pytest.fixture
+def sample_pdf_content():
+    """Sample PDF content for testing"""
+    return b'%PDF-1.4\n%test content\nendobj'
+
+
+@pytest.fixture
+def sample_student_data():
+    """Sample student data from Keycloak"""
+    return {
+        "name": "John",
+        "surname": "Doe",
+        "email": "john@example.com",
+        "id": str(uuid4()),
+    }
+
+
+@pytest.fixture
+def sample_attempt_data():
+    """Sample test attempt data"""
+    return {
+        "id": uuid4(),
+        "student_id": uuid4(),
+        "course_id": uuid4(),
+        "course_name": "Python Programming",
+        "score": 95,
+        "max_score": 100,
+        "passing_score": 70,
+        "test_date": datetime.now(tz=UTC),
+    }
+
+
+# =====================================================
+# Parameterized Tests
+# =====================================================
+
+@pytest.mark.parametrize("score,max_score,expected_percent", [
+    (95, 100, 95),
+    (50, 100, 50),
+    (100, 100, 100),
+    (70, 100, 70),
+    (0, 100, 0),
+])
+def test_score_percentage_calculation(score, max_score, expected_percent):
+    """Test score percentage calculations"""
+    percent = int((score / max_score) * 100) if max_score > 0 else 0
+    assert percent == expected_percent

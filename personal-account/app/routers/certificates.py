@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Response, status
 
 from app.core.security import TokenPayload, get_current_user, require_roles
 from app.schemas.certificate import certificate_create, certificate_response
@@ -66,3 +66,21 @@ async def delete_certificate(certificate_id: UUID):
     """Delete certificate by ID."""
     await certificate_service.delete_certificate(certificate_id)
     return None
+
+
+@router.get(
+    "/{certificate_id}/download",
+    summary="Скачать сертификат",
+    description="Возвращает PDF файл сертификата для скачивания",
+)
+@traced("router.certificates.download_certificate")
+async def download_certificate(certificate_id: UUID, current_user: TokenPayload = Depends(get_current_user)):
+    """Download certificate PDF file."""
+    pdf_content = await certificate_service.download_certificate(certificate_id)
+
+    # Return PDF as downloadable file
+    return Response(
+        content=pdf_content,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=certificate_{certificate_id}.pdf"},
+    )

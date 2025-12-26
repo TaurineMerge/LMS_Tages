@@ -1,9 +1,10 @@
 """Certificate schemas."""
 
-from datetime import date
+from datetime import date, datetime
+from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, FieldValidationInfo, field_validator
+from pydantic import BaseModel, ConfigDict, FieldValidationInfo, HttpUrl, field_validator
 
 from app.schemas.validators import ensure_safe_string
 
@@ -33,9 +34,54 @@ class certificate_response(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    student_id: UUID
     certificate_number: int
-    created_at: date
-    content: str | None = None
+    pdf_s3_key: str | None = None
+    snapshot_s3_key: str | None = None
+    created_at: datetime  # Изменено с date на datetime
+    updated_at: datetime  # Изменено с date на datetime
+    course_id: UUID | None = None  # Добавлено поле course_id
+    course_name: str | None = None
+    score: int | None = None
+    max_score: int | None = None
+    date_of_attempt: datetime | None = None  # Или date, если нужно
+
+
+class certificate_download(BaseModel):
+    """Schema for certificate download response."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    certificate_number: int
     student_id: UUID
     course_id: UUID
-    test_attempt_id: UUID | None = None
+    download_url: HttpUrl | None = None
+    created_at: date
+
+
+class certificate_list_item(BaseModel):
+    """Schema for certificate list item."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    certificate_number: int
+    created_at: date
+    course_id: UUID
+    student_id: UUID
+    download_url: HttpUrl | None = None
+
+
+class certificates_by_course(BaseModel):
+    """Schema for certificates grouped by course."""
+
+    course_id: str
+    certificates: list[certificate_list_item]
+
+
+class stats_response(BaseModel):
+    """Schema for stats API response including certificates."""
+
+    statistics: dict[str, Any]
+    certificates: dict[str, list[dict[str, Any]]]

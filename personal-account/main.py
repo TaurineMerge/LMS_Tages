@@ -13,7 +13,8 @@ from opentelemetry import trace
 from app.config import get_settings
 from app.database import close_db_pool, init_db_pool
 from app.exceptions import app_exception
-from app.routers import auth, certificates, health, pages, students, visits
+from app.routers import auth, certificates, health, pages, stats, students, visits
+from app.services import stats_worker
 from app.telemetry_config import (
     configure_telemetry,
     instrument_fastapi,
@@ -50,7 +51,7 @@ handler.setFormatter(
     )
 )
 
-logging.basicConfig(level=logging.INFO, handlers=[handler])
+logging.basicConfig(level=logging.DEBUG, handlers=[handler])
 logger = logging.getLogger(__name__)
 
 settings = get_settings()
@@ -75,10 +76,25 @@ async def lifespan(app: FastAPI):
     await init_db_pool()
     logger.info("Database pool initialized")
 
+    # Start background worker
+    try:
+        stats_worker.start()
+        logger.info("StatsWorker started")
+    except Exception as exc:
+        logger.error("Failed to start StatsWorker: %s", exc)
+
     yield
 
     # Shutdown
     logger.info("Shutting down Personal Account API...")
+
+    # Stop background worker
+    try:
+        stats_worker.stop()
+        logger.info("StatsWorker stopped")
+    except Exception as exc:
+        logger.error("Failed to stop StatsWorker: %s", exc)
+
     await close_db_pool()
     logger.info("Database pool closed")
 
@@ -119,7 +135,7 @@ API для личного кабинета системы онлайн обра�
     """,
     version="1.0.0",
     lifespan=lifespan,
-    root_path="/account",  # Базовый путь приложения за nginx
+    root_path=settings.root_path,  # Базовый путь приложения за nginx
     docs_url="/docs-swagger",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
@@ -143,12 +159,10 @@ def custom_openapi():
         routes=app.routes,
     )
     # Add server with base path so Swagger UI sends requests to correct URLs
-    openapi_schema["servers"] = [
-        {
-            "url": "/account",
-            "description": "Personal Account API (behind nginx proxy)",
-        }
-    ]
+    # Для local окружения используем пустой путь, для prod - /account
+    server_url = "" if settings.ENVIRONMENT == "local" else "/account"
+    server_desc = "Personal Account API (local)" if settings.ENVIRONMENT == "local" else "Personal Account API (nginx)"
+    openapi_schema["servers"] = [{"url": server_url, "description": server_desc}]
     openapi_schema["components"]["securitySchemes"] = {
         "OAuth2PasswordBearer": oauth2_scheme,
         "BearerAuth": {
@@ -224,6 +238,7 @@ app.include_router(auth.router, prefix=settings.API_PREFIX)
 app.include_router(students.router, prefix=settings.API_PREFIX)
 app.include_router(certificates.router, prefix=settings.API_PREFIX)
 app.include_router(visits.router, prefix=settings.API_PREFIX)
+app.include_router(stats.router, prefix=settings.API_PREFIX)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")

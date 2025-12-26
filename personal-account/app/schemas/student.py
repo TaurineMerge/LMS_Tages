@@ -61,8 +61,9 @@ class student_update(BaseModel):
     contacts: dict[str, Any] | None = None
     email: EmailStr | None = None
     phone: str | None = Field(None, max_length=20)
+    username: str | None = Field(None, min_length=1, max_length=100)
 
-    @field_validator("name", "surname", "avatar", "phone", mode="before")
+    @field_validator("name", "surname", "avatar", "phone", "username", mode="before")  # <-- Добавлен username
     @classmethod
     def _validate_update_strings(cls, value: str | None, info: FieldValidationInfo) -> str | None:
         return ensure_safe_string(value, info.field_name)
@@ -86,5 +87,9 @@ class student_response(student_base):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    name: str | None = None  # для поля формы name
+    surname: str | None = None  # для поля формы surname
+    email: EmailStr | None = None  # для поля формы email
+    username: str | None = None  # для поля формы username
     created_at: datetime | None = None
     updated_at: datetime | None = None

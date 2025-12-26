@@ -2,11 +2,11 @@
   "realm": "student",
   "enabled": true,
   "sslRequired": "none",
-  "registrationAllowed": false,
+  "registrationAllowed": true,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
   "resetPasswordAllowed": false,
-  "editUsernameAllowed": false,
+  "editUsernameAllowed": true,
   "bruteForceProtected": true,
   "accessTokenLifespan": 300,
   "refreshTokenMaxReuse": 0,
@@ -129,6 +129,7 @@
       ]
     },
     {
+      "id": "d3b07384-d92d-4e12-9096-c8350fdc5fd2",  
       "username": "student",
       "enabled": true,
       "emailVerified": true,

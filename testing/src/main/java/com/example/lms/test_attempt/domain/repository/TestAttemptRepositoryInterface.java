@@ -1,80 +1,125 @@
 package com.example.lms.test_attempt.domain.repository;
 
-import java.time.LocalDate;
+import com.example.lms.test_attempt.domain.model.TestAttemptModel;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.example.lms.test_attempt.domain.model.TestAttemptModel;
-
 /**
- * Репозиторий для работы с попытками прохождения тестов.
- * Соответствует таблице TEST_ATTEMPT_B.
+ * Репозиторий для работы с попытками тестов.
+ *
+ * Соответствует таблице test_attempt_b:
+ *  - id                UUID    (PK, not null)
+ *  - student_id        UUID    (not null)
+ *  - test_id           UUID    (FK → test_d.id, not null)
+ *  - date_of_attempt   DATE    (может быть null)
+ *  - point             INTEGER (может быть null)
+ *  - certificate_id    UUID    (может быть null)
+ *  - attempt_version   JSON    (может быть null)
+ *  - attempt_snapshot  VARCHAR(256) (может быть null)
+ *  - completed         BOOLEAN (может быть null)
+ *
+ * Отвечает за доступ к данным:
+ *  - создание / обновление / удаление попыток тестов;
+ *  - выборка по идентификатору, студенту и тесту;
+ *  - подсчёт попыток;
+ *  - поиск завершенных попыток.
  */
 public interface TestAttemptRepositoryInterface {
 
-	/**
-	 * Сохранить новую попытку.
-	 */
-	TestAttemptModel save(TestAttemptModel attempt);
+    /**
+     * Сохранить новую попытку теста.
+     *
+     * @param testAttempt доменная модель попытки теста
+     * @return сохранённая модель с присвоенным идентификатором
+     */
+    TestAttemptModel save(TestAttemptModel testAttempt);
 
-	/**
-	 * Обновить существующую попытку.
-	 */
-	TestAttemptModel update(TestAttemptModel attempt);
+    /**
+     * Обновить существующую попытку теста.
+     *
+     * @param testAttempt модель попытки теста с актуальными данными
+     * @return обновлённая модель
+     */
+    TestAttemptModel update(TestAttemptModel testAttempt);
 
-	/**
-	 * Найти попытку по её ID.
-	 */
-	Optional<TestAttemptModel> findById(UUID id);
+    /**
+     * Найти попытку теста по её идентификатору.
+     *
+     * @param id идентификатор попытки (test_attempt_b.id)
+     * @return Optional с попыткой, если найдена
+     */
+    Optional<TestAttemptModel> findById(UUID id);
 
-	/**
-	 * Получить все попытки.
-	 */
-	List<TestAttemptModel> findAll();
+    /**
+     * Получить список всех попыток тестов.
+     *
+     * @return список всех попыток
+     */
+    List<TestAttemptModel> findAll();
 
-	/**
-	 * Получить все попытки студента.
-	 */
-	List<TestAttemptModel> findByStudentId(UUID studentId);
+    /**
+     * Удалить попытку теста по её идентификатору.
+     *
+     * @param id идентификатор попытки
+     * @return true, если попытка была удалена; false — если запись не найдена
+     */
+    boolean deleteById(UUID id);
 
-	/**
-	 * Получить все попытки по тесту.
-	 */
-	List<TestAttemptModel> findByTestId(UUID testId);
+    /**
+     * Проверить существование попытки теста по её идентификатору.
+     *
+     * @param id идентификатор попытки
+     * @return true, если попытка существует
+     */
+    boolean existsById(UUID id);
 
-	/**
-	 * Получить все попытки конкретного студента по конкретному тесту.
-	 */
-	List<TestAttemptModel> findByStudentAndTest(UUID studentId, UUID testId);
+    /**
+     * Найти все попытки теста для указанного студента.
+     *
+     * @param studentId идентификатор студента (test_attempt_b.student_id)
+     * @return список попыток данного студента
+     */
+    List<TestAttemptModel> findByStudentId(UUID studentId);
 
-	/**
-	 * Удалить попытку по ID.
-	 */
-	boolean deleteById(UUID id);
+    /**
+     * Найти все попытки для указанного теста.
+     *
+     * @param testId идентификатор теста (test_attempt_b.test_id)
+     * @return список попыток данного теста
+     */
+    List<TestAttemptModel> findByTestId(UUID testId);
 
-	/**
-	 * Проверить существование попытки по ID.
-	 */
-	boolean existsById(UUID id);
+    /**
+     * Найти все попытки для указанного студента и теста.
+     *
+     * @param studentId идентификатор студента
+     * @param testId идентификатор теста
+     * @return список попыток
+     */
+    List<TestAttemptModel> findByStudentIdAndTestId(UUID studentId, UUID testId);
 
-	/**
-	 * Подсчитать количество попыток студента по тесту.
-	 */
-	int countAttemptsByStudentAndTest(UUID studentId, UUID testId);
+    /**
+     * Получить количество попыток для студента.
+     *
+     * @param studentId идентификатор студента
+     * @return число попыток, относящихся к студенту
+     */
+    int countByStudentId(UUID studentId);
 
-	/**
-	 * Найти попытки по дате прохождения.
-	 */
-	List<TestAttemptModel> findByDate(LocalDate date);
+    /**
+     * Получить количество попыток для теста.
+     *
+     * @param testId идентификатор теста
+     * @return число попыток, относящихся к тесту
+     */
+    int countByTestId(UUID testId);
 
-	/**
-	 * Найти все завершённые попытки (где point IS NOT NULL).
-	 */
-	List<TestAttemptModel> findCompletedAttempts();
-
-	/**
-	 * Найти все незавершённые попытки (где point IS NULL).
-	 */
-	List<TestAttemptModel> findIncompleteAttempts();
+    /**
+     * Найти все завершенные попытки тестов.
+     *
+     * @return список завершенных попыток
+     */
+    List<TestAttemptModel> findCompletedAttempts();
 }

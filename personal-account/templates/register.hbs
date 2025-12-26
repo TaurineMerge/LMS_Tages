@@ -80,7 +80,7 @@
         <div class="text-center mt-4">
             <p class="text-muted">
                 Уже есть аккаунт? 
-                <a href="/account/login" class="text-decoration-none fw-semibold">Войти</a>
+                <a href="{{ prefix }}/login" class="text-decoration-none fw-semibold">Войти</a>
             </p>
         </div>
         
@@ -88,7 +88,7 @@
             <span class="bg-white px-3 text-muted">или</span>
         </div>
         
-        <a href="/account/api/v1/auth/register" class="btn btn-outline-secondary w-100">
+        <a href="{{ prefix }}/api/v1/auth/register" class="btn btn-outline-secondary w-100">
             <p class="bi bi-box-arrow-in-right me-2"></p>Регистрация через Keycloak
         </a>
     </div>
@@ -184,7 +184,7 @@ document.addEventListener('DOMContentLoaded', function() {
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Регистрация...';
         
         try {
-            const response = await fetch('/account/api/v1/auth/register', {
+            const response = await fetch('{{ prefix }}/api/v1/auth/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -206,7 +206,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Redirect to login after 2 seconds
                 setTimeout(() => {
-                    window.location.href = '/account/login';
+                    window.location.href = '{{ prefix }}/login';
                 }, 2000);
             } else {
                 // Show error

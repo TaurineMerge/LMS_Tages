@@ -1,0 +1,14 @@
+# # Merge стратегии для папок сервисов: принимать их изменения (merge=theirs)
+# personal-account/** merge=theirs
+# testing/** merge=theirs
+# publicSide/** merge=theirs
+# adminPanel/** merge=theirs
+
+# # Общие конфиги: стандартное слияние (merge=union по умолчанию для текстовых файлов)
+# # Не удаляется, изменения сливаются
+# docker-compose.yml merge=union
+# nginx/** merge=union
+# .env merge=union
+
+# # Остальные файлы: стандартный merge
+# * merge=union

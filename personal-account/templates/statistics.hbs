@@ -1,0 +1,92 @@
+{% extends "base.hbs" %}
+
+{% block title %}Статистика | LMS Tages{% endblock %}
+
+{% block content %}
+
+{% if not stats %}
+<div class="profile__error">
+    <p class="profile__error-text">Статистика пока отсутствует. Пройдите хотя бы один тест, чтобы увидеть ваши результаты.</p>
+</div>
+{% else %}
+<div class="profile__stats">
+    <div class="profile__stats-container">
+    <h2 class="profile__title">Моя статистика</h2>
+    
+    <div class="profile__stats-section">
+        <h3 class="profile__subtitle">Ваш прогресс в прохождении тестов</h3>
+        <div class="profile__stats-grid profile__stats-grid--three">
+            <div class="profile__stat-card">
+                <p class="profile__stat-label">Успешных попыток</p>
+                <p class="profile__stat-value profile__stat-value--blue">{{ "%.0f"|format(stats.success_rate or 0) }}%</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="profile__stats-section">
+        <h3 class="profile__subtitle">Ключевые показатели</h3>
+        <div class="profile__stats-grid profile__stats-grid--three">
+            <div class="profile__stat-card">
+                <p class="profile__stat-label">Всего попыток</p>
+                <p class="profile__stat-value">{{ stats.total_attempts or 0 }}</p>
+            </div>
+            <div class="profile__stat-card">
+                <p class="profile__stat-label">Пройдено</p>
+                <p class="profile__stat-value profile__stat-value--green">{{ stats.passed_attempts or 0 }}</p>
+            </div>
+            <div class="profile__stat-card">
+                <p class="profile__stat-label">Не пройдено</p>
+                <p class="profile__stat-value profile__stat-value--red">{{ stats.failed_attempts or 0 }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="profile__stats-section">
+        <h3 class="profile__subtitle">Детальная статистика</h3>
+        <div class="profile__stats-grid profile__stats-grid--two">
+            <div class="profile__stat-card">
+                <p class="profile__stat-label">Средний балл</p>
+                <p class="profile__stat-value">{{ "%.1f"|format(stats.avg_score or 0) }}</p>
+                <p class="profile__stat-desc">Максимальный балл: 100</p>
+            </div>
+            <div class="profile__stat-card">
+                <p class="profile__stat-label">Пройдено тестов</p>
+                <p class="profile__stat-value">{{ stats.total_tests_taken or 0 }}</p>
+                <p class="profile__stat-desc">Уникальных тестов</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="profile__stats-actions">
+        <form class="profile__form" action="{{ prefix }}/statistics/refresh" method="POST">
+            <button type="submit" class="button button--primary">Обновить статистику</button>
+        </form>
+    </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function downloadCertificate(certificateId) {
+    // Создаем ссылку для скачивания
+    const link = document.createElement('a');
+    link.href = `/api/v1/certificates/${certificateId}/download`;
+    link.download = `certificate-${certificateId}.pdf`;
+    link.style.display = 'none';
+    
+    // Добавляем на страницу и кликаем
+    document.body.appendChild(link);
+    link.click();
+    
+    // Удаляем ссылку
+    document.body.removeChild(link);
+}
+
+// Можно также добавить обработку ошибок
+window.addEventListener('load', function() {
+    // Если нужно, можно добавить дополнительную логику
+});
+</script>
+{% endblock %}

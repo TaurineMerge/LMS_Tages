@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-BASE_DIR="/docker-entrypoint-initdb.d"
+BASE_DIR="/docker-entrypoint-initdb.d/init-sql"
 
 # Helper function to process scripts in a given directory
 # Takes the directory name and the names of the environment variables to use

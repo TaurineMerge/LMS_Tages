@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/gofiber/fiber/v2"
 	"golang.org/x/oauth2"
@@ -96,7 +97,7 @@ func (h *AuthHandler) Callback(c *fiber.Ctx) error {
 	slog.Info("User logged in successfully", "user", claims.Username, "email", claims.Email)
 
 	c.Cookie(&fiber.Cookie{
-		Name:     "session_token",
+		Name:     domain.SessionTokenCookie,
 		Value:    rawIDToken,
 		Expires:  time.Now().Add(24 * time.Hour),
 		HTTPOnly: true,
@@ -119,7 +120,7 @@ func (h *AuthHandler) Callback(c *fiber.Ctx) error {
 // Он удаляет сессионную cookie и перенаправляет на главную страницу.
 func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 	c.Cookie(&fiber.Cookie{
-		Name:     "session_token",
+		Name:     domain.SessionTokenCookie,
 		Value:    "",
 		Expires:  time.Now().Add(-1 * time.Hour),
 		HTTPOnly: true,

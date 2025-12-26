@@ -6,7 +6,7 @@ const (
 	// UserContextKey - ключ для хранения информации о пользователе в контексте Fiber.
 	UserContextKey = "user"
 	// SessionTokenCookie - имя cookie, в котором хранится сессионный токен (ID Token).
-	SessionTokenCookie = "session_token"
+	SessionTokenCookie = "access_token"
 )
 
 // UserClaims представляет информацию о пользователе, извлеченную из ID Token'а.

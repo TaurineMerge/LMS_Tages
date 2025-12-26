@@ -218,3 +218,21 @@ def _record_exception(span: trace.Span, exc: Exception) -> None:
 def _normalize_query(query: str) -> str:
     cleaned = " ".join(query.split())
     return cleaned[:2048]
+
+
+async def fetch_one_value(query: str, params: Mapping[str, Any] | None = None) -> Any:
+    """Fetch a single scalar value from the database."""
+    stmt = text(query)
+    async with get_connection() as conn:
+        with _tracer.start_as_current_span("db.fetch_one_value") as span:
+            _record_db_span_attributes(span, query, params)
+            try:
+                result = await conn.execute(stmt, params or {})
+                row = result.first()
+                value = row[0] if row else None
+                span.set_attribute("db.result.value", str(value)[:_MAX_ATTR_LEN])
+                span.set_status(StatusCode.OK)
+                return value
+            except Exception as exc:
+                _record_exception(span, exc)
+                raise

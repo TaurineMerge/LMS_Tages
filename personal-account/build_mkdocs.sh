@@ -9,7 +9,7 @@ echo "=== Сборка MkDocs документации ==="
 
 # Собираем статику
 echo "Сборка статических файлов..."
-mkdocs build --clean --site-dir docs-tech
+mkdocs build -f mkdocs.yml -d docs-tech
 
 echo "=== Готово! ==="
 echo "Статика в: docs-tech/"

@@ -106,7 +106,10 @@ services:
       - ./.env
     volumes:
       - app_data:/var/lib/postgresql/data
-      - ./init-sql:/docker-entrypoint-initdb.d:ro
+      - ./init-sql/00-init-dbs.sh:/docker-entrypoint-initdb.d/00-init-dbs.sh:ro
+      - ./init-sql/01-run-all-sub-scripts.sh:/docker-entrypoint-initdb.d/01-run-all-sub-scripts.sh:ro
+      - ./init-sql:/docker-entrypoint-initdb.d/init-sql:ro
+
     networks:
       - app-network
     ports:
@@ -132,9 +135,9 @@ services:
       DB_HOST: ${APP_DB_HOST}
       DB_PORT: ${APP_DB_INTERNAL_PORT}
       OTEL_EXPORTER_OTLP_ENDPOINT: "otel-collector:4317"
-      OIDC_CLIENT_ID: "teacher-client"
-      OIDC_CLIENT_SECRET: "TEACHER_SECRET"
-      OIDC_ISSUER_URL: "http://localhost/auth/realms/teacher"
+      OIDC_CLIENT_ID: "student-client"
+      OIDC_CLIENT_SECRET: "STUDENT_SECRET"
+      OIDC_ISSUER_URL: "http://localhost/auth/realms/student"
       OIDC_REDIRECT_URL: "http://localhost/auth/callback"
       MINIO_ENDPOINT: "minio:9000"
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
@@ -156,6 +159,7 @@ services:
       minio:
         condition: service_healthy
     restart: unless-stopped
+    
   admin-panel:
     build: ./adminPanel
     container_name: admin-panel
@@ -213,6 +217,24 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_started
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: redis-server --appendonly yes
+    ports: []
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   testing:
@@ -287,16 +309,19 @@ services:
     restart: unless-stopped
 
 networks:
+
   keycloak-network:
     driver: bridge
-    internal: true
   app-network:
     driver: bridge
 
 volumes:
+
   keycloak_data:
     driver: local
   app_data:
+    driver: local
+  redis_data:
     driver: local
   minio_data:
     driver: local
