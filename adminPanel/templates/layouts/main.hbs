@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}} - LMS</title>
+    <link rel="stylesheet" href="/admin/static/css/main.css">
+    <!-- TinyMCE Editor -->
+    <script src="https://cdn.jsdelivr.net/npm/tinymce@6/tinymce.min.js"></script>
+</head>
+<body>
+    <div class="wrapper">
+        {{> partials/header }}
+        <main class="main main--admin">
+            {{{embed}}}
+        </main>
+        {{> partials/footer }}
+    </div>
+    <script src="/admin/static/js/wysiwyg-editor.js"></script>
+</body>
+</html>

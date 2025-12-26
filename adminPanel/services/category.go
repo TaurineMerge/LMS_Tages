@@ -1,15 +1,5 @@
-// Package services реализует бизнес-логику для admin panel
-//
-// Пакет содержит сервисы для работы с сущностями:
-//   - CategoryService: работа с категориями
-//   - CourseService: работа с курсами
-//   - LessonService: работа с уроками
-//
-// Каждый сервис отвечает за:
-//   - Валидацию данных
-//   - Бизнес-логику операций
-//   - Интеграцию с репозиториями
-//   - Трассировку операций
+// Package services предоставляет бизнес-логику для приложения adminPanel.
+// Включает сервисы для работы с категориями, курсами, уроками и т.д.
 package services
 
 import (
@@ -17,7 +7,8 @@ import (
 	"fmt"
 	"strings"
 
-	"adminPanel/exceptions"
+	"adminPanel/handlers/dto/request"
+	"adminPanel/middleware"
 	"adminPanel/models"
 	"adminPanel/repositories"
 
@@ -26,48 +17,26 @@ import (
 	"go.opentelemetry.io/otel/codes"
 )
 
-// CategoryService - сервис для работы с категориями курсов
-//
-// Сервис предоставляет методы для управления категориями:
-//   - Получение списка категорий
-//   - Получение категории по ID
-//   - Создание новой категории
-//   - Обновление категории
-//   - Удаление категории
-//
-// Особенности:
-//   - Проверка уникальности названий
-//   - Контроль связанных курсов при удалении
-//   - Интеграция с OpenTelemetry для трассировки
+// CategoryService предоставляет бизнес-логику для работы с категориями.
+// Содержит репозиторий для доступа к данным и методы для CRUD операций.
 type CategoryService struct {
 	categoryRepo *repositories.CategoryRepository
 }
 
+// categoryTracer трассировщик для сервиса категорий.
+// Используется для отслеживания операций с категориями.
 var categoryTracer = otel.Tracer("admin-panel/category-service")
 
-// NewCategoryService создает новый сервис для работы с категориями
-//
-// Параметры:
-//   - categoryRepo: репозиторий для работы с категориями
-//
-// Возвращает:
-//   - *CategoryService: указатель на новый сервис
+// NewCategoryService создает новый экземпляр CategoryService.
+// Принимает репозиторий категорий.
 func NewCategoryService(categoryRepo *repositories.CategoryRepository) *CategoryService {
 	return &CategoryService{
 		categoryRepo: categoryRepo,
 	}
 }
 
-// GetCategories получает список всех категорий
-//
-// Метод возвращает все доступные категории, отсортированные по названию.
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//
-// Возвращает:
-//   - []models.Category: список категорий
-//   - error: ошибка выполнения (если есть)
+// GetCategories получает все категории, отсортированные по заголовку.
+// Возвращает список моделей Category.
 func (s *CategoryService) GetCategories(ctx context.Context) ([]models.Category, error) {
 	ctx, span := categoryTracer.Start(ctx, "CategoryService.GetCategories")
 	defer span.End()
@@ -76,7 +45,7 @@ func (s *CategoryService) GetCategories(ctx context.Context) ([]models.Category,
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to get categories: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to get categories: %v", err))
 	}
 
 	categories := make([]models.Category, 0, len(data))
@@ -95,15 +64,8 @@ func (s *CategoryService) GetCategories(ctx context.Context) ([]models.Category,
 	return categories, nil
 }
 
-// GetCategory получает категорию по уникальному идентификатору
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//   - id: уникальный идентификатор категории
-//
-// Возвращает:
-//   - *models.Category: указатель на категорию
-//   - error: ошибка выполнения (если есть)
+// GetCategory получает категорию по ID.
+// Возвращает модель Category или ошибку, если не найдена.
 func (s *CategoryService) GetCategory(ctx context.Context, id string) (*models.Category, error) {
 	ctx, span := categoryTracer.Start(ctx, "CategoryService.GetCategory")
 	span.SetAttributes(attribute.String("category.id", id))
@@ -113,11 +75,11 @@ func (s *CategoryService) GetCategory(ctx context.Context, id string) (*models.C
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to get category: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to get category: %v", err))
 	}
 
 	if data == nil {
-		return nil, exceptions.NotFoundError("Category", id)
+		return nil, middleware.NotFoundError("Category", id)
 	}
 
 	category := &models.Category{
@@ -132,33 +94,24 @@ func (s *CategoryService) GetCategory(ctx context.Context, id string) (*models.C
 	return category, nil
 }
 
-// CreateCategory создает новую категорию
-//
-// Перед созданием проверяет уникальность названия категории.
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//   - input: данные для создания категории
-//
-// Возвращает:
-//   - *models.Category: созданная категория
-//   - error: ошибка выполнения (если есть)
-func (s *CategoryService) CreateCategory(ctx context.Context, input models.CategoryCreate) (*models.Category, error) {
+// CreateCategory создает новую категорию на основе данных из request.CategoryCreate.
+// Проверяет уникальность заголовка и возвращает созданную категорию.
+func (s *CategoryService) CreateCategory(ctx context.Context, input request.CategoryCreate) (*models.Category, error) {
 	existing, err := s.categoryRepo.GetByTitle(ctx, input.Title)
 	if err != nil {
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to check existing category: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to check existing category: %v", err))
 	}
 
 	if existing != nil {
-		return nil, exceptions.ConflictError(fmt.Sprintf("Category with title '%s' already exists", input.Title))
+		return nil, middleware.ConflictError(fmt.Sprintf("Category with title '%s' already exists", input.Title))
 	}
 
 	data, err := s.categoryRepo.Create(ctx, input.Title)
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate key") {
-			return nil, exceptions.ConflictError("Category with this title already exists")
+			return nil, middleware.ConflictError("Category with this title already exists")
 		}
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to create category: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to create category: %v", err))
 	}
 
 	category := &models.Category{
@@ -173,19 +126,9 @@ func (s *CategoryService) CreateCategory(ctx context.Context, input models.Categ
 	return category, nil
 }
 
-// UpdateCategory обновляет существующую категорию
-//
-// Проверяет существование категории и уникальность нового названия.
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//   - id: уникальный идентификатор категории
-//   - input: данные для обновления категории
-//
-// Возвращает:
-//   - *models.Category: обновленная категория
-//   - error: ошибка выполнения (если есть)
-func (s *CategoryService) UpdateCategory(ctx context.Context, id string, input models.CategoryUpdate) (*models.Category, error) {
+// UpdateCategory обновляет категорию по ID на основе данных из request.CategoryUpdate.
+// Проверяет существование и уникальность заголовка, возвращает обновленную категорию.
+func (s *CategoryService) UpdateCategory(ctx context.Context, id string, input request.CategoryUpdate) (*models.Category, error) {
 	ctx, span := categoryTracer.Start(ctx, "CategoryService.UpdateCategory")
 	span.SetAttributes(
 		attribute.String("category.id", id),
@@ -197,11 +140,11 @@ func (s *CategoryService) UpdateCategory(ctx context.Context, id string, input m
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to check category: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to check category: %v", err))
 	}
 
 	if existing == nil {
-		return nil, exceptions.NotFoundError("Category", id)
+		return nil, middleware.NotFoundError("Category", id)
 	}
 
 	if input.Title != fmt.Sprintf("%v", existing["title"]) {
@@ -209,10 +152,10 @@ func (s *CategoryService) UpdateCategory(ctx context.Context, id string, input m
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, err.Error())
-			return nil, exceptions.InternalError(fmt.Sprintf("Failed to check title: %v", err))
+			return nil, middleware.InternalError(fmt.Sprintf("Failed to check title: %v", err))
 		}
 		if categoryWithTitle != nil {
-			return nil, exceptions.ConflictError(fmt.Sprintf("Category with title '%s' already exists", input.Title))
+			return nil, middleware.ConflictError(fmt.Sprintf("Category with title '%s' already exists", input.Title))
 		}
 	}
 
@@ -220,7 +163,7 @@ func (s *CategoryService) UpdateCategory(ctx context.Context, id string, input m
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to update category: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to update category: %v", err))
 	}
 
 	category := &models.Category{
@@ -235,17 +178,8 @@ func (s *CategoryService) UpdateCategory(ctx context.Context, id string, input m
 	return category, nil
 }
 
-// DeleteCategory удаляет категорию по уникальному идентификатору
-//
-// Перед удалением проверяет наличие связанных курсов.
-// Категория с курсами не может быть удалена.
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//   - id: уникальный идентификатор категории
-//
-// Возвращает:
-//   - error: ошибка выполнения (если есть)
+// DeleteCategory удаляет категорию по ID.
+// Проверяет существование и отсутствие связанных курсов перед удалением.
 func (s *CategoryService) DeleteCategory(ctx context.Context, id string) error {
 	ctx, span := categoryTracer.Start(ctx, "CategoryService.DeleteCategory")
 	span.SetAttributes(attribute.String("category.id", id))
@@ -255,33 +189,33 @@ func (s *CategoryService) DeleteCategory(ctx context.Context, id string) error {
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return exceptions.InternalError(fmt.Sprintf("Failed to check category: %v", err))
+		return middleware.InternalError(fmt.Sprintf("Failed to check category: %v", err))
 	}
 
 	if existing == nil {
-		return exceptions.NotFoundError("Category", id)
+		return middleware.NotFoundError("Category", id)
 	}
 
 	courseCount, err := s.categoryRepo.CountCoursesForCategory(ctx, id)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return exceptions.InternalError(fmt.Sprintf("Failed to check associated courses: %v", err))
+		return middleware.InternalError(fmt.Sprintf("Failed to check associated courses: %v", err))
 	}
 
 	if courseCount > 0 {
-		return exceptions.ConflictError("Cannot delete category with associated courses")
+		return middleware.ConflictError("Cannot delete category with associated courses")
 	}
 
 	deleted, err := s.categoryRepo.Delete(ctx, id)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return exceptions.InternalError(fmt.Sprintf("Failed to delete category: %v", err))
+		return middleware.InternalError(fmt.Sprintf("Failed to delete category: %v", err))
 	}
 
 	if !deleted {
-		return exceptions.InternalError("Failed to delete category")
+		return middleware.InternalError("Failed to delete category")
 	}
 
 	return nil

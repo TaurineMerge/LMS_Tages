@@ -1,0 +1,111 @@
+/* Courses list page styles */
+
+.courses {
+    padding: 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.courses__header {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+}
+
+.courses-page__title {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--main-text-color);
+    margin: 0 0 16px 0;
+}
+
+.courses-page__description {
+    font-size: 16px;
+    line-height: var(--line-height-relaxed);
+    color: var(--border-color);
+    margin: 0;
+}
+
+.course-item-grid {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* Filter section */
+.courses-filters {
+    background-color: var(--main-background-color);
+    border: 1px solid var(--card-border-color);
+    border-radius: var(--border-radius);
+    padding: 24px;
+    margin-bottom: 30px;
+}
+
+.filters-group {
+    margin-bottom: 20px;
+}
+
+.filters-group:last-child {
+    margin-bottom: 0;
+}
+
+.filters-group-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--main-text-color);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.filter-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.filter-option {
+    padding: 8px 16px;
+    background-color: transparent;
+    border: 1px solid var(--card-border-color);
+    border-radius: var(--border-radius);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all var(--transition-duration);
+}
+
+.filter-option:hover {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+
+.filter-option--active {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    color: var(--button-text-color);
+}
+
+.courses__grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+}
+
+@media (max-width: 1400px) {
+    .courses__grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 1024px) {
+    .courses__grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .courses__grid {
+        grid-template-columns: 1fr;
+    }
+}

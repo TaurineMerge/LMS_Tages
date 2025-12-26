@@ -1,15 +1,5 @@
-// Package middleware содержит HTTP middleware для admin panel
-//
-// Пакет предоставляет:
-//   - Аутентификацию через JWT-токены
-//   - Валидацию токенов Keycloak
-//   - Обработку ошибок
-//   - CORS настройки
-//
-// Основные компоненты:
-//   - InitAuth: инициализация аутентификации
-//   - AuthMiddleware: middleware для проверки JWT
-//   - ErrorHandlerMiddleware: middleware для обработки ошибок
+// Пакет middleware содержит промежуточное ПО для аутентификации,
+// обработки ошибок, валидации JSON и доверия прокси.
 package middleware
 
 import (
@@ -24,12 +14,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// AuthConfig - конфигурация аутентификации через Keycloak
-//
-// Содержит параметры для настройки JWT-аутентификации:
-//   - IssuerURL: URL Keycloak для валидации токенов
-//   - Audience: аудитория для JWT-токенов
-//   - JWKSURL: URL для получения JWKS ключей
+// AuthConfig содержит конфигурацию для аутентификации через Keycloak.
 type AuthConfig struct {
 	IssuerURL string
 	Audience  string
@@ -41,14 +26,8 @@ var (
 	jwks       *keyfunc.JWKS
 )
 
-// InitAuth инициализирует аутентификацию через Keycloak
-//
-// Функция загружает JWKS ключи из Keycloak и настраивает
-// валидацию JWT-токенов. При неудачной инициализации
-// аутентификация отключается.
-//
-// Возвращает:
-//   - error: ошибка инициализации (если есть)
+// InitAuth инициализирует аутентификацию, загружая JWKS из Keycloak.
+// Если переменная окружения KEYCLOAK_ISSUER_URL не установлена, аутентификация пропускается.
 func InitAuth() error {
 	issuer := os.Getenv("KEYCLOAK_ISSUER_URL")
 	if issuer == "" {
@@ -95,25 +74,10 @@ func InitAuth() error {
 	return nil
 }
 
-// AuthMiddleware - middleware для проверки JWT-токенов
-//
-// Middleware выполняет:
-//   - Проверку наличия Authorization заголовка
-//   - Валидацию JWT-токена через JWKS
-//   - Проверку issuer и audience
-//   - Сохранение claims в контекст
-//
-// Пропускает без аутентификации:
-//   - /admin/swagger/*
-//   - /health
-//   - /favicon.ico
-//   - /admin/swagger/doc.json
-//
-// Возвращает:
-//   - fiber.Handler: middleware для использования в Fiber
+// AuthMiddleware возвращает промежуточное ПО для аутентификации JWT-токенов.
+// Пропускает определенные пути без проверки и проверяет токены для остальных.
 func AuthMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// Публичные эндпоинты
 		path := c.Path()
 
 		if strings.HasPrefix(path, "/admin/swagger") ||
@@ -173,18 +137,8 @@ func AuthMiddleware() fiber.Handler {
 	}
 }
 
-// verifyAudience проверяет audience в JWT claims
-//
-// Функция проверяет соответствие audience в токене
-// ожидаемому значению. Audience может быть как строкой,
-// так и массивом строк.
-//
-// Параметры:
-//   - claims: JWT claims
-//   - expected: ожидаемое значение audience
-//
-// Возвращает:
-//   - bool: true, если audience совпадает
+// verifyAudience проверяет, соответствует ли аудитория токена ожидаемой.
+// Поддерживает как строковую, так и массивную форму аудитории.
 func verifyAudience(claims jwt.MapClaims, expected string) bool {
 	if expected == "" {
 		return true

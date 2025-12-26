@@ -58,7 +58,8 @@ CREATE TABLE IF NOT EXISTS knowledge_base.course_b (
     description TEXT,
     level VARCHAR(20) CHECK (level IN ('hard', 'medium', 'easy')) DEFAULT 'medium',
     category_id UUID NOT NULL REFERENCES knowledge_base.category_d(id) ON DELETE RESTRICT,
-    visibility VARCHAR(20) CHECK (visibility IN ('draft', 'public', 'private')) DEFAULT 'draft',
+    visibility VARCHAR(20) CHECK (visibility IN ('hard', 'medium', 'easy')) DEFAULT 'draft',
+    image_key VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

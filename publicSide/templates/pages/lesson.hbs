@@ -1,0 +1,23 @@
+{{#with Context}}
+{{> partials/page-header PageHeader}}
+
+<section class="lesson-page">
+    <div class="lesson-page__content">
+        <aside class="lesson-page__lessons-panel lessons-preview">
+            <div class="lessons-preview__header">
+                <span class="lessons-preview__count">Уроки в курсе:</span>
+            </div>
+        
+            {{#if Lessons}}
+                {{> partials/lessons-preview Lesson=Lesson Lessons=Lessons showButton=false}}
+            {{/if}}
+        </aside>
+        <main class="lesson-page__main">
+            <article class="lesson-page__article">
+                {{{Lesson.Content}}}
+            </article>
+            {{> partials/lesson-navigation . }}
+        </main>
+    </div>
+</section>
+{{/with}}

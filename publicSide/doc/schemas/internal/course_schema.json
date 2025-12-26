@@ -1,0 +1,50 @@
+{
+    "$schema": "course_schema.json",
+    "type": "object",
+    "properties": {
+        "uuid": {
+            "type": "string",
+            "format": "uuid",
+            "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            "description": "Уникальный идентификатор курса в формате UUID"
+        },
+        "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "example": "Введение в Python",
+            "description": "Название курса"
+        },
+        "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "example": "Базовый курс по программированию на Python для начинающих",
+            "description": "Описание курса"
+        },
+        "level": {
+            "type": "string",
+            "enum": [
+                "easy",
+                "medium",
+                "hard"
+            ],
+            "example": "easy",
+            "description": "Уровень сложности курса"
+        },
+        "lessons": {
+            "type": "array",
+            "items": {
+                "$ref": "lesson_schema.json"
+            },
+            "description": "Список уроков в курсе"
+        }
+    },
+    "required": [
+        "uuid",
+        "title",
+        "description",
+        "level",
+        "lessons"
+    ]
+}

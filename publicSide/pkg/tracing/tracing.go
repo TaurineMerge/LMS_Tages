@@ -1,9 +1,10 @@
-// Package tracing provides utilities for initializing OpenTelemetry tracing.
+// Package tracing инкапсулирует настройку и управление OpenTelemetry.
 package tracing
 
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/config"
 	"go.opentelemetry.io/otel"
@@ -16,42 +17,56 @@ import (
 	"google.golang.org/grpc"
 )
 
-// InitTracer initializes and registers a new OpenTelemetry tracer provider.
-// It configures an OTLP exporter to send traces to a collector (e.g., Jaeger via OTel Collector).
-func InitTracer(cfg *config.Config) (*sdktrace.TracerProvider, error) {
+// Tracer инкапсулирует провайдер трассировки OpenTelemetry для управления его жизненным циклом.
+type Tracer struct {
+	traceProvider *sdktrace.TracerProvider
+}
+
+// New инициализирует и настраивает глобальный провайдер трассировки OpenTelemetry.
+// Он создает ресурс, настраивает экспортер OTLP/gRPC и устанавливает
+// глобальный провайдер трассировки и пропагатор.
+func New(cfg *config.OtelConfig) (*Tracer, error) {
 	ctx := context.Background()
 
-	// Create a new resource with service name and version attributes.
+	// Создание ресурса OTel, который описывает сервис.
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
-			semconv.ServiceName(cfg.OTELServiceName),
+			semconv.ServiceName(cfg.ServiceName),
 		),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OTel resource: %w", err)
 	}
 
-	// Create an OTLP gRPC exporter.
-	// This assumes the collector is running on the specified endpoint and is accessible.
-	// For local development, an insecure connection is typically used.
+	// Настройка экспортера трассировок через OTLP/gRPC.
 	traceExporter, err := otlptrace.New(ctx, otlptracegrpc.NewClient(
-		otlptracegrpc.WithInsecure(),
-		otlptracegrpc.WithEndpoint(cfg.OTELCollectorEndpoint),
-		otlptracegrpc.WithDialOption(grpc.WithBlock()),
+		otlptracegrpc.WithInsecure(), // Использование небезопасного соединения.
+		otlptracegrpc.WithEndpoint(cfg.CollectorEndpoint),
+		otlptracegrpc.WithDialOption(grpc.WithBlock()), // Блокировка до установления соединения.
 	))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OTLP trace exporter: %w", err)
 	}
 
-	// Create a new tracer provider with the resource and the Jaeger exporter.
+	// Создание провайдера трассировки с батчером и настроенным ресурсом.
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(traceExporter),
 		sdktrace.WithResource(res),
 	)
 
-	// Set the global tracer provider and propagator.
+	// Установка глобального провайдера трассировки и пропагатора контекста.
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
-	return tp, nil
+	return &Tracer{
+		traceProvider: tp,
+	}, nil
+}
+
+// Close корректно завершает работу провайдера трассировки, обеспечивая отправку всех
+// оставшихся в буфере трассировок. Должен вызываться при завершении работы приложения.
+func (t *Tracer) Close() {
+	if err := t.traceProvider.Shutdown(context.Background()); err != nil {
+		slog.Error("Error shutting down tracer provider", "error", err)
+	}
 }

@@ -1,0 +1,17 @@
+<header class="page-header">
+    {{#if PageHeader.Breadcrumbs}}
+        <nav class="page-header__breadcrumbs">
+            {{#each PageHeader.Breadcrumbs}}
+                {{#if this.URL}}
+                    <a href="{{this.URL}}" class="page-header__breadcrumb-link">{{this.Text}}</a>
+                    {{#unless @last}}
+                        <span class="page-header__breadcrumb-separator">/</span>
+                    {{/unless}}
+                {{else}}
+                    <span class="page-header__breadcrumb-text">{{this.Text}}</span>
+                {{/if}}
+            {{/each}}
+        </nav>
+    {{/if}}
+    <h1 class="page-header__title">{{PageHeader.Title}}</h1>
+</header>

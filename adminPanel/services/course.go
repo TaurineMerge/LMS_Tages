@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"adminPanel/exceptions"
+	"adminPanel/handlers/dto/request"
+	"adminPanel/handlers/dto/response"
+	"adminPanel/middleware"
 	"adminPanel/models"
 	"adminPanel/repositories"
 
@@ -14,36 +16,19 @@ import (
 	"go.opentelemetry.io/otel/codes"
 )
 
-// CourseService - сервис для работы с курсами
-//
-// Сервис предоставляет методы для управления курсами:
-//   - Получение курсов с фильтрацией и пагинацией
-//   - Получение курса по ID
-//   - Создание нового курса
-//   - Обновление курса
-//   - Удаление курса
-//   - Получение курсов категории
-//
-// Особенности:
-//   - Проверка существования категорий
-//   - Фильтрация по уровню сложности и видимости
-//   - Интеграция с OpenTelemetry для трассировки
-//   - Валидация данных
+// CourseService предоставляет бизнес-логику для работы с курсами.
+// Содержит репозитории для курсов и категорий, методы для CRUD операций.
 type CourseService struct {
 	courseRepo   *repositories.CourseRepository
 	categoryRepo *repositories.CategoryRepository
 }
 
+// courseTracer трассировщик для сервиса курсов.
+// Используется для отслеживания операций с курсами.
 var courseTracer = otel.Tracer("admin-panel/course-service")
 
-// NewCourseService создает новый сервис для работы с курсами
-//
-// Параметры:
-//   - courseRepo: репозиторий для работы с курсами
-//   - categoryRepo: репозиторий для работы с категориями
-//
-// Возвращает:
-//   - *CourseService: указатель на новый сервис
+// NewCourseService создает новый экземпляр CourseService.
+// Принимает репозитории для курсов и категорий.
 func NewCourseService(
 	courseRepo *repositories.CourseRepository,
 	categoryRepo *repositories.CategoryRepository,
@@ -54,19 +39,9 @@ func NewCourseService(
 	}
 }
 
-// GetCourses получает курсы с фильтрацией и пагинацией
-//
-// Метод возвращает курсы указанной категории с возможностью
-// фильтрации по уровню сложности и видимости.
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//   - filter: фильтр для поиска курсов
-//
-// Возвращает:
-//   - *models.PaginatedCoursesResponse: ответ с курсами и пагинацией
-//   - error: ошибка выполнения (если есть)
-func (s *CourseService) GetCourses(ctx context.Context, filter models.CourseFilter) (*models.PaginatedCoursesResponse, error) {
+// GetCourses получает курсы с фильтрами и пагинацией из request.CourseFilter.
+// Возвращает пагинированный ответ с курсами.
+func (s *CourseService) GetCourses(ctx context.Context, filter request.CourseFilter) (*response.PaginatedCoursesResponse, error) {
 	ctx, span := courseTracer.Start(ctx, "CourseService.GetCourses")
 	span.SetAttributes(
 		attribute.String("filter.level", filter.Level),
@@ -88,17 +63,17 @@ func (s *CourseService) GetCourses(ctx context.Context, filter models.CourseFilt
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to check category: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to check category: %v", err))
 	}
 	if !categoryExists {
-		return nil, exceptions.NotFoundError("Category", filter.CategoryID)
+		return nil, middleware.NotFoundError("Category", filter.CategoryID)
 	}
 
 	data, total, err := s.courseRepo.GetFiltered(ctx, filter)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to get courses: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to get courses: %v", err))
 	}
 
 	courses := make([]models.Course, 0, len(data))
@@ -114,6 +89,7 @@ func (s *CourseService) GetCourses(ctx context.Context, filter models.CourseFilt
 			Level:       toString(item["level"]),
 			CategoryID:  toString(item["category_id"]),
 			Visibility:  toString(item["visibility"]),
+			ImageKey:    toString(item["image_key"]),
 		}
 		courses = append(courses, course)
 	}
@@ -123,7 +99,7 @@ func (s *CourseService) GetCourses(ctx context.Context, filter models.CourseFilt
 		pages = 1
 	}
 
-	return &models.PaginatedCoursesResponse{
+	return &response.PaginatedCoursesResponse{
 		Status: "success",
 		Data: struct {
 			Items      []models.Course   `json:"items"`
@@ -140,19 +116,9 @@ func (s *CourseService) GetCourses(ctx context.Context, filter models.CourseFilt
 	}, nil
 }
 
-// GetCourse получает курс по уникальному идентификатору
-//
-// Проверяет принадлежность курса указанной категории.
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//   - categoryID: уникальный идентификатор категории
-//   - id: уникальный идентификатор курса
-//
-// Возвращает:
-//   - *models.CourseResponse: ответ с курсом
-//   - error: ошибка выполнения (если есть)
-func (s *CourseService) GetCourse(ctx context.Context, categoryID, id string) (*models.CourseResponse, error) {
+// GetCourse получает курс по ID в заданной категории.
+// Возвращает ответ с курсом или ошибку, если не найден.
+func (s *CourseService) GetCourse(ctx context.Context, categoryID, id string) (*response.CourseResponse, error) {
 	ctx, span := courseTracer.Start(ctx, "CourseService.GetCourse")
 	span.SetAttributes(attribute.String("course.id", id))
 	defer span.End()
@@ -161,18 +127,18 @@ func (s *CourseService) GetCourse(ctx context.Context, categoryID, id string) (*
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to get course: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to get course: %v", err))
 	}
 
 	if data == nil {
-		return nil, exceptions.NotFoundError("Course", id)
+		return nil, middleware.NotFoundError("Course", id)
 	}
 
 	if toString(data["category_id"]) != categoryID {
-		return nil, exceptions.NotFoundError("Course", id)
+		return nil, middleware.NotFoundError("Course", id)
 	}
 
-	course := &models.CourseResponse{
+	course := &response.CourseResponse{
 		Status: "success",
 		Data: models.Course{
 			BaseModel: models.BaseModel{
@@ -185,24 +151,17 @@ func (s *CourseService) GetCourse(ctx context.Context, categoryID, id string) (*
 			Level:       toString(data["level"]),
 			CategoryID:  toString(data["category_id"]),
 			Visibility:  toString(data["visibility"]),
+			ImageKey:    toString(data["image_key"]),
 		},
 	}
 
 	return course, nil
 }
 
-// CreateCourse создает новый курс в указанной категории
-//
-// Устанавливает значения по умолчанию для уровня и видимости.
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//   - input: данные для создания курса
-//
-// Возвращает:
-//   - *models.CourseResponse: ответ с созданным курсом
-//   - error: ошибка выполнения (если есть)
-func (s *CourseService) CreateCourse(ctx context.Context, input models.CourseCreate) (*models.CourseResponse, error) {
+// CreateCourse создает новый курс на основе данных из request.CourseCreate.
+// Проверяет существование категории и устанавливает значения по умолчанию.
+// Возвращает ответ с созданным курсом.
+func (s *CourseService) CreateCourse(ctx context.Context, input request.CourseCreate) (*response.CourseResponse, error) {
 	ctx, span := courseTracer.Start(ctx, "CourseService.CreateCourse")
 	span.SetAttributes(
 		attribute.String("course.category_id", input.CategoryID),
@@ -216,11 +175,11 @@ func (s *CourseService) CreateCourse(ctx context.Context, input models.CourseCre
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to check category: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to check category: %v", err))
 	}
 
 	if !categoryExists {
-		return nil, exceptions.NotFoundError("Category", input.CategoryID)
+		return nil, middleware.NotFoundError("Category", input.CategoryID)
 	}
 
 	if strings.TrimSpace(input.Level) == "" {
@@ -234,10 +193,10 @@ func (s *CourseService) CreateCourse(ctx context.Context, input models.CourseCre
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to create course: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to create course: %v", err))
 	}
 
-	course := &models.CourseResponse{
+	course := &response.CourseResponse{
 		Status: "success",
 		Data: models.Course{
 			BaseModel: models.BaseModel{
@@ -250,26 +209,16 @@ func (s *CourseService) CreateCourse(ctx context.Context, input models.CourseCre
 			Level:       toString(data["level"]),
 			CategoryID:  toString(data["category_id"]),
 			Visibility:  toString(data["visibility"]),
+			ImageKey:    toString(data["image_key"]),
 		},
 	}
 
 	return course, nil
 }
 
-// UpdateCourse обновляет существующий курс
-//
-// Проверяет принадлежность курса указанной категории.
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//   - categoryID: уникальный идентификатор категории
-//   - id: уникальный идентификатор курса
-//   - input: данные для обновления курса
-//
-// Возвращает:
-//   - *models.CourseResponse: ответ с обновленным курсом
-//   - error: ошибка выполнения (если есть)
-func (s *CourseService) UpdateCourse(ctx context.Context, categoryID, id string, input models.CourseUpdate) (*models.CourseResponse, error) {
+// UpdateCourse обновляет курс по ID в категории на основе данных из request.CourseUpdate.
+// Проверяет существование и возвращает ответ с обновленным курсом.
+func (s *CourseService) UpdateCourse(ctx context.Context, categoryID, id string, input request.CourseUpdate) (*response.CourseResponse, error) {
 	ctx, span := courseTracer.Start(ctx, "CourseService.UpdateCourse")
 	span.SetAttributes(
 		attribute.String("course.id", id),
@@ -284,11 +233,11 @@ func (s *CourseService) UpdateCourse(ctx context.Context, categoryID, id string,
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to check course: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to check course: %v", err))
 	}
 
 	if existing == nil || toString(existing["category_id"]) != categoryID {
-		return nil, exceptions.NotFoundError("Course", id)
+		return nil, middleware.NotFoundError("Course", id)
 	}
 
 	input.CategoryID = categoryID
@@ -297,10 +246,10 @@ func (s *CourseService) UpdateCourse(ctx context.Context, categoryID, id string,
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to update course: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to update course: %v", err))
 	}
 
-	course := &models.CourseResponse{
+	course := &response.CourseResponse{
 		Status: "success",
 		Data: models.Course{
 			BaseModel: models.BaseModel{
@@ -313,23 +262,15 @@ func (s *CourseService) UpdateCourse(ctx context.Context, categoryID, id string,
 			Level:       toString(data["level"]),
 			CategoryID:  toString(data["category_id"]),
 			Visibility:  toString(data["visibility"]),
+			ImageKey:    toString(data["image_key"]),
 		},
 	}
 
 	return course, nil
 }
 
-// DeleteCourse удаляет курс по уникальному идентификатору
-//
-// Проверяет принадлежность курса указанной категории.
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//   - categoryID: уникальный идентификатор категории
-//   - id: уникальный идентификатор курса
-//
-// Возвращает:
-//   - error: ошибка выполнения (если есть)
+// DeleteCourse удаляет курс по ID в заданной категории.
+// Проверяет существование перед удалением.
 func (s *CourseService) DeleteCourse(ctx context.Context, categoryID, id string) error {
 	ctx, span := courseTracer.Start(ctx, "CourseService.DeleteCourse")
 	span.SetAttributes(attribute.String("course.id", id))
@@ -339,36 +280,29 @@ func (s *CourseService) DeleteCourse(ctx context.Context, categoryID, id string)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return exceptions.InternalError(fmt.Sprintf("Failed to check course: %v", err))
+		return middleware.InternalError(fmt.Sprintf("Failed to check course: %v", err))
 	}
 
 	if existing == nil || toString(existing["category_id"]) != categoryID {
-		return exceptions.NotFoundError("Course", id)
+		return middleware.NotFoundError("Course", id)
 	}
 
 	deleted, err := s.courseRepo.Delete(ctx, id)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return exceptions.InternalError(fmt.Sprintf("Failed to delete course: %v", err))
+		return middleware.InternalError(fmt.Sprintf("Failed to delete course: %v", err))
 	}
 
 	if !deleted {
-		return exceptions.InternalError("Failed to delete course")
+		return middleware.InternalError("Failed to delete course")
 	}
 
 	return nil
 }
 
-// GetCategoryCourses получает все курсы указанной категории
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//   - categoryID: уникальный идентификатор категории
-//
-// Возвращает:
-//   - []models.Course: список курсов категории
-//   - error: ошибка выполнения (если есть)
+// GetCategoryCourses получает все курсы для заданной категории.
+// Возвращает список курсов.
 func (s *CourseService) GetCategoryCourses(ctx context.Context, categoryID string) ([]models.Course, error) {
 	ctx, span := courseTracer.Start(ctx, "CourseService.GetCategoryCourses")
 	span.SetAttributes(attribute.String("category.id", categoryID))
@@ -378,18 +312,18 @@ func (s *CourseService) GetCategoryCourses(ctx context.Context, categoryID strin
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to check category: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to check category: %v", err))
 	}
 
 	if !categoryExists {
-		return nil, exceptions.NotFoundError("Category", categoryID)
+		return nil, middleware.NotFoundError("Category", categoryID)
 	}
 
 	data, err := s.courseRepo.GetByCategory(ctx, categoryID)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to get courses: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to get courses: %v", err))
 	}
 
 	courses := make([]models.Course, 0, len(data))

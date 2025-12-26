@@ -1,0 +1,22 @@
+<div class="category-card">
+    <div class="category-card__header">
+        <a href="{{this.CoursesRef}}" class="category-card__link">
+            <h3 class="category-card__title link">{{this.Title}}</h3>
+        </a>
+        <p class="category-card__total-courses">Курсов в категории: {{this.TotalCourses}}</p>
+    </div>
+    <ul class="category-card__courses">
+        {{#each this.Courses}}
+            {{> partials/course-line this}}
+        {{/each}}
+    </ul>
+    <div class="category-card__more">
+        <a href="{{this.CoursesRef}}" class="category-card__more-link button">
+            {{#if (gt this.TotalCourses this.CoursesLimit)}}
+                Посмотреть еще...
+            {{else}}
+                Подробнее о курсах...
+            {{/if}}
+        </a>
+    </div>
+</div>

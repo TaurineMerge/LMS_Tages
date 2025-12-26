@@ -6,44 +6,31 @@ import (
 	"strings"
 
 	"adminPanel/database"
-	"adminPanel/models"
+	"adminPanel/handlers/dto/request"
 )
 
-// CourseRepository - репозиторий для работы с курсами в базе данных
-//
-// Репозиторий предоставляет методы для выполнения CRUD операций
-// с курсами в базе данных, включая фильтрацию и пагинацию.
+// CourseRepository предоставляет методы для работы с курсами.
+// Встраивает BaseRepository для общих операций.
 type CourseRepository struct {
 	*BaseRepository
 }
 
-// NewCourseRepository создает новый репозиторий для курсов
-//
-// Параметры:
-//   - db: экземпляр базы данных
-//
-// Возвращает:
-//   - *CourseRepository: указатель на новый репозиторий
+// NewCourseRepository создает новый экземпляр CourseRepository.
+// Использует таблицу "course_b" в схеме "knowledge_base".
 func NewCourseRepository(db *database.Database) *CourseRepository {
 	return &CourseRepository{
 		BaseRepository: NewBaseRepository(db, "course_b", "knowledge_base"),
 	}
 }
 
-// Create создает новый курс в базе данных
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//   - course: данные для создания курса
-//
-// Возвращает:
-//   - map[string]interface{}: созданный объект курса
-//   - error: ошибка выполнения (если есть)
-func (r *CourseRepository) Create(ctx context.Context, course models.CourseCreate) (map[string]interface{}, error) {
+// Create создает новый курс на основе данных из request.CourseCreate.
+// Генерирует UUID и устанавливает время создания и обновления.
+// Возвращает созданный курс.
+func (r *CourseRepository) Create(ctx context.Context, course request.CourseCreate) (map[string]interface{}, error) {
 	query := `
 		INSERT INTO knowledge_base.course_b 
-		(id, title, description, level, category_id, visibility, created_at, updated_at)
-		VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, NOW(), NOW())
+		(id, title, description, level, category_id, visibility, image_key, created_at, updated_at)
+		VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, NOW(), NOW())
 		RETURNING *
 	`
 
@@ -53,23 +40,14 @@ func (r *CourseRepository) Create(ctx context.Context, course models.CourseCreat
 		course.Level,
 		course.CategoryID,
 		course.Visibility,
+		course.ImageKey,
 	)
 }
 
-// Update обновляет существующий курс в базе данных
-//
-// Использует COALESCE для частичного обновления - если значение
-// равно nil, оно не изменяется.
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//   - id: уникальный идентификатор курса
-//   - course: данные для обновления курса
-//
-// Возвращает:
-//   - map[string]interface{}: обновленный объект курса
-//   - error: ошибка выполнения (если есть)
-func (r *CourseRepository) Update(ctx context.Context, id string, course models.CourseUpdate) (map[string]interface{}, error) {
+// Update обновляет курс по ID на основе данных из request.CourseUpdate.
+// Использует COALESCE для обновления только переданных полей.
+// Возвращает обновленный курс.
+func (r *CourseRepository) Update(ctx context.Context, id string, course request.CourseUpdate) (map[string]interface{}, error) {
 	query := `
 		UPDATE knowledge_base.course_b 
 		SET title = COALESCE($1, title),
@@ -77,8 +55,9 @@ func (r *CourseRepository) Update(ctx context.Context, id string, course models.
 			level = COALESCE($3, level),
 			category_id = COALESCE($4, category_id),
 			visibility = COALESCE($5, visibility),
+			image_key = COALESCE($6, image_key),
 			updated_at = NOW()
-		WHERE id = $6
+		WHERE id = $7
 		RETURNING *
 	`
 
@@ -88,25 +67,14 @@ func (r *CourseRepository) Update(ctx context.Context, id string, course models.
 		course.Level,
 		course.CategoryID,
 		course.Visibility,
+		course.ImageKey,
 		id,
 	)
 }
 
-// GetFiltered получает курсы с фильтрацией и пагинацией
-//
-// Поддерживает фильтрацию по уровню сложности, видимости
-// и категории. Возвращает отсортированные по дате создания курсы.
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//   - filter: фильтр для поиска курсов
-//
-// Возвращает:
-//   - []map[string]interface{}: список курсов
-//   - int: общее количество курсов
-//   - error: ошибка выполнения (если есть)
-func (r *CourseRepository) GetFiltered(ctx context.Context, filter models.CourseFilter) ([]map[string]interface{}, int, error) {
-	// Строим WHERE условия
+// GetFiltered получает курсы с фильтрами из request.CourseFilter.
+// Возвращает список курсов, общее количество и ошибку.
+func (r *CourseRepository) GetFiltered(ctx context.Context, filter request.CourseFilter) ([]map[string]interface{}, int, error) {
 	var conditions []string
 	var params []interface{}
 	paramCounter := 1
@@ -162,17 +130,8 @@ func (r *CourseRepository) GetFiltered(ctx context.Context, filter models.Course
 	return data, total, nil
 }
 
-// GetByCategory получает все курсы указанной категории
-//
-// Возвращает курсы, отсортированные по дате создания.
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//   - categoryID: уникальный идентификатор категории
-//
-// Возвращает:
-//   - []map[string]interface{}: список курсов категории
-//   - error: ошибка выполнения (если есть)
+// GetByCategory получает все курсы для заданной категории.
+// Сортирует по времени создания в порядке убывания.
 func (r *CourseRepository) GetByCategory(ctx context.Context, categoryID string) ([]map[string]interface{}, error) {
 	query := `
 		SELECT * FROM knowledge_base.course_b
@@ -183,17 +142,8 @@ func (r *CourseRepository) GetByCategory(ctx context.Context, categoryID string)
 	return r.db.FetchAll(ctx, query, categoryID)
 }
 
-// ExistsByCategory проверяет существование категории
-//
-// Используется для валидации перед операциями с курсами.
-//
-// Параметры:
-//   - ctx: контекст выполнения
-//   - categoryID: уникальный идентификатор категории
-//
-// Возвращает:
-//   - bool: true, если категория существует
-//   - error: ошибка выполнения (если есть)
+// ExistsByCategory проверяет существование категории по ID.
+// Возвращает true, если категория существует.
 func (r *CourseRepository) ExistsByCategory(ctx context.Context, categoryID string) (bool, error) {
 	query := "SELECT 1 FROM knowledge_base.category_d WHERE id = $1 LIMIT 1"
 	result, err := r.db.FetchOne(ctx, query, categoryID)

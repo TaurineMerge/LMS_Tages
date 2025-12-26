@@ -1,0 +1,663 @@
+/* WYSIWYG Editor Styles - Professional Design */
+
+:root {
+    --editor-primary: #2563eb;
+    --editor-primary-hover: #1d4ed8;
+    --editor-border: #e5e7eb;
+    --editor-bg: #ffffff;
+    --editor-toolbar-bg: #f9fafb;
+    --editor-hover: #f3f4f6;
+    --editor-active: #e5e7eb;
+    --editor-text: #1f2937;
+    --editor-text-secondary: #6b7280;
+    --editor-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --editor-shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.wysiwyg-editor {
+    border: 1px solid var(--editor-border);
+    border-radius: 8px;
+    background: var(--editor-bg);
+    margin-bottom: 20px;
+    overflow: hidden;
+    box-shadow: var(--editor-shadow);
+    position: relative;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.wysiwyg-editor.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    margin: 0;
+    border-radius: 0;
+    width: 100vw;
+    height: 100vh;
+}
+
+.wysiwyg-editor.fullscreen .wysiwyg-editor__content {
+    max-height: calc(100vh - 60px);
+    height: calc(100vh - 60px);
+}
+
+.wysiwyg-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 10px;
+    background: var(--editor-toolbar-bg);
+    border-bottom: 1px solid var(--editor-border);
+    align-items: center;
+}
+
+/* Кнопки - Современный дизайн */
+.wysiwyg-toolbar__btn {
+    position: relative;
+    padding: 6px 10px;
+    background: var(--editor-bg);
+    border: 1px solid var(--editor-border);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--editor-text);
+    transition: all 0.15s ease;
+    min-width: 36px;
+    min-height: 36px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wysiwyg-toolbar__btn:hover {
+    background: var(--editor-hover);
+    border-color: var(--editor-primary);
+    transform: translateY(-1px);
+    box-shadow: var(--editor-shadow);
+}
+
+.wysiwyg-toolbar__btn:active {
+    background: var(--editor-active);
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+.wysiwyg-toolbar__separator {
+    width: 1px;
+    background: var(--editor-border);
+    margin: 0 6px;
+    height: 24px;
+    align-self: center;
+}
+
+/* Меню - Улучшенный дизайн */
+.wysiwyg-menu {
+    position: relative;
+    display: inline-block;
+}
+
+.wysiwyg-menu__button {
+    padding: 6px 12px;
+    background: var(--editor-bg);
+    border: 1px solid var(--editor-border);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--editor-text);
+    transition: all 0.15s ease;
+    min-height: 36px;
+}
+
+.wysiwyg-menu__button:hover {
+    background: var(--editor-hover);
+    border-color: var(--editor-primary);
+}
+
+.wysiwyg-menu__dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    background: var(--editor-bg);
+    border: 1px solid var(--editor-border);
+    border-radius: 8px;
+    box-shadow: var(--editor-shadow-lg);
+    min-width: 240px;
+    z-index: 1000;
+    overflow: hidden;
+}
+
+.wysiwyg-menu__dropdown.show {
+    display: block;
+    animation: slideDown 0.15s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.wysiwyg-menu__item {
+    width: 100%;
+    padding: 10px 16px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font-size: 14px;
+    color: var(--editor-text);
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.wysiwyg-menu__item:hover {
+    background: var(--editor-hover);
+    color: var(--editor-primary);
+}
+
+.wysiwyg-menu__item-icon {
+    font-size: 18px;
+    min-width: 24px;
+    text-align: center;
+}
+
+.wysiwyg-menu__item-label {
+    flex: 1;
+    font-weight: 400;
+}
+
+.wysiwyg-menu__item-shortcut {
+    font-size: 11px;
+    color: var(--editor-text-secondary);
+    font-family: monospace;
+    padding: 2px 6px;
+    background: var(--editor-hover);
+    border-radius: 3px;
+}
+
+.wysiwyg-menu__separator {
+    height: 1px;
+    background: var(--editor-border);
+    margin: 4px 0;
+}
+
+/* Dropdown - Современный стиль */
+.wysiwyg-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.wysiwyg-dropdown__button {
+    padding: 6px 12px;
+    background: var(--editor-bg);
+    border: 1px solid var(--editor-border);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--editor-text);
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 36px;
+    font-weight: 500;
+}
+
+.wysiwyg-dropdown__button:hover {
+    background: var(--editor-hover);
+    border-color: var(--editor-primary);
+}
+
+.wysiwyg-dropdown__arrow {
+    font-size: 10px;
+}
+
+.wysiwyg-dropdown__list {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    background: var(--editor-bg);
+    border: 1px solid var(--editor-border);
+    border-radius: 8px;
+    box-shadow: var(--editor-shadow-lg);
+    min-width: 200px;
+    max-height: 320px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.wysiwyg-dropdown__list.show {
+    display: block;
+    animation: slideDown 0.15s ease-out;
+}
+
+.wysiwyg-dropdown__item {
+    width: 100%;
+    padding: 10px 16px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font-size: 14px;
+    color: var(--editor-text);
+    transition: all 0.15s ease;
+    font-weight: 400;
+}
+
+.wysiwyg-dropdown__item:hover {
+    background: var(--editor-hover);
+    color: var(--editor-primary);
+}
+
+.wysiwyg-editor__content {
+    min-height: 400px;
+    padding: 24px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--editor-text);
+    outline: none;
+    overflow-y: auto;
+    max-height: 600px;
+    background: var(--editor-bg);
+}
+
+/* Стили для контента внутри редактора */
+
+.wysiwyg-editor__content h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 24px 0 16px 0;
+    color: #111827;
+    line-height: 1.2;
+}
+
+.wysiwyg-editor__content h2 {
+    font-size: 26px;
+    font-weight: 700;
+    margin: 20px 0 14px 0;
+    color: #111827;
+    line-height: 1.3;
+}
+
+.wysiwyg-editor__content h3 {
+    font-size: 22px;
+    font-weight: 600;
+    margin: 18px 0 12px 0;
+    color: #111827;
+    line-height: 1.4;
+}
+
+.wysiwyg-editor__content h4 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 16px 0 10px 0;
+    color: #111827;
+    line-height: 1.5;
+}
+
+.wysiwyg-editor__content p {
+    margin: 12px 0;
+}
+
+.wysiwyg-editor__content ul,
+.wysiwyg-editor__content ol {
+    margin: 12px 0;
+    padding-left: 40px;
+}
+
+.wysiwyg-editor__content li {
+    margin: 8px 0;
+}
+
+.wysiwyg-editor__content ul {
+    list-style-type: disc;
+}
+
+.wysiwyg-editor__content ol {
+    list-style-type: decimal;
+}
+
+.wysiwyg-editor__content blockquote {
+    margin: 16px 0;
+    padding: 16px 20px;
+    background: #f3f4f6;
+    border-left: 4px solid var(--editor-primary);
+    font-style: italic;
+    color: #4b5563;
+    border-radius: 4px;
+}
+
+.wysiwyg-editor__content pre {
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 16px 0;
+}
+
+.wysiwyg-editor__content code {
+    background: #f3f4f6;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Courier New', monospace;
+    font-size: 13px;
+    color: #dc2626;
+}
+
+.wysiwyg-editor__content pre code {
+    background: transparent;
+    padding: 0;
+    color: inherit;
+}
+
+.wysiwyg-editor__content a {
+    color: var(--editor-primary);
+    text-decoration: underline;
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+.wysiwyg-editor__content a:hover {
+    color: var(--editor-primary-hover);
+}
+
+.wysiwyg-editor__content img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 16px auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.wysiwyg-editor__content img:hover {
+    transform: scale(1.01);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.wysiwyg-editor__content img.wysiwyg-image {
+    cursor: pointer;
+}
+
+.wysiwyg-editor__content img[alt*="⚠️"] {
+    border: 2px dashed #ef4444;
+    padding: 20px;
+    background: #fef3c7;
+    color: #92400e;
+    font-size: 14px;
+    white-space: pre-wrap;
+    text-align: center;
+    box-shadow: none;
+}
+
+.wysiwyg-editor__content strong,
+.wysiwyg-editor__content b {
+    font-weight: 700;
+}
+
+.wysiwyg-editor__content em,
+.wysiwyg-editor__content i {
+    font-style: italic;
+}
+
+.wysiwyg-editor__content u {
+    text-decoration: underline;
+}
+
+.wysiwyg-editor__content s,
+.wysiwyg-editor__content strike {
+    text-decoration: line-through;
+}
+
+/* Таблицы */
+.wysiwyg-editor__content table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 16px 0;
+    border: 1px solid var(--editor-border);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.wysiwyg-editor__content table td,
+.wysiwyg-editor__content table th {
+    padding: 12px 16px;
+    border: 1px solid var(--editor-border);
+    text-align: left;
+}
+
+.wysiwyg-editor__content table th {
+    background: var(--editor-toolbar-bg);
+    font-weight: 600;
+    color: var(--editor-text);
+}
+
+.wysiwyg-editor__content table tr:hover {
+    background: var(--editor-hover);
+}
+
+/* Горизонтальная линия */
+.wysiwyg-editor__content hr {
+    border: none;
+    border-top: 2px solid var(--editor-border);
+    margin: 24px 0;
+    border-radius: 1px;
+}
+
+/* Placeholder для пустого редактора */
+.wysiwyg-editor__content:empty:before {
+    content: 'Начните вводить текст урока...';
+    color: var(--editor-text-secondary);
+    font-style: italic;
+}
+
+/* Выделение текста */
+.wysiwyg-editor__content::selection {
+    background: #bfdbfe;
+    color: #1e40af;
+}
+
+/* Режим предпросмотра */
+.wysiwyg-editor__content.preview-mode {
+    background: #f9fafb;
+    border: 2px solid var(--editor-primary);
+    cursor: default;
+    position: relative;
+}
+
+.wysiwyg-editor__content.preview-mode::before {
+    content: '📖 Режим предпросмотра';
+    position: sticky;
+    top: 0;
+    display: block;
+    padding: 10px 16px;
+    background: var(--editor-primary);
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    margin: -24px -24px 16px -24px;
+    border-radius: 0;
+    text-align: center;
+    z-index: 10;
+}
+
+/* Режим исходного кода */
+.wysiwyg-editor__content.source-code-mode {
+    background: #1e293b;
+    color: #94a3b8;
+    padding: 20px;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-x: auto;
+}
+
+.html-source {
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 24px;
+    margin: 0;
+    border-radius: 0;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.8;
+    overflow-x: auto;
+}
+
+.html-source code {
+    background: transparent;
+    padding: 0;
+    color: inherit;
+    font-family: inherit;
+}
+
+/* Подсветка синтаксиса HTML */
+.html-tag {
+    color: #94a3b8; /* Серый для < > */
+}
+
+.html-tag-name {
+    color: #38bdf8; /* Голубой для имён тегов */
+    font-weight: 600;
+}
+
+.html-attr {
+    color: #e2e8f0; /* Светлый для общих атрибутов */
+}
+
+.html-attr-name {
+    color: #c084fc; /* Фиолетовый для имён атрибутов */
+    font-style: italic;
+}
+
+.html-attr-value {
+    color: #4ade80; /* Зелёный для значений атрибутов */
+}
+
+/* Красивый скроллбар */
+.wysiwyg-editor__content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.wysiwyg-editor__content::-webkit-scrollbar-track {
+    background: var(--editor-hover);
+    border-radius: 4px;
+}
+
+.wysiwyg-editor__content::-webkit-scrollbar-thumb {
+    background: var(--editor-border);
+    border-radius: 4px;
+}
+
+.wysiwyg-editor__content::-webkit-scrollbar-thumb:hover {
+    background: var(--editor-text-secondary);
+}
+
+.wysiwyg-dropdown__list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.wysiwyg-dropdown__list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.wysiwyg-dropdown__list::-webkit-scrollbar-thumb {
+    background: var(--editor-border);
+    border-radius: 3px;
+}
+
+.wysiwyg-dropdown__list::-webkit-scrollbar-thumb:hover {
+    background: var(--editor-text-secondary);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .wysiwyg-toolbar {
+        padding: 8px;
+        gap: 2px;
+    }
+    
+    .wysiwyg-toolbar__btn {
+        padding: 6px 10px;
+        font-size: 12px;
+        min-width: 32px;
+    }
+    
+    .wysiwyg-editor__content {
+        padding: 16px;
+        font-size: 15px;
+        min-height: 300px;
+    }
+    
+    .wysiwyg-menu__button,
+    .wysiwyg-dropdown__button {
+        font-size: 13px;
+        padding: 5px 10px;
+    }
+}
+
+/* Плавная анимация для кнопок */
+.wysiwyg-toolbar__btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.wysiwyg-toolbar__btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(37, 99, 235, 0.1);
+    transform: translate(-50%, -50%);
+    transition: width 0.3s, height 0.3s;
+}
+
+.wysiwyg-toolbar__btn:active::after {
+    width: 100px;
+    height: 100px;
+}
+
+/* Фокус для доступности */
+.wysiwyg-editor__content:focus {
+    outline: none;
+}
+
+.wysiwyg-toolbar__btn:focus,
+.wysiwyg-menu__button:focus,
+.wysiwyg-dropdown__button:focus {
+    outline: 2px solid var(--editor-primary);
+    outline-offset: 2px;
+}
+
+.wysiwyg-toolbar__btn:active::after {
+    width: 100%;
+    height: 100%;
+}

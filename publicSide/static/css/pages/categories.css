@@ -1,0 +1,15 @@
+.categories-page {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 40px 20px;
+    flex-grow: 1;
+}
+
+.categories-page__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, var(--category-card-width));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    justify-content: center;
+}

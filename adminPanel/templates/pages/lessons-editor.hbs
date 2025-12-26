@@ -1,0 +1,105 @@
+<!-- templates/pages/lessons-editor.hbs -->
+<div class="admin-page admin-page--full">
+    <!-- Основной контент -->
+    <main class="admin-content admin-content--full">
+        <nav class="top-breadcrumb">
+            <a href="/admin/categories" class="top-breadcrumb__link">📂 Категории</a>
+            <span class="top-breadcrumb__separator">›</span>
+            <a href="/admin/categories/{{categoryID}}/courses" class="top-breadcrumb__link">{{categoryName}}</a>
+            <span class="top-breadcrumb__separator">›</span>
+            <span class="top-breadcrumb__current">{{courseName}}</span>
+        </nav>
+        {{#if error}}
+            <div class="notification notification--error">
+                <span class="notification__icon">⚠️</span>
+                <span class="notification__text">{{error}}</span>
+            </div>
+        {{/if}}
+
+        {{#if success}}
+            <div class="notification notification--success">
+                <span class="notification__icon">✓</span>
+                <span class="notification__text">{{success}}</span>
+            </div>
+        {{/if}}
+
+        {{#if lessons}}
+            <div class="content-header content-header--with-actions">
+                <div class="content-header__text">
+                    <h1 class="content-title">📝 Уроки: {{courseName}}</h1>
+                    <p class="content-description">Управление содержимым курса • {{lessonsCount}} уроков</p>
+                </div>
+                <div class="content-header__actions">
+                    <a href="/admin/categories/{{categoryID}}/courses" class="btn btn--secondary">
+                        <span class="btn__icon">←</span>
+                        Назад
+                    </a>
+                    <a href="/admin/categories/{{categoryID}}/courses/{{courseID}}/lessons/new" class="btn btn--primary">
+                        <span class="btn__icon">＋</span>
+                        Новый урок
+                    </a>
+                </div>
+            </div>
+
+            <div class="lessons-list">
+                {{#each lessons}}
+                    <article class="lesson-item">
+                        <div class="lesson-item__number">
+                            <span>{{Number}}</span>
+                        </div>
+                        <div class="lesson-item__content">
+                            <h3 class="lesson-item__title">{{Title}}</h3>
+                            <div class="lesson-item__meta">
+                                <span class="lesson-item__meta-item">
+                                    <span class="meta-icon">🕐</span>
+                                    Создан: {{CreatedAt}}
+                                </span>
+                                <span class="lesson-item__meta-item">
+                                    <span class="meta-icon">🔄</span>
+                                    Обновлен: {{UpdatedAt}}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="lesson-item__actions">
+                            <a href="/admin/categories/{{../categoryID}}/courses/{{../courseID}}/lessons/{{ID}}" class="lesson-item__action lesson-item__action--edit" title="Редактировать">
+                                <span>✏️</span>
+                                <span class="lesson-item__action-text">Редактировать</span>
+                            </a>
+                            <form method="POST" action="/admin/categories/{{../categoryID}}/courses/{{../courseID}}/lessons/{{ID}}/delete" class="lesson-item__delete-form">
+                                <button type="submit" class="lesson-item__action lesson-item__action--delete" title="Удалить">
+                                    <span>🗑️</span>
+                                    <span class="lesson-item__action-text">Удалить</span>
+                                </button>
+                            </form>
+                        </div>
+                    </article>
+                {{/each}}
+            </div>
+
+            <!-- Кнопка добавления внизу списка -->
+            <a href="/admin/categories/{{categoryID}}/courses/{{courseID}}/lessons/new" class="add-lesson-btn">
+                <span class="add-lesson-btn__icon">＋</span>
+                <span class="add-lesson-btn__text">Добавить урок</span>
+            </a>
+        {{else}}
+            <div class="empty-state-modern">
+                <div class="empty-state-modern__illustration">
+                    <div class="empty-state-modern__circle"></div>
+                    <div class="empty-state-modern__icon">📝</div>
+                </div>
+                <h2 class="empty-state-modern__title">Уроков пока нет</h2>
+                <p class="empty-state-modern__text">Создайте первый урок в курсе "{{courseName}}"</p>
+                <div class="empty-state-modern__actions">
+                    <a href="/admin/categories/{{categoryID}}/courses" class="btn btn--secondary">
+                        <span class="btn__icon">←</span>
+                        Назад к курсам
+                    </a>
+                    <a href="/admin/categories/{{categoryID}}/courses/{{courseID}}/lessons/new" class="btn btn--primary btn--lg">
+                        <span class="btn__icon">＋</span>
+                        Создать урок
+                    </a>
+                </div>
+            </div>
+        {{/if}}
+    </main>
+</div>
