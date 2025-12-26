@@ -148,6 +148,8 @@
     <form id="takeForm" method="post" action="/testing/ui/tests/{{test.id}}/save">
       <input type="hidden" name="student_id" value="{{student_id}}" />
       <input type="hidden" name="attempt_id" value="{{attempt_id}}" />
+      <input type="hidden" name="category_id" value="{{category_id}}" />
+      <input type="hidden" name="course_id" value="{{course_id}}" />
 
     {{#each questions}}
       <div class="card {{#if answered}}answered{{/if}}" id="q_{{id}}">

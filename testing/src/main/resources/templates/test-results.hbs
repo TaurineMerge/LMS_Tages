@@ -39,8 +39,14 @@
       </div>
 
       <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                <form method="post" action="/testing/ui/tests/{{test.id}}/retry" style="margin:0;">
+        {{#if course_back_url}}
+          <a class="btn-outline" href="{{course_back_url}}">Вернуться к курсу</a>
+        {{/if}}
+
+        <form method="post" action="/testing/ui/tests/{{test.id}}/retry" style="margin:0;">
           <input type="hidden" name="student_id" value="{{student_id}}" />
+          <input type="hidden" name="category_id" value="{{category_id}}" />
+          <input type="hidden" name="course_id" value="{{course_id}}" />
           <button type="submit" class="btn">Пройти ещё раз</button>
         </form>
       </div>

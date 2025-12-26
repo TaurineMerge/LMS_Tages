@@ -105,7 +105,7 @@ public class UiTestController {
                 .orElse(null);
 
         if (attemptId != null) {
-            ctx.redirect("/testing/ui/category/" + categoryId + "/course/" + courseIdStr + "/attempt/" + attemptId);
+            ctx.redirect("/testing/ui/categories/" + categoryId + "/courses/" + courseIdStr + "/attempt/" + attemptId);
             return;
         }
 
@@ -115,13 +115,15 @@ public class UiTestController {
                 .orElse(null);
 
         if (lastCompletedAttemptId != null) {
-            ctx.redirect("/testing/ui/tests/" + testId + "/results?attemptId=" + lastCompletedAttemptId);
+            ctx.redirect("/testing/ui/tests/" + testId + "/results?attemptId=" + lastCompletedAttemptId
+                    + "&categoryId=" + categoryId
+                    + "&courseId=" + courseIdStr);
             return;
         }
 
         // 5) Иначе создаём новую попытку
         UUID newAttemptId = testAttemptService.createNewAttempt(studentId, testId);
-        ctx.redirect("/testing/ui/category/" + categoryId + "/course/" + courseIdStr + "/attempt/" + newAttemptId);
+        ctx.redirect("/testing/ui/categories/" + categoryId + "/courses/" + courseIdStr + "/attempt/" + newAttemptId);
     }
 
     /**
@@ -130,6 +132,9 @@ public class UiTestController {
      * GET /ui/category/{categoryId}/course/{courseId}/attempt/{attemptId}
      */
     public void openAttemptFromCourse(Context ctx) {
+        String categoryId = ctx.pathParam("categoryId");
+        String courseIdStr = ctx.pathParam("courseId");
+
         String attemptIdStr = ctx.pathParam("attemptId");
         UUID attemptId = parseUuidOr400(ctx, attemptIdStr, "attemptId");
         if (attemptId == null) return;
@@ -143,7 +148,9 @@ public class UiTestController {
                         .result("Некорректный testId у попытки: attemptId=" + attemptIdStr);
                 return;
             }
-            ctx.redirect("/testing/ui/tests/" + testId + "/take?attemptId=" + attemptId);
+            ctx.redirect("/testing/ui/tests/" + testId + "/take?attemptId=" + attemptId
+                    + "&categoryId=" + categoryId
+                    + "&courseId=" + courseIdStr);
         } catch (Exception e) {
             ctx.status(404).contentType("text/plain; charset=utf-8")
                     .result("Попытка не найдена: " + attemptIdStr);
@@ -163,8 +170,18 @@ public class UiTestController {
 
         UUID studentId = resolveOrCreateStudentId(ctx);
 
+        // Если пришли со страницы курса, сохраняем categoryId/courseId, чтобы на результатах
+        // отрисовать кнопку "Вернуться к курсу".
+        String categoryId = ctx.formParam("category_id");
+        String courseIdStr = ctx.formParam("course_id");
+
         UUID newAttemptId = testAttemptService.createNewAttempt(studentId, testId);
-        ctx.redirect("/testing/ui/tests/" + testId + "/take?attemptId=" + newAttemptId);
+
+        String redirect = "/testing/ui/tests/" + testId + "/take?attemptId=" + newAttemptId;
+        if (categoryId != null && !categoryId.isBlank() && courseIdStr != null && !courseIdStr.isBlank()) {
+            redirect += "&categoryId=" + categoryId + "&courseId=" + courseIdStr;
+        }
+        ctx.redirect(redirect);
     }
 
     // =========================================================
@@ -190,10 +207,19 @@ public class UiTestController {
 
         UUID studentId = resolveOrCreateStudentId(ctx);
 
+        // Если зашли со страницы курса, эти query-параметры нужно протаскивать
+        // через save/finish/results, чтобы показывать кнопку «Вернуться к курсу».
+        String categoryIdQ = ctx.queryParam("categoryId");
+        String courseIdQ = ctx.queryParam("courseId");
+
         UUID attemptId = tryParseUuid(ctx.queryParam("attemptId"));
         if (attemptId == null) {
             UUID newAttemptId = testAttemptService.createNewAttempt(studentId, testId);
-            ctx.redirect("/testing/ui/tests/" + testId + "/take?attemptId=" + newAttemptId);
+            String redirect = "/testing/ui/tests/" + testId + "/take?attemptId=" + newAttemptId;
+            if (categoryIdQ != null && !categoryIdQ.isBlank() && courseIdQ != null && !courseIdQ.isBlank()) {
+                redirect += "&categoryId=" + categoryIdQ + "&courseId=" + courseIdQ;
+            }
+            ctx.redirect(redirect);
             return;
         }
 
@@ -309,6 +335,11 @@ public class UiTestController {
 
         model.put("student_id", studentId.toString());
         model.put("attempt_id", attemptId.toString());
+
+        // Приход с курса: для кнопки «Вернуться к курсу» на странице результатов.
+        // Прокидываем category/course в шаблон, чтобы они ушли hidden-полями при save/finish.
+        model.put("category_id", categoryIdQ);
+        model.put("course_id", courseIdQ);
         model.put("attempt_no", attemptNo);
 
         model.put("totalQuestions", totalQuestions);
@@ -344,7 +375,14 @@ public class UiTestController {
         List<Question> questions = questionService.getQuestionsByTestId(testId);
         persistAllAnswersFromForm(ctx, attemptId, questions);
 
-        ctx.redirect("/testing/ui/tests/" + testId + "/take?attemptId=" + attemptId);
+        // Не теряем контекст курса (нужен для кнопки «Вернуться к курсу» на результатах)
+        String categoryId = ctx.formParam("category_id");
+        String courseIdStr = ctx.formParam("course_id");
+        String redirect = "/testing/ui/tests/" + testId + "/take?attemptId=" + attemptId;
+        if (categoryId != null && !categoryId.isBlank() && courseIdStr != null && !courseIdStr.isBlank()) {
+            redirect += "&categoryId=" + categoryId + "&courseId=" + courseIdStr;
+        }
+        ctx.redirect(redirect);
     }
 
     /**
@@ -498,6 +536,11 @@ public class UiTestController {
         model.put("student_id", studentId.toString());
         model.put("attempt_id", attemptId.toString());
 
+        // Приход с страницы курса: протаскиваем categoryId/courseId, чтобы на результатах
+        // можно было показать кнопку «Вернуться к курсу».
+        model.put("category_id", ctx.queryParam("categoryId"));
+        model.put("course_id", ctx.queryParam("courseId"));
+
         model.put("totalQuestions", total);
         model.put("answeredCount", answeredCount);
         model.put("missingCount", missingCount);
@@ -525,6 +568,10 @@ public class UiTestController {
         boolean force = "true".equalsIgnoreCase(ctx.formParam("force"));
         resolveStudentIdForPost(ctx);
 
+        // Приход с курса: протаскиваем categoryId/courseId до страницы результатов.
+        String categoryId = ctx.formParam("category_id");
+        String courseIdStr = ctx.formParam("course_id");
+
         // 1) сначала сохраняем всё, что пришло из формы (можно исправлять)
         List<Question> questions = questionService.getQuestionsByTestId(testId);
         persistAllAnswersFromForm(ctx, attemptId, questions);
@@ -541,7 +588,11 @@ public class UiTestController {
         }
 
         if (missingCount > 0 && !force) {
-            ctx.redirect("/testing/ui/tests/" + testId + "/finish?attemptId=" + attemptId);
+            String redirect = "/testing/ui/tests/" + testId + "/finish?attemptId=" + attemptId;
+            if (categoryId != null && !categoryId.isBlank() && courseIdStr != null && !courseIdStr.isBlank()) {
+                redirect += "&categoryId=" + categoryId + "&courseId=" + courseIdStr;
+            }
+            ctx.redirect(redirect);
             return;
         }
 
@@ -554,7 +605,11 @@ public class UiTestController {
             testAttemptService.completeAttemptById(attemptId, points);
         } catch (Exception ignored) {}
 
-        ctx.redirect("/testing/ui/tests/" + testId + "/results?attemptId=" + attemptId);
+        String redirect = "/testing/ui/tests/" + testId + "/results?attemptId=" + attemptId;
+        if (categoryId != null && !categoryId.isBlank() && courseIdStr != null && !courseIdStr.isBlank()) {
+            redirect += "&categoryId=" + categoryId + "&courseId=" + courseIdStr;
+        }
+        ctx.redirect(redirect);
     }
 
     // =========================================================
@@ -953,6 +1008,15 @@ public class UiTestController {
         model.put("student_id", studentId.toString());
         model.put("attempt_id", attemptId.toString());
         model.put("attempt_no", attemptNo);
+
+        // Для кнопки «Вернуться к курсу» на странице результатов
+        String categoryId = ctx.queryParam("categoryId");
+        String courseIdStr = ctx.queryParam("courseId");
+        model.put("category_id", categoryId);
+        model.put("course_id", courseIdStr);
+        if (categoryId != null && !categoryId.isBlank() && courseIdStr != null && !courseIdStr.isBlank()) {
+            model.put("course_back_url", "/categories/" + categoryId + "/courses/" + courseIdStr);
+        }
 
         model.put("points", points);
         model.put("maxPossible", maxPossible);

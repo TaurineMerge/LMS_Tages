@@ -40,7 +40,7 @@
       </div>
 
       <div class="actions">
-        <a class="btn-outline" href="/testing/ui/tests/{{test.id}}/take?attemptId={{attempt_id}}">
+        <a class="btn-outline" href="/testing/ui/tests/{{test.id}}/take?attemptId={{attempt_id}}{{#if category_id}}&categoryId={{category_id}}&courseId={{course_id}}{{/if}}">
           Продолжить тестирование
         </a>
       </div>
@@ -61,7 +61,7 @@
         <ul>
           {{#each missingQuestions}}
             <li>
-              <a class="link" href="/testing/ui/tests/{{../test.id}}/take?attemptId={{../attempt_id}}#q_{{id}}">
+              <a class="link" href="/testing/ui/tests/{{../test.id}}/take?attemptId={{../attempt_id}}{{#if ../category_id}}&categoryId={{../category_id}}&courseId={{../course_id}}{{/if}}#q_{{id}}">
                 Перейти к вопросу №{{order}}
               </a>
             </li>
@@ -73,6 +73,8 @@
         <form method="post" action="/testing/ui/tests/{{test.id}}/finish" style="margin:0;">
           <input type="hidden" name="attempt_id" value="{{attempt_id}}"/>
           <input type="hidden" name="student_id" value="{{student_id}}"/>
+          <input type="hidden" name="category_id" value="{{category_id}}"/>
+          <input type="hidden" name="course_id" value="{{course_id}}"/>
           <input type="hidden" name="force" value="true"/>
           <button class="btn-danger" type="submit">Завершить и посмотреть результаты</button>
         </form>
