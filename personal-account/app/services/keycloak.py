@@ -1,11 +1,11 @@
 import logging
 from typing import Any, Optional
 
+from keycloak import KeycloakAdmin, KeycloakOpenID
 from keycloak.exceptions import KeycloakAuthenticationError, KeycloakError
 
 from app.config import get_settings
 from app.telemetry import traced
-from keycloak import KeycloakAdmin, KeycloakOpenID
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -55,6 +55,23 @@ class KeycloakService:
         except Exception as e:
             print(f"Keycloak error: {e}")  # Добавь
             raise
+
+    # @traced("keycloak.get_registration_url", record_args=True, record_result=True)
+    # def get_registration_url(self, redirect_uri: str) -> str:
+    #     try:
+    #         # Сначала получаем базовый URL аутентификации
+    #         auth_url = self.openid.auth_url(redirect_uri=redirect_uri)
+
+    #         # Заменяем 'auth' на 'registrations' в пути URL
+    #         # Например: /realms/myrealm/protocol/openid-connect/auth
+    #         # станет: /realms/myrealm/protocol/openid-connect/registrations
+    #         registration_url = auth_url.replace("/auth?", "/registrations?")
+
+    #         print(f"Keycloak registration URL: {registration_url}")
+    #         return registration_url
+    #     except Exception as e:
+    #         print(f"Keycloak registration error: {e}")
+    #         raise
 
     @traced("keycloak.get_user_data", record_args=True, record_result=True)
     def get_user_data(self, user_id: str) -> dict[str, Any]:

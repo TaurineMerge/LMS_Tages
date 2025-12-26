@@ -10,9 +10,6 @@ from app.config import get_settings
 from app.core.security import TokenPayload, get_current_user, get_current_user_optional
 from app.schemas.common import (
     api_response,
-    message_response,
-    register_request,
-    register_response,
     token_response,
     user_info_response,
 )
@@ -206,35 +203,53 @@ async def get_me(user: TokenPayload = Depends(get_current_user)):
     return api_response(data=user_data)
 
 
-@router.get(
-    "/register",
-    summary="Redirect to Keycloak registration",
-    description="Redirects the user to the Keycloak registration page.",
-)
-@traced("router.auth.register_redirect")
-async def register_redirect():
-    """Redirect to Keycloak registration page."""
-    register_url = auth_service.get_register_url()
-    return RedirectResponse(url=register_url)
+# @router.get(
+#     "/register",
+#     summary="Redirect to Keycloak registration",
+#     description="Redirects the user to the Keycloak registration page.",
+#     response_class=RedirectResponse,
+# )
+# @traced("router.auth.register_redirect")
+# async def register_redirect(request: Request):
+#     """Initiate registration flow."""
+#     try:
+#         # Получаем redirect_uri из настроек (как в методе get_login_url)
+#         redirect_uri = settings.KEYCLOAK_REDIRECT_URI
+
+#         # Генерируем URL для регистрации
+#         register_url = auth_service.get_register_url(redirect_uri)
+
+#         logger.info(
+#             "Redirecting to Keycloak registration",
+#             extra={"registration_url": register_url, "client_ip": request.client.host if request.client else "unknown"},
+#         )
+
+#         return RedirectResponse(
+#             url=register_url, status_code=302, headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
+#         )
+
+#     except Exception as e:
+#         logger.error("Failed to initiate registration process", exc_info=True, extra={"error": str(e)})
+#         raise HTTPException(status_code=500, detail="Failed to initiate registration process. Please try again later.")
 
 
-@router.post(
-    "/register",
-    response_model=api_response[register_response],
-    status_code=status.HTTP_201_CREATED,
-    summary="Register new user",
-    description="Creates a new user account in Keycloak. Available for both students and teachers.",
-)
-@traced("router.auth.register")
-async def register(body: register_request):
-    """Register a new user via API."""
-    result = await auth_service.register_user(
-        username=body.username,
-        email=body.email,
-        password=body.password,
-        first_name=body.first_name,
-        last_name=body.last_name,
-    )
+# @router.post(
+#     "/register",
+#     response_model=api_response[register_response],
+#     status_code=status.HTTP_201_CREATED,
+#     summary="Register new user",
+#     description="Creates a new user account in Keycloak. Available for both students and teachers.",
+# )
+# @traced("router.auth.register")
+# async def register(body: register_request):
+#     """Register a new user via API."""
+#     result = await auth_service.register_user(
+#         username=body.username,
+#         email=body.email,
+#         password=body.password,
+#         first_name=body.first_name,
+#         last_name=body.last_name,
+#     )
 
-    response_data = register_response(user_id=result["user_id"], username=result["username"], email=result["email"])
-    return api_response(data=response_data, message="User registered successfully")
+#     response_data = register_response(user_id=result["user_id"], username=result["username"], email=result["email"])
+#     return api_response(data=response_data, message="User registered successfully")
