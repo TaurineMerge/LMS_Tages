@@ -132,9 +132,9 @@ services:
       DB_HOST: ${APP_DB_HOST}
       DB_PORT: ${APP_DB_INTERNAL_PORT}
       OTEL_EXPORTER_OTLP_ENDPOINT: "otel-collector:4317"
-      OIDC_CLIENT_ID: "teacher-client"
-      OIDC_CLIENT_SECRET: "TEACHER_SECRET"
-      OIDC_ISSUER_URL: "http://localhost/auth/realms/teacher"
+      OIDC_CLIENT_ID: "student-client"
+      OIDC_CLIENT_SECRET: "STUDENT_SECRET"
+      OIDC_ISSUER_URL: "http://localhost/auth/realms/student"
       OIDC_REDIRECT_URL: "http://localhost/auth/callback"
       MINIO_ENDPOINT: "minio:9000"
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
