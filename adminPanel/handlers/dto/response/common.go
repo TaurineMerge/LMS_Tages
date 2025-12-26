@@ -1,4 +1,3 @@
-// Пакет response содержит структуры для ответов API.
 package response
 
 // HealthResponse представляет ответ на health check запрос.

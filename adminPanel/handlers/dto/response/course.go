@@ -1,4 +1,3 @@
-// Пакет response содержит структуры для ответов API.
 package response
 
 import "adminPanel/models"

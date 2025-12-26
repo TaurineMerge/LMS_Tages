@@ -1,5 +1,3 @@
-// Package handlers содержит HTTP-обработчики для API adminPanel.
-// Включает обработчики для категорий, курсов, уроков и других сущностей.
 package handlers
 
 import (

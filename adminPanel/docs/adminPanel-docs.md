@@ -16,7 +16,7 @@ import "adminPanel"
 import "adminPanel/config"
 ```
 
-Package config предоставляет структуры и функции для загрузки и валидации конфигурации приложения adminPanel. Он считывает настройки из переменных окружения и предоставляет удобный доступ к ним.
+Пакет config предоставляет структуры и функции для загрузки и валидации конфигурации приложения adminPanel. Он считывает настройки из переменных окружения и предоставляет удобный доступ к ним.
 
 ## Index
 
@@ -208,7 +208,7 @@ type TestModuleConfig struct {
 import "adminPanel/database"
 ```
 
-Package database предоставляет интерфейс для работы с базой данных PostgreSQL. Включает инициализацию пула соединений, выполнение запросов и сканирование результатов. Поддерживает трассировку с помощью OpenTelemetry.
+Пакет database предоставляет интерфейс для работы с базой данных PostgreSQL. Включает инициализацию пула соединений, выполнение запросов и сканирование результатов. Поддерживает трассировку с помощью OpenTelemetry.
 
 ## Index
 
@@ -302,9 +302,7 @@ FetchOne выполняет SELECT\-запрос, ожидающий одну с
 import "adminPanel/handlers"
 ```
 
-Package handlers содержит HTTP\-обработчики для API adminPanel. Включает обработчики для категорий, курсов, уроков и других сущностей.
-
-Пакет handlers содержит обработчики HTTP\-запросов для различных операций, включая загрузку файлов и управление категориями, курсами, уроками и здоровьем системы.
+Package handlers содержит HTTP\-обработчики для API adminPanel. Включает обработчики для категорий, курсов, уроков, загрузки файлов и проверки здоровья.
 
 ## Index
 
@@ -330,7 +328,7 @@ Package handlers содержит HTTP\-обработчики для API adminP
 
 
 <a name="CategoryHandler"></a>
-## type [CategoryHandler](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/categories.go#L19-L21>)
+## type [CategoryHandler](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/categories.go#L17-L19>)
 
 CategoryHandler обрабатывает HTTP\-запросы для категорий. Содержит сервис для бизнес\-логики и методы для маршрутов.
 
@@ -341,7 +339,7 @@ type CategoryHandler struct {
 ```
 
 <a name="NewCategoryHandler"></a>
-### func [NewCategoryHandler](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/categories.go#L25>)
+### func [NewCategoryHandler](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/categories.go#L23>)
 
 ```go
 func NewCategoryHandler(categoryService *services.CategoryService) *CategoryHandler
@@ -350,7 +348,7 @@ func NewCategoryHandler(categoryService *services.CategoryService) *CategoryHand
 NewCategoryHandler создает новый экземпляр CategoryHandler. Принимает сервис категорий.
 
 <a name="CategoryHandler.RegisterRoutes"></a>
-### func \(\*CategoryHandler\) [RegisterRoutes](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/categories.go#L33>)
+### func \(\*CategoryHandler\) [RegisterRoutes](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/categories.go#L31>)
 
 ```go
 func (h *CategoryHandler) RegisterRoutes(router fiber.Router)
@@ -464,7 +462,7 @@ func (h *LessonHandler) RegisterRoutes(lessons fiber.Router)
 RegisterRoutes регистрирует маршруты для уроков. Привязывает методы к маршрутам для группы уроков.
 
 <a name="UploadHandler"></a>
-## type [UploadHandler](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/upload.go#L17-L19>)
+## type [UploadHandler](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/upload.go#L15-L17>)
 
 UploadHandler обрабатывает запросы на загрузку изображений в S3\-совместимое хранилище.
 
@@ -475,7 +473,7 @@ type UploadHandler struct {
 ```
 
 <a name="NewUploadHandler"></a>
-### func [NewUploadHandler](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/upload.go#L22>)
+### func [NewUploadHandler](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/upload.go#L20>)
 
 ```go
 func NewUploadHandler(s3Service *services.S3Service) *UploadHandler
@@ -484,7 +482,7 @@ func NewUploadHandler(s3Service *services.S3Service) *UploadHandler
 NewUploadHandler создает новый экземпляр UploadHandler с заданным сервисом S3.
 
 <a name="UploadHandler.RegisterRoutes"></a>
-### func \(\*UploadHandler\) [RegisterRoutes](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/upload.go#L29>)
+### func \(\*UploadHandler\) [RegisterRoutes](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/upload.go#L27>)
 
 ```go
 func (h *UploadHandler) RegisterRoutes(upload fiber.Router)
@@ -493,7 +491,7 @@ func (h *UploadHandler) RegisterRoutes(upload fiber.Router)
 RegisterRoutes регистрирует маршруты для загрузки изображений на переданном роутере.
 
 <a name="UploadImageFromURLRequest"></a>
-## type [UploadImageFromURLRequest](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/upload.go#L78-L80>)
+## type [UploadImageFromURLRequest](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/upload.go#L76-L78>)
 
 UploadImageFromURLRequest представляет запрос на загрузку изображения по URL.
 
@@ -504,7 +502,7 @@ type UploadImageFromURLRequest struct {
 ```
 
 <a name="UploadImageResponse"></a>
-## type [UploadImageResponse](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/upload.go#L35-L39>)
+## type [UploadImageResponse](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/upload.go#L33-L37>)
 
 UploadImageResponse представляет ответ на запрос загрузки изображения.
 
@@ -1617,12 +1615,6 @@ import "adminPanel/handlers/web"
 
 Пакет web содержит обработчики для веб\-интерфейса админ\-панели.
 
-Пакет web содержит обработчики для веб\-интерфейса админ\-панели.
-
-Пакет web содержит обработчики для веб\-интерфейса админ\-панели.
-
-Пакет web содержит обработчики для веб\-интерфейса админ\-панели.
-
 ## Index
 
 - [type CategoryView](<#CategoryView>)
@@ -1748,7 +1740,7 @@ func (h *CategoryWebHandler) UpdateCategory(c *fiber.Ctx) error
 UpdateCategory обрабатывает обновление категории из формы.
 
 <a name="CourseTestsView"></a>
-## type [CourseTestsView](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/course_web_handler.go#L29-L32>)
+## type [CourseTestsView](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/course_web_handler.go#L28-L31>)
 
 CourseTestsView представляет информацию о тестах курса.
 
@@ -1760,7 +1752,7 @@ type CourseTestsView struct {
 ```
 
 <a name="CourseView"></a>
-## type [CourseView](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/course_web_handler.go#L14-L26>)
+## type [CourseView](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/course_web_handler.go#L13-L25>)
 
 CourseView представляет курс для отображения в веб\-интерфейсе.
 
@@ -1781,7 +1773,7 @@ type CourseView struct {
 ```
 
 <a name="CourseWebHandler"></a>
-## type [CourseWebHandler](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/course_web_handler.go#L63-L68>)
+## type [CourseWebHandler](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/course_web_handler.go#L62-L67>)
 
 CourseWebHandler обрабатывает веб\-страницы для управления курсами.
 
@@ -1792,7 +1784,7 @@ type CourseWebHandler struct {
 ```
 
 <a name="NewCourseWebHandler"></a>
-### func [NewCourseWebHandler](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/course_web_handler.go#L71>)
+### func [NewCourseWebHandler](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/course_web_handler.go#L70>)
 
 ```go
 func NewCourseWebHandler(courseService *services.CourseService, categoryService *services.CategoryService, s3Service *services.S3Service, testModuleConfig config.TestModuleConfig) *CourseWebHandler
@@ -1801,7 +1793,7 @@ func NewCourseWebHandler(courseService *services.CourseService, categoryService 
 NewCourseWebHandler создает новый обработчик веб\-страниц курсов.
 
 <a name="CourseWebHandler.CreateCourse"></a>
-### func \(\*CourseWebHandler\) [CreateCourse](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/course_web_handler.go#L225>)
+### func \(\*CourseWebHandler\) [CreateCourse](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/course_web_handler.go#L224>)
 
 ```go
 func (h *CourseWebHandler) CreateCourse(c *fiber.Ctx) error
@@ -1810,7 +1802,7 @@ func (h *CourseWebHandler) CreateCourse(c *fiber.Ctx) error
 CreateCourse обрабатывает создание нового курса из формы.
 
 <a name="CourseWebHandler.DeleteCourse"></a>
-### func \(\*CourseWebHandler\) [DeleteCourse](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/course_web_handler.go#L413>)
+### func \(\*CourseWebHandler\) [DeleteCourse](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/course_web_handler.go#L412>)
 
 ```go
 func (h *CourseWebHandler) DeleteCourse(c *fiber.Ctx) error
@@ -1819,7 +1811,7 @@ func (h *CourseWebHandler) DeleteCourse(c *fiber.Ctx) error
 DeleteCourse обрабатывает удаление курса.
 
 <a name="CourseWebHandler.RenderCoursesEditor"></a>
-### func \(\*CourseWebHandler\) [RenderCoursesEditor](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/course_web_handler.go#L81>)
+### func \(\*CourseWebHandler\) [RenderCoursesEditor](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/course_web_handler.go#L80>)
 
 ```go
 func (h *CourseWebHandler) RenderCoursesEditor(c *fiber.Ctx) error
@@ -1828,7 +1820,7 @@ func (h *CourseWebHandler) RenderCoursesEditor(c *fiber.Ctx) error
 RenderCoursesEditor отображает страницу со списком курсов категории.
 
 <a name="CourseWebHandler.RenderEditCourseForm"></a>
-### func \(\*CourseWebHandler\) [RenderEditCourseForm](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/course_web_handler.go#L173>)
+### func \(\*CourseWebHandler\) [RenderEditCourseForm](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/course_web_handler.go#L172>)
 
 ```go
 func (h *CourseWebHandler) RenderEditCourseForm(c *fiber.Ctx) error
@@ -1837,7 +1829,7 @@ func (h *CourseWebHandler) RenderEditCourseForm(c *fiber.Ctx) error
 RenderEditCourseForm отображает форму редактирования курса.
 
 <a name="CourseWebHandler.RenderNewCourseForm"></a>
-### func \(\*CourseWebHandler\) [RenderNewCourseForm](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/course_web_handler.go#L152>)
+### func \(\*CourseWebHandler\) [RenderNewCourseForm](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/course_web_handler.go#L151>)
 
 ```go
 func (h *CourseWebHandler) RenderNewCourseForm(c *fiber.Ctx) error
@@ -1846,7 +1838,7 @@ func (h *CourseWebHandler) RenderNewCourseForm(c *fiber.Ctx) error
 RenderNewCourseForm отображает форму создания нового курса.
 
 <a name="CourseWebHandler.UpdateCourse"></a>
-### func \(\*CourseWebHandler\) [UpdateCourse](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/course_web_handler.go#L293>)
+### func \(\*CourseWebHandler\) [UpdateCourse](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/course_web_handler.go#L292>)
 
 ```go
 func (h *CourseWebHandler) UpdateCourse(c *fiber.Ctx) error
@@ -1855,7 +1847,7 @@ func (h *CourseWebHandler) UpdateCourse(c *fiber.Ctx) error
 UpdateCourse обрабатывает обновление курса из формы.
 
 <a name="HomeWebHandler"></a>
-## type [HomeWebHandler](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/home_web_handler.go#L12-L16>)
+## type [HomeWebHandler](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/home_web_handler.go#L11-L15>)
 
 HomeWebHandler обрабатывает главную страницу админ\-панели.
 
@@ -1866,7 +1858,7 @@ type HomeWebHandler struct {
 ```
 
 <a name="NewHomeWebHandler"></a>
-### func [NewHomeWebHandler](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/home_web_handler.go#L19-L23>)
+### func [NewHomeWebHandler](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/home_web_handler.go#L18-L22>)
 
 ```go
 func NewHomeWebHandler(categoryService *services.CategoryService, courseService *services.CourseService, lessonService *services.LessonService) *HomeWebHandler
@@ -1875,7 +1867,7 @@ func NewHomeWebHandler(categoryService *services.CategoryService, courseService 
 NewHomeWebHandler создает новый обработчик главной страницы.
 
 <a name="HomeWebHandler.RenderHome"></a>
-### func \(\*HomeWebHandler\) [RenderHome](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/home_web_handler.go#L32>)
+### func \(\*HomeWebHandler\) [RenderHome](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/home_web_handler.go#L31>)
 
 ```go
 func (h *HomeWebHandler) RenderHome(c *fiber.Ctx) error
@@ -1884,7 +1876,7 @@ func (h *HomeWebHandler) RenderHome(c *fiber.Ctx) error
 RenderHome отображает главную страницу админ\-панели со статистикой.
 
 <a name="LessonView"></a>
-## type [LessonView](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/lesson_web_handler.go#L14-L22>)
+## type [LessonView](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/lesson_web_handler.go#L13-L21>)
 
 LessonView представляет урок для отображения в веб\-интерфейсе.
 
@@ -1901,7 +1893,7 @@ type LessonView struct {
 ```
 
 <a name="LessonWebHandler"></a>
-## type [LessonWebHandler](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/lesson_web_handler.go#L25-L29>)
+## type [LessonWebHandler](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/lesson_web_handler.go#L24-L28>)
 
 LessonWebHandler обрабатывает веб\-страницы для управления уроками.
 
@@ -1912,7 +1904,7 @@ type LessonWebHandler struct {
 ```
 
 <a name="NewLessonWebHandler"></a>
-### func [NewLessonWebHandler](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/lesson_web_handler.go#L32-L36>)
+### func [NewLessonWebHandler](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/lesson_web_handler.go#L31-L35>)
 
 ```go
 func NewLessonWebHandler(lessonService *services.LessonService, courseService *services.CourseService, categoryService *services.CategoryService) *LessonWebHandler
@@ -1921,7 +1913,7 @@ func NewLessonWebHandler(lessonService *services.LessonService, courseService *s
 NewLessonWebHandler создает новый обработчик веб\-страниц уроков.
 
 <a name="LessonWebHandler.CreateLesson"></a>
-### func \(\*LessonWebHandler\) [CreateLesson](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/lesson_web_handler.go#L199>)
+### func \(\*LessonWebHandler\) [CreateLesson](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/lesson_web_handler.go#L198>)
 
 ```go
 func (h *LessonWebHandler) CreateLesson(c *fiber.Ctx) error
@@ -1930,7 +1922,7 @@ func (h *LessonWebHandler) CreateLesson(c *fiber.Ctx) error
 CreateLesson обрабатывает создание нового урока из формы.
 
 <a name="LessonWebHandler.DeleteLesson"></a>
-### func \(\*LessonWebHandler\) [DeleteLesson](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/lesson_web_handler.go#L325>)
+### func \(\*LessonWebHandler\) [DeleteLesson](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/lesson_web_handler.go#L324>)
 
 ```go
 func (h *LessonWebHandler) DeleteLesson(c *fiber.Ctx) error
@@ -1939,7 +1931,7 @@ func (h *LessonWebHandler) DeleteLesson(c *fiber.Ctx) error
 DeleteLesson обрабатывает удаление урока.
 
 <a name="LessonWebHandler.RenderEditLessonForm"></a>
-### func \(\*LessonWebHandler\) [RenderEditLessonForm](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/lesson_web_handler.go#L143>)
+### func \(\*LessonWebHandler\) [RenderEditLessonForm](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/lesson_web_handler.go#L142>)
 
 ```go
 func (h *LessonWebHandler) RenderEditLessonForm(c *fiber.Ctx) error
@@ -1948,7 +1940,7 @@ func (h *LessonWebHandler) RenderEditLessonForm(c *fiber.Ctx) error
 RenderEditLessonForm отображает форму редактирования урока.
 
 <a name="LessonWebHandler.RenderLessonsEditor"></a>
-### func \(\*LessonWebHandler\) [RenderLessonsEditor](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/lesson_web_handler.go#L45>)
+### func \(\*LessonWebHandler\) [RenderLessonsEditor](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/lesson_web_handler.go#L44>)
 
 ```go
 func (h *LessonWebHandler) RenderLessonsEditor(c *fiber.Ctx) error
@@ -1957,7 +1949,7 @@ func (h *LessonWebHandler) RenderLessonsEditor(c *fiber.Ctx) error
 RenderLessonsEditor отображает страницу со списком уроков курса.
 
 <a name="LessonWebHandler.RenderNewLessonForm"></a>
-### func \(\*LessonWebHandler\) [RenderNewLessonForm](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/lesson_web_handler.go#L110>)
+### func \(\*LessonWebHandler\) [RenderNewLessonForm](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/lesson_web_handler.go#L109>)
 
 ```go
 func (h *LessonWebHandler) RenderNewLessonForm(c *fiber.Ctx) error
@@ -1966,7 +1958,7 @@ func (h *LessonWebHandler) RenderNewLessonForm(c *fiber.Ctx) error
 RenderNewLessonForm отображает форму создания нового урока.
 
 <a name="LessonWebHandler.UpdateLesson"></a>
-### func \(\*LessonWebHandler\) [UpdateLesson](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/lesson_web_handler.go#L247>)
+### func \(\*LessonWebHandler\) [UpdateLesson](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/lesson_web_handler.go#L246>)
 
 ```go
 func (h *LessonWebHandler) UpdateLesson(c *fiber.Ctx) error
@@ -1975,7 +1967,7 @@ func (h *LessonWebHandler) UpdateLesson(c *fiber.Ctx) error
 UpdateLesson обрабатывает обновление урока из формы.
 
 <a name="TestView"></a>
-## type [TestView](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/course_web_handler.go#L35-L37>)
+## type [TestView](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/web/course_web_handler.go#L34-L36>)
 
 TestView представляет тест для отображения.
 
@@ -1990,10 +1982,6 @@ type TestView struct {
 ```go
 import "adminPanel/handlers/dto/request"
 ```
-
-Пакет request содержит структуры для запросов API.
-
-Пакет request содержит структуры для запросов API.
 
 Пакет request содержит структуры для запросов API.
 
@@ -2031,7 +2019,7 @@ type CategoryUpdate struct {
 ```
 
 <a name="CourseCreate"></a>
-## type [CourseCreate](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/request/course.go#L6-L13>)
+## type [CourseCreate](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/request/course.go#L5-L12>)
 
 CourseCreate представляет запрос на создание нового курса. Содержит все необходимые поля для создания курса с валидацией.
 
@@ -2047,7 +2035,7 @@ type CourseCreate struct {
 ```
 
 <a name="CourseFilter"></a>
-## type [CourseFilter](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/request/course.go#L28-L34>)
+## type [CourseFilter](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/request/course.go#L27-L33>)
 
 CourseFilter представляет фильтр для поиска курсов. Используется для пагинации и фильтрации по различным критериям.
 
@@ -2062,7 +2050,7 @@ type CourseFilter struct {
 ```
 
 <a name="CourseUpdate"></a>
-## type [CourseUpdate](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/request/course.go#L17-L24>)
+## type [CourseUpdate](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/request/course.go#L16-L23>)
 
 CourseUpdate представляет запрос на обновление существующего курса. Все поля опциональны для частичного обновления.
 
@@ -2078,7 +2066,7 @@ type CourseUpdate struct {
 ```
 
 <a name="LessonCreate"></a>
-## type [LessonCreate](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/request/lesson.go#L6-L9>)
+## type [LessonCreate](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/request/lesson.go#L5-L8>)
 
 LessonCreate представляет запрос на создание нового урока. Содержит заголовок и содержимое урока.
 
@@ -2090,7 +2078,7 @@ type LessonCreate struct {
 ```
 
 <a name="LessonUpdate"></a>
-## type [LessonUpdate](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/request/lesson.go#L13-L16>)
+## type [LessonUpdate](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/request/lesson.go#L12-L15>)
 
 LessonUpdate представляет запрос на обновление существующего урока. Все поля опциональны для частичного обновления.
 
@@ -2106,12 +2094,6 @@ type LessonUpdate struct {
 ```go
 import "adminPanel/handlers/dto/response"
 ```
-
-Пакет response содержит структуры для ответов API.
-
-Пакет response содержит структуры для ответов API.
-
-Пакет response содержит структуры для ответов API.
 
 Пакет response содержит структуры для ответов API.
 
@@ -2144,7 +2126,7 @@ type CategoryResponse struct {
 ```
 
 <a name="CourseResponse"></a>
-## type [CourseResponse](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/response/course.go#L8-L11>)
+## type [CourseResponse](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/response/course.go#L7-L10>)
 
 CourseResponse представляет ответ API с одним курсом. Содержит статус и данные курса.
 
@@ -2156,7 +2138,7 @@ type CourseResponse struct {
 ```
 
 <a name="ErrorDetails"></a>
-## type [ErrorDetails](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/response/common.go#L14-L17>)
+## type [ErrorDetails](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/response/common.go#L13-L16>)
 
 ErrorDetails содержит детали ошибки для ответа API. Включает код и сообщение об ошибке.
 
@@ -2168,7 +2150,7 @@ type ErrorDetails struct {
 ```
 
 <a name="ErrorResponse"></a>
-## type [ErrorResponse](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/response/common.go#L21-L24>)
+## type [ErrorResponse](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/response/common.go#L20-L23>)
 
 ErrorResponse представляет ответ с ошибкой. Стандартизированный формат для ошибок API.
 
@@ -2180,7 +2162,7 @@ type ErrorResponse struct {
 ```
 
 <a name="HealthResponse"></a>
-## type [HealthResponse](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/response/common.go#L6-L10>)
+## type [HealthResponse](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/response/common.go#L5-L9>)
 
 HealthResponse представляет ответ на health check запрос. Содержит статус сервиса, базы данных и версию.
 
@@ -2193,7 +2175,7 @@ type HealthResponse struct {
 ```
 
 <a name="LessonListResponse"></a>
-## type [LessonListResponse](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/response/lesson.go#L15-L18>)
+## type [LessonListResponse](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/response/lesson.go#L14-L17>)
 
 LessonListResponse представляет ответ со списком уроков. Включает пагинацию и список уроков для курса.
 
@@ -2205,7 +2187,7 @@ type LessonListResponse struct {
 ```
 
 <a name="LessonResponse"></a>
-## type [LessonResponse](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/response/lesson.go#L8-L11>)
+## type [LessonResponse](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/response/lesson.go#L7-L10>)
 
 LessonResponse представляет ответ API с одним уроком. Содержит статус и данные урока.
 
@@ -2217,7 +2199,7 @@ type LessonResponse struct {
 ```
 
 <a name="MessageResponse"></a>
-## type [MessageResponse](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/response/common.go#L34-L37>)
+## type [MessageResponse](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/response/common.go#L33-L36>)
 
 MessageResponse представляет ответ с текстовым сообщением. Содержит статус и сообщение для пользователя.
 
@@ -2244,7 +2226,7 @@ type PaginatedCategoriesResponse struct {
 ```
 
 <a name="PaginatedCoursesResponse"></a>
-## type [PaginatedCoursesResponse](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/response/course.go#L15-L21>)
+## type [PaginatedCoursesResponse](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/response/course.go#L14-L20>)
 
 PaginatedCoursesResponse представляет пагинированный ответ со списком курсов. Включает список курсов и информацию о пагинации.
 
@@ -2259,7 +2241,7 @@ type PaginatedCoursesResponse struct {
 ```
 
 <a name="StatusOnly"></a>
-## type [StatusOnly](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/response/common.go#L28-L30>)
+## type [StatusOnly](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/response/common.go#L27-L29>)
 
 StatusOnly представляет простой ответ с статусом. Используется для подтверждения успешных операций.
 
@@ -2270,7 +2252,7 @@ type StatusOnly struct {
 ```
 
 <a name="ValidationErrorResponse"></a>
-## type [ValidationErrorResponse](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/response/common.go#L41-L45>)
+## type [ValidationErrorResponse](<https://github.com/TaurineMerge/LMS_Tages/blob/main/adminPanel/handlers/dto/response/common.go#L40-L44>)
 
 ValidationErrorResponse представляет ответ с ошибками валидации. Включает детали ошибки и карту полей с ошибками.
 
