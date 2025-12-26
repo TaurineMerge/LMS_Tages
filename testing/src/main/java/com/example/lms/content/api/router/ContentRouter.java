@@ -52,8 +52,6 @@ public class ContentRouter {
         validateController(contentController, "ContentController");
 
         path("/contents", () -> {
-            // Стандартные middleware
-            applyStandardBeforeMiddleware(logger);
 
             // Получение списка элементов контента в JSON
             get(withRealm(READ_ACCESS_REALMS, contentController::getAllContents));

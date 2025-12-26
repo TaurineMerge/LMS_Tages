@@ -2,6 +2,8 @@ package com.example.lms;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +32,7 @@ import com.example.lms.question.domain.service.QuestionService;
 import com.example.lms.question.infrastructure.repositories.QuestionRepository;
 import com.example.lms.shared.controller.ImageController;
 import com.example.lms.shared.router.ImageRouter;
+import com.example.lms.shared.router.RouterUtils;
 import com.example.lms.shared.storage.MinioStorageService;
 import com.example.lms.test.api.controller.TestController;
 import com.example.lms.test.api.router.TestRouter;
@@ -104,7 +107,7 @@ public class Main {
 		ContentService contentService = new ContentService(contentRepository);
 		MinioStorageService minioStorageService = new MinioStorageService(minioConfig);
 		TestAttemptService testAttemptService = new TestAttemptService(testAttemptRepository, minioStorageService);
-		InternalApiService internalApiService = new InternalApiService(testAttemptService, testService);
+		InternalApiService internalApiService = new InternalApiService(testAttemptService, testService, draftService);
 
 		// Контроллер, принимающий HTTP-запросы
 		TestController testController = new TestController(testService, handlebars);
@@ -161,6 +164,19 @@ public class Main {
 
 			// Регистрация маршрутов
 			config.router.apiBuilder(() -> {
+				// Определяем публичные пути
+				List<String> publicPaths = Arrays.asList(
+					"^/swagger$",
+					"^/swagger\\.json$",
+					"^/docs/swagger\\.json$",
+					"^/oauth2-redirect\\.html$",
+					"^/health$",
+					"^/internal/health$",
+					"^/internal/categories/[^/]+/courses/[^/]+/test$"
+				);
+
+				RouterUtils.applyStandardBeforeMiddleware(logger, publicPaths);
+
 				TestRouter.register(testController);
 				AnswerRouter.register(answerController);
 				// Веб-маршруты конструктора тестов
