@@ -54,13 +54,17 @@ public class TestFormController {
      * GET / - Главная страница (перенаправление на создание теста)
      */
     public void showHomePage(Context ctx) {
-        ctx.redirect("/web/tests/new");
+        String redirect = getRedirectUrl(ctx);
+        String redirectParam = redirect != null ? "?redirect=" + redirect : "";
+        ctx.redirect("/web/tests/new" + redirectParam);
     }
     
     /**
      * GET /web/tests/new - Форма создания нового теста
      */
     public void showNewTestForm(Context ctx) {
+        String redirect = getRedirectUrl(ctx);
+        
         Map<String, Object> model = new HashMap<>();
         model.put("title", "Создание нового теста");
         model.put("test", new Test(null, null, "", 60, ""));
@@ -69,6 +73,10 @@ public class TestFormController {
         model.put("isNew", true);
         model.put("isDraft", false);
         model.put("success", ctx.queryParam("success") != null);
+        model.put("redirect", redirect);
+        
+        // Добавляем все query параметры в скрытые поля формы
+        addAllQueryParamsToModel(ctx, model);
         
         renderTemplateWithBody(ctx, "test-builder", model);
     }
@@ -79,6 +87,8 @@ public class TestFormController {
      * - Иначе - редактирование теста
      */
     public void showEditTestForm(Context ctx) {
+        String redirect = getRedirectUrl(ctx);
+        
         try {
             String id = ctx.pathParam("id");
             
@@ -87,11 +97,11 @@ public class TestFormController {
                 String draftId = id.substring(6); // Убираем "draft-" префикс
                 UUID draftUuid = UUID.fromString(draftId);
                 
-                showEditDraftForm(ctx, draftUuid);
+                showEditDraftForm(ctx, draftUuid, redirect);
             } else {
                 // Редактирование теста
                 UUID testUuid = UUID.fromString(id);
-                showEditPublishedTestForm(ctx, testUuid);
+                showEditPublishedTestForm(ctx, testUuid, redirect);
             }
             
         } catch (Exception e) {
@@ -104,6 +114,10 @@ public class TestFormController {
             model.put("page", "test-editor");
             model.put("isNew", true);
             model.put("isDraft", false);
+            model.put("redirect", redirect);
+            
+            // Добавляем все query параметры в скрытые поля формы
+            addAllQueryParamsToModel(ctx, model);
             
             renderTemplateWithBody(ctx, "test-editor", model);
         }
@@ -112,7 +126,7 @@ public class TestFormController {
     /**
      * Редактирование опубликованного теста
      */
-    private void showEditPublishedTestForm(Context ctx, UUID testUuid) throws Exception {
+    private void showEditPublishedTestForm(Context ctx, UUID testUuid, String redirect) throws Exception {
         String testId = testUuid.toString();
         
         // Получаем тест
@@ -159,6 +173,10 @@ public class TestFormController {
         model.put("testId", testId);
         model.put("hasDraft", hasDraft);
         model.put("success", ctx.queryParam("success") != null);
+        model.put("redirect", redirect);
+        
+        // Добавляем все query параметры в скрытые поля формы
+        addAllQueryParamsToModel(ctx, model);
         
         renderTemplateWithBody(ctx, "test-editor", model);
     }
@@ -166,7 +184,7 @@ public class TestFormController {
     /**
      * Редактирование черновика
      */
-    private void showEditDraftForm(Context ctx, UUID draftUuid) throws Exception {
+    private void showEditDraftForm(Context ctx, UUID draftUuid, String redirect) throws Exception {
         String draftId = draftUuid.toString();
         
         // Получаем черновик
@@ -209,12 +227,16 @@ public class TestFormController {
         model.put("draftId", draftId);
         model.put("testId", displayId); // Для совместимости
         model.put("success", ctx.queryParam("success") != null);
+        model.put("redirect", redirect);
         
         // Если черновик привязан к тесту, показываем ссылку на него
         if (draft.getTestId() != null) {
             model.put("hasPublishedTest", true);
             model.put("publishedTestId", draft.getTestId().toString());
         }
+        
+        // Добавляем все query параметры в скрытые поля формы
+        addAllQueryParamsToModel(ctx, model);
         
         renderTemplateWithBody(ctx, "test-editor", model);
     }
@@ -225,6 +247,8 @@ public class TestFormController {
      * - Если это тест - сохраняем как тест
      */
     public void saveTestFromForm(Context ctx) {
+        String redirect = getRedirectUrl(ctx);
+        
         try {
             String entityId = ctx.formParam("entityId");
             Boolean isDraft = Boolean.parseBoolean(ctx.formParam("isDraft"));
@@ -243,6 +267,10 @@ public class TestFormController {
                 model.put("isNew", isNew);
                 model.put("isDraft", isDraft);
                 model.put("entityId", entityId);
+                model.put("redirect", redirect);
+                
+                // Добавляем все query параметры в скрытые поля формы
+                addAllQueryParamsToModel(ctx, model);
                 
                 renderTemplateWithBody(ctx, "test-editor", model);
                 return;
@@ -267,6 +295,10 @@ public class TestFormController {
             model.put("page", "test-editor");
             model.put("isNew", Boolean.parseBoolean(ctx.formParam("isNew")));
             model.put("isDraft", Boolean.parseBoolean(ctx.formParam("isDraft")));
+            model.put("redirect", redirect);
+            
+            // Добавляем все query параметры в скрытые поля формы
+            addAllQueryParamsToModel(ctx, model);
             
             renderTemplateWithBody(ctx, "test-editor", model);
         }
@@ -373,6 +405,8 @@ public class TestFormController {
      * Сохранение опубликованного теста
      */
     private void savePublishedTestFromForm(Context ctx, String entityId, boolean isNew) throws Exception {
+        String redirect = getRedirectUrl(ctx);
+        
         // 1. Получаем и валидируем данные теста
         Test test = getTestFromForm(ctx);
         if (test.getTitle() == null || test.getTitle().trim().isEmpty()) {
@@ -394,14 +428,16 @@ public class TestFormController {
         UUID testUuid = UUID.fromString(savedTest.getId());
         saveQuestionsAndAnswers(testUuid, formData);
         
-        // 5. Перенаправляем на страницу редактирования теста
-        ctx.redirect("/web/tests/" + savedTest.getId() + "/edit?success=true");
+        // 5. Делаем редирект на указанный URL с сохранением всех параметров
+        performRedirect(ctx, redirect, "/web/tests/" + savedTest.getId() + "/edit?success=true");
     }
     
     /**
      * Сохранение черновика
      */
     private void saveDraftFromForm(Context ctx, String entityId, boolean isNew) throws Exception {
+        String redirect = getRedirectUrl(ctx);
+        
         // Получаем данные из формы
         String title = ctx.formParam("title");
         String description = ctx.formParam("description");
@@ -450,8 +486,8 @@ public class TestFormController {
                     saveDraftQuestionsAndAnswers(savedDraft.getId(), existingDraft.getTestId(), formData);
                 }
                 
-                // Перенаправляем на редактирование черновика
-                ctx.redirect("/web/tests/draft-" + savedDraft.getId() + "/edit?success=true");
+                // Делаем редирект на указанный URL с сохранением всех параметров
+                performRedirect(ctx, redirect, "/web/tests/draft-" + savedDraft.getId() + "/edit?success=true");
             }
         }
     }
@@ -460,13 +496,15 @@ public class TestFormController {
      * POST /web/tests/draft - Сохранение черновика нового теста
      */
     public void saveNewTestDraft(Context ctx) {
-        saveDraftInternal(ctx, null, true);
+        String redirect = getRedirectUrl(ctx);
+        saveDraftInternal(ctx, null, true, redirect);
     }
 
     /**
      * POST /web/tests/{id}/draft - Сохранение черновика существующего теста
      */
     public void saveExistingTestDraft(Context ctx) {
+        String redirect = getRedirectUrl(ctx);
         String testId = ctx.pathParam("id");
         UUID testUuid = null;
         if (testId != null && !testId.trim().isEmpty()) {
@@ -476,15 +514,15 @@ public class TestFormController {
                 // Невалидный UUID, сохраняем как черновик без test_id
             }
         }
-        saveDraftInternal(ctx, testUuid, false);
+        saveDraftInternal(ctx, testUuid, false, redirect);
     }
     
     /**
      * Внутренний метод для сохранения черновика
      */
-    private void saveDraftInternal(Context ctx, UUID testId, boolean isNewDraft) {
+    private void saveDraftInternal(Context ctx, UUID testId, boolean isNewDraft, String redirect) {
         try {
-            System.out.println("DEBUG: saveDraftInternal called with testId = '" + testId + "', isNewDraft = " + isNewDraft);
+            System.out.println("DEBUG: saveDraftInternal called with testId = '" + testId + "', isNewDraft = " + isNewDraft + ", redirect = " + redirect);
             
             // Получаем данные из формы
             String title = ctx.formParam("title");
@@ -544,8 +582,8 @@ public class TestFormController {
                 System.out.println("DEBUG: Questions saved as draft");
             }
             
-            // 3. Перенаправляем на редактирование черновика
-            ctx.redirect("/web/tests/draft-" + savedDraft.getId() + "/edit?success=true");
+            // 3. Делаем редирект на указанный URL с сохранением всех параметров
+            performRedirect(ctx, redirect, "/web/tests/draft-" + savedDraft.getId() + "/edit?success=true");
             
         } catch (Exception e) {
             System.out.println("ERROR in saveDraftInternal: " + e.getMessage());
@@ -566,6 +604,10 @@ public class TestFormController {
             
             model.put("page", "test-editor");
             model.put("isNew", true);
+            model.put("redirect", redirect);
+            
+            // Добавляем все query параметры в скрытые поля формы
+            addAllQueryParamsToModel(ctx, model);
             
             renderTemplateWithBody(ctx, "test-editor", model);
         }
@@ -649,6 +691,8 @@ public class TestFormController {
      * PUT /web/tests/{id} - Обновление существующего теста
      */
     public void updateTestFromForm(Context ctx) {
+        String redirect = getRedirectUrl(ctx);
+        
         try {
             String testId = ctx.pathParam("id");
             Test test = getTestFromForm(ctx);
@@ -666,8 +710,8 @@ public class TestFormController {
             UUID testUuid = UUID.fromString(updatedTest.getId());
             saveQuestionsAndAnswers(testUuid, formData);
             
-            // Перенаправляем с сообщением об успехе
-            ctx.redirect("/web/tests/" + updatedTest.getId() + "/edit?success=true");
+            // Делаем редирект на указанный URL с сохранением всех параметров
+            performRedirect(ctx, redirect, "/web/tests/" + updatedTest.getId() + "/edit?success=true");
             
         } catch (Exception e) {
             e.printStackTrace();
@@ -679,6 +723,10 @@ public class TestFormController {
             model.put("page", "test-editor");
             model.put("isNew", false);
             model.put("isDraft", false);
+            model.put("redirect", redirect);
+            
+            // Добавляем все query параметры в скрытые поля формы
+            addAllQueryParamsToModel(ctx, model);
             
             renderTemplateWithBody(ctx, "test-editor", model);
         }
@@ -688,6 +736,8 @@ public class TestFormController {
      * PUT /web/tests/draft-{id} - Обновление черновика
      */
     public void updateDraftFromForm(Context ctx) {
+        String redirect = getRedirectUrl(ctx);
+        
         try {
             String id = ctx.pathParam("id");
             
@@ -734,8 +784,8 @@ public class TestFormController {
                 saveDraftQuestionsAndAnswers(updatedDraft.getId(), existingDraft.getTestId(), formData);
             }
             
-            // Перенаправляем с сообщением об успехе
-            ctx.redirect("/web/tests/" + id + "/edit?success=true");
+            // Делаем редирект на указанный URL с сохранением всех параметров
+            performRedirect(ctx, redirect, "/web/tests/" + id + "/edit?success=true");
             
         } catch (Exception e) {
             e.printStackTrace();
@@ -747,6 +797,10 @@ public class TestFormController {
             model.put("page", "test-editor");
             model.put("isNew", false);
             model.put("isDraft", true);
+            model.put("redirect", redirect);
+            
+            // Добавляем все query параметры в скрытые поля формы
+            addAllQueryParamsToModel(ctx, model);
             
             renderTemplateWithBody(ctx, "test-editor", model);
         }
@@ -756,13 +810,18 @@ public class TestFormController {
      * DELETE /web/tests/{id} - Удаление теста
      */
     public void deleteTest(Context ctx) {
+        String redirect = getRedirectUrl(ctx);
+        
         try {
             String testId = ctx.pathParam("id");
             testService.deleteTest(testId);
-            ctx.redirect("/web/tests/new?deleted=true");
+            
+            // Делаем редирект на указанный URL с сохранением всех параметров
+            performRedirect(ctx, redirect, "/web/tests/new?deleted=true");
         } catch (Exception e) {
             e.printStackTrace();
-            ctx.redirect("/web/tests/" + ctx.pathParam("id") + "/edit?error=delete_failed");
+            // При ошибке делаем редирект с параметром ошибки
+            performRedirect(ctx, redirect, "/web/tests/" + ctx.pathParam("id") + "/edit?error=delete_failed");
         }
     }
     
@@ -770,6 +829,8 @@ public class TestFormController {
      * DELETE /web/tests/draft-{id} - Удаление черновика
      */
     public void deleteDraft(Context ctx) {
+        String redirect = getRedirectUrl(ctx);
+        
         try {
             String id = ctx.pathParam("id");
             
@@ -780,20 +841,23 @@ public class TestFormController {
             String draftId = id.substring(6);
             UUID draftUuid = UUID.fromString(draftId);
             
+            // Получаем черновик для проверки связей
+            Draft draft = draftService.getDraftById(draftUuid);
+            
             // Удаляем черновик
             draftService.deleteDraft(draftUuid);
             
-            // Перенаправляем в зависимости от наличия теста
-            Draft draft = draftService.getDraftById(draftUuid);
+            // Делаем редирект на указанный URL с сохранением всех параметров
             if (draft != null && draft.getTestId() != null) {
-                ctx.redirect("/web/tests/" + draft.getTestId() + "/edit?draft_deleted=true");
+                performRedirect(ctx, redirect, "/web/tests/" + draft.getTestId() + "/edit?draft_deleted=true");
             } else {
-                ctx.redirect("/web/tests/new?draft_deleted=true");
+                performRedirect(ctx, redirect, "/web/tests/new?draft_deleted=true");
             }
             
         } catch (Exception e) {
             e.printStackTrace();
-            ctx.redirect("/web/tests/" + ctx.pathParam("id") + "/edit?error=draft_delete_failed");
+            // При ошибке делаем редирект с параметром ошибки
+            performRedirect(ctx, redirect, "/web/tests/" + ctx.pathParam("id") + "/edit?error=draft_delete_failed");
         }
     }
     
@@ -801,6 +865,8 @@ public class TestFormController {
      * POST /web/tests/{id}/publish - Публикация черновика в тест
      */
     public void publishDraft(Context ctx) {
+        String redirect = getRedirectUrl(ctx);
+        
         try {
             String id = ctx.pathParam("id");
             
@@ -875,15 +941,15 @@ public class TestFormController {
             // Удаляем черновик после публикации
             draftService.deleteDraft(draftUuid);
             
-            // Перенаправляем на редактирование теста
-            ctx.redirect("/web/tests/" + savedTest.getId() + "/edit?success=true");
+            // Делаем редирект на указанный URL с сохранением всех параметров
+            performRedirect(ctx, redirect, "/web/tests/" + savedTest.getId() + "/edit?success=true");
             
         } catch (Exception e) {
             System.out.println("ERROR in publishDraft: " + e.getMessage());
             e.printStackTrace();
             
-            // При ошибке возвращаем обратно к черновику
-            ctx.redirect("/web/tests/" + ctx.pathParam("id") + "/edit?error=true");
+            // При ошибке делаем редирект с параметром ошибки
+            performRedirect(ctx, redirect, "/web/tests/" + ctx.pathParam("id") + "/edit?error=true");
         }
     }
     
@@ -891,6 +957,8 @@ public class TestFormController {
      * POST /web/tests/{id}/create-draft - Создание черновика из теста
      */
     public void createDraftFromTest(Context ctx) {
+        String redirect = getRedirectUrl(ctx);
+        
         try {
             String testId = ctx.pathParam("id");
             UUID testUuid = UUID.fromString(testId);
@@ -904,8 +972,8 @@ public class TestFormController {
             // Проверяем, нет ли уже черновика для этого теста
             Draft existingDraft = draftService.getDraftByTestId(testUuid);
             if (existingDraft != null) {
-                // Если черновик уже есть, перенаправляем на его редактирование
-                ctx.redirect("/web/tests/draft-" + existingDraft.getId() + "/edit");
+                // Если черновик уже есть, делаем редирект на его редактирование
+                performRedirect(ctx, redirect, "/web/tests/draft-" + existingDraft.getId() + "/edit");
                 return;
             }
             
@@ -941,15 +1009,15 @@ public class TestFormController {
                 }
             }
             
-            // Перенаправляем на редактирование черновика
-            ctx.redirect("/web/tests/draft-" + savedDraft.getId() + "/edit");
+            // Делаем редирект на указанный URL с сохранением всех параметров
+            performRedirect(ctx, redirect, "/web/tests/draft-" + savedDraft.getId() + "/edit");
             
         } catch (Exception e) {
             System.out.println("ERROR in createDraftFromTest: " + e.getMessage());
             e.printStackTrace();
             
-            // При ошибке возвращаем обратно к тесту
-            ctx.redirect("/web/tests/" + ctx.pathParam("id") + "/edit?error=true");
+            // При ошибке делаем редирект с параметром ошибки
+            performRedirect(ctx, redirect, "/web/tests/" + ctx.pathParam("id") + "/edit?error=true");
         }
     }
     
@@ -957,6 +1025,8 @@ public class TestFormController {
      * GET /web/tests/{id}/preview - Предпросмотр теста
      */
     public void previewTest(Context ctx) {
+        String redirect = getRedirectUrl(ctx);
+        
         try {
             String testId = ctx.pathParam("id");
             Test test = testService.getTestById(testId);
@@ -981,11 +1051,16 @@ public class TestFormController {
             model.put("test", test);
             model.put("questions", questionsWithAnswers);
             model.put("page", "test-preview");
+            model.put("redirect", redirect);
+            
+            // Добавляем все query параметры в скрытые поля формы
+            addAllQueryParamsToModel(ctx, model);
             
             renderTemplateWithBody(ctx, "test-preview", model);
         } catch (Exception e) {
             e.printStackTrace();
-            ctx.redirect("/web/tests/new");
+            // При ошибке делаем редирект
+            performRedirect(ctx, redirect, "/web/tests/new");
         }
     }
     
@@ -1269,5 +1344,85 @@ public class TestFormController {
         } catch (Exception e) {
             return new ArrayList<>();
         }
+    }
+    
+    /**
+     * Получает URL для редиректа из атрибутов контекста
+     */
+    private String getRedirectUrl(Context ctx) {
+        // Сначала проверяем атрибут, установленный в before фильтре
+        String redirect = ctx.attribute("redirect");
+        if (redirect == null) {
+            // Если нет в атрибутах, проверяем query параметр
+            redirect = ctx.queryParam("redirect");
+        }
+        return redirect;
+    }
+    
+    /**
+     * Выполняет редирект с сохранением всех параметров
+     */
+    private void performRedirect(Context ctx, String externalRedirect, String internalRedirect) {
+        if (externalRedirect != null && !externalRedirect.trim().isEmpty()) {
+            // Если есть внешний redirect URL, делаем редирект на него
+            // Добавляем все query параметры, которые были в оригинальном запросе
+            String fullRedirect = buildRedirectUrlWithParams(externalRedirect, ctx);
+            ctx.redirect(fullRedirect);
+        } else {
+            // Если нет внешнего redirect, используем внутренний
+            ctx.redirect(internalRedirect);
+        }
+    }
+    
+    /**
+     * Строит URL для редиректа с сохранением всех параметров
+     */
+    private String buildRedirectUrlWithParams(String baseUrl, Context ctx) {
+        StringBuilder urlBuilder = new StringBuilder(baseUrl);
+        
+        // Получаем все query параметры из оригинального запроса
+        Map<String, List<String>> queryParams = ctx.queryParamMap();
+        boolean firstParam = true;
+        
+        // Проверяем, есть ли уже query параметры в baseUrl
+        if (baseUrl.contains("?")) {
+            firstParam = false;
+        }
+        
+        // Добавляем все параметры, кроме "redirect" (чтобы избежать циклических редиректов)
+        for (Map.Entry<String, List<String>> entry : queryParams.entrySet()) {
+            String paramName = entry.getKey();
+            if (!"redirect".equals(paramName)) {
+                for (String paramValue : entry.getValue()) {
+                    if (firstParam) {
+                        urlBuilder.append("?");
+                        firstParam = false;
+                    } else {
+                        urlBuilder.append("&");
+                    }
+                    urlBuilder.append(paramName).append("=").append(paramValue);
+                }
+            }
+        }
+        
+        return urlBuilder.toString();
+    }
+    
+    /**
+     * Добавляет все query параметры в модель для скрытых полей формы
+     */
+    private void addAllQueryParamsToModel(Context ctx, Map<String, Object> model) {
+        Map<String, List<String>> queryParams = ctx.queryParamMap();
+        Map<String, String> hiddenParams = new HashMap<>();
+        
+        for (Map.Entry<String, List<String>> entry : queryParams.entrySet()) {
+            String paramName = entry.getKey();
+            List<String> values = entry.getValue();
+            if (!values.isEmpty()) {
+                hiddenParams.put(paramName, values.get(0));
+            }
+        }
+        
+        model.put("hiddenParams", hiddenParams);
     }
 }
