@@ -7,7 +7,7 @@
     
     <title>
         
-             | LMS Documentation
+            Методы для публичной страницы | LMS Documentation
         
     </title>
 
@@ -198,21 +198,52 @@
         
             
             
-            → 
+            → Методы для публичной страницы
         
     </div>
     
-    <h1></h1>
+    <h1>Методы для публичной страницы</h1>
     
     <div class="content">
-        
+        <h2 id="общее-описание">Общее описание</h2>
+<ul>
+<li>Методы: <strong>GET, PUT, DELETE, POST</strong></li>
+<li>Формат входных данных: <strong>PATH</strong></li>
+</ul>
+<h2 id="все-доступные-методы-аутентификации">Все доступные методы аутентификации</h2>
+<ul>
+<li>GET /login                                                        - вход в аккаунт</li>
+<li>GET /logout                                                       - выход из аккаунта</li>
+<li>GET /auth/callback                                                - авторизация через keycloak</li>
+<li>
+<ul>
+<li>GET /reg                                                        - регистрация</li>
+</ul>
+</li>
+</ul>
+<h2 id="внешние-сервисы">Внешние сервисы</h2>
+<ul>
+<li>GET /account/profile                                              - получение профиля из ЛК</li>
+</ul>
+<h2 id="все-доступные-маршруты-веб-приложения">Все доступные маршруты веб-приложения</h2>
+<ul>
+<li>GET /categories                                                   - получение всех категорий</li>
+<li>GET /categories/category_id                                       - получение категории по ID</li>
+<li>GET /categories/category_id/courses                               - получение всех курсов</li>
+<li>GET /categories/category_id/courses/course_id                     - получение курса по ID</li>
+<li>GET /categories/category_id/courses/course_id/lessons             - получение всех уроков</li>
+<li>GET /categories/category_id/courses/course_id/lessons/lesson_id   - получение урока по ID</li>
+</ul>
+<h3 id="быстрый-доступ">Быстрый доступ</h3>
+<p><a href="/documentation/04_methods/">← На главную</a></p>
+
     </div>
     
     
     
     <div class="navigation">
         
-        <a href="//localhost:1313/documentation/04_methods/02_adminpanel/" class="nav-prev">← </a>
+        <a href="//localhost:1313/documentation/04_methods/02_adminpanel/" class="nav-prev">← Методы для системы администрирования</a>
         
         
         
@@ -227,7 +258,7 @@
         <footer class="site-footer">
     <div class="footer-container">
         <div class="footer-content">
-            <p>LMS Documentation • Обновлено: <span id="update-date">18.1225.25251</span></p>
+            <p>LMS Documentation • Обновлено: <span id="update-date">14.1226.262629</span></p>
             <p class="footer-copyright">© 2025 LMS Tages. Все права защищены.</p>
         </div>
     </div>

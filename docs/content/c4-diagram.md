@@ -1,5 +1,5 @@
 ---
-title: "C4-диаграмма архитектуры LMS"
+title: "C4-диаграммы архитектуры LMS"
 date: 2025-12-15
 layout: "single"
 ---
@@ -11,6 +11,10 @@ layout: "single"
 ## Диаграмма контейнеров (Level 2)
 
 ![C4 Container Diagram](/images/c4/c4-container.png)
+
+## Диаграмма компонентов админ панель (Level 3)
+
+![C4 Component Admin Diagram](/images/c4/c4-admin-components-level3.png)
 
 
 

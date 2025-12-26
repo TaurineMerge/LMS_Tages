@@ -7,7 +7,7 @@
     
     <title>
         
-             | LMS Documentation
+            Методы для системы администрирования | LMS Documentation
         
     </title>
 
@@ -198,27 +198,63 @@
         
             
             
-            → 
+            → Методы для системы администрирования
         
     </div>
     
-    <h1></h1>
+    <h1>Методы для системы администрирования</h1>
     
     <div class="content">
-        
+        <h2 id="общее-описание">Общее описание</h2>
+<ul>
+<li>Методы: <strong>GET, PUT, DELETE, POST</strong></li>
+<li>Формат входных данных: <strong>PATH</strong></li>
+</ul>
+<h2 id="все-доступные-методы-для-управления-категориями-курсов">Все доступные методы для управления категориями курсов</h2>
+<ul>
+<li>GET admin/categories                                                       - получение списка категорий</li>
+<li>POST admin/categories                                                      - создание новой категории на основе JSON в теле запроса</li>
+<li>GET admin/categories/:category_id                                          - получение категории по ID</li>
+<li>PUT admin/categories/:category_id                                          - обновление категории по ID на основе JSON в теле запроса</li>
+<li>DELETE admin/categories/:category_id                                       - удаление категории по ID</li>
+</ul>
+<h2 id="все-доступные-методы-для-управления-курсами">Все доступные методы для управления курсами</h2>
+<ul>
+<li>Get  admin/categories/:category_id/courses                                 - возвращает список курсов для категорий с фильтрами и пагинацией</li>
+<li>Post admin/categories/:category_id/courses/create                          - создает новый курс для категории на основе JSON  в теле запроса</li>
+<li>Get  admin/categories/:category_id/courses/:course_id                      - возвращает курс по ID в категории</li>
+<li>Post admin/categories/:category_id/courses/:course_id/update               - обновляет курс по ID  в категории на основе JSON  в теле запроса</li>
+<li>Post admin/categories/:category_id/courses/:course_id/delete               - удаляет курс по ID  в категории на основе JSON  в теле запроса</li>
+</ul>
+<h2 id="все-доступные-методы-для-управления-уроками">Все доступные методы для управления уроками</h2>
+<ul>
+<li>Get    admin/categories/:category_id/courses/:course_id/lessons             - возвращает список уроков для курса с пагинацией и сортировкой</li>
+<li>Post   admin/categories/:category_id/courses/:course_id/lessons             - создает новый урок на основе данных из тела запроса</li>
+<li>Get    admin/categories/:category_id/courses/:course_id/lessons/:lesson_id  - возвращает урок по его ID</li>
+<li>Put    admin/categories/:category_id/courses/:course_id/lessons/:lesson_id  - обновляет существующий урок по его ID на основе данных из тела запроса</li>
+<li>Delete admin/categories/:category_id/courses/:course_id/lessons/:lesson_id  - удаляет урок по его ID</li>
+</ul>
+<h2 id="все-доступные-методы-для-загрузки-изображений">Все доступные методы для загрузки изображений</h2>
+<ul>
+<li>POST /upload/image                                           - загрузка изображения из multipart формы в S#-совместимое хранилище</li>
+<li>POST /upload/image-from-url                                  - загрузка изображения по указанному URL в S3-совместимое хранилище</li>
+</ul>
+<h3 id="быстрый-доступ">Быстрый доступ</h3>
+<p><a href="/documentation/04_methods/">← На главную</a></p>
+
     </div>
     
     
     
     <div class="navigation">
         
-        <a href="//localhost:1313/documentation/04_methods/03_personal_account/" class="nav-prev">← </a>
+        <a href="//localhost:1313/documentation/04_methods/04_testing/" class="nav-prev">← Методы для системы тестирования</a>
         
         
         
         
         
-        <a href="//localhost:1313/documentation/04_methods/01_publicside/" class="nav-next"> →</a>
+        <a href="//localhost:1313/documentation/04_methods/01_publicside/" class="nav-next">Методы для публичной страницы →</a>
         
     </div>
 </div>
@@ -229,7 +265,7 @@
         <footer class="site-footer">
     <div class="footer-container">
         <div class="footer-content">
-            <p>LMS Documentation • Обновлено: <span id="update-date">18.1225.25251</span></p>
+            <p>LMS Documentation • Обновлено: <span id="update-date">14.1226.262629</span></p>
             <p class="footer-copyright">© 2025 LMS Tages. Все права защищены.</p>
         </div>
     </div>
