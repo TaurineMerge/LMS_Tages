@@ -41,6 +41,15 @@ class StorageService:
             aws_secret_access_key=settings.MINIO_SECRET_KEY,
             region_name=settings.MINIO_REGION,
         )
+
+        # Separate client for external URLs (presigned URLs)
+        self.s3_client_external = boto3.client(
+            "s3",
+            endpoint_url=settings.MINIO_EXTERNAL_URL,  # New setting for external access
+            aws_access_key_id=settings.MINIO_ACCESS_KEY,
+            aws_secret_access_key=settings.MINIO_SECRET_KEY,
+            region_name=settings.MINIO_REGION,
+        )
         self.settings = settings
 
     # ==================== Certificate Operations ====================
@@ -154,7 +163,7 @@ class StorageService:
             StorageError: If URL generation fails
         """
         try:
-            url = self.s3_client.generate_presigned_url(
+            url = self.s3_client_external.generate_presigned_url(
                 "get_object",
                 Params={
                     "Bucket": self.CERTIFICATES_BUCKET,
@@ -387,6 +396,25 @@ class StorageService:
             logger.error("Failed to list certificates: %s", e)
             raise StorageError(f"Failed to list certificates: {e}") from e
 
+    # ...existing code...
+
+    @traced("storage_service.get_certificate_download_url", record_args=True, record_result=True)
+    async def get_certificate_download_url(self, s3_key: str, expiration: int = 3600) -> str:
+        """Generate presigned URL for certificate download.
+
+        Args:
+            s3_key: S3 object key for the certificate
+            expiration: URL expiration time in seconds (default: 1 hour)
+
+        Returns:
+            Presigned URL for downloading certificate
+
+        Raises:
+            StorageError: If URL generation fails
+        """
+        return await self.get_certificate_url(s3_key, expiration)
+
+    # ...existing code...
     @traced("storage_service.list_images", record_args=True, record_result=True)
     async def list_images(self, prefix: str = "") -> list[str]:
         """List all images in storage with optional prefix filter.

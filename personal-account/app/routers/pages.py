@@ -298,6 +298,10 @@ async def certificates_page(request: Request):
             if cert.get("pdf_s3_key"):
                 try:
                     cert["download_url"] = await storage_service.get_certificate_download_url(cert["pdf_s3_key"])
+                    logger.info(
+                        "--------------------------------------------------------------download_url = "
+                        + cert["download_url"]
+                    )
                 except Exception as e:
                     logger.error(f"Failed to get download URL for certificate {cert['id']}: {e}")
                     cert["download_url"] = None

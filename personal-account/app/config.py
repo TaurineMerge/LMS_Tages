@@ -97,6 +97,7 @@ class Settings(BaseSettings):
     TESTING_BASE_URL: str = "http://testing:8085"
 
     # MinIO S3 Configuration
+    MINIO_EXTERNAL_URL: str = "http://localhost:9000"  # External URL for presigned URLs
     MINIO_ENDPOINT_URL: str = "http://minio:9000"
     MINIO_ACCESS_KEY: str = "minioadmin"
     MINIO_SECRET_KEY: str = "minioadmin"
