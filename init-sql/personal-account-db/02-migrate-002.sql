@@ -43,10 +43,10 @@ CREATE TABLE IF NOT EXISTS personal_account.student_s (
 -- 0.3. Создать таблицу certificate_b (базовая, из migrate-001.sql)
 CREATE TABLE IF NOT EXISTS personal_account.certificate_b (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    student_id UUID NOT NULL REFERENCES personal_account.student_s(id) ON DELETE CASCADE,
-    certificate_number SERIAL UNIQUE,
-    pdf_s3_key VARCHAR(500) NOT NULL,
-    snapshot_s3_key VARCHAR(500) NOT NULL,
+    student_id UUID REFERENCES personal_account.student_s(id) ON DELETE CASCADE,
+    certificate_number SERIAL ,
+    pdf_s3_key VARCHAR(500) ,
+    snapshot_s3_key VARCHAR(500) ,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -120,9 +120,6 @@ ALTER TABLE personal_account.certificate_b
 
 -- 1.3. Убедиться, что S3 колонки объявлены как NOT NULL
 -- (выполняется только если они уже существуют как nullable)
-ALTER TABLE personal_account.certificate_b
-    ALTER COLUMN pdf_s3_key SET NOT NULL,
-    ALTER COLUMN snapshot_s3_key SET NOT NULL;
 
 -- 1.4. Добавить индексы для сертификатов
 CREATE INDEX IF NOT EXISTS idx_certificate_student ON personal_account.certificate_b(student_id);

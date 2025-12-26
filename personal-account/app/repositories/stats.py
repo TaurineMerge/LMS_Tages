@@ -21,6 +21,36 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
+def _convert_uuids_to_strings(obj: Any) -> Any:
+    """Recursively convert UUID objects to strings for JSON serialization.
+
+    Args:
+        obj: Object to convert
+
+    Returns:
+        Object with UUIDs converted to strings
+    """
+    if isinstance(obj, UUID):
+        return str(obj)
+    elif isinstance(obj, (date, datetime)):
+        return obj.isoformat()
+    elif isinstance(obj, dict):
+        return {key: _convert_uuids_to_strings(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [_convert_uuids_to_strings(item) for item in obj]
+    else:
+        return obj
+
+
+class DateTimeEncoder(json.JSONEncoder):
+    """Custom JSON encoder that handles date/datetime objects."""
+
+    def default(self, obj):
+        if isinstance(obj, (date, datetime)):
+            return obj.isoformat()
+        return super().default(obj)
+
+
 class StatsRepository:
     """Repository for stats operations with Redis caching.
 
@@ -144,13 +174,41 @@ class StatsRepository:
             return stats
         return None
 
+    @traced("stats.get_cached_full_data", record_args=True, record_result=True)
+    async def get_cached_full_data(self, student_id: UUID) -> dict[str, Any] | None:
+        """Get cached full data (stats + certificates + attempts + raw data) from Redis."""
+        redis_client = get_redis_client()
+        cache_key = f"user_full_data:{student_id}"
+        cached = await redis_client.get(cache_key)
+        if cached:
+            data = json.loads(cached)
+            logger.debug("Full data cache hit for student %s", student_id)
+            return data
+        return None
+
     @traced("stats.save_to_redis", record_args=True, record_result=True)
     async def save_to_redis(self, student_id: UUID, stats: dict[str, Any]) -> None:
         """Save stats to Redis with TTL."""
         redis_client = get_redis_client()
         cache_key = f"user_stats:{student_id}"
-        await redis_client.setex(cache_key, self._settings.REDIS_CACHE_TTL, json.dumps(stats))
+        # Convert UUIDs to strings for JSON serialization
+        serializable_stats = _convert_uuids_to_strings(stats)
+        await redis_client.setex(
+            cache_key, self._settings.REDIS_CACHE_TTL, json.dumps(serializable_stats, cls=DateTimeEncoder)
+        )
         logger.debug("Cached stats for student %s with TTL %d", student_id, self._settings.REDIS_CACHE_TTL)
+
+    @traced("stats.save_full_data_to_redis", record_args=True, record_result=True)
+    async def save_full_data_to_redis(self, student_id: UUID, data: dict[str, Any]) -> None:
+        """Save full data (stats + certificates + attempts + raw data) to Redis with TTL."""
+        redis_client = get_redis_client()
+        cache_key = f"user_full_data:{student_id}"
+        # Convert UUIDs to strings for JSON serialization
+        serializable_data = _convert_uuids_to_strings(data)
+        await redis_client.setex(
+            cache_key, self._settings.REDIS_CACHE_TTL, json.dumps(serializable_data, cls=DateTimeEncoder)
+        )
+        logger.debug("Cached full data for student %s with TTL %d", student_id, self._settings.REDIS_CACHE_TTL)
 
     @traced("stats.invalidate_cache", record_args=True, record_result=True)
     async def invalidate_cache(self, student_id: UUID) -> None:
@@ -204,6 +262,51 @@ class StatsRepository:
         logger.debug("Stats after calculation: %s", stats)
         await self.save_to_redis(student_id, stats)
         return stats
+
+    @traced("stats.get_student_attempts", record_args=True, record_result=True)
+    async def get_student_attempts(self, student_id: UUID) -> list[dict[str, Any]]:
+        """Get recent attempts for a student.
+
+        Args:
+            student_id: Student UUID
+
+        Returns:
+            List of attempt dictionaries
+        """
+        from app.database import fetch_all
+        from app.db import queries as q
+
+        return await fetch_all(q.STUDENT_ATTEMPTS_WITH_CERTIFICATES, {"student_id": student_id})
+
+    @traced("stats.get_raw_user_stats", record_args=True, record_result=True)
+    async def get_raw_user_stats(self, student_id: UUID) -> list[dict[str, Any]]:
+        """Get raw user statistics data.
+
+        Args:
+            student_id: Student UUID
+
+        Returns:
+            List of raw user stats dictionaries
+        """
+        from app.database import fetch_all
+        from app.db import queries as q
+
+        return await fetch_all(q.RAW_USER_STATS_BY_STUDENT, {"student_id": student_id})
+
+    @traced("stats.get_raw_attempts", record_args=True, record_result=True)
+    async def get_raw_attempts(self, student_id: UUID) -> list[dict[str, Any]]:
+        """Get raw attempts data.
+
+        Args:
+            student_id: Student UUID
+
+        Returns:
+            List of raw attempts dictionaries
+        """
+        from app.database import fetch_all
+        from app.db import queries as q
+
+        return await fetch_all(q.RAW_ATTEMPTS_BY_STUDENT, {"student_id": student_id})
 
 
 stats_repository = StatsRepository()

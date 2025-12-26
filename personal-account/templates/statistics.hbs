@@ -68,5 +68,25 @@
 {% endblock %}
 
 {% block extra_js %}
-{# JavaScript удален, так как статистика теперь рендерится на сервере #}
+<script>
+function downloadCertificate(certificateId) {
+    // Создаем ссылку для скачивания
+    const link = document.createElement('a');
+    link.href = `/api/v1/certificates/${certificateId}/download`;
+    link.download = `certificate-${certificateId}.pdf`;
+    link.style.display = 'none';
+    
+    // Добавляем на страницу и кликаем
+    document.body.appendChild(link);
+    link.click();
+    
+    // Удаляем ссылку
+    document.body.removeChild(link);
+}
+
+// Можно также добавить обработку ошибок
+window.addEventListener('load', function() {
+    // Если нужно, можно добавить дополнительную логику
+});
+</script>
 {% endblock %}
