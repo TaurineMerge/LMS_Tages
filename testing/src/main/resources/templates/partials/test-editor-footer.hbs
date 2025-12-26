@@ -1,4 +1,11 @@
 <div class="footer-buttons">
+    <!-- Скрытые поля для сохранения query параметров -->
+    {{#if hiddenParams}}
+        {{#each hiddenParams}}
+            <input type="hidden" name="{{@key}}" value="{{this}}">
+        {{/each}}
+    {{/if}}
+    
     <!-- Кнопка "Назад" -->
     <button type="button" class="btn-secondary" onclick="goBack()">
         ← Назад
@@ -7,16 +14,21 @@
     <!-- Универсальные кнопки сохранения -->
     {{#if isDraft}}
         <!-- Режим черновика -->
-        <button type="submit" form="testForm" formaction="/testing/web/tests/draft" class="btn-primary">
+        <button type="submit" form="testForm" formaction="/web/tests/save" class="btn-primary">
             💾 Сохранить черновик
         </button>
         
-        <button type="submit" form="testForm" formaction="/testing/web/tests/{{entityId}}/publish" class="btn-success">
+        <button type="submit" form="testForm" formaction="/web/tests/{{entityId}}/publish" class="btn-success">
             {{#if hasPublishedTest}}🔄 Обновить тест{{else}}🚀 Опубликовать тест{{/if}}
         </button>
         
         <!-- Форма для удаления черновика -->
-        <form method="POST" action="/testing/web/tests/{{entityId}}/delete" style="display: inline;">
+        <form method="POST" action="/web/tests/{{entityId}}/delete" style="display: inline;">
+            {{#if hiddenParams}}
+                {{#each hiddenParams}}
+                    <input type="hidden" name="{{@key}}" value="{{this}}">
+                {{/each}}
+            {{/if}}
             <button type="submit" class="btn-danger" 
                     onclick="return confirm('Удалить черновик? Это действие нельзя отменить.')">
                 🗑️ Удалить черновик
@@ -26,16 +38,21 @@
     {{else}}
         <!-- Режим теста -->
         {{#if isNew}}
-            <button type="submit" form="testForm" formaction="/testing/web/tests/save" class="btn-success">
+            <button type="submit" form="testForm" formaction="/web/tests/save" class="btn-success">
                 ✅ Создать тест
             </button>
         {{else}}
-            <button type="submit" form="testForm" formaction="/testing/web/tests/save" class="btn-success">
+            <button type="submit" form="testForm" formaction="/web/tests/save" class="btn-success">
                 💾 Сохранить изменения
             </button>
             
             <!-- Форма для удаления теста -->
-            <form method="POST" action="/testing/web/tests/{{test.id}}/delete" style="display: inline;">
+            <form method="POST" action="/web/tests/{{test.id}}/delete" style="display: inline;">
+                {{#if hiddenParams}}
+                    {{#each hiddenParams}}
+                        <input type="hidden" name="{{@key}}" value="{{this}}">
+                    {{/each}}
+                {{/if}}
                 <button type="submit" class="btn-danger" 
                         onclick="return confirm('Удалить тест? Все связанные вопросы и ответы будут удалены. Это действие нельзя отменить.')">
                     🗑️ Удалить тест
