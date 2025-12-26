@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"adminPanel/exceptions"
 	"adminPanel/handlers/dto/request"
 	"adminPanel/handlers/dto/response"
 	"adminPanel/middleware"
@@ -81,7 +80,7 @@ func (h *CategoryHandler) getCategories(c *fiber.Ctx) error {
 
 	categories, err := h.categoryService.GetCategories(ctx)
 	if err != nil {
-		if appErr, ok := err.(*exceptions.AppError); ok {
+		if appErr, ok := err.(*middleware.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(response.ErrorResponse{
 				Status: "error",
 				Error: response.ErrorDetails{
@@ -152,7 +151,7 @@ func (h *CategoryHandler) getCategory(c *fiber.Ctx) error {
 
 	category, err := h.categoryService.GetCategory(ctx, id)
 	if err != nil {
-		if appErr, ok := err.(*exceptions.AppError); ok {
+		if appErr, ok := err.(*middleware.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(response.ErrorResponse{
 				Status: "error",
 				Error: response.ErrorDetails{
@@ -229,7 +228,7 @@ func (h *CategoryHandler) createCategory(c *fiber.Ctx) error {
 
 	category, err := h.categoryService.CreateCategory(ctx, input)
 	if err != nil {
-		if appErr, ok := err.(*exceptions.AppError); ok {
+		if appErr, ok := err.(*middleware.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(response.ErrorResponse{
 				Status: "error",
 				Error: response.ErrorDetails{
@@ -319,7 +318,7 @@ func (h *CategoryHandler) updateCategory(c *fiber.Ctx) error {
 
 	category, err := h.categoryService.UpdateCategory(ctx, id, input)
 	if err != nil {
-		if appErr, ok := err.(*exceptions.AppError); ok {
+		if appErr, ok := err.(*middleware.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(response.ErrorResponse{
 				Status: "error",
 				Error: response.ErrorDetails{
@@ -384,7 +383,7 @@ func (h *CategoryHandler) deleteCategory(c *fiber.Ctx) error {
 
 	err := h.categoryService.DeleteCategory(ctx, id)
 	if err != nil {
-		if appErr, ok := err.(*exceptions.AppError); ok {
+		if appErr, ok := err.(*middleware.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(response.ErrorResponse{
 				Status: "error",
 				Error: response.ErrorDetails{

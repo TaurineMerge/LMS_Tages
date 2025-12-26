@@ -3,7 +3,7 @@ package handlers
 import (
 	"fmt"
 
-	"adminPanel/exceptions"
+	"adminPanel/middleware"
 	"adminPanel/services"
 
 	"github.com/gofiber/fiber/v2"
@@ -44,8 +44,8 @@ type UploadImageResponse struct {
 // @Produce json
 // @Param image formData file true "Файл изображения (JPEG, PNG, GIF, WEBP, максимум 10 МБ)"
 // @Success 200 {object} UploadImageResponse
-// @Failure 400 {object} exceptions.AppError "Неверный тип файла или размер"
-// @Failure 500 {object} exceptions.AppError "Ошибка загрузки"
+// @Failure 400 {object} middleware.AppError "Неверный тип файла или размер"
+// @Failure 500 {object} middleware.AppError "Ошибка загрузки"
 // @Router /api/v1/upload/image [post]
 func (h *UploadHandler) uploadImage(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -54,7 +54,7 @@ func (h *UploadHandler) uploadImage(c *fiber.Ctx) error {
 	// Получаем файл из запроса
 	file, err := c.FormFile("image")
 	if err != nil {
-		return exceptions.NewAppError(
+		return middleware.NewAppError(
 			fmt.Sprintf("Failed to read uploaded file: %v", err),
 			400,
 			"MISSING_FILE",
@@ -96,8 +96,8 @@ type UploadImageFromURLRequest struct {
 // @Produce json
 // @Param body body UploadImageFromURLRequest true "URL изображения"
 // @Success 200 {object} UploadImageResponse
-// @Failure 400 {object} exceptions.AppError "Неверный URL или тип файла"
-// @Failure 500 {object} exceptions.AppError "Ошибка загрузки"
+// @Failure 400 {object} middleware.AppError "Неверный URL или тип файла"
+// @Failure 500 {object} middleware.AppError "Ошибка загрузки"
 // @Router /api/v1/upload/image-from-url [post]
 func (h *UploadHandler) uploadImageFromURL(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -105,7 +105,7 @@ func (h *UploadHandler) uploadImageFromURL(c *fiber.Ctx) error {
 
 	var req UploadImageFromURLRequest
 	if err := c.BodyParser(&req); err != nil {
-		return exceptions.NewAppError(
+		return middleware.NewAppError(
 			fmt.Sprintf("Invalid request body: %v", err),
 			400,
 			"VALIDATION_ERROR",
@@ -113,7 +113,7 @@ func (h *UploadHandler) uploadImageFromURL(c *fiber.Ctx) error {
 	}
 
 	if req.URL == "" {
-		return exceptions.NewAppError(
+		return middleware.NewAppError(
 			"URL is required",
 			400,
 			"MISSING_URL",

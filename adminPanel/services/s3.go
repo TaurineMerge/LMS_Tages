@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"adminPanel/config"
-	"adminPanel/exceptions"
+	"adminPanel/middleware"
 
 	"github.com/google/uuid"
 	"github.com/minio/minio-go/v7"
@@ -107,7 +107,7 @@ func (s *S3Service) UploadImage(ctx context.Context, file *multipart.FileHeader)
 	// Проверяем тип файла
 	contentType := file.Header.Get("Content-Type")
 	if !isValidImageType(contentType) {
-		return "", exceptions.NewAppError(
+		return "", middleware.NewAppError(
 			fmt.Sprintf("Invalid image type: %s. Only JPEG, PNG, GIF, and WEBP are allowed", contentType),
 			400,
 			"INVALID_IMAGE_TYPE",
@@ -117,7 +117,7 @@ func (s *S3Service) UploadImage(ctx context.Context, file *multipart.FileHeader)
 	// Проверяем размер файла (максимум 10 МБ)
 	maxSize := int64(10 * 1024 * 1024) // 10 MB
 	if file.Size > maxSize {
-		return "", exceptions.NewAppError(
+		return "", middleware.NewAppError(
 			fmt.Sprintf("Image size exceeds maximum allowed size of %d bytes", maxSize),
 			400,
 			"IMAGE_TOO_LARGE",
@@ -128,7 +128,7 @@ func (s *S3Service) UploadImage(ctx context.Context, file *multipart.FileHeader)
 	src, err := file.Open()
 	if err != nil {
 		span.RecordError(err)
-		return "", exceptions.NewAppError(
+		return "", middleware.NewAppError(
 			fmt.Sprintf("Failed to open uploaded file: %v", err),
 			500,
 			"FILE_OPEN_ERROR",
@@ -152,7 +152,7 @@ func (s *S3Service) UploadImage(ctx context.Context, file *multipart.FileHeader)
 	})
 	if err != nil {
 		span.RecordError(err)
-		return "", exceptions.NewAppError(
+		return "", middleware.NewAppError(
 			fmt.Sprintf("Failed to upload image to S3: %v", err),
 			500,
 			"S3_UPLOAD_ERROR",
@@ -182,7 +182,7 @@ func (s *S3Service) UploadImageKey(ctx context.Context, file *multipart.FileHead
 	// Проверяем тип файла
 	contentType := file.Header.Get("Content-Type")
 	if !isValidImageType(contentType) {
-		return "", exceptions.NewAppError(
+		return "", middleware.NewAppError(
 			fmt.Sprintf("Invalid image type: %s. Only JPEG, PNG, GIF, and WEBP are allowed", contentType),
 			400,
 			"INVALID_IMAGE_TYPE",
@@ -192,7 +192,7 @@ func (s *S3Service) UploadImageKey(ctx context.Context, file *multipart.FileHead
 	// Проверяем размер файла (максимум 10 МБ)
 	maxSize := int64(10 * 1024 * 1024) // 10 MB
 	if file.Size > maxSize {
-		return "", exceptions.NewAppError(
+		return "", middleware.NewAppError(
 			fmt.Sprintf("Image size exceeds maximum allowed size of %d bytes", maxSize),
 			400,
 			"IMAGE_TOO_LARGE",
@@ -203,7 +203,7 @@ func (s *S3Service) UploadImageKey(ctx context.Context, file *multipart.FileHead
 	src, err := file.Open()
 	if err != nil {
 		span.RecordError(err)
-		return "", exceptions.NewAppError(
+		return "", middleware.NewAppError(
 			fmt.Sprintf("Failed to open uploaded file: %v", err),
 			500,
 			"FILE_OPEN_ERROR",
@@ -227,7 +227,7 @@ func (s *S3Service) UploadImageKey(ctx context.Context, file *multipart.FileHead
 	})
 	if err != nil {
 		span.RecordError(err)
-		return "", exceptions.NewAppError(
+		return "", middleware.NewAppError(
 			fmt.Sprintf("Failed to upload image to S3: %v", err),
 			500,
 			"S3_UPLOAD_ERROR",
@@ -251,7 +251,7 @@ func (s *S3Service) DeleteImage(ctx context.Context, imageURL string) error {
 	// Извлекаем имя объекта из URL
 	objectName := s.extractObjectNameFromURL(imageURL)
 	if objectName == "" {
-		return exceptions.NewAppError(
+		return middleware.NewAppError(
 			"Invalid image URL",
 			400,
 			"INVALID_IMAGE_URL",
@@ -264,7 +264,7 @@ func (s *S3Service) DeleteImage(ctx context.Context, imageURL string) error {
 	err := s.client.RemoveObject(ctx, s.bucket, objectName, minio.RemoveObjectOptions{})
 	if err != nil {
 		span.RecordError(err)
-		return exceptions.NewAppError(
+		return middleware.NewAppError(
 			fmt.Sprintf("Failed to delete image from S3: %v", err),
 			500,
 			"S3_DELETE_ERROR",
@@ -323,7 +323,7 @@ func (s *S3Service) UploadImageFromReader(ctx context.Context, reader io.Reader,
 
 	// Проверяем тип файла
 	if !isValidImageType(contentType) {
-		return "", exceptions.NewAppError(
+		return "", middleware.NewAppError(
 			fmt.Sprintf("Invalid image type: %s. Only JPEG, PNG, GIF, and WEBP are allowed", contentType),
 			400,
 			"INVALID_IMAGE_TYPE",
@@ -346,7 +346,7 @@ func (s *S3Service) UploadImageFromReader(ctx context.Context, reader io.Reader,
 	})
 	if err != nil {
 		span.RecordError(err)
-		return "", exceptions.NewAppError(
+		return "", middleware.NewAppError(
 			fmt.Sprintf("Failed to upload image to S3: %v", err),
 			500,
 			"S3_UPLOAD_ERROR",
@@ -374,7 +374,7 @@ func (s *S3Service) UploadImageFromURL(ctx context.Context, imageURL string) (st
 	resp, err := http.Get(imageURL)
 	if err != nil {
 		span.RecordError(err)
-		return "", exceptions.NewAppError(
+		return "", middleware.NewAppError(
 			fmt.Sprintf("Failed to download image from URL: %v", err),
 			400,
 			"IMAGE_DOWNLOAD_ERROR",
@@ -383,7 +383,7 @@ func (s *S3Service) UploadImageFromURL(ctx context.Context, imageURL string) (st
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", exceptions.NewAppError(
+		return "", middleware.NewAppError(
 			fmt.Sprintf("Failed to download image: HTTP %d", resp.StatusCode),
 			400,
 			"IMAGE_DOWNLOAD_ERROR",
@@ -393,7 +393,7 @@ func (s *S3Service) UploadImageFromURL(ctx context.Context, imageURL string) (st
 	// Определяем тип контента
 	contentType := resp.Header.Get("Content-Type")
 	if !isValidImageType(contentType) {
-		return "", exceptions.NewAppError(
+		return "", middleware.NewAppError(
 			fmt.Sprintf("Invalid image type from URL: %s", contentType),
 			400,
 			"INVALID_IMAGE_TYPE",
@@ -432,7 +432,7 @@ func (s *S3Service) UploadImageFromURL(ctx context.Context, imageURL string) (st
 	})
 	if err != nil {
 		span.RecordError(err)
-		return "", exceptions.NewAppError(
+		return "", middleware.NewAppError(
 			fmt.Sprintf("Failed to upload image to S3: %v", err),
 			500,
 			"S3_UPLOAD_ERROR",

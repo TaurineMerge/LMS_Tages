@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"adminPanel/exceptions"
 	"adminPanel/handlers/dto/request"
 	"adminPanel/handlers/dto/response"
+	"adminPanel/middleware"
 	"adminPanel/models"
 	"adminPanel/repositories"
 
@@ -90,17 +90,17 @@ func (s *CourseService) GetCourses(ctx context.Context, filter request.CourseFil
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to check category: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to check category: %v", err))
 	}
 	if !categoryExists {
-		return nil, exceptions.NotFoundError("Category", filter.CategoryID)
+		return nil, middleware.NotFoundError("Category", filter.CategoryID)
 	}
 
 	data, total, err := s.courseRepo.GetFiltered(ctx, filter)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to get courses: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to get courses: %v", err))
 	}
 
 	courses := make([]models.Course, 0, len(data))
@@ -164,15 +164,15 @@ func (s *CourseService) GetCourse(ctx context.Context, categoryID, id string) (*
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to get course: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to get course: %v", err))
 	}
 
 	if data == nil {
-		return nil, exceptions.NotFoundError("Course", id)
+		return nil, middleware.NotFoundError("Course", id)
 	}
 
 	if toString(data["category_id"]) != categoryID {
-		return nil, exceptions.NotFoundError("Course", id)
+		return nil, middleware.NotFoundError("Course", id)
 	}
 
 	course := &response.CourseResponse{
@@ -220,11 +220,11 @@ func (s *CourseService) CreateCourse(ctx context.Context, input request.CourseCr
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to check category: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to check category: %v", err))
 	}
 
 	if !categoryExists {
-		return nil, exceptions.NotFoundError("Category", input.CategoryID)
+		return nil, middleware.NotFoundError("Category", input.CategoryID)
 	}
 
 	if strings.TrimSpace(input.Level) == "" {
@@ -238,7 +238,7 @@ func (s *CourseService) CreateCourse(ctx context.Context, input request.CourseCr
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to create course: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to create course: %v", err))
 	}
 
 	course := &response.CourseResponse{
@@ -289,11 +289,11 @@ func (s *CourseService) UpdateCourse(ctx context.Context, categoryID, id string,
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to check course: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to check course: %v", err))
 	}
 
 	if existing == nil || toString(existing["category_id"]) != categoryID {
-		return nil, exceptions.NotFoundError("Course", id)
+		return nil, middleware.NotFoundError("Course", id)
 	}
 
 	input.CategoryID = categoryID
@@ -302,7 +302,7 @@ func (s *CourseService) UpdateCourse(ctx context.Context, categoryID, id string,
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to update course: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to update course: %v", err))
 	}
 
 	course := &response.CourseResponse{
@@ -345,22 +345,22 @@ func (s *CourseService) DeleteCourse(ctx context.Context, categoryID, id string)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return exceptions.InternalError(fmt.Sprintf("Failed to check course: %v", err))
+		return middleware.InternalError(fmt.Sprintf("Failed to check course: %v", err))
 	}
 
 	if existing == nil || toString(existing["category_id"]) != categoryID {
-		return exceptions.NotFoundError("Course", id)
+		return middleware.NotFoundError("Course", id)
 	}
 
 	deleted, err := s.courseRepo.Delete(ctx, id)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return exceptions.InternalError(fmt.Sprintf("Failed to delete course: %v", err))
+		return middleware.InternalError(fmt.Sprintf("Failed to delete course: %v", err))
 	}
 
 	if !deleted {
-		return exceptions.InternalError("Failed to delete course")
+		return middleware.InternalError("Failed to delete course")
 	}
 
 	return nil
@@ -384,18 +384,18 @@ func (s *CourseService) GetCategoryCourses(ctx context.Context, categoryID strin
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to check category: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to check category: %v", err))
 	}
 
 	if !categoryExists {
-		return nil, exceptions.NotFoundError("Category", categoryID)
+		return nil, middleware.NotFoundError("Category", categoryID)
 	}
 
 	data, err := s.courseRepo.GetByCategory(ctx, categoryID)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to get courses: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to get courses: %v", err))
 	}
 
 	courses := make([]models.Course, 0, len(data))

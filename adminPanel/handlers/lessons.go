@@ -3,7 +3,6 @@ package handlers
 import (
 	"fmt"
 
-	"adminPanel/exceptions"
 	"adminPanel/handlers/dto/request"
 	"adminPanel/handlers/dto/response"
 	"adminPanel/middleware"
@@ -43,12 +42,12 @@ func (h *LessonHandler) getLessons(c *fiber.Ctx) error {
 
 	courseID := c.Params("course_id")
 	if !isValidUUID(courseID) {
-		return exceptions.NewAppError("Invalid course ID format", 400, "INVALID_UUID")
+		return middleware.NewAppError("Invalid course ID format", 400, "INVALID_UUID")
 	}
 
 	var queryParams models.QueryList
 	if err := c.QueryParser(&queryParams); err != nil {
-		return exceptions.NewAppError(fmt.Sprintf("Invalid query parameters: %v", err), 400, "VALIDATION_ERROR")
+		return middleware.NewAppError(fmt.Sprintf("Invalid query parameters: %v", err), 400, "VALIDATION_ERROR")
 	}
 
 	lessonsResponse, err := h.lessonService.GetLessons(ctx, courseID, queryParams)
@@ -70,7 +69,7 @@ func (h *LessonHandler) getLesson(c *fiber.Ctx) error {
 	lessonID := c.Params("lesson_id")
 
 	if !isValidUUID(courseID) || !isValidUUID(lessonID) {
-		return exceptions.NewAppError("Invalid course or lesson ID format", 400, "INVALID_UUID")
+		return middleware.NewAppError("Invalid course or lesson ID format", 400, "INVALID_UUID")
 	}
 
 	lesson, err := h.lessonService.GetLesson(ctx, lessonID, courseID)
@@ -87,12 +86,12 @@ func (h *LessonHandler) createLesson(c *fiber.Ctx) error {
 	courseID := c.Params("course_id")
 
 	if !isValidUUID(courseID) {
-		return exceptions.NewAppError("Invalid course ID format", 400, "INVALID_UUID")
+		return middleware.NewAppError("Invalid course ID format", 400, "INVALID_UUID")
 	}
 
 	var input request.LessonCreate
 	if err := c.BodyParser(&input); err != nil {
-		return exceptions.NewAppError(fmt.Sprintf("Invalid request body: %v", err), 400, "VALIDATION_ERROR")
+		return middleware.NewAppError(fmt.Sprintf("Invalid request body: %v", err), 400, "VALIDATION_ERROR")
 	}
 
 	lesson, err := h.lessonService.CreateLesson(ctx, courseID, input)
@@ -110,12 +109,12 @@ func (h *LessonHandler) updateLesson(c *fiber.Ctx) error {
 	lessonID := c.Params("lesson_id")
 
 	if !isValidUUID(courseID) || !isValidUUID(lessonID) {
-		return exceptions.NewAppError("Invalid course or lesson ID format", 400, "INVALID_UUID")
+		return middleware.NewAppError("Invalid course or lesson ID format", 400, "INVALID_UUID")
 	}
 
 	var input request.LessonUpdate
 	if err := c.BodyParser(&input); err != nil {
-		return exceptions.NewAppError(fmt.Sprintf("Invalid request body: %v", err), 400, "VALIDATION_ERROR")
+		return middleware.NewAppError(fmt.Sprintf("Invalid request body: %v", err), 400, "VALIDATION_ERROR")
 	}
 
 	lesson, err := h.lessonService.UpdateLesson(ctx, lessonID, courseID, input)
@@ -133,7 +132,7 @@ func (h *LessonHandler) deleteLesson(c *fiber.Ctx) error {
 	lessonID := c.Params("lesson_id")
 
 	if !isValidUUID(courseID) || !isValidUUID(lessonID) {
-		return exceptions.NewAppError("Invalid course or lesson ID format", 400, "INVALID_UUID")
+		return middleware.NewAppError("Invalid course or lesson ID format", 400, "INVALID_UUID")
 	}
 
 	err := h.lessonService.DeleteLesson(ctx, lessonID, courseID)

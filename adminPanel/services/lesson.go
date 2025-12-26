@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"adminPanel/exceptions"
 	"adminPanel/handlers/dto/request"
 	"adminPanel/handlers/dto/response"
+	"adminPanel/middleware"
 	"adminPanel/models"
 	"adminPanel/repositories"
 
@@ -51,10 +51,10 @@ func (s *LessonService) GetLessons(ctx context.Context, courseID string, queryPa
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to check course existence: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to check course existence: %v", err))
 	}
 	if !courseExists {
-		return nil, exceptions.NotFoundError("Course", courseID)
+		return nil, middleware.NotFoundError("Course", courseID)
 	}
 
 	sortBy, sortOrder := parseSortParameter(queryParams.Sort)
@@ -64,14 +64,14 @@ func (s *LessonService) GetLessons(ctx context.Context, courseID string, queryPa
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to count lessons: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to count lessons: %v", err))
 	}
 
 	lessons, err := s.lessonRepo.GetAllByCourseID(ctx, courseID, queryParams.Limit, offset, sortBy, sortOrder)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to get lessons: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to get lessons: %v", err))
 	}
 
 	pages := 0
@@ -104,11 +104,11 @@ func (s *LessonService) GetLesson(ctx context.Context, lessonID, courseID string
 	lesson, err := s.lessonRepo.GetByID(ctx, lessonID)
 	if err != nil {
 		span.RecordError(err)
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to get lesson: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to get lesson: %v", err))
 	}
 
 	if lesson == nil || lesson.CourseID != courseID {
-		return nil, exceptions.NotFoundError("Lesson", lessonID)
+		return nil, middleware.NotFoundError("Lesson", lessonID)
 	}
 
 	// DEBUG: Логируем загруженный урок
@@ -129,16 +129,16 @@ func (s *LessonService) CreateLesson(ctx context.Context, courseID string, input
 	courseExists, err := s.courseRepo.Exists(ctx, courseID)
 	if err != nil {
 		span.RecordError(err)
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to check course existence: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to check course existence: %v", err))
 	}
 	if !courseExists {
-		return nil, exceptions.NotFoundError("Course", courseID)
+		return nil, middleware.NotFoundError("Course", courseID)
 	}
 
 	lesson, err := s.lessonRepo.Create(ctx, courseID, input)
 	if err != nil {
 		span.RecordError(err)
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to create lesson: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to create lesson: %v", err))
 	}
 
 	return &response.LessonResponse{
@@ -155,16 +155,16 @@ func (s *LessonService) UpdateLesson(ctx context.Context, lessonID, courseID str
 	existing, err := s.lessonRepo.GetByID(ctx, lessonID)
 	if err != nil {
 		span.RecordError(err)
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to check lesson: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to check lesson: %v", err))
 	}
 	if existing == nil || existing.CourseID != courseID {
-		return nil, exceptions.NotFoundError("Lesson", lessonID)
+		return nil, middleware.NotFoundError("Lesson", lessonID)
 	}
 
 	lesson, err := s.lessonRepo.Update(ctx, lessonID, input)
 	if err != nil {
 		span.RecordError(err)
-		return nil, exceptions.InternalError(fmt.Sprintf("Failed to update lesson: %v", err))
+		return nil, middleware.InternalError(fmt.Sprintf("Failed to update lesson: %v", err))
 	}
 
 	return &response.LessonResponse{
@@ -181,19 +181,19 @@ func (s *LessonService) DeleteLesson(ctx context.Context, lessonID, courseID str
 	existing, err := s.lessonRepo.GetByID(ctx, lessonID)
 	if err != nil {
 		span.RecordError(err)
-		return exceptions.InternalError(fmt.Sprintf("Failed to check lesson: %v", err))
+		return middleware.InternalError(fmt.Sprintf("Failed to check lesson: %v", err))
 	}
 	if existing == nil || existing.CourseID != courseID {
-		return exceptions.NotFoundError("Lesson", lessonID)
+		return middleware.NotFoundError("Lesson", lessonID)
 	}
 
 	deleted, err := s.lessonRepo.Delete(ctx, lessonID)
 	if err != nil {
 		span.RecordError(err)
-		return exceptions.InternalError(fmt.Sprintf("Failed to delete lesson: %v", err))
+		return middleware.InternalError(fmt.Sprintf("Failed to delete lesson: %v", err))
 	}
 	if !deleted {
-		return exceptions.InternalError("Failed to delete lesson for an unknown reason")
+		return middleware.InternalError("Failed to delete lesson for an unknown reason")
 	}
 
 	return nil

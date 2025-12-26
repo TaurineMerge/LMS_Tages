@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"strings"
 
-	"adminPanel/exceptions"
 	"adminPanel/handlers/dto/request"
 	"adminPanel/handlers/dto/response"
 	"adminPanel/middleware"
@@ -107,7 +106,7 @@ func (h *CourseHandler) getCourses(c *fiber.Ctx) error {
 
 	result, err := h.courseService.GetCourses(ctx, filter)
 	if err != nil {
-		if appErr, ok := err.(*exceptions.AppError); ok {
+		if appErr, ok := err.(*middleware.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(response.ErrorResponse{
 				Status: "error",
 				Error: response.ErrorDetails{
@@ -214,7 +213,7 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 
 	course, err := h.courseService.CreateCourse(ctx, input)
 	if err != nil {
-		if appErr, ok := err.(*exceptions.AppError); ok {
+		if appErr, ok := err.(*middleware.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(response.ErrorResponse{
 				Status: "error",
 				Error: response.ErrorDetails{
@@ -277,7 +276,7 @@ func (h *CourseHandler) getCourse(c *fiber.Ctx) error {
 
 	course, err := h.courseService.GetCourse(ctx, categoryID, id)
 	if err != nil {
-		if appErr, ok := err.(*exceptions.AppError); ok {
+		if appErr, ok := err.(*middleware.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(response.ErrorResponse{
 				Status: "error",
 				Error: response.ErrorDetails{
@@ -389,7 +388,7 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 
 	course, err := h.courseService.UpdateCourse(ctx, categoryID, id, input)
 	if err != nil {
-		if appErr, ok := err.(*exceptions.AppError); ok {
+		if appErr, ok := err.(*middleware.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(response.ErrorResponse{
 				Status: "error",
 				Error: response.ErrorDetails{
@@ -452,7 +451,7 @@ func (h *CourseHandler) deleteCourse(c *fiber.Ctx) error {
 
 	err := h.courseService.DeleteCourse(ctx, categoryID, id)
 	if err != nil {
-		if appErr, ok := err.(*exceptions.AppError); ok {
+		if appErr, ok := err.(*middleware.AppError); ok {
 			return c.Status(appErr.StatusCode).JSON(response.ErrorResponse{
 				Status: "error",
 				Error: response.ErrorDetails{
