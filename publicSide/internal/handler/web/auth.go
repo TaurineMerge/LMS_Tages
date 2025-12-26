@@ -1,4 +1,4 @@
-// Package web contains web handlers for rendering HTML pages.
+// Package web содержит обработчики для рендеринга веб-страниц.
 package web
 
 import (
@@ -13,13 +13,13 @@ import (
 	"golang.org/x/oauth2"
 )
 
-// AuthHandler handles OIDC authentication flows.
+// AuthHandler обрабатывает HTTP-запросы, связанные с аутентификацией через OIDC.
 type AuthHandler struct {
 	provider     *oidc.Provider
 	oauth2Config *oauth2.Config
 }
 
-// NewAuthHandler creates a new AuthHandler.
+// NewAuthHandler создает новый экземпляр AuthHandler.
 func NewAuthHandler(provider *oidc.Provider, oauth2Config *oauth2.Config) *AuthHandler {
 	return &AuthHandler{
 		provider:     provider,
@@ -27,9 +27,10 @@ func NewAuthHandler(provider *oidc.Provider, oauth2Config *oauth2.Config) *AuthH
 	}
 }
 
-// Login initiates the OIDC login flow.
+// Login инициирует процесс аутентификации OIDC.
+// Он генерирует `state` для защиты от CSRF, сохраняет его в cookie
+// и перенаправляет пользователя на страницу входа провайдера.
 func (h *AuthHandler) Login(c *fiber.Ctx) error {
-	// Generate a random state for CSRF protection
 	b := make([]byte, 16)
 	_, err := rand.Read(b)
 	if err != nil {
@@ -38,7 +39,6 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	}
 	state := hex.EncodeToString(b)
 
-	// Save the state in a short-lived cookie
 	c.Cookie(&fiber.Cookie{
 		Name:     "oidc_state",
 		Value:    state,
@@ -48,25 +48,23 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		SameSite: "Lax",
 	})
 
-	// Redirect to the Keycloak login page
 	authURL := h.oauth2Config.AuthCodeURL(state)
 	return c.Redirect(authURL, fiber.StatusTemporaryRedirect)
 }
 
-// Callback handles the OIDC callback from Keycloak.
+// Callback обрабатывает обратный вызов от OIDC провайдера после аутентификации.
+// Он проверяет `state`, обменивает `code` на токены, верифицирует `id_token`
+// и сохраняет его в сессионной cookie.
 func (h *AuthHandler) Callback(c *fiber.Ctx) error {
-	// 1. Check for the state cookie
 	stateCookie := c.Cookies("oidc_state")
 	if stateCookie == "" {
 		return fiber.NewError(fiber.StatusBadRequest, "Missing state cookie")
 	}
 
-	// 2. Compare the state from the cookie with the one from the query params
 	if c.Query("state") != stateCookie {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid OIDC state")
 	}
 
-	// 3. Exchange the authorization code for tokens
 	ctx := context.Background()
 	tokens, err := h.oauth2Config.Exchange(ctx, c.Query("code"))
 	if err != nil {
@@ -74,7 +72,6 @@ func (h *AuthHandler) Callback(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "Failed to log in")
 	}
 
-	// 4. Extract and verify the ID Token
 	rawIDToken, ok := tokens.Extra("id_token").(string)
 	if !ok {
 		return fiber.NewError(fiber.StatusInternalServerError, "ID token missing")
@@ -87,7 +84,6 @@ func (h *AuthHandler) Callback(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "Invalid session token")
 	}
 
-	// 5. (Optional) Extract claims if needed to store in a local session
 	var claims struct {
 		Email    string `json:"email"`
 		Name     string `json:"name"`
@@ -99,17 +95,16 @@ func (h *AuthHandler) Callback(c *fiber.Ctx) error {
 	}
 	slog.Info("User logged in successfully", "user", claims.Username, "email", claims.Email)
 
-	// 6. Set the ID token in a secure, long-lived session cookie
 	c.Cookie(&fiber.Cookie{
 		Name:     "session_token",
 		Value:    rawIDToken,
-		Expires:  time.Now().Add(24 * time.Hour), // Or use idToken.Expiry
+		Expires:  time.Now().Add(24 * time.Hour),
 		HTTPOnly: true,
 		Secure:   c.Protocol() == "https",
 		SameSite: "Lax",
 	})
-	
-	// 7. Clean up the state cookie
+
+	// Удаляем state cookie после успешного использования.
 	c.Cookie(&fiber.Cookie{
 		Name:     "oidc_state",
 		Value:    "",
@@ -117,11 +112,11 @@ func (h *AuthHandler) Callback(c *fiber.Ctx) error {
 		HTTPOnly: true,
 	})
 
-	// 8. Redirect to the home page
 	return c.Redirect("/", fiber.StatusTemporaryRedirect)
 }
 
-// Logout clears the session cookie and redirects to the home page.
+// Logout выполняет выход пользователя из системы.
+// Он удаляет сессионную cookie и перенаправляет на главную страницу.
 func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 	c.Cookie(&fiber.Cookie{
 		Name:     "session_token",

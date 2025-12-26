@@ -1,4 +1,4 @@
-// Package service contains the business logic layer of the application.
+// Package service предоставляет бизнес-логику приложения.
 package service
 
 import (
@@ -15,19 +15,21 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-// CourseService defines the interface for course business logic.
+// CourseService определяет интерфейс для бизнес-логики, связанной с курсами.
 type CourseService interface {
+	// GetCoursesByCategoryID получает курсы для данной категории с пагинацией, фильтрацией и сортировкой.
 	GetCoursesByCategoryID(ctx context.Context, categoryID string, page, limit int, level, sortBy string) ([]response.CourseDTO, response.Pagination, error)
+	// GetCourseByID получает один курс по его ID и ID категории.
 	GetCourseByID(ctx context.Context, categoryID, courseID string) (response.CourseDTO, error)
 }
 
+// courseService является реализацией CourseService.
 type courseService struct {
 	repo         repository.CourseRepository
 	categoryRepo repository.CategoryRepository
-	s3Service    *S3Service // Added S3Service
+	s3Service    *S3Service
 }
 
-// NewCourseService creates a new instance of the course service.
 func NewCourseService(repo repository.CourseRepository, categoryRepo repository.CategoryRepository, s3Service *S3Service) CourseService {
 	return &courseService{
 		repo:         repo,
@@ -36,7 +38,8 @@ func NewCourseService(repo repository.CourseRepository, categoryRepo repository.
 	}
 }
 
-// GetCoursesByCategoryID retrieves paginated courses for a category with filters and converts them to DTOs.
+// GetCoursesByCategoryID обрабатывает запрос на получение курсов, валидирует параметры,
+// проверяет существование категории, вызывает репозиторий и преобразует результат в DTO.
 func (s *courseService) GetCoursesByCategoryID(ctx context.Context, categoryID string, page, limit int, level, sortBy string) ([]response.CourseDTO, response.Pagination, error) {
 	tracer := otel.Tracer("service")
 	ctx, span := tracer.Start(ctx, "courseService.GetCoursesByCategoryID")
@@ -50,7 +53,7 @@ func (s *courseService) GetCoursesByCategoryID(ctx context.Context, categoryID s
 		attribute.String("sort_by", sortBy),
 	)
 
-	// Validate that category exists
+	// Проверяем, существует ли категория, прежде чем запрашивать курсы.
 	_, err := s.categoryRepo.GetByID(ctx, categoryID)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
@@ -59,12 +62,11 @@ func (s *courseService) GetCoursesByCategoryID(ctx context.Context, categoryID s
 		return nil, response.Pagination{}, err
 	}
 
-	// Validate pagination parameters
 	if page < 1 {
 		page = 1
 	}
 	if limit < 1 || limit > 100 {
-		limit = 20 
+		limit = 20
 	}
 
 	courses, total, err := s.repo.GetCoursesByCategoryID(ctx, categoryID, page, limit, level, sortBy)
@@ -77,7 +79,6 @@ func (s *courseService) GetCoursesByCategoryID(ctx context.Context, categoryID s
 		courseDTOs = append(courseDTOs, s.mapCourseToDTO(course))
 	}
 
-	// Calculate total pages
 	pages := int(math.Ceil(float64(total) / float64(limit)))
 
 	pagination := response.Pagination{
@@ -90,7 +91,8 @@ func (s *courseService) GetCoursesByCategoryID(ctx context.Context, categoryID s
 	return courseDTOs, pagination, nil
 }
 
-// mapCourseToDTO converts a domain Course to a CourseDTO.
+// mapCourseToDTO преобразует доменную модель Course в DTO CourseDTO,
+// добавляя публичный URL для изображения из S3.
 func (s *courseService) mapCourseToDTO(course domain.Course) response.CourseDTO {
 	imageURL := ""
 	if s.s3Service != nil && course.ImageKey != "" {
@@ -109,8 +111,8 @@ func (s *courseService) mapCourseToDTO(course domain.Course) response.CourseDTO 
 	}
 }
 
-// TruncateDescription truncates a description to a specified number of characters,
-// ensuring it doesn't cut in the middle of a word and adds ellipsis if truncated.
+// TruncateDescription обрезает текст до заданного количества символов,
+// сохраняя целостность слов. (На данный момент не используется в этом сервисе).
 func (s *courseService) TruncateDescription(text string, maxChars int) string {
 	if maxChars <= 0 {
 		return ""
@@ -122,7 +124,6 @@ func (s *courseService) TruncateDescription(text string, maxChars int) string {
 		return text
 	}
 
-	// Truncate to maxChars
 	truncated := ""
 	count := 0
 	for _, r := range text {
@@ -133,7 +134,6 @@ func (s *courseService) TruncateDescription(text string, maxChars int) string {
 		count++
 	}
 
-	// Find the last space to avoid cutting words
 	lastSpace := strings.LastIndex(truncated, " ")
 	if lastSpace > 0 {
 		truncated = truncated[:lastSpace]
@@ -142,7 +142,8 @@ func (s *courseService) TruncateDescription(text string, maxChars int) string {
 	return truncated + "..."
 }
 
-// GetCourseByID retrieves a single course by ID and converts it to DTO.
+// GetCourseByID находит курс по ID. Сначала проверяет существование категории,
+// затем запрашивает курс и обрабатывает случай "не найдено".
 func (s *courseService) GetCourseByID(ctx context.Context, categoryID, courseID string) (response.CourseDTO, error) {
 	tracer := otel.Tracer("service")
 	ctx, span := tracer.Start(ctx, "courseService.GetCourseByID")
@@ -153,7 +154,6 @@ func (s *courseService) GetCourseByID(ctx context.Context, categoryID, courseID 
 		attribute.String("course_id", courseID),
 	)
 
-	// Validate that category exists
 	_, err := s.categoryRepo.GetByID(ctx, categoryID)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {

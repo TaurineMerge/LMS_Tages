@@ -1,3 +1,4 @@
+// Package testing предоставляет клиент для взаимодействия с внешним сервисом тестирования.
 package testing
 
 import (
@@ -13,21 +14,27 @@ import (
 )
 
 const (
+	// TEST_API_PATH - путь для внутреннего API-взаимодействия для получения информации о тесте.
 	TEST_API_PATH = "/testing/internal/categories/%s/courses/%s/test"
-	TEST_UI_PATH  = "/testing/categories/%s/courses/%s/test"
+	// TEST_UI_PATH - путь для пользовательского интерфейса для прохождения теста.
+	TEST_UI_PATH = "/testing/categories/%s/courses/%s/test"
 
-	STATUS_OK        = "success"
+	// STATUS_OK - строковый литерал для успешного статуса ответа.
+	STATUS_OK = "success"
+	// STATUS_NOT_FOUND - строковый литерал для статуса "не найдено".
 	STATUS_NOT_FOUND = "not_found"
 )
 
-// Client is a client for the testing service.
+// Client инкапсулирует логику для отправки запросов к сервису тестирования.
 type Client struct {
 	baseURL    *url.URL
 	httpClient *http.Client
 	schema     *jsonschema.Schema
 }
 
-// NewClient creates a new client for the testing service.
+// NewClient создает новый экземпляр клиента для сервиса тестирования.
+// `baseURL` - это базовый URL сервиса (например, "http://localhost:8081").
+// `schemaPath` - путь к файлу JSON-схемы для валидации ответов.
 func NewClient(baseURL string, schemaPath string) (*Client, error) {
 	parsedBaseURL, err := url.Parse(baseURL)
 	if err != nil {
@@ -48,7 +55,10 @@ func NewClient(baseURL string, schemaPath string) (*Client, error) {
 	}, nil
 }
 
-// GetTest retrieves a test from the testing service.
+// GetTest запрашивает информацию о тесте для конкретного курса.
+// Он выполняет GET-запрос, валидирует ответ по JSON-схеме и разбирает его.
+// Возвращает `ErrTestNotFound`, если тест не найден, `ErrServiceUnavailable` при проблемах с сетью
+// или `ErrInvalidResponse` при несоответствии ответа схеме.
 func (c *Client) GetTest(ctx context.Context, categoryID, courseID string) (*TestData, error) {
 	path := fmt.Sprintf(TEST_API_PATH, categoryID, courseID)
 	requestURL := c.baseURL.ResolveReference(&url.URL{Path: path})
@@ -73,7 +83,6 @@ func (c *Client) GetTest(ctx context.Context, categoryID, courseID string) (*Tes
 	if err := json.Unmarshal(body, &v); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response for validation: %w: %v", ErrInvalidResponse, err)
 	}
-
 	if err := c.schema.Validate(v); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidResponse, err)
 	}
@@ -90,6 +99,7 @@ func (c *Client) GetTest(ctx context.Context, categoryID, courseID string) (*Tes
 	return testResponse.Data, nil
 }
 
+// GetUITestURL генерирует полный URL для страницы прохождения теста.
 func GetUITestURL(baseURL, categoryId, courseId string) string {
 	url := fmt.Sprintf("%s/%s", baseURL, TEST_UI_PATH)
 	return fmt.Sprintf(url, categoryId, courseId)

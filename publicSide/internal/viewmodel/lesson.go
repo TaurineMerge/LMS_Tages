@@ -1,3 +1,4 @@
+// Package viewmodel содержит структуры, которые используются для передачи данных в шаблоны (views).
 package viewmodel
 
 import (
@@ -5,11 +6,13 @@ import (
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/routing"
 )
 
+// LessonViewModel представляет данные для отображения одного урока в списке (например, в боковой панели).
 type LessonViewModel struct {
 	Title string
-	Ref   string
+	Ref   string // URL-адрес урока.
 }
 
+// NewLessonViewModel создает новую модель представления для элемента списка уроков.
 func NewLessonViewModel(lessonDTO response.LessonDTO, categoryID, courseID string) *LessonViewModel {
 	vm := LessonViewModel{
 		Title: lessonDTO.Title,
@@ -20,11 +23,13 @@ func NewLessonViewModel(lessonDTO response.LessonDTO, categoryID, courseID strin
 	return &vm
 }
 
+// LessonDetailedViewModel расширяет LessonViewModel, добавляя контент урока для детального отображения.
 type LessonDetailedViewModel struct {
 	LessonViewModel
 	Content string
 }
 
+// NewLessonDetailedViewModel создает новую модель представления для детальной информации об уроке.
 func NewLessonDetailedViewModel(lessonDTO response.LessonDTODetailed, categoryId string) *LessonDetailedViewModel {
 	return &LessonDetailedViewModel{
 		LessonViewModel: LessonViewModel{
@@ -35,14 +40,16 @@ func NewLessonDetailedViewModel(lessonDTO response.LessonDTODetailed, categoryId
 	}
 }
 
+// LessonPageViewModel представляет данные для страницы одного урока.
 type LessonPageViewModel struct {
 	PageHeader *PageHeaderViewModel
-	Lesson     *LessonDetailedViewModel
-	NextLesson *LessonViewModel
-	PrevLesson *LessonViewModel
-	Lessons    []LessonViewModel
+	Lesson     *LessonDetailedViewModel // Текущий урок.
+	NextLesson *LessonViewModel         // Следующий урок для навигации.
+	PrevLesson *LessonViewModel         // Предыдущий урок для навигации.
+	Lessons    []LessonViewModel        // Полный список уроков курса для боковой панели.
 }
 
+// NewLessonPageViewModel создает новую модель представления для страницы урока.
 func NewLessonPageViewModel(
 	lessonDTODetailed response.LessonDTODetailed,
 	courseDTO response.CourseDTO,

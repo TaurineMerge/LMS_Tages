@@ -1,4 +1,4 @@
-// Package repository provides the data persistence layer for the application.
+// Package repository предоставляет слой для взаимодействия с базой данных.
 package repository
 
 import (
@@ -15,18 +15,21 @@ import (
 	"go.opentelemetry.io/otel/codes"
 )
 
-// CourseRepository defines the interface for course data operations.
+// CourseRepository определяет интерфейс для работы с курсами в базе данных.
 type CourseRepository interface {
+	// GetCoursesByCategoryID получает все публичные курсы для данной категории с пагинацией, фильтрацией и сортировкой.
 	GetCoursesByCategoryID(ctx context.Context, categoryID string, page, limit int, level, sortBy string) ([]domain.Course, int, error)
+	// GetCourseByID получает один публичный курс по его ID и ID категории.
 	GetCourseByID(ctx context.Context, categoryID, courseID string) (domain.Course, error)
 }
 
+// courseRepository является реализацией CourseRepository.
 type courseRepository struct {
 	db   *pgxpool.Pool
 	psql squirrel.StatementBuilderType
 }
 
-// NewCourseRepository creates a new instance of the course repository.
+// NewCourseRepository создает новый экземпляр courseRepository.
 func NewCourseRepository(db *pgxpool.Pool) CourseRepository {
 	return &courseRepository{
 		db:   db,
@@ -34,9 +37,11 @@ func NewCourseRepository(db *pgxpool.Pool) CourseRepository {
 	}
 }
 
+// scanCourse сканирует одну строку из результата запроса в структуру domain.Course.
+// Обрабатывает `image_key`, который может быть NULL.
 func (r *courseRepository) scanCourse(row scanner) (domain.Course, error) {
 	var course domain.Course
-	var imageKey sql.NullString // Use sql.NullString for nullable columns
+	var imageKey sql.NullString
 
 	err := row.Scan(
 		&course.ID,
@@ -45,7 +50,7 @@ func (r *courseRepository) scanCourse(row scanner) (domain.Course, error) {
 		&course.Level,
 		&course.CategoryID,
 		&course.Visibility,
-		&imageKey, // Scan into the nullable type
+		&imageKey,
 		&course.CreatedAt,
 		&course.UpdatedAt,
 	)
@@ -62,7 +67,9 @@ func (r *courseRepository) scanCourse(row scanner) (domain.Course, error) {
 	return course, nil
 }
 
-// GetCoursesByCategoryID retrieves paginated public courses for a given category with optional filters and sorting.
+// GetCoursesByCategoryID извлекает из базы данных срез курсов для указанной категории.
+// Поддерживает пагинацию, фильтрацию по уровню сложности и сортировку.
+// Возвращает срез курсов, общее количество курсов, удовлетворяющих фильтрам, и ошибку.
 func (r *courseRepository) GetCoursesByCategoryID(ctx context.Context, categoryID string, page, limit int, level, sortBy string) ([]domain.Course, int, error) {
 	tracer := otel.Tracer("repository")
 	ctx, span := tracer.Start(ctx, "courseRepository.GetCoursesByCategoryID")
@@ -76,7 +83,7 @@ func (r *courseRepository) GetCoursesByCategoryID(ctx context.Context, categoryI
 		attribute.String("sort_by", sortBy),
 	)
 
-	// Count total public courses with filters
+	// Сначала считаем общее количество курсов, удовлетворяющих фильтрам.
 	countQuery := r.psql.Select("COUNT(*)").
 		From(courseTable).
 		Where(squirrel.Eq{
@@ -84,7 +91,6 @@ func (r *courseRepository) GetCoursesByCategoryID(ctx context.Context, categoryI
 			"visibility":  "public",
 		})
 
-	// Apply level filter if specified
 	if level != "" && level != "all" {
 		countQuery = countQuery.Where(squirrel.Eq{"level": level})
 	}
@@ -108,10 +114,9 @@ func (r *courseRepository) GetCoursesByCategoryID(ctx context.Context, categoryI
 		return []domain.Course{}, 0, nil
 	}
 
-	// Calculate offset
+	// Затем строим основной запрос для получения среза курсов.
 	offset := (page - 1) * limit
 
-	// Get paginated courses with filters
 	queryBuilder := r.psql.Select("id", "title", "description", "level", "category_id", "visibility", "image_key", "created_at", "updated_at").
 		From(courseTable).
 		Where(squirrel.Eq{
@@ -119,12 +124,10 @@ func (r *courseRepository) GetCoursesByCategoryID(ctx context.Context, categoryI
 			"visibility":  "public",
 		})
 
-	// Apply level filter if specified
 	if level != "" && level != "all" {
 		queryBuilder = queryBuilder.Where(squirrel.Eq{"level": level})
 	}
 
-	// Determine sort order
 	column, direction := utils.UnpackSort(sortBy, "updated_at", utils.DescendingDirection, map[string]bool{
 		"updated_at": true,
 	})
@@ -170,7 +173,8 @@ func (r *courseRepository) GetCoursesByCategoryID(ctx context.Context, categoryI
 	return courses, total, nil
 }
 
-// GetCourseByID retrieves a single public course by its ID within a specific category.
+// GetCourseByID находит и возвращает один видимый курс по его ID и ID категории.
+// Если курс не найден, возвращает ошибку.
 func (r *courseRepository) GetCourseByID(ctx context.Context, categoryID, courseID string) (domain.Course, error) {
 	tracer := otel.Tracer("repository")
 	ctx, span := tracer.Start(ctx, "courseRepository.GetCourseByID")

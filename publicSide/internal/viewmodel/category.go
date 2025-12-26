@@ -1,3 +1,4 @@
+// Package viewmodel содержит структуры, которые используются для передачи данных в шаблоны (views).
 package viewmodel
 
 import (
@@ -5,6 +6,7 @@ import (
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/routing"
 )
 
+// CategoryViewModel представляет данные для отображения одной карточки категории.
 type CategoryViewModel struct {
 	Title        string
 	CoursesRef   string
@@ -13,6 +15,7 @@ type CategoryViewModel struct {
 	CoursesLimit int
 }
 
+// NewCategoryViewModel создает новую модель представления для одной категории.
 func NewCategoryViewModel(categoryDTO response.CategoryDTO, coursesDTO []response.CourseDTO, coursesPagination response.Pagination, coursesLimit int) CategoryViewModel {
 	courses := make([]CourseViewModel, 0, len(coursesDTO))
 	for _, c := range coursesDTO {
@@ -28,12 +31,14 @@ func NewCategoryViewModel(categoryDTO response.CategoryDTO, coursesDTO []respons
 	}
 }
 
+// CategoriesPageViewModel представляет данные для страницы со списком всех категорий.
 type CategoriesPageViewModel struct {
 	PageHeader *PageHeaderViewModel
 	Categories []CategoryViewModel
 	Pagination *PaginationViewModel
 }
 
+// NewCategoriesPageViewMode создает новую модель представления для страницы категорий.
 func NewCategoriesPageViewMode(
 	categories []CategoryViewModel,
 	pagination response.Pagination,

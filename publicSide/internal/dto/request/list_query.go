@@ -1,9 +1,10 @@
-// Package request contains Data Transfer Objects (DTOs) for incoming client requests.
+// Package request содержит структуры данных для разбора входящих HTTP-запросов.
 package request
 
-// ListQuery represents the common query parameters for listing resources, including pagination and sorting.
+// ListQuery представляет собой стандартные параметры запроса для списков,
+// включая пагинацию и сортировку.
 type ListQuery struct {
-	Page  int    `query:"page"`
-	Limit int    `query:"limit"`
-	Sort  string `query:"sort"` // Field and order for sorting (e.g., "title", "-created_at")
+	Page  int    `query:"page"`  // Номер страницы.
+	Limit int    `query:"limit"` // Количество элементов на странице.
+	Sort  string `query:"sort"`  // Поле и направление для сортировки (например, "created_at" или "-title").
 }

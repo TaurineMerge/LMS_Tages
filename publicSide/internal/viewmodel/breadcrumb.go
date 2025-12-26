@@ -1,3 +1,5 @@
+// Package viewmodel содержит структуры, которые используются для передачи данных в шаблоны (views).
+// Они агрегируют и форматируют данные из сервисного слоя для удобного отображения.
 package viewmodel
 
 import (
@@ -5,18 +7,18 @@ import (
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/routing"
 )
 
-// Breadcrumb представляет один элемент "хлебных крошек".
+// Breadcrumb представляет собой один элемент в навигационной цепочке "хлебных крошек".
 type Breadcrumb struct {
-	Text string
-	URL  string // URL может быть пустым для последнего, неактивного элемента
+	Text string // Текст элемента.
+	URL  string // URL-адрес элемента. Пустая строка для некликабельного элемента.
 }
 
-// home возвращает базовую крошку для главной страницы.
+// home создает базовый элемент "хлебных крошек" для главной страницы.
 func home() Breadcrumb {
 	return Breadcrumb{Text: "Главная", URL: routing.MakePathHome()}
 }
 
-// categories возвращает путь до списка категорий.
+// categories создает базовую цепочку "хлебных крошек" до страницы категорий.
 func categories() []Breadcrumb {
 	return []Breadcrumb{
 		home(),
@@ -24,42 +26,41 @@ func categories() []Breadcrumb {
 	}
 }
 
-// BreadcrumbsForCategoriesPage создает крошки для страницы со списком всех категорий.
+// BreadcrumbsForCategoriesPage генерирует "хлебные крошки" для страницы со списком категорий.
+// Последний элемент делается некликабельным.
 func BreadcrumbsForCategoriesPage() []Breadcrumb {
 	crumbs := categories()
 	if len(crumbs) > 0 {
-		crumbs[len(crumbs)-1].URL = "" // Последний элемент не кликабельный
+		crumbs[len(crumbs)-1].URL = "" // Последний элемент некликабельный
 	}
 	return crumbs
 }
 
-// BreadcrumbsForCoursesPage создает крошки для страницы курсов конкретной категории.
+// BreadcrumbsForCoursesPage генерирует "хлебные крошки" для страницы курсов в определенной категории.
 func BreadcrumbsForCoursesPage(category response.CategoryDTO) []Breadcrumb {
 	crumbs := categories()
 	crumbs = append(crumbs, Breadcrumb{Text: category.Title, URL: ""})
 	return crumbs
 }
 
-// BreadcrumbsForCoursePage создает крошки для страницы конкретного курса.
+// BreadcrumbsForCoursePage генерирует "хлебные крошки" для страницы конкретного курса.
 func BreadcrumbsForCoursePage(category response.CategoryDTO, course response.CourseDTO) []Breadcrumb {
 	crumbs := BreadcrumbsForCoursesPage(category)
 	if len(crumbs) > 1 {
-		// Делаем предыдущий элемент (категорию) кликабельным
+		// Предыдущий элемент (название категории) делаем кликабельным.
 		crumbs[len(crumbs)-1].URL = routing.MakePathCourses(category.ID)
 	}
-	// Добавляем текущий, некликабельный элемент
 	crumbs = append(crumbs, Breadcrumb{Text: course.Title, URL: ""})
 	return crumbs
 }
 
-// BreadcrumbsForLessonPage создает крошки для страницы урока.
+// BreadcrumbsForLessonPage генерирует "хлебные крошки" для страницы конкретного урока.
 func BreadcrumbsForLessonPage(category response.CategoryDTO, course response.CourseDTO, lesson response.LessonDTODetailed) []Breadcrumb {
 	crumbs := BreadcrumbsForCoursePage(category, course)
 	if len(crumbs) > 1 {
-		// Делаем предыдущий элемент (курс) кликабельным
+		// Предыдущий элемент (название курса) делаем кликабельным.
 		crumbs[len(crumbs)-1].URL = routing.MakePathCourse(category.ID, course.ID)
 	}
-	// Добавляем текущий, некликабельный элемент
 	crumbs = append(crumbs, Breadcrumb{Text: lesson.Title, URL: ""})
 	return crumbs
 }

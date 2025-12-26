@@ -1,4 +1,4 @@
-// Package web contains web handlers and related middleware
+// Package web содержит обработчики для рендеринга веб-страниц.
 package web
 
 import (
@@ -10,13 +10,13 @@ import (
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
 )
 
-// AuthMiddleware contains dependencies for auth middleware.
+// AuthMiddleware предоставляет middleware для аутентификации.
 type AuthMiddleware struct {
 	provider *oidc.Provider
 	clientID string
 }
 
-// NewAuthMiddleware creates a new AuthMiddleware.
+// NewAuthMiddleware создает новый экземпляр AuthMiddleware.
 func NewAuthMiddleware(provider *oidc.Provider, clientID string) *AuthMiddleware {
 	return &AuthMiddleware{
 		provider: provider,
@@ -24,17 +24,18 @@ func NewAuthMiddleware(provider *oidc.Provider, clientID string) *AuthMiddleware
 	}
 }
 
-// WithUser is a "light" middleware that checks for a session and populates
-// c.Locals with user info if available, but does not redirect or block.
-// This is useful for templates that need to show different states for logged-in
-// and anonymous users (e.g., the header).
+// WithUser является middleware, которое проверяет сессионную cookie,
+// верифицирует JWT (ID Token) и помещает информацию о пользователе (claims)
+// в `c.Locals` для дальнейшего использования в обработчиках и шаблонах.
+// Если токен отсутствует или невалиден, он просто передает управление дальше,
+// оставляя в `c.Locals` пустую структуру UserClaims (гостевой пользователь).
 func (m *AuthMiddleware) WithUser(c *fiber.Ctx) error {
-	// Set a default empty user
+	// Инициализируем пустыми данными на случай, если пользователь гость.
 	c.Locals(domain.UserContextKey, domain.UserClaims{})
 
 	rawIDToken := c.Cookies(domain.SessionTokenCookie)
 	if rawIDToken == "" {
-		return c.Next() // No token, just continue
+		return c.Next()
 	}
 
 	ctx := context.Background()
@@ -42,17 +43,17 @@ func (m *AuthMiddleware) WithUser(c *fiber.Ctx) error {
 
 	idToken, err := verifier.Verify(ctx, rawIDToken)
 	if err != nil {
-		// Token is invalid or expired, just continue as an anonymous user
+		// Если токен невалиден (например, истек), считаем пользователя гостем.
 		return c.Next()
 	}
 
 	var claims domain.UserClaims
 	if err := idToken.Claims(&claims); err != nil {
-		// Claims are malformed, continue as anonymous
+		// Если не удалось извлечь claims, считаем пользователя гостем.
 		return c.Next()
 	}
 
-	// Token is valid, populate locals
+	// Сохраняем claims в контексте для доступа в последующих обработчиках.
 	c.Locals(domain.UserContextKey, claims)
 
 	return c.Next()

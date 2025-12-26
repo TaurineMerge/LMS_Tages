@@ -1,4 +1,4 @@
-// Package template provides template engine configuration for the application.
+// Package template отвечает за настройку и конфигурацию шаблонизатора Handlebars.
 package template
 
 import (
@@ -11,15 +11,17 @@ import (
 	"github.com/gofiber/template/handlebars/v2"
 )
 
-// NewEngine creates a new Handlebars template engine with custom helpers.
+// NewEngine создает и настраивает новый экземпляр движка шаблонов Handlebars.
+// Он настраивает перезагрузку и отладку на основе конфигурации приложения,
+// а также регистрирует множество пользовательских вспомогательных функций.
 func NewEngine(cfg *config.AppConfig) *handlebars.Engine {
 	engine := handlebars.New("./templates", ".hbs")
 
-	// Reload and Debug should be enabled based on development mode
+	// Включает/выключает перезагрузку и отладку шаблонов
 	engine.Reload(cfg.Dev)
 	engine.Debug(cfg.Dev)
 
-	// Register custom helper for truncating text
+	// truncate обрезает текст до заданной длины, сохраняя целостность слов.
 	engine.AddFunc("truncate", func(text string, length int) string {
 		if utf8.RuneCountInString(text) <= length {
 			return text
@@ -43,41 +45,42 @@ func NewEngine(cfg *config.AppConfig) *handlebars.Engine {
 		return truncated + "..."
 	})
 
-	// Register custom helper for equality comparison
+	// eq проверяет равенство двух целых чисел.
 	engine.AddFunc("eq", func(a, b int) bool {
 		return a == b
 	})
 
+	// neq проверяет неравенство двух целых чисел.
 	engine.AddFunc("neq", func(a, b int) bool {
 		return a != b
 	})
 
-	// Register custom helper for string equality comparison
+	// streq проверяет равенство двух строк.
 	engine.AddFunc("streq", func(a, b string) bool {
 		return a == b
 	})
 
-	// Register helper for greater than comparison
+	// gt проверяет, что a > b.
 	engine.AddFunc("gt", func(a, b int) bool {
 		return a > b
 	})
 
-	// Register helper for less than comparison
+	// lt проверяет, что a < b.
 	engine.AddFunc("lt", func(a, b int) bool {
 		return a < b
 	})
 
-	// Register helper for addition
+	// add возвращает сумму двух целых чисел.
 	engine.AddFunc("add", func(a, b int) int {
 		return a + b
 	})
 
-	// Register helper for subtraction
+	// subtract возвращает разность двух целых чисел.
 	engine.AddFunc("subtract", func(a, b int) int {
 		return a - b
 	})
 
-	// Register helper for range generation
+	// range создает срез целых чисел в заданном диапазоне [start, end].
 	engine.AddFunc("range", func(start, end int) []int {
 		result := make([]int, 0, end-start+1)
 		for i := start; i <= end; i++ {
@@ -86,15 +89,17 @@ func NewEngine(cfg *config.AppConfig) *handlebars.Engine {
 		return result
 	})
 
+	// len возвращает количество рун (символов) в строке.
 	engine.AddFunc("len", func(s string) int {
 		return utf8.RuneCountInString(s)
 	})
 
-	// Register helper for date formatting
+	// formatDate форматирует время в строку "дд.мм.гггг".
 	engine.AddFunc("formatDate", func(t time.Time) string {
 		return t.Format("02.01.2006")
 	})
 
+	// firstLessonRef возвращает URL первого урока из среза, или "#" если срез пуст.
 	engine.AddFunc("firstLessonRef", func(slice []viewmodel.LessonViewModel) string {
 		if len(slice) == 0 {
 			return "#"

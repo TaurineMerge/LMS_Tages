@@ -1,3 +1,4 @@
+// Package web содержит обработчики для рендеринга веб-страниц.
 package web
 
 import (
@@ -15,7 +16,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// CoursesHandler handles web requests for the courses page.
+// CoursesHandler инкапсулирует зависимости и логику для обработки HTTP-запросов,
+// связанных со страницами курсов.
 type CoursesHandler struct {
 	courseService   service.CourseService
 	categoryService service.CategoryService
@@ -24,7 +26,7 @@ type CoursesHandler struct {
 	testingConfig   config.TestingServiceConfig
 }
 
-// NewCoursesHandler creates a new instance of CoursesHandler.
+// NewCoursesHandler создает и возвращает новый экземпляр CoursesHandler.
 func NewCoursesHandler(
 	courseService service.CourseService,
 	categoryService service.CategoryService,
@@ -41,7 +43,9 @@ func NewCoursesHandler(
 	}
 }
 
-// RenderCourses renders the courses page with filters and sorting.
+// RenderCourses отображает страницу со списком курсов для определенной категории.
+// Он извлекает ID категории из URL и поддерживает пагинацию, а также фильтрацию
+// по уровню и сортировку через query-параметры.
 func (h *CoursesHandler) RenderCourses(c *fiber.Ctx) error {
 	categoryID := c.Params(routing.PathVariableCategoryID)
 	if _, err := uuid.Parse(categoryID); err != nil {
@@ -64,6 +68,7 @@ func (h *CoursesHandler) RenderCourses(c *fiber.Ctx) error {
 		return err
 	}
 
+	// Для каждого курса получаем количество уроков.
 	lessonAmounts := make([]int, 0, len(coursesDTOs))
 	for _, course := range coursesDTOs {
 		_, pag, err := h.lessonService.GetAllByCourseID(c.UserContext(), categoryID, course.ID, 1, 1, "")
@@ -92,7 +97,10 @@ func (h *CoursesHandler) RenderCourses(c *fiber.Ctx) error {
 	}, "layouts/main")
 }
 
-// RenderCoursePage renders the individual course page with course details.
+// RenderCoursePage отображает детальную страницу одного курса.
+// Он извлекает ID категории и курса из URL, загружает всю необходимую информацию:
+// данные о курсе, категории, список уроков и информацию о тесте.
+// Корректно обрабатывает случаи, когда тест не найден или сервис тестов недоступен.
 func (h *CoursesHandler) RenderCoursePage(c *fiber.Ctx) error {
 	categoryID := c.Params(routing.PathVariableCategoryID)
 	if _, err := uuid.Parse(categoryID); err != nil {
@@ -117,7 +125,6 @@ func (h *CoursesHandler) RenderCoursePage(c *fiber.Ctx) error {
 		return err
 	}
 
-	// Fetch test details
 	var testVM *viewmodel.TestViewModel
 	var testIsNotFound, testServiceIsUnavailable bool
 
@@ -157,6 +164,7 @@ func (h *CoursesHandler) RenderCoursePage(c *fiber.Ctx) error {
 	}, "layouts/main")
 }
 
+// getLevelRussification переводит уровень сложности курса с английского на русский.
 func getLevelRussification(level string) string {
 	enLvlToRu := map[string]string{
 		"all":    "Все уровни",
@@ -171,6 +179,8 @@ func getLevelRussification(level string) string {
 	return level
 }
 
+// russifyCoursesLevel итерируется по срезу CourseViewModel и заполняет
+// поле `LevelRu`, переводя английское значение из поля `Level`.
 func russifyCoursesLevel(courses []viewmodel.CourseViewModel) []viewmodel.CourseViewModel {
 	for i := range courses {
 		courses[i].LevelRu = getLevelRussification(courses[i].Level)
@@ -178,6 +188,8 @@ func russifyCoursesLevel(courses []viewmodel.CourseViewModel) []viewmodel.Course
 	return courses
 }
 
+// russifyCourseDetailLevel переводит поле `Level` у одного `CourseDetailViewModel`
+// на русский язык и устанавливает значение в поле `LevelRu`.
 func russifyCourseDetailLevel(course *viewmodel.CourseDetailViewModel) {
 	course.LevelRu = getLevelRussification(course.Level)
 }
