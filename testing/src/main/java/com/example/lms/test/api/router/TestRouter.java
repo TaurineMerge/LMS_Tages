@@ -55,27 +55,30 @@ public class TestRouter {
 		path("/tests", () -> {
 
 			// Список и создание тестов
-			get(withRealm(READ_ACCESS_REALMS, testController::getTests));
-			post(withRealm(TEACHER_REALM, testController::createTest));
+			// get(withRealm(READ_ACCESS_REALMS, testController::getTests));
+			// post(withRealm(TEACHER_REALM, testController::createTest));
+
+			get(testController::getTests);
+			post(testController::createTest);
 
 			path("/{id}", () -> {
 				// Просмотр теста - для всех
-				get(withRealm(READ_ACCESS_REALMS, testController::getTestById));
+				get(testController::getTestById);
 
 				// Редактирование и удаление
-				put(withRealm(TEACHER_REALM, testController::updateTest));
-				delete(withRealm(Set.of(TEACHER_REALM), testController::deleteTest));
+				put(testController::updateTest);
+				delete(testController::deleteTest);
 			});
 
 			path("/by-course", () -> {
 				// Получить тест по ID курса
 				path("/{courseId}", () -> {
-					get(withRealm(READ_ACCESS_REALMS, testController::getTestByCourseId));
+					get(testController::getTestByCourseId);
 				});
 
 				path("/validate/{courseId}", () -> {
 					// Проверка существования теста по id курса - для всех
-					get(withRealm(READ_ACCESS_REALMS, testController::existsByCourseId));
+					get(testController::existsByCourseId);
 				});
 			});
 

@@ -166,16 +166,15 @@ public class Main {
 			config.router.apiBuilder(() -> {
 				// Определяем публичные пути
 				List<String> publicPaths = Arrays.asList(
-					"^/swagger$",
-					"^/swagger\\.json$",
-					"^/docs/swagger\\.json$",
-					"^/oauth2-redirect\\.html$",
-					"^/health$",
-					"^/internal/health$",
-					"^/internal/categories/[^/]+/courses/[^/]+/test$"
-				);
+						"^/swagger$",
+						"^/swagger\\.json$",
+						"^/docs/swagger\\.json$",
+						"^/oauth2-redirect\\.html$",
+						"^/health$",
+						"^/internal/health$",
+						"^/internal/categories/[^/]+/courses/[^/]+/test$");
 
-				RouterUtils.applyStandardBeforeMiddleware(logger, publicPaths);
+				// RouterUtils.applyStandardBeforeMiddleware(logger, publicPaths);
 
 				TestRouter.register(testController);
 				AnswerRouter.register(answerController);
