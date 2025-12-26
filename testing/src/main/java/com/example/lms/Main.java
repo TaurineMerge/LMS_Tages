@@ -172,6 +172,20 @@ public class Main {
 					"^/oauth2-redirect\\.html$",
 					"^/health$",
 					"^/internal/health$",
+					
+					// UI тесты и попытки
+					"^/ui/categories/[^/]+/courses/[^/]+/test$",
+					"^/ui/categories/[^/]+/courses/[^/]+/attempt/[^/]+$",
+					
+					// Новые пути для тестирования
+					"^/ui/tests/[^/]+/take(\\\\?.*)?$",
+					"^/ui/tests/[^/]+/save$",
+					"^/ui/tests/[^/]+/questions/[^/]+/answer$",
+					"^/ui/tests/[^/]+/finish$",
+					"^/ui/tests/[^/]+/results$",
+					"^/ui/tests/[^/]+/retry$",
+					
+					// Internal пути
 					"^/internal/categories/[^/]+/courses/[^/]+/test$"
 				);
 

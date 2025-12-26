@@ -9,11 +9,22 @@ public class UiRouter {
     public static void register(UiTestController uiTestController) {
         path("/ui", () -> {
 
+            // "умная" точка входа с курса
+            // /ui/category/{categoryId}/course/{courseId}/test
+            get("/categories/{categoryId}/courses/{courseId}/test", uiTestController::startOrResumeFromCourse);
+
+            // открыть конкретную попытку с курса
+            // /ui/category/{categoryId}/course/{courseId}/attempt/{attemptId}
+            get("/categories/{categoryId}/courses/{courseId}/attempt/{attemptId}", uiTestController::openAttemptFromCourse);
+
             // attemptId идёт query-параметром:
             // /ui/tests/{testId}/take?attemptId=...
             get("/tests/{testId}/take", uiTestController::showTakePage);
 
-            // submit: hidden attempt_id
+            // сохранить все ответы (можно исправлять)
+            post("/tests/{testId}/save", uiTestController::saveAllAnswers);
+
+            // legacy submit (не используем в новом UI, но оставляем чтобы не ломать старое)
             post("/tests/{testId}/questions/{questionId}/answer", uiTestController::submitAnswer);
 
             // finish/results тоже работают с attemptId:
