@@ -297,16 +297,6 @@ async def certificates_page(request: Request):
     )
 
 
-@router.get("/visits", response_class=HTMLResponse)
-@traced("pages.visits")
-async def visits_page(request: Request):
-    """Render visits page."""
-    return _render_template_safe(
-        "visits.hbs",
-        {"request": request, "active_page": "visits", **get_keycloak_urls()},
-    )
-
-
 @router.get("/statistics", response_class=HTMLResponse)
 @traced("pages.statistics")
 async def statistics_page(request: Request):

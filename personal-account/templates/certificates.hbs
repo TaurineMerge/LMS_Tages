@@ -5,124 +5,275 @@
 {% block content %}
 <div class="certificates">
     <div class="certificates__container">
-        <h2 class="certificates__title">Мои сертификаты</h2>
-        
-        <div class="certificate-list">
-            <!-- Заглушка для сертификатов -->
-            <div class="certificate-item">
-                <div class="certificate-item__info">
-                    <div class="certificate-item__icon" style="background-color: #FFEEE8;">
-                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 15.5L16.5 10.5H7.5L12 15.5Z" fill="#FF6636"/>
-                            <path d="M21 10H3C2.44772 10 2 10.4477 2 11V13C2 13.5523 2.44772 14 3 14H21C21.5523 14 22 13.5523 22 13V11C22 10.4477 21.5523 10 21 10Z" fill="#FF6636"/>
-                        </svg>
-                    </div>
-                    <div class="certificate-item__content">
-                        <p class="certificate-item__label">Курс</p>
-                        <h3 class="certificate-item__name">HTML</h3>
-                    </div>
-                </div>
-                <div class="certificate-item__actions">
-                    <button class="button button--secondary">Просмотреть</button>
-                </div>
-            </div>
-            
-            <div class="certificate-item">
-                <div class="certificate-item__info">
-                    <div class="certificate-item__icon" style="background-color: #E6F0FF;">
-                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 15.5L16.5 10.5H7.5L12 15.5Z" fill="#3F51B5"/>
-                            <path d="M21 10H3C2.44772 10 2 10.4477 2 11V13C2 13.5523 2.44772 14 3 14H21C21.5523 14 22 13.5523 22 13V11C22 10.4477 21.5523 10 21 10Z" fill="#3F51B5"/>
-                        </svg>
-                    </div>
-                    <div class="certificate-item__content">
-                        <p class="certificate-item__label">Курс</p>
-                        <h3 class="certificate-item__name">CSS</h3>
-                    </div>
-                </div>
-                <div class="certificate-item__actions">
-                    <button class="button button--secondary">Просмотреть</button>
-                </div>
-            </div>
-            
-            <div class="certificate-item">
-                <div class="certificate-item__info">
-                    <div class="certificate-item__icon" style="background-color: #FFF4E6;">
-                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 15.5L16.5 10.5H7.5L12 15.5Z" fill="#FFD500"/>
-                            <path d="M21 10H3C2.44772 10 2 10.4477 2 11V13C2 13.5523 2.44772 14 3 14H21C21.5523 14 22 13.5523 22 13V11C22 10.4477 21.5523 10 21 10Z" fill="#FFD500"/>
-                        </svg>
-                    </div>
-                    <div class="certificate-item__content">
-                        <p class="certificate-item__label">Курс</p>
-                        <h3 class="certificate-item__name">JavaScript</h3>
-                    </div>
-                </div>
-                <div class="certificate-item__actions">
-                    <button class="button button--secondary">Просмотреть</button>
-                </div>
-            </div>
-            
-            <div class="certificate-item">
-                <div class="certificate-item__info">
-                    <div class="certificate-item__icon" style="background-color: #E6F0FF;">
-                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 15.5L16.5 10.5H7.5L12 15.5Z" fill="#2196F3"/>
-                            <path d="M21 10H3C2.44772 10 2 10.4477 2 11V13C2 13.5523 2.44772 14 3 14H21C21.5523 14 22 13.5523 22 13V11C22 10.4477 21.5523 10 21 10Z" fill="#2196F3"/>
-                        </svg>
-                    </div>
-                    <div class="certificate-item__content">
-                        <p class="certificate-item__label">Курс</p>
-                        <h3 class="certificate-item__name">SQL</h3>
-                    </div>
-                </div>
-                <div class="certificate-item__actions">
-                    <button class="button button--secondary">Просмотреть</button>
-                </div>
-            </div>
-            
-            <div class="certificate-item">
-                <div class="certificate-item__info">
-                    <div class="certificate-item__icon" style="background-color: #E8F5E9;">
-                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 15.5L16.5 10.5H7.5L12 15.5Z" fill="#4CAF50"/>
-                            <path d="M21 10H3C2.44772 10 2 10.4477 2 11V13C2 13.5523 2.44772 14 3 14H21C21.5523 14 22 13.5523 22 13V11C22 10.4477 21.5523 10 21 10Z" fill="#4CAF50"/>
-                        </svg>
-                    </div>
-                    <div class="certificate-item__content">
-                        <p class="certificate-item__label">Курс</p>
-                        <h3 class="certificate-item__name">Python</h3>
-                    </div>
-                </div>
-                <div class="certificate-item__actions">
-                    <button class="button button--secondary">Просмотреть</button>
-                </div>
+        <div class="certificates__header">
+            <h2 class="certificates__title">Мои сертификаты</h2>
+            <div class="profile__stats-actions">
+                <form class="profile__form" action="{{ prefix }}/certificates/generate" method="POST">
+                    <button type="submit" class="button button--primary">
+                        Сгенерировать сертификат
+                    </button>
+                </form>
             </div>
         </div>
-        
-        <div class="profile__stats-actions" style="margin-top: 3rem;">
-            <form class="profile__form" action="{{ prefix }}/certificates/refresh" method="POST">
-                <button type="submit" class="button button--primary">Обновить сертификаты</button>
-            </form>
+
+        <div id="certificates-container" class="certificate-list">
+            {% if certificates %}
+                {% for certificate in certificates %}
+                <div class="certificate-item" data-id="{{ certificate.id }}">
+                    <div class="certificate-item__info">
+                        <div class="certificate-item__icon" style="background-color: #E8F5E9;"> <!-- Можно добавить логику для разных цветов -->
+                            <svg class="certificate-item__svg" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 15.5L16.5 10.5H7.5L12 15.5Z" fill="#4CAF50"/> <!-- Цвет можно варьировать -->
+                                <path d="M21 10H3C2.44772 10 2 10.4477 2 11V13C2 13.5523 2.44772 14 3 14H21C21.5523 14 22 13.5523 22 13V11C22 10.4477 21.5523 10 21 10Z" fill="#4CAF50"/>
+                            </svg>
+                        </div>
+                        <div class="certificate-item__content">
+                            <p class="certificate-item__label">Курс #{{ certificate.course_id }}</p>
+                            <h3 class="certificate-item__name">Сертификат</h3>
+                            <p class="certificate-item__date">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M7 13C10.3137 13 13 10.3137 13 7C13 3.68629 10.3137 1 7 1C3.68629 1 1 3.68629 1 7C1 10.3137 3.68629 13 7 13Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M7 4V7L9 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                {{ certificate.created_at.strftime('%d.%m.%Y') if certificate.created_at else 'Неизвестно' }}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="certificate-item__actions">
+                        <button class="button button--secondary view-certificate" data-id="{{ certificate.id }}">
+                            Просмотреть
+                        </button>
+                        {% if certificate.download_url %}
+                        <a href="{{ certificate.download_url }}" download="certificate-{{ certificate.certificate_number or certificate.id }}.pdf" class="button button--secondary">
+                            Скачать
+                        </a>
+                        {% else %}
+                        <button class="button button--secondary button--disabled" disabled>
+                            <svg class="button__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12.6667 10.6667V12.6667C12.6667 13.0203 12.5262 13.3594 12.2762 13.6094C12.0261 13.8595 11.687 14 11.3334 14H4.66671C4.31312 14 3.97403 13.8595 3.72397 13.6094C3.47391 13.3594 3.33337 13.0203 3.33337 12.6667V10.6667M5.33337 7.33333L8.00004 10M8.00004 10L10.6667 7.33333M8.00004 10V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Недоступно
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="certificate-list__empty">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 15.5L16.5 10.5H7.5L12 15.5Z" fill="#9E9E9E"/>
+                    <path d="M21 10H3C2.44772 10 2 10.4477 2 11V13C2 13.5523 2.44772 14 3 14H21C21.5523 14 22 13.5523 22 13V11C22 10.4477 21.5523 10 21 10Z" fill="#9E9E9E"/>
+                </svg>
+                <h3 class="certificate-list__empty-title">У вас пока нет сертификатов</h3>
+                <p class="certificate-list__empty-text">Завершите курсы, чтобы получить сертификаты</p>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
+<!-- Шаблоны Handlebars -->
+{% raw %}
+<script id="certificates-list-template" type="text/x-handlebars-template">
+    {{#if certificates.length}}
+        {{#each certificates}}
+        <div class="certificate-item" data-id="{{id}}">
+            <div class="certificate-item__info">
+                <div class="certificate-item__icon" style="background-color: #E8F5E9;"> <!-- Логика цвета может быть добавлена здесь -->
+                    <svg class="certificate-item__svg" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 15.5L16.5 10.5H7.5L12 15.5Z" fill="#4CAF50"/>
+                        <path d="M21 10H3C2.44772 10 2 10.4477 2 11V13C2 13.5523 2.44772 14 3 14H21C21.5523 14 22 13.5523 22 13V11C22 10.4477 21.5523 10 21 10Z" fill="#4CAF50"/>
+                    </svg>
+                </div>
+                <div class="certificate-item__content">
+                    <p class="certificate-item__label">Курс #{{course_id}}</p>
+                    <h3 class="certificate-item__name">Сертификат</h3>
+                    <p class="certificate-item__date">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M7 13C10.3137 13 13 10.3137 13 7C13 3.68629 10.3137 1 7 1C3.68629 1 1 3.68629 1 7C1 10.3137 3.68629 13 7 13Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M7 4V7L9 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        {{formatDate created_at}}
+                    </p>
+                </div>
+            </div>
+            <div class="certificate-item__actions">
+                <button class="button button--secondary view-certificate" data-id="{{id}}">
+                    <svg class="button__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8 3C4.13401 3 1 8 1 8C1 8 4.13401 13 8 13C11.866 13 15 8 15 8C15 8 11.866 3 8 3Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M8 10C9.65685 10 11 8.65685 11 7C11 5.34315 9.65685 4 8 4C6.34315 4 5 5.34315 5 7C5 8.65685 6.34315 10 8 10Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Просмотреть
+                </button>
+                {{#if download_url}}
+                <a href="{{download_url}}" download="certificate-{{certificate_number}}.pdf" class="button button--secondary">
+                    <svg class="button__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12.6667 10.6667V12.6667C12.6667 13.0203 12.5262 13.3594 12.2762 13.6094C12.0261 13.8595 11.687 14 11.3334 14H4.66671C4.31312 14 3.97403 13.8595 3.72397 13.6094C3.47391 13.3594 3.33337 13.0203 3.33337 12.6667V10.6667M5.33337 7.33333L8.00004 10M8.00004 10L10.6667 7.33333M8.00004 10V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Скачать
+                </a>
+                {{else}}
+                <button class="button button--secondary button--disabled" disabled>
+                    <svg class="button__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12.6667 10.6667V12.6667C12.6667 13.0203 12.5262 13.3594 12.2762 13.6094C12.0261 13.8595 11.687 14 11.3334 14H4.66671C4.31312 14 3.97403 13.8595 3.72397 13.6094C3.47391 13.3594 3.33337 13.0203 3.33337 12.6667V10.6667M5.33337 7.33333L8.00004 10M8.00004 10L10.6667 7.33333M8.00004 10V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Недоступно
+                </button>
+                {{/if}}
+            </div>
+        </div>
+        {{/each}}
+    {{else}}
+    <div class="certificate-list__empty">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 15.5L16.5 10.5H7.5L12 15.5Z" fill="#9E9E9E"/>
+            <path d="M21 10H3C2.44772 10 2 10.4477 2 11V13C2 13.5523 2.44772 14 3 14H21C21.5523 14 22 13.5523 22 13V11C22 10.4477 21.5523 10 21 10Z" fill="#9E9E9E"/>
+        </svg>
+        <h3 class="certificate-list__empty-title">У вас пока нет сертификатов</h3>
+        <p class="certificate-list__empty-text">Завершите курсы, чтобы получить сертификаты</p>
+    </div>
+    {{/if}}
+</script>
+
+<script id="certificate-preview-template" type="text/x-handlebars-template">
+    <div class="certificate-preview p-5 border border-3 border-success" style="background: linear-gradient(135deg, #f8fff8 0%, #fff 100%);">
+        <div class="mb-4">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 15.5L16.5 10.5H7.5L12 15.5Z" fill="#4CAF50"/>
+                <path d="M21 10H3C2.44772 10 2 10.4477 2 11V13C2 13.5523 2.44772 14 3 14H21C21.5523 14 22 13.5523 22 13V11C22 10.4477 21.5523 10 21 10Z" fill="#4CAF50"/>
+            </svg>
+        </div>
+        <h2 class="text-uppercase mb-3">Сертификат</h2>
+        <p class="lead mb-2">подтверждает, что</p>
+        <h3 class="text-success mb-3">{{student_name}}</h3>
+        <p class="lead mb-4">успешно завершил(а) курс</p>
+        <h4 class="mb-4">«Курс #{{course_id}}»</h4>
+        <hr class="w-50 mx-auto my-4">
+        <p class="text-muted">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M7 13C10.3137 13 13 10.3137 13 7C13 3.68629 10.3137 1 7 1C3.68629 1 1 3.68629 1 7C1 10.3137 3.68629 13 7 13Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M7 4V7L9 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Дата выдачи: {{formatDate created_at}}
+        </p>
+        <p class="text-muted">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M7 13C10.3137 13 13 10.3137 13 7C13 3.68629 10.3137 1 7 1C3.68629 1 1 3.68629 1 7C1 10.3137 3.68629 13 7 13Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M4 7L6 9L10 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            ID: {{id}}
+        </p>
+    </div>
+</script>
+{% endraw %}
 {% endblock %}
 
 {% block extra_js %}
 <script>
-document.querySelectorAll('.button--secondary').forEach(button => {        
-        // Имитация загрузки
-        const originalText = this.textContent;
-        this.textContent = 'Загрузка...';
-        this.disabled = true;
-        
-        setTimeout(() => {
-            this.textContent = originalText;
-            this.disabled = false;
-            alert('Сертификат загружен! В реальном приложении здесь откроется PDF-файл');
-        }, 1500);
+    // Регистрация хелпера Handlebars для форматирования даты [[2]]
+    Handlebars.registerHelper('formatDate', function(dateString) {
+        if (!dateString) return 'Неизвестно';
+        const date = new Date(dateString);
+        // Используем локализованный формат
+        return date.toLocaleDateString('ru-RU', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric'
+        });
     });
-});
+
+    // Компиляция шаблонов
+    const certificatesListTemplate = Handlebars.compile(document.getElementById('certificates-list-template').innerHTML);
+    const certificatePreviewTemplate = Handlebars.compile(document.getElementById('certificate-preview-template').innerHTML);
+
+    let allCertificates = [];
+    let currentUser = null;
+
+    async function loadCertificates() {
+        const token = API.getToken();
+
+        if (!token) {
+            document.getElementById('certificates-container').innerHTML = certificatesListTemplate({ certificates: [] });
+            return;
+        }
+
+        try {
+            // Получаем информацию о пользователе
+            const userResponse = await API.get('/auth/me');
+            currentUser = userResponse.data;
+
+            // Получаем сертификаты
+            const response = await API.get('/certificates');
+            allCertificates = response.data || [];
+
+            renderCertificates(allCertificates);
+
+        } catch (error) {
+            console.error('Failed to load certificates:', error);
+            // В реальном приложении можно показать уведомление
+            // showToast('Ошибка загрузки сертификатов', 'danger');
+            document.getElementById('certificates-container').innerHTML = certificatesListTemplate({ certificates: [] });
+        }
+    }
+
+    function renderCertificates(certificates) {
+        document.getElementById('certificates-container').innerHTML = certificatesListTemplate({ certificates });
+
+        // Добавляем обработчики кликов на кнопки "Просмотреть"
+        document.querySelectorAll('.view-certificate').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.currentTarget.dataset.id;
+                showCertificate(id);
+            });
+        });
+    }
+
+    function showCertificate(id) {
+        const certificate = allCertificates.find(c => c.id === id);
+        if (!certificate) return;
+
+        // Если доступна ссылка на скачивание, показываем PDF в iframe
+        if (certificate.download_url) {
+            const html = `
+                <div class="text-center">
+                    <iframe src="${certificate.download_url}"
+                            width="100%"
+                            height="500px"
+                            style="border: 1px solid #ddd; border-radius: 8px;">
+                        <p>Ваш браузер не поддерживает просмотр PDF.
+                           <a href="${certificate.download_url}" target="_blank">Скачать PDF</a>
+                        </p>
+                    </iframe>
+                </div>
+            `;
+            document.getElementById('certificate-preview').innerHTML = html;
+
+            // Настраиваем кнопку скачивания
+            const downloadBtn = document.getElementById('download-certificate');
+            downloadBtn.disabled = false; // Активируем кнопку
+            downloadBtn.onclick = () => {
+                const link = document.createElement('a');
+                link.href = certificate.download_url;
+                link.download = `certificate-${certificate.certificate_number || certificate.id}.pdf`;
+                link.click();
+            };
+        } else {
+            // Если PDF недоступен, показываем HTML-представление сертификата
+            const html = certificatePreviewTemplate({
+                ...certificate,
+                student_name: currentUser?.name || currentUser?.preferred_username || 'Студент'
+            });
+            document.getElementById('certificate-preview').innerHTML = html;
+
+            // Отключаем кнопку скачивания
+            document.getElementById('download-certificate').disabled = true;
+            document.getElementById('download-certificate').onclick = null; // Убираем обработчик
+        }
+
+        // Показываем модальное окно
+        new bootstrap.Modal(document.getElementById('certificateModal')).show();
+    }
+
+    // Инициализация при загрузке DOM
+    document.addEventListener('DOMContentLoaded', loadCertificates);
 </script>
 {% endblock %}
