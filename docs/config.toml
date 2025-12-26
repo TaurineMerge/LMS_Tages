@@ -1,0 +1,67 @@
+baseURL = "/"
+languageCode = "ru-ru"
+title = "LMS Documentation"
+defaultContentLanguage = "ru"
+hasCJKLanguage = false
+
+[params]
+  description = "Документация системы управления обучением (LMS)"
+  author = "LMS Team"
+  buildDate = "2024-01-15"
+  
+  # Настройки футера
+  footerText = "LMS Documentation"
+  
+  # Настройки навигации
+  showBreadcrumb = true
+  showNavigation = true
+
+# Меню навигации
+[menu]
+  [[menu.main]]
+    identifier = "home"
+    name = "Главная"
+    url = "/"
+    weight = 10
+  
+  [[menu.main]]
+    identifier = "public"
+    name = "Public"
+    url = "/public/"
+    weight = 20
+  
+  [[menu.main]]
+    identifier = "admin"
+    name = "Admin"
+    url = "/admin/"
+    weight = 30
+  
+  [[menu.main]]
+    identifier = "test"
+    name = "Test"
+    url = "/test/"
+    weight = 40
+  
+  [[menu.main]]
+    identifier = "account"
+    name = "Account"
+    url = "/account/"
+    weight = 50
+
+# Настройки Markdown
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true  # Разрешаем HTML в Markdown
+
+  [markup.highlight]
+    style = "github"  # Стиль подсветки кода
+
+# Настройки для Mermaid.js
+[params.mermaid]
+  enable = true
+  theme = "default"
+
+# Настройки для поиска (если будем добавлять)
+[outputs]
+  home = ["HTML", "RSS"]

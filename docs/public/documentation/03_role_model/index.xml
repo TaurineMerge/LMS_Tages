@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Роли on LMS Documentation</title>
+    <link>//localhost:1313/documentation/03_role_model/</link>
+    <description>Recent content in Роли on LMS Documentation</description>
+    <generator>Hugo</generator>
+    <language>ru-ru</language>
+    <atom:link href="//localhost:1313/documentation/03_role_model/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Взаимодействие ролей</title>
+      <link>//localhost:1313/documentation/03_role_model/01_roles/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>//localhost:1313/documentation/03_role_model/01_roles/</guid>
+      <description>&lt;h3 id=&#34;гость&#34;&gt;Гость&lt;/h3&gt;&#xA;&lt;p&gt;Гость может:&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;просматривать курсы и уроки без авторизации на сайте&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h3 id=&#34;ученик&#34;&gt;Ученик&lt;/h3&gt;&#xA;&lt;p&gt;Ученик - он же авторизированный гость.&lt;/p&gt;&#xA;&lt;p&gt;Ученик может:&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;просматривать курсы и уроки;&lt;/li&gt;&#xA;&lt;li&gt;проходить тест;&lt;/li&gt;&#xA;&lt;li&gt;получать сертификат по итогам теста;&lt;/li&gt;&#xA;&lt;li&gt;заходить в личный кабинет и менять там персональные данные, а также просматривать статистику по тестам.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h3 id=&#34;учитель-админ&#34;&gt;Учитель (админ)&lt;/h3&gt;&#xA;&lt;p&gt;Учитель - он же админ - может выполнять любые действия с контентом.&lt;/p&gt;&#xA;&lt;p&gt;А именно:&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;создавать категории, курсы и уроки;&lt;/li&gt;&#xA;&lt;li&gt;редактировать категории, курсы и уроки;&lt;/li&gt;&#xA;&lt;li&gt;удалять категории, курсы и уроки;&lt;/li&gt;&#xA;&lt;li&gt;создавать (изменять, удалять) при необходимости тесты в каждом добавленном курсе;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;p&gt;Также есть админ keycloak, который может назначать роли всем пользователям.&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

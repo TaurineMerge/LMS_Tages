@@ -1,0 +1,88 @@
+{{ define "main" }}
+<div class="page-content">
+    <div class="breadcrumbs">
+        <a href="/">Главная</a> 
+        {{ if not .IsHome }}
+            {{ if eq .Section "public" "admin" "test" "account" }}
+                → <a href="/{{ .Section }}/">{{ .Section | title }}</a>
+            {{ end }}
+            {{ if eq .Type "diagrams" }}
+                → <a href="/{{ .Section }}/diagrams/">Диаграммы</a>
+            {{ end }}
+            → {{ .Title }}
+        {{ end }}
+    </div>
+    
+    <h1>{{ .Title }}</h1>
+    
+    <div class="content">
+        {{ .Content }}
+    </div>
+    
+    {{ if .IsHome }}
+    <!-- На главной странице - общие ссылки -->
+    <div class="section-links">
+        <h3>Общая документация проекта:</h3>
+        <div class="section-grid">
+            <a href="/documentation" class="section-card">
+                <span class="icon">📚</span>
+                <span class="title">Общая документация</span>
+                <span class="desc">Полная документация по проекту</span>
+            </a>
+            
+            <a href="/c4-diagrams" class="section-card">
+                <span class="icon">🏗️</span>
+                <span class="title">C4-диаграмма</span>
+                <span class="desc">Архитектурная диаграмма</span>
+            </a>
+            
+            <a href="/er-diagrams" class="section-card">
+                <span class="icon">🗃️</span>
+                <span class="title">ER-диаграмма</span>
+                <span class="desc">Диаграмма базы данных</span>
+            </a>
+            
+            <a href="/glossary" class="section-card">
+                <span class="icon">📖</span>
+                <span class="title">Глоссарий</span>
+                <span class="desc">Термины и определения</span>
+            </a>
+        </div>
+    </div>
+    {{ else if in (slice "public" "admin" "test" "account") .Section }}
+    <!-- На страницах микросервисов - только их документация и диаграммы -->
+    <div class="section-links">
+        <h3>Разделы {{ .Section | title }}:</h3>
+        <div class="section-grid">
+            <a href="/{{ .Section }}/documentation" class="section-card">
+                <span class="icon">📄</span>
+                <span class="title">Документация</span>
+                <span class="desc">Документация микросервиса</span>
+            </a>
+            
+            <a href="/{{ .Section }}/diagrams/" class="section-card">
+                <span class="icon">📈</span>
+                <span class="title">Диаграммы процессов</span>
+                <span class="desc">Flowchart, Sequence, User Journey</span>
+            </a>
+        </div>
+    </div>
+    {{ end }}
+    
+    <div class="navigation">
+        {{ if .PrevInSection }}
+        <a href="{{ .PrevInSection.Permalink }}" class="nav-prev">← {{ .PrevInSection.Title }}</a>
+        {{ end }}
+        
+        {{ if eq .Type "diagrams" }}
+        <a href="/{{ .Section }}/diagrams/" class="nav-home">↑ К списку диаграмм</a>
+        {{ else if in (slice "public" "admin" "test" "account") .Section }}
+        <a href="/{{ .Section }}/" class="nav-home">↑ К разделу {{ .Section | title }}</a>
+        {{ end }}
+        
+        {{ if .NextInSection }}
+        <a href="{{ .NextInSection.Permalink }}" class="nav-next">{{ .NextInSection.Title }} →</a>
+        {{ end }}
+    </div>
+</div>
+{{ end }}

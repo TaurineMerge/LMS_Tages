@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Базы данных on LMS Documentation</title>
+    <link>//localhost:1313/documentation/02_info_model/03_datastorage/</link>
+    <description>Recent content in Базы данных on LMS Documentation</description>
+    <generator>Hugo</generator>
+    <language>ru-ru</language>
+    <atom:link href="//localhost:1313/documentation/02_info_model/03_datastorage/index.xml" rel="self" type="application/rss+xml" />
+  </channel>
+</rss>
