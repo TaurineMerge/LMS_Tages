@@ -18,7 +18,7 @@ weight: 18
  * POST     /testing/web/tests/draft                    - создание нового черновика
  * GET      /testing/web/tests/draft-{id}/edit          - форма редактирования черновика
  * GET      /testing/web/tests/{id}/edit                - форма редактирования теста
- * GET      /testing/web/tests/{id}/preview             - ппредпросмотр теста
+ * GET      /testing/web/tests/{id}/preview             - предпросмотр теста
  * PUT      /testing/web/tests/draft-{id}               - полное обновление существующего черновика
  * PUT      /testing/web/tests/{id}                     - полное обновление существующего теста
  * PATCH    /testing/web/tests/draft-{id}               - частичное обновление черновика

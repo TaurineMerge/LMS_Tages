@@ -45,6 +45,10 @@
   </url><url>
     <loc>//localhost:1313/documentation/02_info_model/03_datastorage/</loc>
   </url><url>
+    <loc>//localhost:1313/documentation/04_methods/01_publicside/</loc>
+  </url><url>
+    <loc>//localhost:1313/documentation/04_methods/02_adminpanel/</loc>
+  </url><url>
     <loc>//localhost:1313/documentation/04_methods/04_testing/</loc>
   </url><url>
     <loc>//localhost:1313/test/diagrams/user-journey/</loc>
@@ -68,10 +72,10 @@
     <loc>//localhost:1313/admin/</loc>
     <lastmod>2025-12-15T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>//localhost:1313/c4-diagram/</loc>
+    <loc>//localhost:1313/documentation/01_overviews/03_architecture/</loc>
     <lastmod>2025-12-15T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>//localhost:1313/documentation/01_overviews/03_architecture/</loc>
+    <loc>//localhost:1313/c4-diagram/</loc>
     <lastmod>2025-12-15T00:00:00+00:00</lastmod>
   </url><url>
     <loc>//localhost:1313/account/diagrams/er/</loc>
@@ -182,10 +186,6 @@
     <loc>//localhost:1313/account/documentation/</loc>
   </url><url>
     <loc>//localhost:1313/admin/documentation/</loc>
-  </url><url>
-    <loc>//localhost:1313/documentation/04_methods/01_publicside/</loc>
-  </url><url>
-    <loc>//localhost:1313/documentation/04_methods/02_adminpanel/</loc>
   </url><url>
     <loc>//localhost:1313/documentation/04_methods/03_personal_account/</loc>
   </url><url>
