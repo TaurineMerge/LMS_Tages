@@ -231,8 +231,15 @@ async def general_exception_handler(request: Request, exc: Exception):
     return JSONResponse(status_code=500, content={"error": "Internal server error"})
 
 
+@app.middleware("http")
+async def add_prefix_to_request(request: Request, call_next):
+    # Автоматически добавляем prefix в state для шаблонов
+    request.state.prefix = settings.url_prefix
+    return await call_next(request)
+
+
 # Include routers
-app.include_router(pages.router)  # Frontend pages (no prefix)
+app.include_router(pages.router)
 app.include_router(health.router)
 app.include_router(auth.router, prefix=settings.API_PREFIX)
 app.include_router(students.router, prefix=settings.API_PREFIX)

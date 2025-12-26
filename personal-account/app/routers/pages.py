@@ -22,6 +22,7 @@ from app.services.student import student_service
 from app.telemetry import traced
 
 logger = logging.getLogger(__name__)
+settings = get_settings()
 
 
 def form_data_to_student_update(
@@ -50,7 +51,6 @@ def form_data_to_student_update(
     return student_update(**data_dict)
 
 
-settings = get_settings()
 templates = Jinja2Templates(directory="templates")
 
 router = APIRouter(tags=["Pages"])
@@ -80,6 +80,7 @@ def _render_template_safe(template_name: str, context: dict):
     try:
         # TemplateResponse will be returned to FastAPI and rendered by Starlette
         context["prefix"] = settings.url_prefix  # Динамический prefix из settings
+        context["settings"] = settings
 
         resp = templates.TemplateResponse(template_name, context)
         # Add trace headers to response (best-effort)
@@ -161,22 +162,6 @@ async def root_page(request: Request):
     return _render_template_safe("index.hbs", {"request": request, **get_keycloak_urls()})
 
 
-# @router.get("/dashboard", response_class=HTMLResponse)  # <-- Теперь дэшборд здесь
-# @traced("pages.dashboard")
-# async def dashboard_page(request: Request):
-#    """Render dashboard page (Protected Area)."""
-#
-#   # (Опционально) Можно добавить проверку: если нет куки, редирект на /
-#   # token = request.cookies.get("access_token")
-# if not token:
-#   #     return RedirectResponse(url="/")
-
-#   return _render_template_safe(
-#       "dashboard.hbs",
-#       {"request": request, "active_page": "dashboard", **get_keycloak_urls()},
-#   )
-
-
 @router.get("/profile", response_class=HTMLResponse)
 @traced("pages.profile")
 async def profile_page(request: Request, user: TokenPayload = Depends(get_current_user)):
@@ -184,7 +169,7 @@ async def profile_page(request: Request, user: TokenPayload = Depends(get_curren
     keycloak_data = await run_in_threadpool(keycloak_service.get_user_data, user.sub)
     logger.info(f"GET /profile: Retrieved fresh Keycloak data: {keycloak_data}")
 
-    return templates.TemplateResponse(
+    return _render_template_safe(
         "profile.hbs",
         {
             "request": request,
@@ -233,23 +218,10 @@ async def update_profile_form(
         logger.info(f"🔍 Verified updated data: {updated_data}")
 
         # Редиректим на GET /profile
-        return RedirectResponse(url="/account/profile?success=true", status_code=303)
+        return RedirectResponse(url=f"{settings.url_prefix}/profile?success=true", status_code=303)
 
     except Exception as e:
         logger.error(f"💥 ERROR in update_profile_form: {e}", exc_info=True)
-        user_info = data.model_dump(exclude_unset=True)
-        return templates.TemplateResponse(
-            "profile.hbs",
-            {
-                "request": request,
-                "user": user_info,
-                "active_page": "profile",
-                "errors": [{"loc": ["server"], "msg": f"Failed to update profile: {e!s}"}],
-                **get_keycloak_urls(),
-            },
-        )
-    except Exception as e:
-        logger.error(f"Unexpected error in update_profile_form: {e}", exc_info=True)
         user_info = data.model_dump(exclude_unset=True)
         return templates.TemplateResponse(
             "profile.hbs",
@@ -449,7 +421,6 @@ async def certificates_generate(request: Request):
     except Exception as e:
         logger.error(f"Failed to generate certificates for user {student_id}: {e}")
 
-    settings = get_settings()
     return RedirectResponse(url=f"{settings.url_prefix}/certificates", status_code=303)
 
 

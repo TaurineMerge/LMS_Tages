@@ -243,13 +243,17 @@ input {
     color: var(--gray-500);
 }
 
+.sidebar .sidebar__logout .nav-link--icon {
+    color: var(--gray-500);
+}
+
 .sidebar .sidebar__logout .nav-link:hover{
     color: var(--orange-500);
     background-color: transparent;
     transition: color 0.3s;
 }
 
-.sidebar .sidebar__logout .nav-link:hover svg {
+.sidebar .sidebar__logout .nav-link:hover .nav-link--icon  {
     color: var(--orange-500);
     transition: color 0.3s;
 }
