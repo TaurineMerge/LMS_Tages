@@ -6,6 +6,9 @@ import (
 	"adminPanel/handlers/dto/request"
 	"adminPanel/services"
 	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -37,12 +40,42 @@ type TestView struct {
 }
 
 // getCourseTests получает информацию о тестах для курса.
-func (h *CourseWebHandler) getCourseTests(ctx context.Context, courseID string) (CourseTestsView, error) {
+func (h *CourseWebHandler) getCourseTests(ctx context.Context, categoryID, courseID string) (CourseTestsView, error) {
 	if !h.testModuleConfig.Enabled {
 		return CourseTestsView{}, nil
 	}
 
-	return CourseTestsView{}, nil
+	var tests CourseTestsView
+
+	// Получить опубликованный тест
+	publishedURL := fmt.Sprintf("%s/internal/categories/%s/courses/%s/test", h.testModuleConfig.BaseURL, categoryID, courseID)
+	if resp, err := http.Get(publishedURL); err == nil {
+		defer resp.Body.Close()
+		if resp.StatusCode == 200 {
+			var testResp struct {
+				ID string `json:"id"`
+			}
+			if json.NewDecoder(resp.Body).Decode(&testResp) == nil && testResp.ID != "" {
+				tests.Published = &TestView{ID: testResp.ID}
+			}
+		}
+	}
+
+	// Получить черновик теста
+	draftURL := fmt.Sprintf("%s/internal/categories/%s/courses/%s/draft", h.testModuleConfig.BaseURL, categoryID, courseID)
+	if resp, err := http.Get(draftURL); err == nil {
+		defer resp.Body.Close()
+		if resp.StatusCode == 200 {
+			var testResp struct {
+				ID string `json:"id"`
+			}
+			if json.NewDecoder(resp.Body).Decode(&testResp) == nil && testResp.ID != "" {
+				tests.Draft = &TestView{ID: testResp.ID}
+			}
+		}
+	}
+
+	return tests, nil
 }
 
 // levelToRussian преобразует уровень сложности в русский текст.
@@ -165,6 +198,7 @@ func (h *CourseWebHandler) RenderNewCourseForm(c *fiber.Ctx) error {
 		"title":        "Новый курс",
 		"categoryID":   categoryID,
 		"categoryName": category.Title,
+		"redirectURL":  c.OriginalURL(),
 		"s3Service":    h.s3Service,
 	}, "layouts/main")
 }
@@ -206,7 +240,7 @@ func (h *CourseWebHandler) RenderEditCourseForm(c *fiber.Ctx) error {
 		ImageKey:    course.Data.ImageKey,
 	}
 
-	tests, err := h.getCourseTests(ctx, course.Data.ID)
+	tests, err := h.getCourseTests(ctx, categoryID, course.Data.ID)
 	if err != nil {
 		tests = CourseTestsView{}
 	}
@@ -217,6 +251,7 @@ func (h *CourseWebHandler) RenderEditCourseForm(c *fiber.Ctx) error {
 		"categoryID":   categoryID,
 		"categoryName": category.Title,
 		"course":       courseView,
+		"redirectURL":  c.OriginalURL(),
 		"s3Service":    h.s3Service,
 	}, "layouts/main")
 }
