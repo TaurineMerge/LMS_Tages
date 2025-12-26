@@ -170,18 +170,18 @@
                     <div class="form-field">
                         <p class="form-field__hint">Управляйте тестами для этого курса через внешний модуль тестов.</p>
                         <div class="form-actions form-actions--inline">
-                            <a href="testing/web/tests/new?redirect={{redirectURL}}" class="btn btn--secondary">
+                            <a href="/testing/web/tests/new?redirect={{redirectURL}}&category_id={{categoryID}}&course_id={{course.ID}}" class="btn btn--secondary">
                                 <span class="btn__icon">＋</span>
                                 Создать тест
                             </a>
                             {{#if course.tests.draft}}
-                            <a href="testing/web/tests/{{course.tests.draft.ID}}/draft" class="btn btn--secondary">
+                            <a href="/testing/web/tests/{{course.tests.draft.ID}}/draft?redirect={{redirectURL}}&category_id={{categoryID}}&course_id={{course.ID}}" class="btn btn--secondary">
                                 <span class="btn__icon">✏️</span>
                                 Редактировать черновик
                             </a>
                             {{/if}}
                             {{#if course.tests.published}}
-                            <a href="testing/web/tests/{{course.tests.published.ID}}/edit" class="btn btn--secondary">
+                            <a href="/testing/web/tests/{{course.tests.published.ID}}/edit?redirect={{redirectURL}}&category_id={{categoryID}}&course_id={{course.ID}}" class="btn btn--secondary">
                                 <span class="btn__icon">✏️</span>
                                 Редактировать опубликованный тест
                             </a>

@@ -67,7 +67,9 @@ public class TestFormController {
         
         Map<String, Object> model = new HashMap<>();
         model.put("title", "Создание нового теста");
-        model.put("test", new Test(null, null, "", 60, ""));
+        String courseId = ctx.queryParam("course_id");
+        model.put("courseId", courseId);
+        model.put("test", new Test(null, courseId, "", 60, ""));
         model.put("questions", new ArrayList<>());
         model.put("page", "test-builder");
         model.put("isNew", true);
@@ -165,6 +167,7 @@ public class TestFormController {
         
         model.put("title", "Редактирование теста: " + test.getTitle());
         model.put("test", test);
+        model.put("courseId", test.getCourseId());
         model.put("questions", questionsWithAnswers);
         model.put("page", "test-editor");
         model.put("isNew", false);
@@ -219,6 +222,7 @@ public class TestFormController {
         
         model.put("title", "Редактирование черновика: " + draft.getTitle());
         model.put("test", testForDisplay);
+        model.put("courseId", testForDisplay.getCourseId());
         model.put("questions", questionsWithAnswers);
         model.put("page", "test-editor");
         model.put("isNew", false);
