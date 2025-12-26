@@ -13,13 +13,8 @@
       --danger:#b42318; --danger-weak:rgba(180,35,24,.08);
     }
     *{box-sizing:border-box}
-    html{
-      /* помогает, чтобы якоря не прятались под sticky topbar */
-      scroll-padding-top: 84px;
-    }
+    html{scroll-padding-top:84px}
     body{margin:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial}
-
-    /* убрать подчёркивания по умолчанию */
     a{color:inherit;text-decoration:none}
     a:hover{text-decoration:none}
 
@@ -30,7 +25,6 @@
       border-bottom:1px solid var(--border);
       padding:12px 0;
       margin-bottom:14px;
-      /* фиксируем высоту/поведение, чтобы меньше “прыгало” */
       min-height:64px;
     }
     .topbar-inner{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:980px;margin:0 auto;padding:0 18px;}
@@ -39,24 +33,6 @@
     .muted{color:var(--muted);font-size:13px;font-weight:500}
 
     .top-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
-    .card-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-
-    .btn{
-      padding:11px 16px;border-radius:12px;border:1px solid var(--text);
-      background:var(--text);color:#fff;cursor:pointer;
-      font-weight:600;letter-spacing:-.01em;
-      transition:transform .05s ease,opacity .15s ease,background .15s ease,border-color .15s ease
-    }
-    .btn:hover{opacity:.94}
-    .btn:active{transform:translateY(1px)}
-    .btn.pressed{
-      background:transparent;color:var(--text);
-      border-color:rgba(255,106,0,.85);
-      box-shadow:0 0 0 3px rgba(255,106,0,.18);
-      cursor:default;opacity:1;
-      font-weight:600;
-    }
-    .btn:disabled{cursor:default;opacity:.75}
 
     .btn-outline{
       padding:11px 16px;border-radius:12px;border:1px solid rgba(255,106,0,.85);
@@ -68,21 +44,6 @@
     }
     .btn-outline:hover{box-shadow:0 0 0 3px rgba(255,106,0,.16);}
 
-    .btn-danger{
-      padding:12px 18px;
-      border-radius:12px;
-      border:1px solid rgba(255,106,0,.85);
-      background:var(--orange);
-      color:#fff;
-      cursor:pointer;
-      font-weight:650;
-      font-size:15px;
-      letter-spacing:-.01em;
-      white-space:nowrap;
-    }
-    .btn-danger:hover{opacity:.95}
-    .btn-danger:active{transform:translateY(1px)}
-
     .container{max-width:980px;margin:0 auto;padding:0 18px 60px}
     .card{
       background:#fff;border:1px solid var(--border);
@@ -90,8 +51,7 @@
       box-shadow:var(--shadow);
       padding:16px;margin:14px 0;
       transition:border-color .15s ease,box-shadow .15s ease,background .15s ease;
-      /* чтобы якорь позиционировался красивее */
-      scroll-margin-top: 84px;
+      scroll-margin-top:84px;
     }
     .card.answered{
       border-color:rgba(255,106,0,.55);
@@ -99,13 +59,11 @@
       box-shadow:0 8px 22px rgba(255,106,0,.12),var(--shadow);
     }
 
-    /* подсветка цели по якорю: красным только обводка */
     .card:target{
       border-color:rgba(180,35,24,.75);
       outline:3px solid rgba(180,35,24,.18);
       background:#fff;
     }
-    /* если уже отвечено — при target пусть будет оранжевым */
     .card.answered:target{
       border-color:rgba(255,106,0,.75);
       outline:3px solid rgba(255,106,0,.18);
@@ -138,7 +96,6 @@
     }
     .answer:hover{border-color:rgba(255,106,0,.35);background:linear-gradient(0deg,var(--orange-weak-2),var(--orange-weak-2)),#fff}
     .answer.selected{border-color:rgba(255,106,0,.65);background:linear-gradient(0deg,var(--orange-weak),var(--orange-weak)),#fff}
-    .answer.disabled{opacity:.85}
     .answer-text{line-height:1.5;min-width:0}
 
     .badge{
@@ -155,55 +112,6 @@
       font-size:12px;font-weight:700;
     }
 
-    .error{
-      margin:0 0 10px 0;padding:10px 12px;border-radius:14px;
-      border:1px solid rgba(180,35,24,.25);background:var(--danger-weak);
-      color:var(--danger);font-weight:600;font-size:13px;line-height:1.45;
-    }
-
-    /* ---------- МОДАЛКА БЕЗ JS: через :target ---------- */
-    .modal{display:none;position:fixed;inset:0;z-index:999;align-items:center;justify-content:center;padding:18px;}
-    #finishConfirm:target{display:flex;}
-    .modal-overlay{position:absolute;inset:0;background:rgba(0,0,0,.45);}
-
-    .modal-card{
-      position:relative;
-      width:min(720px,100%);
-      background:#fff;
-      border-radius:18px;
-      border:1px solid var(--border);
-      box-shadow:0 18px 60px rgba(0,0,0,.20);
-      padding:18px;
-    }
-    .modal-title{margin:0 0 8px 0;font-size:18px;letter-spacing:-.01em;font-weight:650;}
-    .modal-text{margin:0;color:var(--muted);line-height:1.55;font-weight:500;}
-
-    .modal-warn{
-      margin-top:12px;
-      padding:12px;
-      border-radius:14px;
-      border:1px solid rgba(255,106,0,.45);
-      background:var(--orange-weak);
-      color:#2a2a2a;
-      font-weight:500;
-    }
-
-    .modal-list{margin:10px 0 0 0;padding-left:18px;}
-    .modal-list li{margin:10px 0; line-height:1.7; font-weight:500;}
-
-    /* ссылки в перечне — пунктирное оранжевое подчёркивание */
-    .miss-link{
-      font-weight:500;
-      border-bottom: 2px dotted rgba(255,106,0,.75);
-      padding-bottom:2px;
-    }
-    .miss-link:hover{border-bottom-color: rgba(255,106,0,.95);}
-
-    .modal-actions{
-      display:flex;gap:10px;flex-wrap:wrap;
-      margin-top:14px;align-items:center;justify-content:flex-end;
-    }
-
     .footer{text-align:center;color:var(--muted);padding:22px 0 10px;font-weight:500;}
 
     @media (max-width:640px){
@@ -213,8 +121,6 @@
       .points{width:100%;text-align:left;display:flex;align-items:baseline;justify-content:space-between}
       .points b{font-size:18px}
       .points span{margin-top:0}
-      .modal-actions{justify-content:stretch}
-      .modal-actions>*{flex:1}
     }
   </style>
 </head>
@@ -232,21 +138,17 @@
       </div>
 
       <div class="top-actions">
-        {{#if allAnswered}}
-          <form method="post" action="/testing/ui/tests/{{test.id}}/finish" style="margin:0;">
-            <input type="hidden" name="attempt_id" value="{{attempt_id}}"/>
-            <input type="hidden" name="student_id" value="{{student_id}}"/>
-            <input type="hidden" name="force" value="true"/>
-            <button class="btn-outline" type="submit">Завершить и посмотреть результаты</button>
-          </form>
-        {{else}}
-          <a class="btn-outline" href="#finishConfirm">Завершить и посмотреть результаты</a>
-        {{/if}}
+        <button class="btn-outline" type="submit" form="takeForm">Сохранить</button>
+        <button class="btn-outline" type="submit" form="takeForm" formaction="/testing/ui/tests/{{test.id}}/finish">Завершить</button>
       </div>
     </div>
   </div>
 
   <div class="container">
+    <form id="takeForm" method="post" action="/testing/ui/tests/{{test.id}}/save">
+      <input type="hidden" name="student_id" value="{{student_id}}" />
+      <input type="hidden" name="attempt_id" value="{{attempt_id}}" />
+
     {{#each questions}}
       <div class="card {{#if answered}}answered{{/if}}" id="q_{{id}}">
         <div class="qrow">
@@ -263,76 +165,27 @@
             <p class="qtext">{{text_of_question}}</p>
             {{#if hint}}<div class="muted" style="margin:-6px 0 10px 0;"><span style="font-weight:600">{{hint}}</span></div>{{/if}}
 
-            {{#if validationError}}
-              <div class="error">{{validationError}}</div>
+            <div class="answers">
+              {{#each answers}}
+                <label class="answer {{#if selected}}selected{{/if}}">
+                  <input type="{{../inputType}}" name="{{../inputName}}" value="{{id}}" {{#if selected}}checked{{/if}} />
+                  <span class="answer-text">{{text}}</span>
+                </label>
+              {{/each}}
+            </div>
+
+            {{#if answered}}
+              <div class="badge" style="margin-top:10px;">
+                <span class="check">✓</span>
+                <span>Сохранено{{#if selectedAnswerText}}: <span style="font-weight:600">{{selectedAnswerText}}</span>{{/if}}</span>
+              </div>
             {{/if}}
-
-            <form method="post" action="/testing/ui/tests/{{../test.id}}/questions/{{id}}/answer">
-              <div class="answers">
-                {{#each answers}}
-                  <label class="answer {{#if disabled}}disabled{{/if}} {{#if selected}}selected{{/if}}">
-                    <input type="{{../inputType}}" name="{{../inputName}}" value="{{id}}"
-                      {{#if selected}}checked{{/if}}
-                      {{#if disabled}}disabled{{/if}} />
-                    <span class="answer-text">{{text}}</span>
-                  </label>
-                {{/each}}
-              </div>
-
-              <input type="hidden" name="student_id" value="{{../student_id}}" />
-              <input type="hidden" name="attempt_id" value="{{../attempt_id}}" />
-
-              <div class="card-actions">
-                <button type="submit" class="{{buttonClass}}" {{#if buttonDisabled}}disabled{{/if}}>
-                  {{buttonText}}
-                </button>
-
-                {{#if answered}}
-                  <div class="badge">
-                    <span class="check">✓</span>
-                    <span>Сохранено{{#if selectedAnswerText}}: <span style="font-weight:600">{{selectedAnswerText}}</span>{{/if}}</span>
-                  </div>
-                {{/if}}
-              </div>
-            </form>
           </div>
         </div>
       </div>
     {{/each}}
+    </form>
   </div>
-
-  {{#unless allAnswered}}
-    <div class="modal" id="finishConfirm" aria-modal="true" role="dialog">
-      <a class="modal-overlay" href="#" aria-label="Закрыть"></a>
-
-      <div class="modal-card">
-        <h2 class="modal-title">Завершить попытку?</h2>
-        <p class="modal-text">
-          Есть вопросы без ответа: {{missingCount}}. Можно вернуться и ответить, либо завершить и посмотреть результаты.
-        </p>
-
-        <div class="modal-warn">
-          <div style="margin-bottom:6px;">Без ответа:</div>
-          <ul class="modal-list">
-            {{#each missingQuestions}}
-              <li><a class="miss-link" href="#q_{{id}}">Вопрос {{order}}</a></li>
-            {{/each}}
-          </ul>
-        </div>
-
-        <div class="modal-actions">
-          <a class="btn-outline" href="#">Продолжить тестирование</a>
-
-          <form method="post" action="/testing/ui/tests/{{test.id}}/finish" style="margin:0;">
-            <input type="hidden" name="attempt_id" value="{{attempt_id}}"/>
-            <input type="hidden" name="student_id" value="{{student_id}}"/>
-            <input type="hidden" name="force" value="true"/>
-            <button class="btn-danger" type="submit">Завершить и смотреть результаты</button>
-          </form>
-        </div>
-      </div>
-    </div>
-  {{/unless}}
 
   <footer class="footer">
     {{> footer}}

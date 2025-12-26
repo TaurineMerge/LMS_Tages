@@ -21,7 +21,10 @@ public class UiRouter {
             // /ui/tests/{testId}/take?attemptId=...
             get("/tests/{testId}/take", uiTestController::showTakePage);
 
-            // submit: hidden attempt_id
+            // сохранить все ответы (можно исправлять)
+            post("/tests/{testId}/save", uiTestController::saveAllAnswers);
+
+            // legacy submit (не используем в новом UI, но оставляем чтобы не ломать старое)
             post("/tests/{testId}/questions/{questionId}/answer", uiTestController::submitAnswer);
 
             // finish/results тоже работают с attemptId:
