@@ -1,36 +1,33 @@
-// Package apperrors provides custom error types and factories for the application.
-// This allows for consistent, structured error responses in the API layer.
+// Package apperrors предоставляет стандартизированные типы ошибок, используемые во всем приложении.
+// Это позволяет последовательно обрабатывать ошибки и преобразовывать их в соответствующие HTTP-ответы.
 package apperrors
 
 import "fmt"
 
-// AppError is our custom error type for the application.
-// It includes an HTTP status code, an application-specific error code,
-// and a user-facing message.
+// AppError представляет собой стандартную ошибку приложения с дополнительной информацией
+// для преобразования в HTTP-ответ.
 type AppError struct {
-	HTTPStatus int    // HTTP Status code to return
-	Code       string // Application-specific error code
-	Message    string // User-facing error message
+	HTTPStatus int    // HTTP-статус, который должен быть возвращен клиенту.
+	Code       string // Уникальный код ошибки для программной обработки.
+	Message    string // Человекочитаемое сообщение об ошибке.
 }
 
-// Error makes AppError implement the standard error interface.
+// Error реализует стандартный интерфейс error.
 func (e *AppError) Error() string {
 	return e.Message
 }
 
-// ServiceUnavailableError represents an error where a dependency service is unavailable.
+// ServiceUnavailableError представляет ошибку, возникающую, когда внешний сервис недоступен.
 type ServiceUnavailableError struct {
-	ServiceName string
+	ServiceName string // Имя недоступного сервиса.
 }
 
+// Error реализует стандартный интерфейс error.
 func (e *ServiceUnavailableError) Error() string {
 	return fmt.Sprintf("service %s is unavailable", e.ServiceName)
 }
 
-
-// Factory functions for creating specific application errors.
-
-// NewNotFound creates a new 404 Not Found error.
+// NewNotFound создает новую ошибку AppError для случаев, когда ресурс не найден (HTTP 404).
 func NewNotFound(resource string) error {
 	return &AppError{
 		HTTPStatus: 404,
@@ -39,7 +36,7 @@ func NewNotFound(resource string) error {
 	}
 }
 
-// NewInvalidUUID creates a new 400 Bad Request error for invalid UUIDs.
+// NewInvalidUUID создает новую ошибку AppError для неверного формата UUID (HTTP 400).
 func NewInvalidUUID(resource string) error {
 	return &AppError{
 		HTTPStatus: 400,
@@ -48,7 +45,7 @@ func NewInvalidUUID(resource string) error {
 	}
 }
 
-// NewInvalidRequest creates a new 400 Bad Request error for general invalid requests.
+// NewInvalidRequest создает новую ошибку AppError для неверных параметров запроса (HTTP 400).
 func NewInvalidRequest(message string) error {
 	if message == "" {
 		message = "Invalid request parameters"
@@ -60,8 +57,7 @@ func NewInvalidRequest(message string) error {
 	}
 }
 
-// NewInternal creates a new 500 Internal Server Error.
-// This should be used for unexpected errors that cannot be handled.
+// NewInternal создает новую ошибку AppError для непредвиденных внутренних ошибок сервера (HTTP 500).
 func NewInternal() error {
 	return &AppError{
 		HTTPStatus: 500,
@@ -70,7 +66,7 @@ func NewInternal() error {
 	}
 }
 
-// NewServiceUnavailable creates a new error indicating a dependency service is unavailable.
+// NewServiceUnavailable создает новую ошибку ServiceUnavailableError.
 func NewServiceUnavailable(serviceName string) error {
 	return &ServiceUnavailableError{ServiceName: serviceName}
 }

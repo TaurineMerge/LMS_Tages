@@ -1,31 +1,42 @@
-// Package v1 contains the HTTP handlers for the application.
+// Package v1 содержит обработчики для API версии 1.
 package v1
 
 import (
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/dto/request"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/dto/response"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/service"
-	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/routing"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apperrors"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/routing"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
 
-// CourseHandler handles HTTP requests related to course pages.
+// CourseHandler обрабатывает HTTP-запросы, связанные с курсами.
 type CourseHandler struct {
 	courseService service.CourseService
 }
 
-// NewCourseHandler creates a new instance of a course handler.
+// NewCourseHandler создает новый экземпляр CourseHandler.
 func NewCourseHandler(courseService service.CourseService) *CourseHandler {
 	return &CourseHandler{
 		courseService: courseService,
 	}
 }
 
-
-
-// GetCoursesByCategoryID handles the request to get paginated courses for a specific category.
+// GetCoursesByCategoryID обрабатывает запрос на получение списка курсов для конкретной категории.
+// @Summary Получить список курсов категории
+// @Description Получает страницы списка курсов для указанной категории.
+// @Tags Courses
+// @Accept json
+// @Produce json
+// @Param category_id path string true "Уникальный идентификатор категории"
+// @Param page query int false "Номер страницы" default(1)
+// @Param limit query int false "Количество элементов на странице" default(20)
+// @Success 200 {object} response.SuccessResponse{data=response.PaginatedCoursesData} "Успешный ответ"
+// @Failure 400 {object} response.ErrorResponse "Неверные параметры запроса"
+// @Failure 404 {object} response.ErrorResponse "Категория не найдена"
+// @Failure 500 {object} response.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /categories/{category_id}/courses [get]
 func (h *CourseHandler) GetCoursesByCategoryID(c *fiber.Ctx) error {
 	categoryID := c.Params(routing.PathVariableCategoryID)
 	if _, err := uuid.Parse(categoryID); err != nil {
@@ -37,7 +48,7 @@ func (h *CourseHandler) GetCoursesByCategoryID(c *fiber.Ctx) error {
 		return apperrors.NewInvalidRequest("Wrong query parameters")
 	}
 
-	// Get courses for this category with pagination (no filters for API)
+	// В API не используются фильтры по уровню и сортировка, передаем пустые строки.
 	courses, pagination, err := h.courseService.GetCoursesByCategoryID(c.UserContext(), categoryID, query.Page, query.Limit, "", "")
 	if err != nil {
 		return err
@@ -52,7 +63,19 @@ func (h *CourseHandler) GetCoursesByCategoryID(c *fiber.Ctx) error {
 	})
 }
 
-// GetCourseByID handles the request to get a single course by its ID.
+// GetCourseByID обрабатывает запрос на получение одного курса по его ID.
+// @Summary Получить курс по ID
+// @Description Получает детали одного курса по его UUID в рамках категории.
+// @Tags Courses
+// @Accept json
+// @Produce json
+// @Param category_id path string true "Уникальный идентификатор категории"
+// @Param course_id path string true "Уникальный идентификатор курса"
+// @Success 200 {object} response.SuccessResponse{data=response.CourseDTO} "Успешный ответ"
+// @Failure 400 {object} response.ErrorResponse "Неверный формат ID"
+// @Failure 404 {object} response.ErrorResponse "Категория или курс не найдены"
+// @Failure 500 {object} response.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /categories/{category_id}/courses/{course_id} [get]
 func (h *CourseHandler) GetCourseByID(c *fiber.Ctx) error {
 	categoryID := c.Params(routing.PathVariableCategoryID)
 	if _, err := uuid.Parse(categoryID); err != nil {

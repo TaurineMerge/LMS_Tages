@@ -1,4 +1,4 @@
-// Package logger provides a centralized setup for the application's slog logger.
+// Package logger предоставляет утилиты для настройки логирования в приложении.
 package logger
 
 import (
@@ -7,7 +7,10 @@ import (
 	"strings"
 )
 
-// Setup initializes the global slog logger with the given level.
+// Setup настраивает и возвращает новый экземпляр *slog.Logger.
+// Он определяет уровень логирования на основе предоставленной строки `logLevel`.
+// Поддерживаемые уровни: "DEBUG", "WARN", "ERROR". По умолчанию используется "INFO".
+// Логгер выводит текстовые сообщения в os.Stdout.
 func Setup(logLevel string) *slog.Logger {
 	var level slog.Level
 	switch strings.ToUpper(logLevel) {
@@ -18,7 +21,7 @@ func Setup(logLevel string) *slog.Logger {
 	case "ERROR":
 		level = slog.LevelError
 	default:
-		level = slog.LevelInfo // Default to INFO
+		level = slog.LevelInfo
 	}
 
 	return slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level}))

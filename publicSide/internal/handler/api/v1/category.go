@@ -1,30 +1,38 @@
-// Package v1 contains the HTTP handlers for the application.
-// It is responsible for parsing requests, calling services, and formatting responses.
+// Package v1 содержит обработчики для API версии 1.
 package v1
 
 import (
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/dto/request"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/dto/response"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/service"
-	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/routing"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apperrors"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/routing"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
 
-// CategoryHandler handles HTTP requests related to categories.
+// CategoryHandler обрабатывает HTTP-запросы, связанные с категориями.
 type CategoryHandler struct {
 	service service.CategoryService
 }
 
-// NewCategoryHandler creates a new instance of a category handler.
+// NewCategoryHandler создает новый экземпляр CategoryHandler.
 func NewCategoryHandler(s service.CategoryService) *CategoryHandler {
 	return &CategoryHandler{service: s}
 }
 
-
-
-// GetAllCategories handles the request to get a paginated list of all categories.
+// GetAllCategories обрабатывает запрос на получение списка всех категорий с пагинацией.
+// @Summary Получить список всех категорий
+// @Description Получает страницы списка всех категорий.
+// @Tags Categories
+// @Accept json
+// @Produce json
+// @Param page query int false "Номер страницы" default(1)
+// @Param limit query int false "Количество элементов на странице" default(20)
+// @Success 200 {object} response.SuccessResponse{data=response.PaginatedCategoriesData} "Успешный ответ"
+// @Failure 400 {object} response.ErrorResponse "Неверные параметры запроса"
+// @Failure 500 {object} response.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /categories [get]
 func (h *CategoryHandler) GetAllCategories(c *fiber.Ctx) error {
 	var query request.PaginationQuery
 	if err := c.QueryParser(&query); err != nil {
@@ -45,7 +53,18 @@ func (h *CategoryHandler) GetAllCategories(c *fiber.Ctx) error {
 	})
 }
 
-// GetCategoryByID handles the request to get a single category by its ID.
+// GetCategoryByID обрабатывает запрос на получение одной категории по ее ID.
+// @Summary Получить категорию по ID
+// @Description Получает детали одной категории по ее UUID.
+// @Tags Categories
+// @Accept json
+// @Produce json
+// @Param category_id path string true "Уникальный идентификатор категории"
+// @Success 200 {object} response.SuccessResponse{data=response.CategoryDTO} "Успешный ответ"
+// @Failure 400 {object} response.ErrorResponse "Неверный формат ID"
+// @Failure 404 {object} response.ErrorResponse "Категория не найдена"
+// @Failure 500 {object} response.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /categories/{category_id} [get]
 func (h *CategoryHandler) GetCategoryByID(c *fiber.Ctx) error {
 	categoryID := c.Params(routing.PathVariableCategoryID)
 	if _, err := uuid.Parse(categoryID); err != nil {

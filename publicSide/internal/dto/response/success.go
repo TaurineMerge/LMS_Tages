@@ -1,13 +1,13 @@
-// Package response contains Data Transfer Objects (DTOs) for outgoing server responses.
+// Package response содержит структуры данных для формирования HTTP-ответов.
 package response
 
 const (
-	StatusSuccess = "success"
-	StatusError   = "error"
+	StatusSuccess = "success" // Статус для успешного ответа.
+	StatusError   = "error"   // Статус для ответа с ошибкой.
 )
 
-// SuccessResponse represents a success response.
+// SuccessResponse представляет собой стандартную обертку для успешных JSON-ответов.
 type SuccessResponse struct {
-	Status string      `json:"status"`
-	Data   interface{} `json:"data"`
+	Status string      `json:"status"` // Статус ответа, всегда "success".
+	Data   interface{} `json:"data"`   // Полезная нагрузка (данные) ответа.
 }

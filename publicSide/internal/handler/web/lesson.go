@@ -1,3 +1,4 @@
+// Package web содержит обработчики для рендеринга веб-страниц.
 package web
 
 import (
@@ -13,21 +14,25 @@ import (
 	"github.com/google/uuid"
 )
 
+// LessonHandler обрабатывает HTTP-запросы, связанные со страницей урока.
 type LessonHandler struct {
-	lessonsService   service.LessonService
-	coursesService   service.CourseService
+	lessonsService    service.LessonService
+	coursesService    service.CourseService
 	categoriesService service.CategoryService
 }
 
+// NewLessonHandler создает новый экземпляр LessonHandler.
 func NewLessonHandler(ls service.LessonService, cs service.CourseService, cats service.CategoryService) *LessonHandler {
 	return &LessonHandler{
-		lessonsService:   ls,
-		coursesService:   cs,
+		lessonsService:    ls,
+		coursesService:    cs,
 		categoriesService: cats,
 	}
 }
 
-// RenderLesson отображает страницу урока.
+// RenderLesson отображает страницу конкретного урока.
+// Он загружает данные урока, курса, категории, а также информацию о соседних
+// уроках для навигации.
 func (h *LessonHandler) RenderLesson(c *fiber.Ctx) error {
 	categoryID := c.Params(routing.PathVariableCategoryID)
 	if _, err := uuid.Parse(categoryID); err != nil {
@@ -56,6 +61,7 @@ func (h *LessonHandler) RenderLesson(c *fiber.Ctx) error {
 		nextLessonDTO = response.LessonDTO{}
 	}
 
+	// Получаем все уроки для боковой панели.
 	lessonsDTOs, _, err := h.lessonsService.GetAllByCourseID(ctx, categoryID, courseID, 1, 100, "")
 	if err != nil {
 		slog.Error("Failed to get all lessons", "lessonID", lessonID, "error", err)

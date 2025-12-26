@@ -1,5 +1,7 @@
-// Package main is the entry point for the publicSide service.
-// It initializes the configuration, database, router, and starts the HTTP server.
+
+
+// publicSide - это публичная часть образовательной платформы LMS Tages.
+// Данный файл является точкой входа в приложение.
 package main
 
 import (
@@ -30,12 +32,12 @@ import (
 )
 
 func main() {
-	// 1. Load Environment
+	// --- Загрузка переменных окружения ---
 	if err := godotenv.Load(); err != nil {
 		slog.Warn("Not loaded .env file, using environment variables", "error", err)
 	}
 
-	// 2. Initialize Configuration
+	// --- Конфигурация ---
 	cfg, err := config.New(
 		config.WithDBFromEnv(),
 		config.WithCORSFromEnv(),
@@ -52,11 +54,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	// 3. Initialize Logger
+	// --- Логирование и Трассировка ---
 	slog.SetDefault(logger.Setup(cfg.Log.Level))
 	slog.Info("Application starting", "DEV_MODE", cfg.App.Dev)
 
-	// 4. Initialize Tracer
 	tracer, err := tracing.New(&cfg.Otel)
 	if err != nil {
 		slog.Error("Failed to initialize tracer", "error", err)
@@ -64,14 +65,13 @@ func main() {
 	}
 	defer tracer.Close()
 
-	// Initialize OIDC Provider
+	// --- Аутентификация (OIDC) ---
 	provider, err := oidc.NewProvider(context.Background(), cfg.OIDC.IssuerURL)
 	if err != nil {
 		slog.Error("Failed to initialize OIDC provider", "error", err)
 		os.Exit(1)
 	}
 
-	// Configure OAuth2
 	oauth2Config := &oauth2.Config{
 		ClientID:     cfg.OIDC.ClientID,
 		ClientSecret: cfg.OIDC.ClientSecret,
@@ -83,17 +83,15 @@ func main() {
 	authHandler := web.NewAuthHandler(provider, oauth2Config)
 	authMiddleware := web.NewAuthMiddleware(provider, cfg.OIDC.ClientID)
 
-	// 5. Initialize Database
+	// --- Инициализация зависимостей (DI) ---
 	dbPool, err := database.NewConnection(&cfg.Database)
 	if err != nil {
 		slog.Error("Failed to connect to database", "error", err)
 		os.Exit(1)
 	}
-
 	defer dbPool.Close()
 	slog.Info("Database connection pool established")
 
-	// 6. Initialize S3 Service
 	s3Service, err := service.NewS3Service(cfg.Minio)
 	if err != nil {
 		slog.Error("Failed to initialize S3 service", "error", err)
@@ -101,7 +99,6 @@ func main() {
 	}
 	slog.Info("S3 service initialized")
 
-	// 7. Initialize Services
 	testingClient, err := testing.NewClient(cfg.TestingService.BaseURL, "./doc/schemas/external/testing/get_test_response.json")
 	if err != nil {
 		slog.Error("Failed to initialize testing client", "error", err)
@@ -109,23 +106,26 @@ func main() {
 	}
 	slog.Info("Testing client initialized")
 
+	// Репозитории
 	lessonRepo := repository.NewLessonRepository(dbPool)
 	categoryRepo := repository.NewCategoryRepository(dbPool)
 	courseRepo := repository.NewCourseRepository(dbPool)
 
+	// Сервисы
 	lessonService := service.NewLessonService(lessonRepo)
 	categoryService := service.NewCategoryService(categoryRepo)
 	courseService := service.NewCourseService(courseRepo, categoryRepo, s3Service)
 	testService := service.NewTestService(testingClient)
 	slog.Info("All services initialized")
 
-	// 8. Initialize Fiber App and Global Middleware
+	// --- Настройка Fiber ---
 	engine := template.NewEngine(&cfg.App)
 	app := fiber.New(fiber.Config{
 		Views:        engine,
 		ErrorHandler: middleware.CommonErrorHandler,
 	})
 
+	// Middleware
 	app.Use(recover.New())
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     cfg.CORS.AllowedOrigins,
@@ -136,7 +136,7 @@ func main() {
 	app.Use(otelfiber.Middleware())
 	app.Use(middleware.RequestResponseLogger())
 
-	// 9. Setup Routes
+	// --- Роутинг ---
 	webRouter := &router.WebRouter{
 		Config:              &cfg.App,
 		HomeHandler:         web.NewHomeHandler(categoryService, courseService),
@@ -155,7 +155,7 @@ func main() {
 	}
 	apiRouter.Setup(app)
 
-	// 10. Start Server
+	// --- Запуск сервера ---
 	slog.Info("Starting server", "address", cfg.Server.Port)
 	if err := app.Listen(fmt.Sprintf(":%s", cfg.Server.Port)); err != nil {
 		slog.Error("Server failed to start", "error", err)
