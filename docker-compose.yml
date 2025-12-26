@@ -13,8 +13,6 @@ services:
     depends_on:
       keycloak:
         condition: service_healthy
-      public-side:
-        condition: service_started
       admin-panel:
         condition: service_started
       personal-account:
@@ -22,6 +20,8 @@ services:
       testing:
         condition: service_started
       jaeger:
+        condition: service_started
+      public-side:
         condition: service_started
       otel-collector:
         condition: service_started
@@ -62,7 +62,7 @@ services:
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
       KC_PROXY: "reencrypt"
-      KC_HOSTNAME_PORT: "80"
+      KC_HOSTNAME: "localhost"
       KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
       KC_HTTP_RELATIVE_PATH: "/auth"
       KC_BASE_URL: "http://localhost/auth"
@@ -132,16 +132,29 @@ services:
       DB_HOST: ${APP_DB_HOST}
       DB_PORT: ${APP_DB_INTERNAL_PORT}
       OTEL_EXPORTER_OTLP_ENDPOINT: "otel-collector:4317"
+      OIDC_CLIENT_ID: "teacher-client"
+      OIDC_CLIENT_SECRET: "TEACHER_SECRET"
+      OIDC_ISSUER_URL: "http://localhost/auth/realms/teacher"
+      OIDC_REDIRECT_URL: "http://localhost/auth/callback"
+      MINIO_ENDPOINT: "minio:9000"
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET_IMAGES:-images}
+      MINIO_USE_SSL: "false"
+      MINIO_PUBLIC_URL: "http://localhost:9000"
     ports: []
+    extra_hosts:
+      - "localhost:host-gateway"
     networks:
       - app-network
     depends_on:
       app-db:
         condition: service_healthy
       keycloak:
-        condition: service_started
+        condition: service_healthy
+      minio:
+        condition: service_healthy
     restart: unless-stopped
-
   admin-panel:
     build: ./adminPanel
     container_name: admin-panel
@@ -165,6 +178,12 @@ services:
       API_ADDRESS: ":4000"
       CORS_ALLOW_ORIGINS: "*"
       CORS_ALLOW_CREDENTIALS: "false"
+      MINIO_ENDPOINT: "minio:9000"
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET_IMAGES:-images}
+      MINIO_USE_SSL: "false"
+      MINIO_PUBLIC_URL: "http://localhost:9000"
     ports: []
     networks:
       - app-network
@@ -172,6 +191,8 @@ services:
       app-db:
         condition: service_healthy
       keycloak:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     restart: unless-stopped
 

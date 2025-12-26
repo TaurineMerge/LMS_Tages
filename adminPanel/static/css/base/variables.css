@@ -1,0 +1,20 @@
+/* Variables */
+:root {
+    --gray-25: #FAFBFC;
+    --gray-50: #F5F7FA;
+    --gray-100: #E5E7EB;
+    --gray-500: #8C94A3;
+    --gray-900: #1D2026;
+    --lavender-100: #EBEBFF;
+    --orange-100: #FFEEE8;
+    --orange-500: #FF6636;
+    
+    --font-family: 'Inter', sans-serif;
+    --border-radius: 0.5rem;
+
+    /* Additional for home page */
+    --main-text-color: var(--gray-900);
+    --accent-color: var(--orange-500);
+    --line-height-tight: 1.2;
+    --line-height-relaxed: 1.6;
+}

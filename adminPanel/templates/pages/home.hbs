@@ -1,0 +1,80 @@
+<!-- templates/pages/home.hbs -->
+<div class="admin-page admin-page--full">
+    <!-- Основной контент -->
+    <main class="admin-content admin-content--full">
+        <section class="home">
+            <header class="home__header">
+                <h1 class="home__header-title">
+                    Добро пожаловать в
+                    <span class="accent">Админ-панель LMS Tages!</span>
+                </h1>
+                <p class="home__header-description">
+                   Управляй контентом платформы
+                    <span class="accent">эффективно</span>
+                    и 
+                    <span class="accent">удобно</span>
+                </p>
+            </header>
+
+            <section class="home__abilities">
+                <h2 class="home__abilities-title">Здесь ты можешь:</h2>
+                <ul class="home__abilities-list">
+                    <li class="home__abilities-item">Создавать и редактировать категории курсов</li>
+                    <li class="home__abilities-item">Управлять курсами и их содержимым</li>
+                    <li class="home__abilities-item">Добавлять уроки с текстом и медиа</li>
+                    <li class="home__abilities-item">Создавать тесты и сертификаты</li>
+                    <li class="home__abilities-item">Просматривать статистику и аналитику</li>
+                </ul>
+            </section>
+
+            <section class="home__management">
+                <h2 class="home__management-title">Управление контентом:</h2>
+                <p class="home__management-description">
+                    Как администратор, ты имеешь полный контроль над платформой. После создания материалов ты можешь:
+                </p>
+                <ul class="home__management-list">
+                    <li class="home__management-item">Работать с черновиками — публиковать, когда готово</li>
+                    <li class="home__management-item">Устанавливать уровни сложности для курсов</li>
+                    <li class="home__management-item">Управлять видимостью для студентов и гостей</li>
+                    <li class="home__management-item">Мониторить прогресс и результаты тестов</li>
+                </ul>
+            </section>
+
+            <section class="home__stats">
+                <h2 class="home__stats-title">Статистика платформы:</h2>
+                <ul class="home__stats-list">
+                    <li class="home__stats-item">Общее количество пользователей</li>
+                    <li class="home__stats-item">Количество активных курсов</li>
+                    <li class="home__stats-item">Статистика прохождения тестов</li>
+                    <li class="home__stats-item">Популярные категории и курсы</li>
+                </ul>
+            </section>
+
+            <section class="home__quick-actions">
+                <h2 class="home__quick-actions-title">Быстрые действия:</h2>
+                <div class="home__quick-actions-grid">
+                    <a href="/admin/categories" class="dashboard-card">
+                        <div class="dashboard-card__icon">📂</div>
+                        <h3 class="dashboard-card__title">Категории</h3>
+                        <p class="dashboard-card__description">Управление разделами курсов</p>
+                    </a>
+                    <a href="/admin/courses" class="dashboard-card">
+                        <div class="dashboard-card__icon">📚</div>
+                        <h3 class="dashboard-card__title">Курсы</h3>
+                        <p class="dashboard-card__description">Создание и редактирование курсов</p>
+                    </a>
+                    <a href="/admin/lessons" class="dashboard-card">
+                        <div class="dashboard-card__icon">📖</div>
+                        <h3 class="dashboard-card__title">Уроки</h3>
+                        <p class="dashboard-card__description">Управление содержимым уроков</p>
+                    </a>
+                    <div class="dashboard-card dashboard-card--disabled">
+                        <div class="dashboard-card__icon">📊</div>
+                        <h3 class="dashboard-card__title">Статистика</h3>
+                        <p class="dashboard-card__description">Просмотр аналитики и отчетов</p>
+                    </div>
+                </div>
+            </section>
+        </section>
+    </main>
+</div>

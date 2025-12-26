@@ -4,9 +4,9 @@ import (
 	"strconv"
 	"strings"
 
-	"adminPanel/exceptions"
+	"adminPanel/handlers/dto/request"
+	"adminPanel/handlers/dto/response"
 	"adminPanel/middleware"
-	"adminPanel/models"
 	"adminPanel/services"
 
 	"github.com/gofiber/fiber/v2"
@@ -14,65 +14,34 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// CourseHandler - HTTP обработчик для операций с курсами
-//
-// Обработчик предоставляет REST API для управления курсами:
-//   - GET /categories/:category_id/courses - получение курсов категории
-//   - POST /categories/:category_id/courses - создание курса
-//   - GET /categories/:category_id/courses/:id - получение курса
-//   - PUT /categories/:category_id/courses/:id - обновление курса
-//   - DELETE /categories/:category_id/courses/:id - удаление курса
-//
-// Особенности:
-//   - Фильтрация курсов по уровню и видимости
-//   - Пагинация результатов
-//   - Валидация входных данных
-//   - Интеграция с OpenTelemetry для трассировки
-//   - Стандартизированный формат ответов
+// CourseHandler обрабатывает HTTP-запросы для курсов.
+// Содержит сервис для бизнес-логики и методы для маршрутов.
 type CourseHandler struct {
 	courseService *services.CourseService
 }
 
-// NewCourseHandler создает новый HTTP обработчик для курсов
-//
-// Параметры:
-//   - courseService: сервис для работы с курсами
-//
-// Возвращает:
-//   - *CourseHandler: указатель на новый обработчик
+// NewCourseHandler создает новый экземпляр CourseHandler.
+// Принимает сервис курсов.
 func NewCourseHandler(courseService *services.CourseService) *CourseHandler {
 	return &CourseHandler{
 		courseService: courseService,
 	}
 }
 
-// RegisterRoutes регистрирует маршруты для курсов
-//
-// Регистрирует все необходимые маршруты в указанном роутере.
-// Все маршруты включают в себя category_id в пути.
-//
-// Параметры:
-//   - router: роутер Fiber для регистрации маршрутов
+// RegisterRoutes регистрирует маршруты для курсов.
+// Создает группу /categories/:category_id/courses и привязывает методы к маршрутам.
 func (h *CourseHandler) RegisterRoutes(router fiber.Router) {
 	courses := router.Group("/categories/:category_id/courses")
 
 	courses.Get("/", h.getCourses)
-	courses.Post("/", h.createCourse)
+	courses.Post("/", middleware.ValidateJSONSchema("course-create.json"), h.createCourse)
 	courses.Get("/:course_id", h.getCourse)
-	courses.Put("/:course_id", h.updateCourse)
+	courses.Put("/:course_id", middleware.ValidateJSONSchema("course-update.json"), h.updateCourse)
 	courses.Delete("/:course_id", h.deleteCourse)
 }
 
-// getCourses обрабатывает GET /categories/:category_id/courses
-//
-// Возвращает список курсов категории с возможностью фильтрации
-// по уровню сложности и видимости, а также с пагинацией.
-//
-// Параметры:
-//   - c: контекст Fiber
-//
-// Возвращает:
-//   - error: ошибка выполнения (если есть)
+// getCourses обрабатывает GET /categories/:category_id/courses.
+// Возвращает список курсов для категории с фильтрами и пагинацией.
 func (h *CourseHandler) getCourses(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	span := trace.SpanFromContext(ctx)
@@ -87,15 +56,15 @@ func (h *CourseHandler) getCourses(c *fiber.Ctx) error {
 	categoryID := c.Params("category_id")
 
 	if !isValidUUID(categoryID) {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "INVALID_UUID",
 				Message: "Invalid category ID format",
 			},
 		})
 	}
-	filter := models.CourseFilter{
+	filter := request.CourseFilter{
 		CategoryID: categoryID,
 	}
 	page, _ := strconv.Atoi(c.Query("page", "1"))
@@ -106,18 +75,18 @@ func (h *CourseHandler) getCourses(c *fiber.Ctx) error {
 
 	result, err := h.courseService.GetCourses(ctx, filter)
 	if err != nil {
-		if appErr, ok := err.(*exceptions.AppError); ok {
-			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
+		if appErr, ok := err.(*middleware.AppError); ok {
+			return c.Status(appErr.StatusCode).JSON(response.ErrorResponse{
 				Status: "error",
-				Error: models.ErrorDetails{
+				Error: response.ErrorDetails{
 					Code:    appErr.Code,
 					Message: appErr.Message,
 				},
 			})
 		}
-		return c.Status(500).JSON(models.ErrorResponse{
+		return c.Status(500).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "SERVER_ERROR",
 				Message: "Internal server error",
 			},
@@ -133,15 +102,8 @@ func (h *CourseHandler) getCourses(c *fiber.Ctx) error {
 	return c.JSON(result)
 }
 
-// createCourse обрабатывает POST /categories/:category_id/courses
-//
-// Создает новый курс в указанной категории с валидацией данных.
-//
-// Параметры:
-//   - c: контекст Fiber
-//
-// Возвращает:
-//   - error: ошибка выполнения (если есть)
+// createCourse обрабатывает POST /categories/:category_id/courses.
+// Создает новый курс для категории на основе JSON в теле запроса.
 func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	span := trace.SpanFromContext(ctx)
@@ -155,16 +117,16 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 	categoryID := c.Params("category_id")
 
 	if !isValidUUID(categoryID) {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "INVALID_UUID",
 				Message: "Invalid category ID format",
 			},
 		})
 	}
 
-	var input models.CourseCreate
+	var input request.CourseCreate
 
 	if len(c.Body()) > 0 {
 		body := c.Body()
@@ -179,10 +141,10 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 	}
 
 	if err := c.BodyParser(&input); err != nil {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
-				Code:    "VALIDATION_ERROR",
+			Error: response.ErrorDetails{
+				Code:    "INVALID_JSON",
 				Message: "Invalid request body",
 			},
 		})
@@ -190,29 +152,10 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 
 	input.CategoryID = categoryID
 
-	if validationErrors, err := middleware.ValidateStruct(&input); err != nil {
-		return c.Status(500).JSON(models.ErrorResponse{
-			Status: "error",
-			Error: models.ErrorDetails{
-				Code:    "SERVER_ERROR",
-				Message: "Validation error",
-			},
-		})
-	} else if len(validationErrors) > 0 {
-		return c.Status(422).JSON(models.ValidationErrorResponse{
-			Status: "error",
-			Error: models.ErrorDetails{
-				Code:    "VALIDATION_ERROR",
-				Message: "Validation failed",
-			},
-			Errors: validationErrors,
-		})
-	}
-
 	if input.Level != "" && !isValidLevel(input.Level) {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "VALIDATION_ERROR",
 				Message: "Level must be one of: hard, medium, easy",
 			},
@@ -220,9 +163,9 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 	}
 
 	if input.Visibility != "" && !isValidVisibility(input.Visibility) {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "VALIDATION_ERROR",
 				Message: "Visibility must be one of: draft, public, private",
 			},
@@ -231,18 +174,18 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 
 	course, err := h.courseService.CreateCourse(ctx, input)
 	if err != nil {
-		if appErr, ok := err.(*exceptions.AppError); ok {
-			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
+		if appErr, ok := err.(*middleware.AppError); ok {
+			return c.Status(appErr.StatusCode).JSON(response.ErrorResponse{
 				Status: "error",
-				Error: models.ErrorDetails{
+				Error: response.ErrorDetails{
 					Code:    appErr.Code,
 					Message: appErr.Message,
 				},
 			})
 		}
-		return c.Status(500).JSON(models.ErrorResponse{
+		return c.Status(500).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "SERVER_ERROR",
 				Message: "Internal server error",
 			},
@@ -259,15 +202,8 @@ func (h *CourseHandler) createCourse(c *fiber.Ctx) error {
 	return c.Status(201).JSON(course)
 }
 
-// getCourse обрабатывает GET /categories/:category_id/courses/:id
-//
-// Возвращает курс по уникальному идентификатору.
-//
-// Параметры:
-//   - c: контекст Fiber
-//
-// Возвращает:
-//   - error: ошибка выполнения (если есть)
+// getCourse обрабатывает GET /categories/:category_id/courses/:course_id.
+// Возвращает курс по ID в категории.
 func (h *CourseHandler) getCourse(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	span := trace.SpanFromContext(ctx)
@@ -283,9 +219,9 @@ func (h *CourseHandler) getCourse(c *fiber.Ctx) error {
 	id := c.Params("course_id")
 
 	if !isValidUUID(id) || !isValidUUID(categoryID) {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "INVALID_UUID",
 				Message: "Invalid ID format",
 			},
@@ -294,18 +230,18 @@ func (h *CourseHandler) getCourse(c *fiber.Ctx) error {
 
 	course, err := h.courseService.GetCourse(ctx, categoryID, id)
 	if err != nil {
-		if appErr, ok := err.(*exceptions.AppError); ok {
-			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
+		if appErr, ok := err.(*middleware.AppError); ok {
+			return c.Status(appErr.StatusCode).JSON(response.ErrorResponse{
 				Status: "error",
-				Error: models.ErrorDetails{
+				Error: response.ErrorDetails{
 					Code:    appErr.Code,
 					Message: appErr.Message,
 				},
 			})
 		}
-		return c.Status(500).JSON(models.ErrorResponse{
+		return c.Status(500).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "SERVER_ERROR",
 				Message: "Internal server error",
 			},
@@ -322,15 +258,8 @@ func (h *CourseHandler) getCourse(c *fiber.Ctx) error {
 	return c.JSON(course)
 }
 
-// updateCourse обрабатывает PUT /categories/:category_id/courses/:id
-//
-// Обновляет существующий курс с валидацией данных.
-//
-// Параметры:
-//   - c: контекст Fiber
-//
-// Возвращает:
-//   - error: ошибка выполнения (если есть)
+// updateCourse обрабатывает PUT /categories/:category_id/courses/:course_id.
+// Обновляет курс по ID в категории на основе JSON в теле запроса.
 func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	span := trace.SpanFromContext(ctx)
@@ -346,15 +275,15 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 	id := c.Params("course_id")
 
 	if !isValidUUID(id) || !isValidUUID(categoryID) {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "INVALID_UUID",
 				Message: "Invalid ID format",
 			},
 		})
 	}
-	var input models.CourseUpdate
+	var input request.CourseUpdate
 
 	if len(c.Body()) > 0 {
 		body := c.Body()
@@ -369,44 +298,23 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 	}
 
 	if err := c.BodyParser(&input); err != nil {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
-				Code:    "VALIDATION_ERROR",
+			Error: response.ErrorDetails{
+				Code:    "INVALID_JSON",
 				Message: "Invalid request body",
 			},
 		})
 	}
 
-	// Привязываем категорию из пути
 	if input.CategoryID == "" {
 		input.CategoryID = categoryID
 	}
 
-	// Валидация через middleware
-	if validationErrors, err := middleware.ValidateStruct(&input); err != nil {
-		return c.Status(500).JSON(models.ErrorResponse{
-			Status: "error",
-			Error: models.ErrorDetails{
-				Code:    "SERVER_ERROR",
-				Message: "Validation error",
-			},
-		})
-	} else if len(validationErrors) > 0 {
-		return c.Status(422).JSON(models.ValidationErrorResponse{
-			Status: "error",
-			Error: models.ErrorDetails{
-				Code:    "VALIDATION_ERROR",
-				Message: "Validation failed",
-			},
-			Errors: validationErrors,
-		})
-	}
-
 	if input.Level != "" && !isValidLevel(input.Level) {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "VALIDATION_ERROR",
 				Message: "Level must be one of: hard, medium, easy",
 			},
@@ -414,9 +322,9 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 	}
 
 	if input.Visibility != "" && !isValidVisibility(input.Visibility) {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "VALIDATION_ERROR",
 				Message: "Visibility must be one of: draft, public, private",
 			},
@@ -425,18 +333,18 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 
 	course, err := h.courseService.UpdateCourse(ctx, categoryID, id, input)
 	if err != nil {
-		if appErr, ok := err.(*exceptions.AppError); ok {
-			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
+		if appErr, ok := err.(*middleware.AppError); ok {
+			return c.Status(appErr.StatusCode).JSON(response.ErrorResponse{
 				Status: "error",
-				Error: models.ErrorDetails{
+				Error: response.ErrorDetails{
 					Code:    appErr.Code,
 					Message: appErr.Message,
 				},
 			})
 		}
-		return c.Status(500).JSON(models.ErrorResponse{
+		return c.Status(500).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "SERVER_ERROR",
 				Message: "Internal server error",
 			},
@@ -453,15 +361,8 @@ func (h *CourseHandler) updateCourse(c *fiber.Ctx) error {
 	return c.JSON(course)
 }
 
-// deleteCourse обрабатывает DELETE /categories/:category_id/courses/:id
-//
-// Удаляет курс по уникальному идентификатору.
-//
-// Параметры:
-//   - c: контекст Fiber
-//
-// Возвращает:
-//   - error: ошибка выполнения (если есть)
+// deleteCourse обрабатывает DELETE /categories/:category_id/courses/:course_id.
+// Удаляет курс по ID в категории.
 func (h *CourseHandler) deleteCourse(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	span := trace.SpanFromContext(ctx)
@@ -477,9 +378,9 @@ func (h *CourseHandler) deleteCourse(c *fiber.Ctx) error {
 	id := c.Params("course_id")
 
 	if !isValidUUID(id) || !isValidUUID(categoryID) {
-		return c.Status(400).JSON(models.ErrorResponse{
+		return c.Status(400).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "INVALID_UUID",
 				Message: "Invalid ID format",
 			},
@@ -488,18 +389,18 @@ func (h *CourseHandler) deleteCourse(c *fiber.Ctx) error {
 
 	err := h.courseService.DeleteCourse(ctx, categoryID, id)
 	if err != nil {
-		if appErr, ok := err.(*exceptions.AppError); ok {
-			return c.Status(appErr.StatusCode).JSON(models.ErrorResponse{
+		if appErr, ok := err.(*middleware.AppError); ok {
+			return c.Status(appErr.StatusCode).JSON(response.ErrorResponse{
 				Status: "error",
-				Error: models.ErrorDetails{
+				Error: response.ErrorDetails{
 					Code:    appErr.Code,
 					Message: appErr.Message,
 				},
 			})
 		}
-		return c.Status(500).JSON(models.ErrorResponse{
+		return c.Status(500).JSON(response.ErrorResponse{
 			Status: "error",
-			Error: models.ErrorDetails{
+			Error: response.ErrorDetails{
 				Code:    "SERVER_ERROR",
 				Message: "Internal server error",
 			},
@@ -515,16 +416,8 @@ func (h *CourseHandler) deleteCourse(c *fiber.Ctx) error {
 	return c.SendStatus(204)
 }
 
-// isValidLevel проверяет валидность уровня сложности
-//
-// Проверяет, что уровень сложности является одним из допустимых:
-// "hard", "medium", "easy" (регистронезависимо).
-//
-// Параметры:
-//   - level: уровень сложности для проверки
-//
-// Возвращает:
-//   - bool: true, если уровень валиден
+// isValidLevel проверяет, является ли уровень сложности допустимым.
+// Допустимые значения: hard, medium, easy.
 func isValidLevel(level string) bool {
 	switch strings.ToLower(level) {
 	case "hard", "medium", "easy":
@@ -534,16 +427,8 @@ func isValidLevel(level string) bool {
 	}
 }
 
-// isValidVisibility проверяет валидность видимости
-//
-// Проверяет, что видимость является одной из допустимых:
-// "draft", "public", "private" (регистронезависимо).
-//
-// Параметры:
-//   - visibility: видимость для проверки
-//
-// Возвращает:
-//   - bool: true, если видимость валидна
+// isValidVisibility проверяет, является ли видимость допустимой.
+// Допустимые значения: draft, public, private.
 func isValidVisibility(visibility string) bool {
 	switch strings.ToLower(visibility) {
 	case "draft", "public", "private":

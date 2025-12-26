@@ -1,0 +1,48 @@
+{{#with Context}}
+    {{> partials/page-header PageHeader}}
+
+    <div class="course-page">
+        <div class="course-page__content">
+            <aside class="course-page__lessons-panel lessons-preview">
+                <div class="lessons-preview__header">
+                    <span class="lessons-preview__count">Уроков в курсе: {{Course.LessonsAmount}}</span>
+                </div>
+                
+                {{#if Course.Lessons}}
+                    {{> partials/lessons-preview Lessons=Course.Lessons showButton=true}}
+                {{/if}}
+            </aside>
+
+            <main class="course-page__details-panel course-details">
+                <div class="course-details__meta">
+                    <div class="course-details__meta-item">
+                        <span class="course-details__label">Сложность:</span>
+                        <span class="course-details__value course-details__value--level-{{Course.Level}}">{{Course.LevelRu}}</span>
+                    </div>
+                    <div class="course-details__meta-item">
+                        <span class="course-details__label">Обновлено:</span>
+                        <span class="course-details__value">{{formatDate Course.UpdatedAt}}</span>
+                    </div>
+                     <div class="course-details__meta-item">
+                        <span class="course-details__label">Создано:</span>
+                        <span class="course-details__value">{{formatDate Course.CreatedAt}}</span>
+                    </div>
+                </div>
+
+                <div class="course-details__description">
+                    <h2 class="course-details__description-title">О курсе</h2>
+                    <div class="course-details__description-text">
+                        {{#if Course.ImageURL}}
+                            <img src="{{Course.ImageURL}}" alt="Обложка курса {{Course.Title}}" class="course-details__image">
+                        {{/if}}
+                        {{#if Course.Description}}
+                            <p>{{Course.Description}}</p>
+                        {{else}}
+                            <p>Описание для этого курса пока не добавлено.</p>
+                        {{/if}}
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+{{/with}}

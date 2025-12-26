@@ -1,0 +1,26 @@
+{{#with Context}}
+    {{> partials/page-header PageHeader}}
+    <section class="categories-page">
+        {{#if Categories}}
+            <div class="categories-page__grid">
+                {{#each Categories}}
+                    <div class="categories-page__grid-item">
+                        {{> partials/category-card this}}
+                    </div>
+                {{/each}}
+            </div>
+
+            <div class="categories-page__pagination">
+                {{> partials/pagination Pagination }}
+            </div>
+        {{else}}
+            <div class="empty-state">
+                 <div class="empty-state__icon">📭</div>
+                <h2 class="empty-state__title">Категории не найдены</h2>
+                <p class="empty-state__text">
+                    Пока нет ни одной категории. Создайте их, и они появятся здесь.
+                </p>
+            </div>
+        {{/if}}
+    </section>
+{{/with}}

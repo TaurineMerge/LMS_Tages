@@ -1,0 +1,95 @@
+<!-- templates/pages/categories-editor.hbs -->
+<div class="admin-page admin-page--full">
+    <!-- Основной контент -->
+    <main class="admin-content admin-content--full">
+        {{#if error}}
+            <div class="notification notification--error">
+                <span class="notification__icon">⚠️</span>
+                <span class="notification__text">{{error}}</span>
+            </div>
+        {{/if}}
+
+        {{#if success}}
+            <div class="notification notification--success">
+                <span class="notification__icon">✓</span>
+                <span class="notification__text">{{success}}</span>
+            </div>
+        {{/if}}
+
+        {{#if categories}}
+            <div class="content-header content-header--with-actions">
+                <div class="content-header__text">
+                    <h1 class="content-title">📂 Категории</h1>
+                    <p class="content-description">Управление разделами курсов • {{categoriesCount}} категорий</p>
+                </div>
+                <div class="content-header__actions">
+                    <a href="/admin/categories/new" class="btn btn--primary">
+                        <span class="btn__icon">＋</span>
+                        Новая категория
+                    </a>
+                </div>
+            </div>
+
+            <div class="entity-grid">
+                {{#each categories}}
+                    <article class="entity-card entity-card--category">
+                        
+                        <div class="entity-card__body">
+                            <div class="entity-card__title-row">
+                                <h3 class="entity-card__title">{{Title}}</h3>
+                                <div class="entity-card__menu">
+                                    <input type="checkbox" id="menu-cat-{{ID}}" class="entity-card__menu-toggle">
+                                    <label for="menu-cat-{{ID}}" class="entity-card__menu-btn" title="Действия">⋮</label>
+                                    <div class="entity-card__menu-dropdown">
+                                        <a href="/admin/categories/{{ID}}" class="entity-card__menu-item">
+                                            <span>✏️</span> Редактировать
+                                        </a>
+                                        <form method="POST" action="/admin/categories/{{ID}}/delete" class="entity-card__menu-form">
+                                            <button type="submit" class="entity-card__menu-item entity-card__menu-item--danger">
+                                                <span>🗑️</span> Удалить
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="entity-card__meta">
+                                <span class="entity-card__meta-item">
+                                    <span class="meta-icon">🕐</span>
+                                    {{CreatedAt}}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="entity-card__footer">
+                            <a href="/admin/categories/{{ID}}/courses" class="entity-card__action-btn">
+                                <span>Курсы</span>
+                                <span class="entity-card__arrow">→</span>
+                            </a>
+                        </div>
+                    </article>
+                {{/each}}
+
+                <!-- Карточка добавления -->
+                <a href="/admin/categories/new" class="entity-card entity-card--add">
+                    <div class="entity-card__add-content">
+                        <span class="entity-card__add-icon">＋</span>
+                        <span class="entity-card__add-text">Добавить категорию</span>
+                    </div>
+                </a>
+            </div>
+        {{else}}
+            <div class="empty-state-modern">
+                <div class="empty-state-modern__illustration">
+                    <div class="empty-state-modern__circle"></div>
+                    <div class="empty-state-modern__icon">📂</div>
+                </div>
+                <h2 class="empty-state-modern__title">Категорий пока нет</h2>
+                <p class="empty-state-modern__text">Создайте первую категорию, чтобы начать организовывать ваши курсы</p>
+                <a href="/admin/categories/new" class="btn btn--primary btn--lg">
+                    <span class="btn__icon">＋</span>
+                    Создать категорию
+                </a>
+            </div>
+        {{/if}}
+    </main>
+</div>

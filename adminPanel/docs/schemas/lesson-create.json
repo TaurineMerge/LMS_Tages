@@ -1,0 +1,34 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "lesson-create.json",
+    "type": "object",
+    "title": "LessonCreate",
+    "description": "JSON Schema для создания нового урока",
+    "properties": {
+        "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "description": "Название урока"
+        },
+        "content": {
+            "type": "array",
+            "description": "Контент урока",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "content_type": {
+                        "type": "string",
+                        "description": "Тип контента"
+                    },
+                    "data": {
+                        "description": "Данные контента"
+                    }
+                },
+                "required": ["content_type", "data"]
+            }
+        }
+    },
+    "required": ["title"],
+    "additionalProperties": false
+}

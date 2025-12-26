@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/domain"
-	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/handler/dto/response"
+	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/dto/response"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/internal/repository"
 	"github.com/TaurineMerge/LMS_Tages/publicSide/pkg/apperrors"
 	"go.opentelemetry.io/otel"
@@ -21,6 +21,8 @@ type LessonService interface {
 	GetAllByCourseID(ctx context.Context, categoryID, courseID string, page, limit int, sort string) ([]response.LessonDTO, response.Pagination, error)
 	// GetByID retrieves a single detailed lesson by its ID.
 	GetByID(ctx context.Context, categoryID, courseID, lessonID string) (response.LessonDTODetailed, error)
+	// GetNeighboringLessons retrieves the previous and next lesson within a course.
+	GetNeighboringLessons(ctx context.Context, categoryID, courseID, lessonID string) (prevLesson, nextLesson response.LessonDTO, err error)
 }
 
 type lessonService struct {
@@ -101,4 +103,50 @@ func (s *lessonService) GetByID(ctx context.Context, categoryID, courseID, lesso
 		return response.LessonDTODetailed{}, err
 	}
 	return toLessonDTODetailed(lesson), nil
+}
+
+func (s *lessonService) GetNeighboringLessons(ctx context.Context, categoryID, courseID, lessonID string) (response.LessonDTO, response.LessonDTO, error) {
+	ctx, span := otel.Tracer("lessonService").Start(ctx, "GetNeighboringLessons")
+	span.SetAttributes(attribute.String("lesson.id", lessonID), attribute.String("course.id", courseID))
+	defer span.End()
+
+	// 1. Get the current lesson to find its pivot point
+	currentLesson, err := s.repo.GetByID(ctx, categoryID, courseID, lessonID)
+	if err != nil {
+		return response.LessonDTO{}, response.LessonDTO{}, err
+	}
+
+	orderBy := "created_at" // Default ordering
+	
+	// 2. Get previous lesson
+	prevLessons, err := s.repo.GetLessonsChunk(ctx, courseID, repository.LessonChunkOptions{
+		PivotValue: currentLesson.CreatedAt,
+		OrderBy:    orderBy,
+		Direction:  repository.DirectionPrevious,
+		Limit:      1,
+	})
+	if err != nil {
+		return response.LessonDTO{}, response.LessonDTO{}, err
+	}
+
+	// 3. Get next lesson
+	nextLessons, err := s.repo.GetLessonsChunk(ctx, courseID, repository.LessonChunkOptions{
+		PivotValue: currentLesson.CreatedAt,
+		OrderBy:    orderBy,
+		Direction:  repository.DirectionNext,
+		Limit:      1,
+	})
+	if err != nil {
+		return response.LessonDTO{}, response.LessonDTO{}, err
+	}
+
+	var prevLessonDTO, nextLessonDTO response.LessonDTO
+	if len(prevLessons) > 0 {
+		prevLessonDTO = toLessonDTO(prevLessons[0])
+	}
+	if len(nextLessons) > 0 {
+		nextLessonDTO = toLessonDTO(nextLessons[0])
+	}
+
+	return prevLessonDTO, nextLessonDTO, nil
 }

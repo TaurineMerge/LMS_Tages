@@ -1,0 +1,54 @@
+/* Tag/Badge component */
+
+.tag {
+    display: inline-block;
+    padding: 8px 20px;
+    background-color: transparent;
+    color: var(--accent-color);
+    border: 1px solid var(--accent-color);
+    border-radius: var(--border-radius);
+    font-size: 14px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all var(--transition-duration);
+}
+
+.tag:hover {
+    background-color: var(--accent-color);
+    color: var(--button-text-color);
+}
+
+.tag--active {
+    background-color: var(--accent-color);
+    color: var(--button-text-color);
+}
+
+.tag--small {
+    padding: 6px 16px;
+    font-size: 13px;
+}
+
+.tag--large {
+    padding: 10px 24px;
+    font-size: 15px;
+}
+
+.tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .tag {
+        padding: 6px 16px;
+        font-size: 13px;
+    }
+
+    .tags-container {
+        gap: 6px;
+    }
+}

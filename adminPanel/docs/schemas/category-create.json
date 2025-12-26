@@ -1,0 +1,17 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "category-create.json",
+    "type": "object",
+    "title": "CategoryCreate",
+    "description": "JSON Schema для создания новой категории",
+    "properties": {
+        "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "description": "Название категории"
+        }
+    },
+    "required": ["title"],
+    "additionalProperties": false
+}

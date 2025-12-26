@@ -1,0 +1,27 @@
+
+body {
+    font-family: var(--font-family);
+    background-color: var(--gray-50);
+    color: var(--gray-900);
+}
+
+.main {
+    width: 100%;
+    min-height: 90vh;
+    margin: 0 auto;
+    padding: 2.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.accent {
+    color: var(--accent-color);
+    font-weight: 700;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .main {
+        padding: 1.5rem 1rem;
+    }
+}

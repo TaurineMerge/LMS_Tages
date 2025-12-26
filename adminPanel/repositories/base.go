@@ -1,44 +1,25 @@
-// Package repositories содержит реализации слоя доступа к данным (Data Access Layer).
-// Этот пакет предоставляет базовые структуры и методы для работы с базой данных,
-// включая CRUD операции и фильтрацию данных.
-//
-// BaseRepository - базовый репозиторий, предоставляющий общие методы для всех репозиториев:
-//   - GetByID - получение записи по ID
-//   - GetAll - получение всех записей с пагинацией
-//   - Count - подсчет записей
-//   - Delete - удаление записи
-//   - Exists - проверка существования записи
-//   - GetFiltered - получение записей с фильтрацией
-//
-// Все методы возвращают сырые данные в формате map[string]interface{},
-// что позволяет гибко работать с различными типами данных.
+// Package repositories предоставляет базовые репозитории для работы с данными.
+// Включает BaseRepository для общих операций CRUD с базой данных.
 package repositories
 
 import (
 	"context"
-	"fmt"     // Нужен для fmt.Sprintf
-	"strings" // Нужен для strings.Join
+	"fmt"
+	"strings"
 
 	"adminPanel/database"
 )
 
-// BaseRepository - базовый репозиторий для всех сущностей.
-// Предоставляет общие методы для работы с базой данных.
+// BaseRepository предоставляет базовые методы для работы с таблицей базы данных.
+// Содержит ссылку на базу данных, имя таблицы и схему.
 type BaseRepository struct {
 	db        *database.Database
 	tableName string
 	schema    string
 }
 
-// NewBaseRepository создает новый базовый репозиторий.
-//
-// Параметры:
-//   - db: указатель на соединение с базой данных
-//   - tableName: имя таблицы для операций
-//   - schema: имя схемы (может быть пустой строкой)
-//
-// Возвращает:
-//   - *BaseRepository: указатель на новый экземпляр BaseRepository
+// NewBaseRepository создает новый экземпляр BaseRepository.
+// Принимает соединение с БД, имя таблицы и схему.
 func NewBaseRepository(db *database.Database, tableName, schema string) *BaseRepository {
 	return &BaseRepository{
 		db:        db,
@@ -47,10 +28,8 @@ func NewBaseRepository(db *database.Database, tableName, schema string) *BaseRep
 	}
 }
 
-// FullTableName возвращает полное имя таблицы в формате "схема.таблица".
-//
-// Возвращает:
-//   - string: полное имя таблицы, включая схему (если указана)
+// FullTableName возвращает полное имя таблицы с учетом схемы.
+// Если схема не указана, возвращает только имя таблицы.
 func (r *BaseRepository) FullTableName() string {
 	if r.schema == "" {
 		return r.tableName
@@ -58,32 +37,15 @@ func (r *BaseRepository) FullTableName() string {
 	return fmt.Sprintf("%s.%s", r.schema, r.tableName)
 }
 
-// GetByID выполняет запрос SELECT для получения записи по уникальному идентификатору.
-//
-// Параметры:
-//   - ctx: контекст выполнения запроса
-//   - id: уникальный идентификатор записи
-//
-// Возвращает:
-//   - map[string]interface{}: найденная запись в виде map
-//   - error: ошибка, если произошла
+// GetByID получает запись по ID.
+// Возвращает map[string]interface{} с данными или nil, если не найдено.
 func (r *BaseRepository) GetByID(ctx context.Context, id string) (map[string]interface{}, error) {
 	query := fmt.Sprintf("SELECT * FROM %s WHERE id = $1", r.FullTableName())
 	return r.db.FetchOne(ctx, query, id)
 }
 
-// GetAll выполняет запрос SELECT для получения всех записей с пагинацией и сортировкой.
-//
-// Параметры:
-//   - ctx: контекст выполнения запроса
-//   - limit: максимальное количество записей
-//   - offset: смещение от начала
-//   - orderBy: поле для сортировки (по умолчанию "created_at")
-//   - orderDir: направление сортировки (по умолчанию "DESC")
-//
-// Возвращает:
-//   - []map[string]interface{}: список найденных записей
-//   - error: ошибка, если произошла
+// GetAll получает все записи с пагинацией и сортировкой.
+// Принимает limit, offset, orderBy и orderDir. По умолчанию сортирует по created_at DESC.
 func (r *BaseRepository) GetAll(ctx context.Context, limit, offset int, orderBy, orderDir string) ([]map[string]interface{}, error) {
 	if orderBy == "" {
 		orderBy = "created_at"
@@ -101,16 +63,8 @@ func (r *BaseRepository) GetAll(ctx context.Context, limit, offset int, orderBy,
 	return r.db.FetchAll(ctx, query, limit, offset)
 }
 
-// Count выполняет запрос COUNT для подсчета количества записей.
-//
-// Параметры:
-//   - ctx: контекст выполнения запроса
-//   - whereClause: условие WHERE для фильтрации (может быть пустым)
-//   - params: параметры для подстановки в условие WHERE
-//
-// Возвращает:
-//   - int: количество найденных записей
-//   - error: ошибка, если произошла
+// Count подсчитывает количество записей с опциональным условием WHERE.
+// Принимает whereClause и параметры для него.
 func (r *BaseRepository) Count(ctx context.Context, whereClause string, params ...interface{}) (int, error) {
 	query := fmt.Sprintf("SELECT COUNT(*) as count FROM %s", r.FullTableName())
 
@@ -129,15 +83,8 @@ func (r *BaseRepository) Count(ctx context.Context, whereClause string, params .
 	return 0, nil
 }
 
-// Delete выполняет запрос DELETE для удаления записи по уникальному идентификатору.
-//
-// Параметры:
-//   - ctx: контекст выполнения запроса
-//   - id: уникальный идентификатор записи для удаления
-//
-// Возвращает:
-//   - bool: true, если запись была удалена, false - если запись не найдена
-//   - error: ошибка, если произошла
+// Delete удаляет запись по ID.
+// Возвращает true, если запись была удалена, false - если не найдена.
 func (r *BaseRepository) Delete(ctx context.Context, id string) (bool, error) {
 	query := fmt.Sprintf("DELETE FROM %s WHERE id = $1", r.FullTableName())
 	affected, err := r.db.Execute(ctx, query, id)
@@ -147,15 +94,8 @@ func (r *BaseRepository) Delete(ctx context.Context, id string) (bool, error) {
 	return affected > 0, nil
 }
 
-// Exists выполняет запрос для проверки существования записи по уникальному идентификатору.
-//
-// Параметры:
-//   - ctx: контекст выполнения запроса
-//   - id: уникальный идентификатор записи
-//
-// Возвращает:
-//   - bool: true, если запись существует, false - если не существует
-//   - error: ошибка, если произошла
+// Exists проверяет существование записи по ID.
+// Возвращает true, если запись существует.
 func (r *BaseRepository) Exists(ctx context.Context, id string) (bool, error) {
 	query := fmt.Sprintf("SELECT 1 FROM %s WHERE id = $1 LIMIT 1", r.FullTableName())
 	result, err := r.db.FetchOne(ctx, query, id)
@@ -165,18 +105,8 @@ func (r *BaseRepository) Exists(ctx context.Context, id string) (bool, error) {
 	return result != nil, nil
 }
 
-// GetFiltered выполняет запрос SELECT для получения записей с фильтрацией.
-//
-// Параметры:
-//   - ctx: контекст выполнения запроса
-//   - conditions: список условий WHERE для фильтрации
-//   - params: параметры для подстановки в условия
-//   - orderBy: поле для сортировки (по умолчанию "created_at")
-//   - orderDir: направление сортировки (по умолчанию "DESC")
-//
-// Возвращает:
-//   - []map[string]interface{}: список найденных записей
-//   - error: ошибка, если произошла
+// GetFiltered получает записи с фильтрами и сортировкой.
+// Принимает условия WHERE, параметры, orderBy и orderDir.
 func (r *BaseRepository) GetFiltered(ctx context.Context, conditions []string, params []interface{}, orderBy, orderDir string) ([]map[string]interface{}, error) {
 	if orderBy == "" {
 		orderBy = "created_at"
