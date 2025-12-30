@@ -1,5 +1,5 @@
-// Package config provides flexible configuration management for the application.
-// It uses an options-based pattern to load settings from environment variables.
+// Package config предоставляет гибкое управление конфигурацией для приложения.
+// Он использует паттерн "функциональные опции" для загрузки настроек из переменных окружения.
 package config
 
 import (
@@ -8,32 +8,83 @@ import (
 	"strconv"
 )
 
-// Config stores all configuration of the application.
-type Config struct {
-	// DatabaseURL is the connection string for the PostgreSQL database.
-	DatabaseURL string
-	// CORSAllowedOrigins is a comma-separated list of origins that are allowed to make cross-origin requests.
-	CORSAllowedOrigins string
-	// CORSAllowedMethods is a comma-separated list of methods that are allowed for cross-origin requests.
-	CORSAllowedMethods string
-	// CORSAllowedHeaders is a comma-separated list of headers that are allowed for cross-origin requests.
-	CORSAllowedHeaders string
-	// CORSAllowCredentials indicates whether credentials can be shared in cross-origin requests.
-	CORSAllowCredentials bool
-	// Port is the network port on which the application server will listen.
-	Port string
-	// OTELServiceName is the name of the service for OpenTelemetry.
-	OTELServiceName string
-	// OTELCollectorEndpoint is the endpoint of the OpenTelemetry collector.
-	OTELCollectorEndpoint string
-	// LogLevel is the level for application logging (e.g., DEBUG, INFO, WARN, ERROR).
-	LogLevel string
-}
+type (
+	// Config является корневой структурой конфигурации, объединяющей все остальные.
+	Config struct {
+		App            AppConfig
+		Server         ServerConfig
+		Database       DatabaseConfig
+		CORS           CORSConfig
+		Otel           OtelConfig
+		Log            LogConfig
+		OIDC           OIDCConfig
+		Minio          MinioConfig
+		TestingService TestingServiceConfig
+	}
 
-// Option defines a function that configures a Config object.
+	// AppConfig содержит общие настройки приложения.
+	AppConfig struct {
+		Dev bool // Dev режим (true/false) - включает горячую перезагрузку шаблонов и заголовки no-cache.
+	}
+
+	// ServerConfig содержит настройки HTTP-сервера.
+	ServerConfig struct {
+		Port string // Порт, на котором будет запущен веб-сервер.
+	}
+
+	// DatabaseConfig содержит настройки подключения к базе данных.
+	DatabaseConfig struct {
+		URL string // Полная строка подключения к PostgreSQL.
+	}
+
+	// CORSConfig содержит настройки Cross-Origin Resource Sharing.
+	CORSConfig struct {
+		AllowedOrigins   string // Разрешенные источники (через запятую).
+		AllowedMethods   string // Разрешенные методы (через запятую).
+		AllowedHeaders   string // Разрешенные заголовки (через запятую).
+		AllowCredentials bool   // Разрешает передачу credentials.
+	}
+
+	// OtelConfig содержит настройки OpenTelemetry.
+	OtelConfig struct {
+		ServiceName       string // Имя сервиса для отображения в Jaeger/Uptrace.
+		CollectorEndpoint string // Адрес OTel-коллектора для отправки трассировок.
+	}
+
+	// LogConfig содержит настройки логирования.
+	LogConfig struct {
+		Level string // Уровень логирования (DEBUG, INFO, WARN, ERROR).
+	}
+
+	// OIDCConfig содержит настройки OpenID Connect для аутентификации.
+	OIDCConfig struct {
+		ClientID     string // ID клиента OIDC.
+		ClientSecret string // Секрет клиента OIDC.
+		IssuerURL    string // URL издателя токенов OIDC.
+		RedirectURL  string // URL для перенаправления после аутентификации.
+	}
+
+	// MinioConfig содержит настройки подключения к MinIO (S3-совместимое хранилище).
+	MinioConfig struct {
+		Endpoint  string // Адрес сервера MinIO.
+		AccessKey string // Ключ доступа.
+		SecretKey string // Секретный ключ.
+		Bucket    string // Название бакета.
+		UseSSL    bool   // Использовать ли SSL.
+		PublicURL string // Публичный URL для доступа к файлам.
+	}
+
+	// TestingServiceConfig содержит настройки для внешнего сервиса тестирования.
+	TestingServiceConfig struct {
+		BaseURL string // Базовый URL сервиса тестирования.
+	}
+)
+
+// Option определяет тип функции, которая конфигурирует объект *Config.
 type Option func(*Config) error
 
-// New returns a new Config struct and an error if configuration is invalid.
+// New создает новый экземпляр Config, применяя переданные опции.
+// Возвращает ошибку, если какая-либо из опций не смогла быть применена.
 func New(opts ...Option) (*Config, error) {
 	cfg := &Config{}
 
@@ -46,12 +97,37 @@ func New(opts ...Option) (*Config, error) {
 	return cfg, nil
 }
 
-// WithDBFromEnv configures the database settings from environment variables.
+// WithOIDCFromEnv возвращает Option для конфигурации OIDC из переменных окружения.
+func WithOIDCFromEnv() Option {
+	return func(cfg *Config) error {
+		var err error
+		cfg.OIDC.ClientID, err = getRequiredEnv("OIDC_CLIENT_ID")
+		if err != nil {
+			return err
+		}
+		cfg.OIDC.ClientSecret, err = getRequiredEnv("OIDC_CLIENT_SECRET")
+		if err != nil {
+			return err
+		}
+		cfg.OIDC.IssuerURL, err = getRequiredEnv("OIDC_ISSUER_URL")
+		if err != nil {
+			return err
+		}
+		cfg.OIDC.RedirectURL, err = getRequiredEnv("OIDC_REDIRECT_URL")
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+}
+
+// WithDBFromEnv возвращает Option для конфигурации базы данных из переменных окружения.
+// Поддерживает как полную строку `DATABASE_URL`, так и отдельные `DB_*` переменные.
 func WithDBFromEnv() Option {
 	return func(cfg *Config) error {
 		databaseURL := os.Getenv("DATABASE_URL")
 		if databaseURL != "" {
-			cfg.DatabaseURL = databaseURL
+			cfg.Database.URL = databaseURL
 			return nil
 		}
 
@@ -73,7 +149,7 @@ func WithDBFromEnv() Option {
 
 		sslMode := getOptionalEnv("DB_SSLMODE", "disable")
 
-		cfg.DatabaseURL = fmt.Sprintf(
+		cfg.Database.URL = fmt.Sprintf(
 			"postgres://%s:%s@%s:%s/%s?sslmode=%s",
 			requiredEnvs["DB_USER"],
 			requiredEnvs["DB_PASSWORD"],
@@ -86,15 +162,16 @@ func WithDBFromEnv() Option {
 	}
 }
 
-// WithCORSFromEnv configures CORS settings from environment variables, with sensible defaults.
+// WithCORSFromEnv возвращает Option для конфигурации CORS из переменных окружения.
+// Использует разумные значения по умолчанию, если переменные не установлены.
 func WithCORSFromEnv() Option {
 	return func(cfg *Config) error {
-		cfg.CORSAllowedOrigins = getOptionalEnv("CORS_ALLOWED_ORIGINS", "*")
-		cfg.CORSAllowedMethods = getOptionalEnv("CORS_ALLOWED_METHODS", "GET")
-		cfg.CORSAllowedHeaders = getOptionalEnv("CORS_ALLOWED_HEADERS", "Origin,Content-Type,Accept,Authorization")
+		cfg.CORS.AllowedOrigins = getOptionalEnv("CORS_ALLOWED_ORIGINS", "*")
+		cfg.CORS.AllowedMethods = getOptionalEnv("CORS_ALLOWED_METHODS", "GET")
+		cfg.CORS.AllowedHeaders = getOptionalEnv("CORS_ALLOWED_HEADERS", "Origin,Content-Type,Accept,Authorization")
 
 		var err error
-		cfg.CORSAllowCredentials, err = getOptionalEnvAsBool("CORS_ALLOW_CREDENTIALS", false)
+		cfg.CORS.AllowCredentials, err = getOptionalEnvAsBool("CORS_ALLOW_CREDENTIALS", false)
 		if err != nil {
 			return err
 		}
@@ -103,27 +180,26 @@ func WithCORSFromEnv() Option {
 	}
 }
 
-// WithPortFromEnv configures the application port from the APP_PORT environment variable.
-// It defaults to "3000" if the variable is not set.
+// WithPortFromEnv возвращает Option для конфигурации порта приложения из переменной `APP_PORT`.
 func WithPortFromEnv() Option {
 	return func(cfg *Config) error {
-		portStr := getOptionalEnv("APP_PORT", "3000") // Get port as string, default empty
+		portStr := getOptionalEnv("APP_PORT", "3000")
 
 		_, err := strconv.Atoi(portStr)
 		if err != nil {
 			return fmt.Errorf("failed to parse APP_PORT environment variable as integer: %w", err)
 		}
-		cfg.Port = portStr
+		cfg.Server.Port = portStr
 		return nil
 	}
 }
 
-// WithTracingFromEnv configures OpenTelemetry settings from environment variables.
+// WithTracingFromEnv возвращает Option для конфигурации OpenTelemetry из переменных окружения.
 func WithTracingFromEnv() Option {
 	return func(cfg *Config) error {
-		cfg.OTELServiceName = getOptionalEnv("OTEL_SERVICE_NAME", "publicSide")
+		cfg.Otel.ServiceName = getOptionalEnv("OTEL_SERVICE_NAME", "publicSide")
 		var err error
-		cfg.OTELCollectorEndpoint, err = getRequiredEnv("OTEL_EXPORTER_OTLP_ENDPOINT")
+		cfg.Otel.CollectorEndpoint, err = getRequiredEnv("OTEL_EXPORTER_OTLP_ENDPOINT")
 		if err != nil {
 			return err
 		}
@@ -131,15 +207,57 @@ func WithTracingFromEnv() Option {
 	}
 }
 
-// WithLogLevelFromEnv configures the logging level from the LOG_LEVEL environment variable.
+// WithLogLevelFromEnv возвращает Option для конфигурации уровня логирования из переменной `LOG_LEVEL`.
 func WithLogLevelFromEnv() Option {
 	return func(cfg *Config) error {
-		cfg.LogLevel = getOptionalEnv("LOG_LEVEL", "INFO")
+		cfg.Log.Level = getOptionalEnv("LOG_LEVEL", "INFO")
 		return nil
 	}
 }
 
-// getRequiredEnv retrieves a required environment variable.
+// WithDevFromEnv возвращает Option для конфигурации режима разработки из переменной `DEV`.
+func WithDevFromEnv() Option {
+	return func(cfg *Config) error {
+		var err error
+		cfg.App.Dev, err = getOptionalEnvAsBool("DEV", false)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+}
+
+// WithMinioFromEnv возвращает Option для конфигурации MinIO из переменных окружения.
+func WithMinioFromEnv() Option {
+	return func(cfg *Config) error {
+		cfg.Minio.Endpoint = getOptionalEnv("MINIO_ENDPOINT", "minio:9000")
+		cfg.Minio.AccessKey = getOptionalEnv("MINIO_ACCESS_KEY", "minioadmin")
+		cfg.Minio.SecretKey = getOptionalEnv("MINIO_SECRET_KEY", "minioadmin")
+		cfg.Minio.Bucket = getOptionalEnv("MINIO_BUCKET", "images")
+		var err error
+		cfg.Minio.UseSSL, err = getOptionalEnvAsBool("MINIO_USE_SSL", false)
+		if err != nil {
+			return err
+		}
+		cfg.Minio.PublicURL = getOptionalEnv("MINIO_PUBLIC_URL", "http://localhost:9000")
+		return nil
+	}
+}
+
+// WithTestingFromEnv возвращает Option для конфигурации внешнего сервиса тестирования.
+func WithTestingFromEnv() Option {
+	return func(cfg *Config) error {
+		var err error
+		cfg.TestingService.BaseURL, err = getRequiredEnv("TESTING_SERVICE_BASE_URL")
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+}
+
+// getRequiredEnv извлекает обязательную переменную окружения.
+// Возвращает ошибку, если переменная не установлена или пуста.
 func getRequiredEnv(key string) (string, error) {
 	value, exists := os.LookupEnv(key)
 	if !exists || value == "" {
@@ -148,7 +266,7 @@ func getRequiredEnv(key string) (string, error) {
 	return value, nil
 }
 
-// getOptionalEnv retrieves an optional environment variable with a default value.
+// getOptionalEnv извлекает необязательную переменную окружения с значением по умолчанию.
 func getOptionalEnv(key, defaultValue string) string {
 	if value, exists := os.LookupEnv(key); exists && value != "" {
 		return value
@@ -156,20 +274,7 @@ func getOptionalEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
-// getRequiredEnvAsBool retrieves a required environment variable as a boolean.
-func getRequiredEnvAsBool(key string) (bool, error) {
-	valueStr, err := getRequiredEnv(key)
-	if err != nil {
-		return false, err
-	}
-	value, err := strconv.ParseBool(valueStr)
-	if err != nil {
-		return false, fmt.Errorf("failed to parse environment variable '%s' as boolean: %w", key, err)
-	}
-	return value, nil
-}
-
-// getOptionalEnvAsBool retrieves an optional environment variable as a boolean, with a default.
+// getOptionalEnvAsBool извлекает необязательную переменную окружения как boolean.
 func getOptionalEnvAsBool(key string, defaultValue bool) (bool, error) {
 	valueStr := getOptionalEnv(key, strconv.FormatBool(defaultValue))
 	value, err := strconv.ParseBool(valueStr)

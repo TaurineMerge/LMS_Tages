@@ -2,6 +2,8 @@ package com.example.lms;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,22 +14,45 @@ import com.example.lms.answer.domain.service.AnswerService;
 import com.example.lms.answer.infrastructure.repositories.AnswerRepository;
 import com.example.lms.config.DatabaseConfig;
 import com.example.lms.config.HandlebarsConfig;
+import com.example.lms.content.api.controller.ContentController;
+import com.example.lms.content.api.router.ContentRouter;
+import com.example.lms.content.domain.service.ContentService;
+import com.example.lms.content.infrastructure.repositories.ContentRepository;
+import com.example.lms.draft.api.controller.DraftController;
+import com.example.lms.draft.api.router.DraftRouter;
+import com.example.lms.draft.domain.service.DraftService;
+import com.example.lms.draft.infrastructure.repositories.DraftRepository;
+import com.example.lms.config.MinioConfig;
+import com.example.lms.internal.api.controller.InternalApiController;
+import com.example.lms.internal.api.router.InternalApiRouter;
+import com.example.lms.internal.service.InternalApiService;
 import com.example.lms.question.api.controller.QuestionController;
+import com.example.lms.question.api.router.QuestionRouter;
 import com.example.lms.question.domain.service.QuestionService;
 import com.example.lms.question.infrastructure.repositories.QuestionRepository;
+import com.example.lms.shared.controller.ImageController;
+import com.example.lms.shared.router.ImageRouter;
+import com.example.lms.shared.router.RouterUtils;
+import com.example.lms.shared.storage.MinioStorageService;
 import com.example.lms.test.api.controller.TestController;
 import com.example.lms.test.api.router.TestRouter;
 import com.example.lms.test.domain.service.TestService;
 import com.example.lms.test.infrastructure.repositories.TestRepository;
+import com.example.lms.test.web.controller.TestFormController;
+import com.example.lms.test.web.router.TestWebRouter;
 import com.example.lms.test_attempt.api.controller.TestAttemptController;
+import com.example.lms.test_attempt.api.router.TestAttemptRouter;
 import com.example.lms.test_attempt.domain.service.TestAttemptService;
 import com.example.lms.test_attempt.infrastructure.repositories.TestAttemptRepository;
+import com.example.lms.ui.UiRouter;
+import com.example.lms.ui.UiTestController;
 import com.github.jknack.handlebars.Handlebars;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import io.javalin.Javalin;
 import static io.javalin.apibuilder.ApiBuilder.get;
 import io.javalin.http.staticfiles.Location;
+import io.javalin.json.JavalinJackson;
 
 /**
  * Главная точка входа в приложение LMS Testing Service.
@@ -51,6 +76,11 @@ public class Main {
 		final String DB_USER = dotenv.get("DB_USER");
 		final String DB_PASSWORD = dotenv.get("DB_PASSWORD");
 
+		final String ENDPOINT = dotenv.get("MINIO_ENDPOINT");
+		final String ACCESS_KEY = dotenv.get("MINIO_ACCESS_KEY");
+		final String SECRET_KEY = dotenv.get("MINIO_SECRET_KEY");
+		final String BUCKET = dotenv.get("MINIO_BUCKET");
+
 		// ---------------------------------------------------------------
 		// 2. Настройка зависимостей (Manual Dependency Injection)
 		// ---------------------------------------------------------------
@@ -59,29 +89,53 @@ public class Main {
 
 		// Конфигурация подключения к базе
 		DatabaseConfig dbConfig = new DatabaseConfig(DB_URL, DB_USER, DB_PASSWORD);
+		MinioConfig minioConfig = new MinioConfig(ENDPOINT, ACCESS_KEY, SECRET_KEY, BUCKET);
 
 		// Репозитории с логикой работы с БД
 		TestRepository testRepository = new TestRepository(dbConfig);
 		AnswerRepository answerRepository = new AnswerRepository(dbConfig);
 		QuestionRepository questionRepository = new QuestionRepository(dbConfig);
 		TestAttemptRepository testAttemptRepository = new TestAttemptRepository(dbConfig);
+		DraftRepository draftRepository = new DraftRepository(dbConfig);
+		ContentRepository contentRepository = new ContentRepository(dbConfig);
 
 		// Сервисный слой (бизнес-логика)
 		TestService testService = new TestService(testRepository);
 		AnswerService answerService = new AnswerService(answerRepository);
 		QuestionService questionService = new QuestionService(questionRepository);
-		TestAttemptService testAttemptService = new TestAttemptService(testAttemptRepository);
+		DraftService draftService = new DraftService(draftRepository);
+		ContentService contentService = new ContentService(contentRepository);
+		MinioStorageService minioStorageService = new MinioStorageService(minioConfig);
+		TestAttemptService testAttemptService = new TestAttemptService(testAttemptRepository, minioStorageService);
+		InternalApiService internalApiService = new InternalApiService(testAttemptService, testService, draftService);
 
 		// Контроллер, принимающий HTTP-запросы
 		TestController testController = new TestController(testService, handlebars);
 		AnswerController answerController = new AnswerController(answerService);
 		QuestionController questionController = new QuestionController(questionService);
 		TestAttemptController testAttemptController = new TestAttemptController(testAttemptService);
+		DraftController draftController = new DraftController(draftService);
+		ContentController contentController = new ContentController(contentService, handlebars);
+
+		// ИСПРАВЛЕННАЯ СТРОКА: добавлен draftService в конструктор TestFormController
+		TestFormController testWebController = new TestFormController(
+				testService,
+				questionService,
+				answerService,
+				draftService, // Добавлен draftService
+				handlebars);
+
+		var uiTestController = new UiTestController(testService, questionService, answerService, testAttemptService);
+		InternalApiController internalApiController = new InternalApiController(internalApiService);
+		ImageController imageController = new ImageController(minioStorageService);
 
 		// ---------------------------------------------------------------
 		// 3. Создание и запуск Javalin HTTP-сервера
 		// ---------------------------------------------------------------
 		Javalin app = Javalin.create(config -> {
+			// Используем JavalinJackson по умолчанию (без кастомного ObjectMapper)
+			config.jsonMapper(new JavalinJackson());
+
 			// Добавляем логирование запросов для отладки
 			config.requestLogger.http((ctx, executionTimeMs) -> {
 				logger.info("{} {} - {}ms", ctx.method(), ctx.path(), executionTimeMs);
@@ -110,12 +164,51 @@ public class Main {
 
 			// Регистрация маршрутов
 			config.router.apiBuilder(() -> {
+				// Определяем публичные пути
+				List<String> publicPaths = Arrays.asList(
+					"^/swagger$",
+					"^/swagger\\.json$",
+					"^/docs/swagger\\.json$",
+					"^/oauth2-redirect\\.html$",
+					"^/health$",
+					"^/internal/health$",
+					
+					// UI тесты и попытки
+					"^/ui/categories/[^/]+/courses/[^/]+/test$",
+					"^/ui/categories/[^/]+/courses/[^/]+/attempt/[^/]+$",
+					
+					// Новые пути для тестирования
+					"^/ui/tests/[^/]+/take(\\\\?.*)?$",
+					"^/ui/tests/[^/]+/save$",
+					"^/ui/tests/[^/]+/questions/[^/]+/answer$",
+					"^/ui/tests/[^/]+/finish$",
+					"^/ui/tests/[^/]+/results$",
+					"^/ui/tests/[^/]+/retry$",
+					
+					// Internal пути
+					"^/internal/categories/[^/]+/courses/[^/]+/test$"
+				);
+
+				RouterUtils.applyStandardBeforeMiddleware(logger, publicPaths);
+
 				TestRouter.register(testController);
 				AnswerRouter.register(answerController);
+				// Веб-маршруты конструктора тестов
+				TestWebRouter.register(testWebController);
+				QuestionRouter.register(questionController);
+				TestAttemptRouter.register(testAttemptController);
+				DraftRouter.register(draftController);
+				ContentRouter.register(contentController);
+
+				// UI маршруты
+				UiRouter.register(uiTestController);
+				InternalApiRouter.register(internalApiController);
+				ImageRouter.register(imageController);
 
 				// Swagger UI
 				get("/swagger", ctx -> {
-					try (InputStream inputStream = Main.class.getClassLoader().getResourceAsStream("public/swagger.html")) {
+					try (InputStream inputStream = Main.class.getClassLoader()
+							.getResourceAsStream("public/swagger.html")) {
 						if (inputStream == null) {
 							logger.error("Swagger HTML file not found in classpath");
 							ctx.status(404).result("Swagger UI not found");
@@ -131,7 +224,8 @@ public class Main {
 
 				// Swagger JSON
 				get("/swagger.json", ctx -> {
-					try (InputStream inputStream = Main.class.getClassLoader().getResourceAsStream("docs/swagger.json")) {
+					try (InputStream inputStream = Main.class.getClassLoader()
+							.getResourceAsStream("docs/swagger.json")) {
 						if (inputStream == null) {
 							logger.error("Swagger JSON file not found in classpath");
 							ctx.status(404).result("Swagger JSON not found");

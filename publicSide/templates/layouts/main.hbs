@@ -3,33 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{#if PageTitle}}{{PageTitle}} - {{/if}}LMS Tages</title>
+    <title>{{Main.Title}} - LMS</title>
+    <link rel="icon" href="/static/icon/icon.ico" type="image/x-icon">
     <link rel="stylesheet" href="/static/css/main.css">
 </head>
-<body>
-    <div class="wrapper">
-        <header class="header">
-            <div class="header__container">
-                <a href="/" class="header__logo">📚 LMS Tages</a>
-                <nav>
-                    <ul class="header__nav">
-                        <li><a href="/" class="header__nav-link">Главная</a></li>
-                        <li><a href="/categories" class="header__nav-link">Категории</a></li>
-                        <li><a href="/about" class="header__nav-link">О нас</a></li>
-                    </ul>
-                </nav>
-            </div>
-        </header>
-        
-        <main class="main">
-            {{{embed}}}
-        </main>
-        
-        <footer class="footer">
-            <div class="footer__container">
-                <p>&copy; 2025 LMS Tages. Все права защищены.</p>
-            </div>
-        </footer>
-    </div>
+<body class="body">
+    {{> partials/header }}
+    <main class="main">
+        {{{embed}}}
+    </main>
+    {{> partials/footer }}
 </body>
 </html>

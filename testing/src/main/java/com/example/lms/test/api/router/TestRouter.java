@@ -9,7 +9,6 @@ import com.example.lms.shared.router.RouterUtils;
 import static com.example.lms.shared.router.RouterUtils.READ_ACCESS_REALMS;
 import static com.example.lms.shared.router.RouterUtils.TEACHER_REALM;
 import static com.example.lms.shared.router.RouterUtils.applyStandardAfterMiddleware;
-import static com.example.lms.shared.router.RouterUtils.applyStandardBeforeMiddleware;
 import static com.example.lms.shared.router.RouterUtils.validateController;
 import static com.example.lms.shared.router.RouterUtils.withRealm;
 import com.example.lms.test.api.controller.TestController;
@@ -54,11 +53,9 @@ public class TestRouter {
 		validateController(testController, "TestController");
 
 		path("/tests", () -> {
-			// Стандартные middleware
-			applyStandardBeforeMiddleware(logger);
 
 			// Список и создание тестов
-			get(withRealm(TEACHER_REALM, testController::getTests));
+			get(withRealm(READ_ACCESS_REALMS, testController::getTests));
 			post(withRealm(TEACHER_REALM, testController::createTest));
 
 			path("/{id}", () -> {
@@ -70,6 +67,18 @@ public class TestRouter {
 				delete(withRealm(Set.of(TEACHER_REALM), testController::deleteTest));
 			});
 
+			path("/by-course", () -> {
+				// Получить тест по ID курса
+				path("/{courseId}", () -> {
+					get(withRealm(READ_ACCESS_REALMS, testController::getTestByCourseId));
+				});
+
+				path("/validate/{courseId}", () -> {
+					// Проверка существования теста по id курса - для всех
+					get(withRealm(READ_ACCESS_REALMS, testController::existsByCourseId));
+				});
+			});
+
 			applyStandardAfterMiddleware(logger);
 		});
 
@@ -79,24 +88,4 @@ public class TestRouter {
 			ctx.result("OK");
 		});
 	}
-
-	// private static void captureUserAttributes(Context ctx) {
-	// Object userId = ctx.attribute("userId");
-	// Object username = ctx.attribute("username");
-	// Object email = ctx.attribute("email");
-	// Object roles = ctx.attribute("roles");
-
-	// if (userId != null) {
-	// SimpleTracer.addAttribute("user.id", userId.toString());
-	// }
-	// if (username != null) {
-	// SimpleTracer.addAttribute("user.username", username.toString());
-	// }
-	// if (email != null) {
-	// SimpleTracer.addAttribute("user.email", email.toString());
-	// }
-	// if (roles != null) {
-	// SimpleTracer.addAttribute("user.roles", roles.toString());
-	// }
-	// }
 }

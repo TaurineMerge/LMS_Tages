@@ -1,0 +1,20 @@
+<form id="testForm" method="POST">
+    {{#unless isNew}}
+    <input type="hidden" name="testId" value="{{test.id}}">
+    {{/unless}}
+    
+    <div class="card">
+        <h2>Основная информация</h2>
+        {{> partials/name-test}}
+        
+        <!-- Блок с общей суммой баллов за тест -->
+        <div class="total-test-points-display">
+            Максимально баллов за тест: <span id="total-test-points">0</span>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>Вопросы теста</h2>
+        {{> partials/test-builder-questions}}
+    </div>
+</form>

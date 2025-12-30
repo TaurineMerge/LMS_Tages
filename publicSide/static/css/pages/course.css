@@ -1,0 +1,158 @@
+/* Single course page styles */
+
+.course-page {
+    padding: 40px 20px;
+}
+
+.course-page__title {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--main-text-color);
+    margin: 0 0 32px 0; /* Increased bottom margin */
+    text-align: center; /* Center the title */
+}
+
+/* --- New Layout Styles --- */
+.course-page__content {
+    display: flex;
+    gap: 40px; /* Space between columns */
+    flex-wrap: wrap; /* Allow columns to wrap on smaller screens */
+    align-items: flex-start; /* Align items to the top */
+}
+
+.course-page__lessons-panel {
+    flex: 0 0 350px; /* Fixed width for the left panel on larger screens */
+    background-color: var(--main-background-color);
+    border-radius: var(--border-radius);
+    padding: 32px;
+    box-shadow: var(--shadow-sm, 0 2px 5px rgba(0,0,0,0.05)); /* Using a common shadow variable, with fallback */
+    position: sticky; /* Make it sticky */
+    top: 20px; /* Stick to top with some offset from viewport */
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.course-page__details-panel {
+    flex: 1;
+    background-color: var(--main-background-color);
+    border-radius: var(--border-radius);
+    padding: 32px;
+    box-shadow: var(--shadow-sm, 0 2px 5px rgba(0,0,0,0.05));
+}
+
+.course-details__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--card-border-color);
+}
+
+.course-details__meta-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.course-details__label {
+    font-size: 14px;
+    color: var(--secondary-text-color);
+    margin-bottom: 4px;
+}
+
+.course-details__value {
+    text-align: center;
+    font-weight: 600;
+    color: var(--main-text-color);
+    font-size: 16px;
+}
+
+/* Reusing level styles from old course.css, renamed to fit BEM for values */
+.course-details__value--level-easy {
+    background-color: #D1FAE5;
+    color: #065F46;
+    padding: 4px 8px;
+    border-radius: var(--border-radius-sm, 4px); /* Small border radius, with fallback */
+    font-size: 14px;
+}
+
+.course-details__value--level-medium {
+    background-color: var(--accent-color-light);
+    color: #92400E;
+    padding: 4px 8px;
+    border-radius: var(--border-radius-sm, 4px);
+    font-size: 14px;
+}
+
+.course-details__value--level-hard {
+    background-color: #FEE2E2;
+    color: #991B1B;
+    padding: 4px 8px;
+    border-radius: var(--border-radius-sm, 4px);
+    font-size: 14px;
+}
+
+
+.course-details__image {
+    float: right;
+    shape-outside: margin-box;
+    margin: 0 20px 10px 0;
+    max-width: 40%;
+}
+
+.course-details__description-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 15px;
+    color: var(--main-text-color);
+}
+
+.course-details__description-text p {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--secondary-text-color);
+    margin-bottom: 15px;
+}
+
+.course-details__test {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    gap: 10px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid var(--card-border-color);
+}
+
+.course-details__test-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--main-text-color);
+}
+
+.course-details__test-description {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--secondary-text-color);
+}
+
+.course-details__test-description--error {
+    font-weight: 600;
+    color: var(--error-color);
+}
+
+.course-details__test-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.course-details__test-login-message {
+    font-size: 10px;
+    color: var(--card-border-color);
+    margin: 0;
+}
+
+

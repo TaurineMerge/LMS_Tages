@@ -1,0 +1,50 @@
+<form id="testForm" method="POST">
+    <!-- Скрытые поля для определения режима -->
+    <input type="hidden" name="entityId" value="{{entityId}}">
+    <input type="hidden" name="isDraft" value="{{isDraft}}">
+    <input type="hidden" name="isNew" value="{{isNew}}">
+    
+    {{#if test.id}}
+    <input type="hidden" name="testId" value="{{test.id}}">
+    {{/if}}
+    
+    <!-- Основная информация -->
+    <div class="card">
+        <h2>Основная информация</h2>
+        
+        <div class="form-group">
+            <label for="title">Название теста *</label>
+            <input type="text" id="title" name="title" value="{{test.title}}" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="min_point">Минимальный балл для прохождения *</label>
+            <input type="number" id="min_point" name="min_point" value="{{test.min_point}}" min="0" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="description">Описание теста</label>
+            <textarea id="description" name="description">{{test.description}}</textarea>
+        </div>
+        
+        <!-- Общая сумма баллов -->
+        <div class="total-test-points">
+            Максимально баллов за тест: <span id="total-test-points">0</span>
+        </div>
+    </div>
+    
+    <!-- Вопросы -->
+    <div class="card">
+        <h2>Вопросы теста</h2>
+        <div id="questions-container">
+            {{#if questions}}
+                {{#each questions}}
+                {{> partials/test-editor-question question=this questionIndex=@index}}
+                {{/each}}
+            {{else}}
+                {{> partials/test-editor-question question=null questionIndex=0}}
+            {{/if}}
+        </div>
+        <button type="button" id="add-question-btn" class="btn-secondary">+ Добавить вопрос</button>
+    </div>
+</form>

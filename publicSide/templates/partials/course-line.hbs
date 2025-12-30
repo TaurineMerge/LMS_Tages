@@ -1,0 +1,14 @@
+<a href="{{this.Ref}}" class="course-line__link link">
+    <li class="course-line">
+        <div class="course-line__content">
+            <h4 class="course-line__title">{{this.Title}}</h4>
+        </div>
+        <div class="course-line__image-container">
+            {{#if this.ImageURL}}
+                <img src="{{this.ImageURL}}" alt="Обложка курса {{this.Title}}" class="course-line__image">
+            {{else}}    
+                📖
+            {{/if}}
+        </div>
+    </li>
+</a>

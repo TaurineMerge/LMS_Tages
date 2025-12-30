@@ -10,6 +10,7 @@ import com.example.lms.tracing.SimpleTracer;
 import io.github.cdimascio.dotenv.Dotenv;
 import io.javalin.http.Handler;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -325,6 +326,27 @@ public class RouterUtils {
 	 */
 	public static void applyStandardBeforeMiddleware(Logger customLogger) {
 		io.javalin.apibuilder.ApiBuilder.before(authenticate());
+		io.javalin.apibuilder.ApiBuilder.before(logRequestStart(customLogger));
+	}
+
+	/**
+	 * Применяет стандартный набор before() middleware с кастомным логгером.
+	 * 
+	 * @param customLogger логгер для использования вместо стандартного
+	 */
+	public static void applyStandardBeforeMiddleware(Logger customLogger, List<String> publicPaths) {
+		io.javalin.apibuilder.ApiBuilder.before(ctx -> {
+			String path = ctx.path();
+			
+			for (String pattern : publicPaths) {
+				if (path.matches(pattern)) {
+					return;
+				}
+			}
+			
+			// Для остальных маршрутов применяем аутентификацию
+			authenticate().handle(ctx);
+		});
 		io.javalin.apibuilder.ApiBuilder.before(logRequestStart(customLogger));
 	}
 

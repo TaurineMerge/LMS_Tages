@@ -5,224 +5,177 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Доменная модель попытки прохождения теста.
- * <p>
- * Соответствует таблице <b>test_attempt_b</b> в базе данных.
- * Хранит информацию о:
- * <ul>
- * <li>ID попытки</li>
- * <li>ID студента</li>
- * <li>ID теста</li>
- * <li>дате прохождения</li>
- * <li>результате (баллы)</li>
- * </ul>
+ * Domain Model: TestAttemptModel
  *
- * Модель содержит бизнес-методы для:
- * <ul>
- * <li>завершения попытки</li>
- * <li>проверки завершённости и успешности теста</li>
- * <li>валидации перед сохранением</li>
- * </ul>
+ * Представляет попытку прохождения теста студентом и соответствует строке таблицы test_attempt_b.
+ *
+ * ВАЖНО:
+ * - id = PK
+ * - date_of_attempt НЕ используем как идентификатор попытки (это не PK)
+ * - если в БД стоит UNIQUE(student_id, test_id, date_of_attempt), то автопроставление даты
+ *   при завершении может ломать "несколько попыток в один день".
+ *   Поэтому в completeAttempt() мы НЕ трогаем dateOfAttempt автоматически.
  */
 public class TestAttemptModel {
 
-	private UUID id;
-	private UUID studentId;
-	private UUID testId;
-	private LocalDate dateOfAttempt;
-	private Integer point;
+    private UUID id;
+    private UUID studentId;
+    private UUID testId;
+    private LocalDate dateOfAttempt;
+    private Integer point;
+    private UUID certificateId;
+    private String attemptVersion;
+    private String attemptSnapshot;
+    private Boolean completed;
 
-	/**
-	 * Конструктор для создания новой попытки.
-	 * <p>
-	 * Используется на уровне сервиса при создании новой записи.
-	 * Значения:
-	 * <ul>
-	 * <li>{@code dateOfAttempt} устанавливается как текущая дата</li>
-	 * <li>{@code point} изначально равен null</li>
-	 * </ul>
-	 *
-	 * @param studentId идентификатор студента
-	 * @param testId    идентификатор теста
-	 */
-	public TestAttemptModel(UUID studentId, UUID testId) {
-		this.studentId = Objects.requireNonNull(studentId, "Student ID cannot be null");
-		this.testId = Objects.requireNonNull(testId, "Test ID cannot be null");
-		this.dateOfAttempt = LocalDate.now();
-		this.point = null;
-	}
+    // ---------------------- КОНСТРУКТОРЫ ----------------------
 
-	public TestAttemptModel() {
-		// Пустой конструктор для десериализации
-	}
+    public TestAttemptModel(UUID studentId, UUID testId) {
+        this.studentId = Objects.requireNonNull(studentId, "Student ID cannot be null");
+        this.testId = Objects.requireNonNull(testId, "Test ID cannot be null");
+        this.completed = false;
+    }
 
-	/**
-	 * Конструктор для загрузки данных из БД.
-	 *
-	 * @param id            идентификатор попытки
-	 * @param studentId     идентификатор студента
-	 * @param testId        идентификатор теста
-	 * @param dateOfAttempt дата прохождения
-	 * @param point         набранные баллы (null, если не завершено)
-	 */
-	public TestAttemptModel(UUID id, UUID studentId, UUID testId,
-			LocalDate dateOfAttempt, Integer point) {
-		this.id = id;
-		this.studentId = studentId;
-		this.testId = testId;
-		this.dateOfAttempt = dateOfAttempt;
-		this.point = point;
-	}
+    public TestAttemptModel(UUID studentId, UUID testId, LocalDate dateOfAttempt,
+                            Integer point, UUID certificateId, String attemptVersion,
+                            String attemptSnapshot, Boolean completed) {
+        this.studentId = Objects.requireNonNull(studentId, "Student ID cannot be null");
+        this.testId = Objects.requireNonNull(testId, "Test ID cannot be null");
+        this.dateOfAttempt = dateOfAttempt;
+        this.point = point;
+        this.certificateId = certificateId;
+        this.attemptVersion = attemptVersion;
+        this.attemptSnapshot = attemptSnapshot;
+        this.completed = completed != null ? completed : false;
+    }
 
-	// ----------------------------------------------------------------------
-	// BUSINESS LOGIC METHODS
-	// ----------------------------------------------------------------------
+    public TestAttemptModel(UUID id, UUID studentId, UUID testId, LocalDate dateOfAttempt,
+                            Integer point, UUID certificateId, String attemptVersion,
+                            String attemptSnapshot, Boolean completed) {
+        this.id = id;
+        this.studentId = studentId;
+        this.testId = testId;
+        this.dateOfAttempt = dateOfAttempt;
+        this.point = point;
+        this.certificateId = certificateId;
+        this.attemptVersion = attemptVersion;
+        this.attemptSnapshot = attemptSnapshot;
+        this.completed = completed != null ? completed : false;
+    }
 
-	/**
-	 * Завершает попытку теста, устанавливая количество набранных баллов.
-	 *
-	 * @param points баллы за прохождение теста
-	 * @throws IllegalStateException    если попытка уже завершена
-	 * @throws IllegalArgumentException если points отрицательные
-	 */
-	public void complete(int points) {
-		if (this.point != null) {
-			throw new IllegalStateException("Test attempt is already completed");
-		}
-		if (points < 0) {
-			throw new IllegalArgumentException("Points cannot be negative");
-		}
-		this.point = points;
-	}
+    // ---------------------- GETTERS ----------------------
 
-	/**
-	 * Проверяет, завершена ли попытка.
-	 *
-	 * @return true — если есть значение point, иначе false
-	 */
-	public boolean isCompleted() {
-		return point != null;
-	}
+    public UUID getId() { return id; }
+    public UUID getStudentId() { return studentId; }
+    public UUID getTestId() { return testId; }
+    public LocalDate getDateOfAttempt() { return dateOfAttempt; }
+    public Integer getPoint() { return point; }
+    public UUID getCertificateId() { return certificateId; }
+    public String getAttemptVersion() { return attemptVersion; }
+    public String getAttemptSnapshot() { return attemptSnapshot; }
+    public Boolean getCompleted() { return completed; }
 
-	/**
-	 * Проверяет, пройден ли тест.
-	 *
-	 * @param minPoints минимальный балл, требуемый для прохождения теста (nullable)
-	 * @return true — если тест завершён и баллов достаточно
-	 */
-	public boolean isPassed(Integer minPoints) {
-		if (point == null) {
-			return false;
-		}
-		if (minPoints == null) {
-			return true;
-		}
-		return point >= minPoints;
-	}
+    // ---------------------- SETTERS ----------------------
 
-	// ----------------------------------------------------------------------
-	// GETTERS
-	// ----------------------------------------------------------------------
+    public void setId(UUID id) {
+        this.id = Objects.requireNonNull(id, "ID cannot be null");
+    }
 
-	public UUID getId() {
-		return id;
-	}
+    public void setStudentId(UUID studentId) {
+        this.studentId = Objects.requireNonNull(studentId, "Student ID cannot be null");
+    }
 
-	public UUID getStudentId() {
-		return studentId;
-	}
+    public void setTestId(UUID testId) {
+        this.testId = Objects.requireNonNull(testId, "Test ID cannot be null");
+    }
 
-	public UUID getTestId() {
-		return testId;
-	}
+    public void setDateOfAttempt(LocalDate dateOfAttempt) {
+        this.dateOfAttempt = dateOfAttempt; // null OK
+    }
 
-	public LocalDate getDateOfAttempt() {
-		return dateOfAttempt;
-	}
+    public void setPoint(Integer point) {
+        if (point != null && point < 0) {
+            throw new IllegalArgumentException("Point cannot be negative");
+        }
+        this.point = point;
+    }
 
-	public Integer getPoint() {
-		return point;
-	}
+    public void setCertificateId(UUID certificateId) {
+        this.certificateId = certificateId; // null OK
+    }
 
-	// ----------------------------------------------------------------------
-	// SETTERS
-	// ----------------------------------------------------------------------
+    public void setAttemptVersion(String attemptVersion) {
+        this.attemptVersion = attemptVersion; // null OK
+    }
 
-	public void setId(UUID id) {
-		this.id = Objects.requireNonNull(id, "ID cannot be null");
-	}
+    public void setAttemptSnapshot(String attemptSnapshot) {
+        this.attemptSnapshot = attemptSnapshot; // null OK
+    }
 
-	public void setPoint(Integer point) {
-		if (point != null && point < 0) {
-			throw new IllegalArgumentException("Points cannot be negative");
-		}
-		this.point = point;
-	}
+    public void setCompleted(Boolean completed) {
+        this.completed = completed != null ? completed : false;
+    }
 
-	/**
-	 * Устанавливает дату попытки.
-	 * 
-	 * @param dateOfAttempt дата попытки
-	 */
-	public void setDateOfAttempt(LocalDate dateOfAttempt) {
-		this.dateOfAttempt = dateOfAttempt;
-	}
+    // ---------------------- ДОМЕННАЯ ЛОГИКА ----------------------
 
-	// ----------------------------------------------------------------------
-	// VALIDATION
-	// ----------------------------------------------------------------------
+    /**
+     * Помечает попытку как завершенную.
+     *
+     * ВАЖНО: дату не трогаем автоматически, потому что date_of_attempt не PK и
+     * при UNIQUE(student_id,test_id,date_of_attempt) это может ломать множественные попытки в один день.
+     */
+    public void completeAttempt(int finalPoint) {
+        if (finalPoint < 0) {
+            throw new IllegalArgumentException("Final point cannot be negative");
+        }
+        this.point = finalPoint;
+        this.completed = true;
+    }
 
-	/**
-	 * Проверяет корректность данных модели перед сохранением.
-	 *
-	 * @throws IllegalArgumentException если модель содержит недопустимые значения
-	 */
-	public void validate() {
-		if (studentId == null) {
-			throw new IllegalArgumentException("Student ID cannot be null");
-		}
-		if (testId == null) {
-			throw new IllegalArgumentException("Test ID cannot be null");
-		}
-		if (dateOfAttempt == null) {
-			throw new IllegalArgumentException("Date of attempt cannot be null");
-		}
-		if (dateOfAttempt.isAfter(LocalDate.now())) {
-			throw new IllegalArgumentException("Date of attempt cannot be in the future");
-		}
-		if (point != null && point < 0) {
-			throw new IllegalArgumentException("Points cannot be negative");
-		}
-	}
+    public void updateSnapshot(String newSnapshot) {
+        this.attemptSnapshot = newSnapshot;
+    }
 
-	// ----------------------------------------------------------------------
-	// OVERRIDDEN METHODS
-	// ----------------------------------------------------------------------
+    public void validate() {
+        if (studentId == null) {
+            throw new IllegalArgumentException("Student ID cannot be null");
+        }
+        if (testId == null) {
+            throw new IllegalArgumentException("Test ID cannot be null");
+        }
+        if (point != null && point < 0) {
+            throw new IllegalArgumentException("Point cannot be negative");
+        }
+    }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o)
-			return true;
-		if (o == null || getClass() != o.getClass())
-			return false;
-		TestAttemptModel that = (TestAttemptModel) o;
-		return Objects.equals(id, that.id);
-	}
+    public boolean isSuccessful(int minPassingPoint) {
+        return point != null && point >= minPassingPoint;
+    }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(id);
-	}
+    // ---------------------- UTILS ----------------------
 
-	@Override
-	public String toString() {
-		return "TestAttemptModel{" +
-				"id=" + id +
-				", studentId=" + studentId +
-				", testId=" + testId +
-				", dateOfAttempt=" + dateOfAttempt +
-				", point=" + point +
-				", completed=" + isCompleted() +
-				'}';
-	}
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TestAttemptModel that = (TestAttemptModel) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+
+    @Override
+    public String toString() {
+        return "TestAttemptModel{" +
+                "id=" + id +
+                ", studentId=" + studentId +
+                ", testId=" + testId +
+                ", dateOfAttempt=" + dateOfAttempt +
+                ", point=" + point +
+                ", completed=" + completed +
+                '}';
+    }
 }

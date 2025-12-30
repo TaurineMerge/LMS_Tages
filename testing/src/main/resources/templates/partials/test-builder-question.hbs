@@ -1,0 +1,42 @@
+<div class="question-card" data-question-index="{{questionIndex}}">
+    <div class="form-group">
+        <h3>Вопрос {{add questionIndex 1}}</h3>
+        <div class="question-controls">
+            <button type="button" class="btn-move-up" onclick="moveQuestionUp({{questionIndex}})">↑</button>
+            <button type="button" class="btn-move-down" onclick="moveQuestionDown({{questionIndex}})">↓</button>
+            <!-- УБИРАЕМ УСЛОВИЕ, кнопка всегда видна -->
+            <button type="button" class="remove-question-btn" onclick="removeQuestion({{questionIndex}})">× Удалить</button>
+        </div>
+        <textarea name="question[{{questionIndex}}][text]" placeholder="Введите текст вопроса" required>
+            {{#if question}}{{question.question.text}}{{/if}}
+        </textarea>
+    </div>
+    
+    <!-- БЛОК ДЛЯ ОТОБРАЖЕНИЯ СУММЫ БАЛЛОВ -->
+    <div class="question-points-info">
+        <div class="points-display">
+            <span>Максимум баллов за вопрос:</span>
+            <strong class="total-answers-points">0</strong>
+        </div>
+        <div class="points-hint">
+            (ответы с баллами > 0 считаются правильными)
+        </div>
+    </div>
+    
+    <div class="answers-container" id="answers-{{questionIndex}}">
+        {{#if question}}
+            {{#each question.answers}}
+            {{> partials/test-builder-answer 
+                questionIndex=@../questionIndex 
+                answerIndex=@index 
+                answer=this
+            }}
+            {{/each}}
+        {{else}}
+            {{> partials/test-builder-answer questionIndex=questionIndex answerIndex=0}}
+            {{> partials/test-builder-answer questionIndex=questionIndex answerIndex=1}}
+        {{/if}}
+    </div>
+    
+    <button type="button" class="add-answer-btn" onclick="addAnswer({{questionIndex}})">+ Добавить ответ</button>
+</div>

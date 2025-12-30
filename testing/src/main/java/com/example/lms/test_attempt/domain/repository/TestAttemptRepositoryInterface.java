@@ -1,6 +1,5 @@
 package com.example.lms.test_attempt.domain.repository;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -9,72 +8,41 @@ import com.example.lms.test_attempt.domain.model.TestAttemptModel;
 
 /**
  * Репозиторий для работы с попытками прохождения тестов.
- * Соответствует таблице TEST_ATTEMPT_B.
+ *
+ * Таблица: testing.test_attempt_b
  */
 public interface TestAttemptRepositoryInterface {
 
-	/**
-	 * Сохранить новую попытку.
-	 */
-	TestAttemptModel save(TestAttemptModel attempt);
+    // ---------------- CRUD ----------------
+    TestAttemptModel save(TestAttemptModel testAttempt);
+    TestAttemptModel update(TestAttemptModel testAttempt);
+    Optional<TestAttemptModel> findById(UUID id);
+    List<TestAttemptModel> findAll();
+    boolean deleteById(UUID id);
+    boolean existsById(UUID id);
 
-	/**
-	 * Обновить существующую попытку.
-	 */
-	TestAttemptModel update(TestAttemptModel attempt);
+    // ---------------- Queries ----------------
+    List<TestAttemptModel> findByStudentId(UUID studentId);
+    List<TestAttemptModel> findByTestId(UUID testId);
+    List<TestAttemptModel> findByStudentIdAndTestId(UUID studentId, UUID testId);
+    int countByStudentId(UUID studentId);
+    int countByTestId(UUID testId);
+    List<TestAttemptModel> findCompletedAttempts();
+    List<TestAttemptModel> findIncompleteAttempts();
 
-	/**
-	 * Найти попытку по её ID.
-	 */
-	Optional<TestAttemptModel> findById(UUID id);
+    /**
+     * Возвращает последнюю (самую свежую) незавершённую попытку студента по тесту.
+     * Незавершённая = completed = false AND point IS NULL.
+     */
+    Optional<TestAttemptModel> findLatestIncompleteByStudentAndTestId(UUID studentId, UUID testId);
 
-	/**
-	 * Получить все попытки.
-	 */
-	List<TestAttemptModel> findAll();
+    /**
+     * Возвращает последнюю (самую свежую) завершённую попытку студента по тесту.
+     * Завершённая = completed = true OR point IS NOT NULL.
+     */
+    Optional<TestAttemptModel> findLatestCompletedByStudentAndTestId(UUID studentId, UUID testId);
 
-	/**
-	 * Получить все попытки студента.
-	 */
-	List<TestAttemptModel> findByStudentId(UUID studentId);
-
-	/**
-	 * Получить все попытки по тесту.
-	 */
-	List<TestAttemptModel> findByTestId(UUID testId);
-
-	/**
-	 * Получить все попытки конкретного студента по конкретному тесту.
-	 */
-	List<TestAttemptModel> findByStudentAndTest(UUID studentId, UUID testId);
-
-	/**
-	 * Удалить попытку по ID.
-	 */
-	boolean deleteById(UUID id);
-
-	/**
-	 * Проверить существование попытки по ID.
-	 */
-	boolean existsById(UUID id);
-
-	/**
-	 * Подсчитать количество попыток студента по тесту.
-	 */
-	int countAttemptsByStudentAndTest(UUID studentId, UUID testId);
-
-	/**
-	 * Найти попытки по дате прохождения.
-	 */
-	List<TestAttemptModel> findByDate(LocalDate date);
-
-	/**
-	 * Найти все завершённые попытки (где point IS NOT NULL).
-	 */
-	List<TestAttemptModel> findCompletedAttempts();
-
-	/**
-	 * Найти все незавершённые попытки (где point IS NULL).
-	 */
-	List<TestAttemptModel> findIncompleteAttempts();
+    // ---------------- UI: attempt_version by attemptId (PK) ----------------
+    Optional<String> findAttemptVersionByAttemptId(UUID attemptId);
+    void updateAttemptVersionByAttemptId(UUID attemptId, String attemptVersionJson);
 }

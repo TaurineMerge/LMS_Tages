@@ -96,4 +96,12 @@ public interface TestRepositoryInterface {
      * @return число тестов, относящихся к курсу
      */
     int countByCourseId(UUID courseId);
+
+    /**
+     * Проверяет, существует ли тест по ID курса.
+     *
+     * @param course_id строковый UUID курса
+     * @return true — если тест был существует; false — если не найден
+     */
+    boolean existsByCourseId(UUID course_id);
 }

@@ -1,0 +1,184 @@
+
+.home__header {
+    margin-bottom: 60px;
+}
+
+.home__header-title {
+    font-size: 36px;
+    font-weight: 400;
+    color: var(--main-text-color);
+    margin-bottom: 20px;
+    line-height: var(--line-height-tight);
+}
+
+.home__header-description {
+    font-size: 18px;
+    color: var(--main-text-color);
+    line-height: var(--line-height-relaxed);
+    font-weight: 300;
+    margin: 0;
+}
+
+.home__abilities,
+.home__teachers,
+.home__personal-account,
+.home__random-categories {
+    margin-bottom: 60px;
+}
+
+.home__abilities-title,
+.home__teachers-title,
+.home__personal-account-title,
+.home__random-categories-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--accent-color);
+    margin: 0 0 24px 0;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--accent-color);
+}
+
+.home__teachers-description {
+    font-size: 16px;
+    line-height: var(--line-height-relaxed);
+    color: var(--main-text-color);
+    margin: 0 0 20px 0;
+}
+
+/* Lists */
+.home__abilities-list,
+.home__teachers-list,
+.home__personal-account-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.home__abilities-item,
+.home__teachers-item,
+.home__personal-account-item {
+    font-size: 16px;
+    line-height: var(--line-height-relaxed);
+    color: var(--main-text-color);
+    padding-left: 24px;
+    position: relative;
+}
+
+.home__abilities-item::before,
+.home__teachers-item::before,
+.home__personal-account-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 10px;
+    width: 6px;
+    height: 6px;
+    background-color: var(--accent-color);
+    border-radius: 50%;
+}
+
+/* Categories Section */
+.home__random-categories-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 24px;
+    scroll-snap-type: x mandatory;
+}
+
+.home__random-categories-item {
+    display: flex;
+    flex-shrink: 0;
+    scroll-snap-align: start;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .home__random-categories-list {
+        gap: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .home {
+        padding: 40px 16px;
+    }
+
+    .home__header {
+        margin-bottom: 40px;
+    }
+
+    .home__header-title {
+        font-size: 28px;
+        margin-bottom: 16px;
+    }
+
+    .home__header-description {
+        font-size: 16px;
+    }
+
+    .home__abilities,
+    .home__teachers,
+    .home__personal-account,
+    .home__random-categories {
+        margin-bottom: 40px;
+    }
+
+    .home__abilities-title,
+    .home__teachers-title,
+    .home__personal-account-title,
+    .home__random-categories-title {
+        font-size: 24px;
+    }
+
+    .home__random-categories-list {
+        gap: 16px;
+    }
+
+    .home__abilities-item,
+    .home__teachers-item,
+    .home__personal-account-item {
+        font-size: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .home {
+        padding: 30px 12px;
+    }
+
+    .home__header-title {
+        font-size: 24px;
+    }
+
+    .home__header-description {
+        font-size: 15px;
+    }
+
+    .home__abilities-title,
+    .home__teachers-title,
+    .home__personal-account-title,
+    .home__random-categories-title {
+        font-size: 20px;
+        margin-bottom: 16px;
+    }
+
+    .home__abilities-item,
+    .home__teachers-item,
+    .home__personal-account-item {
+        font-size: 14px;
+        padding-left: 20px;
+    }
+
+    .home__abilities-list,
+    .home__teachers-list,
+    .home__personal-account-list {
+        gap: 10px;
+    }
+}

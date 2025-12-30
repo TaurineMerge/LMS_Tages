@@ -1,14 +1,20 @@
 package com.example.lms.test.infrastructure.repositories;
 
-import com.example.lms.config.DatabaseConfig;
-import com.example.lms.test.domain.model.TestModel;
-import com.example.lms.test.domain.repository.TestRepositoryInterface;
-
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import com.example.lms.config.DatabaseConfig;
+import com.example.lms.test.domain.model.TestModel;
+import com.example.lms.test.domain.repository.TestRepositoryInterface;
 
 /**
  * Репозиторий для работы с тестами в базе данных.
@@ -17,311 +23,410 @@ import java.util.UUID;
  */
 public class TestRepository implements TestRepositoryInterface {
 
-	private final DatabaseConfig dbConfig;
+    private final DatabaseConfig dbConfig;
 
-	/**
-	 * Конструктор репозитория.
-	 *
-	 * @param dbConfig конфигурация базы данных, содержащая параметры подключения
-	 */
-	public TestRepository(DatabaseConfig dbConfig) {
-		this.dbConfig = dbConfig;
-	}
+    /**
+     * Конструктор репозитория.
+     *
+     * @param dbConfig конфигурация базы данных, содержащая параметры подключения
+     */
+    public TestRepository(DatabaseConfig dbConfig) {
+        this.dbConfig = dbConfig;
+    }
 
-	/**
-	 * Устанавливает соединение с базой данных.
-	 *
-	 * @return активное соединение с базой данных
-	 * @throws SQLException если произошла ошибка при установке соединения
-	 */
-	private Connection getConnection() throws SQLException {
-		return DriverManager.getConnection(
-				dbConfig.getUrl(),
-				dbConfig.getUser(),
-				dbConfig.getPassword());
-	}
+    /**
+     * Устанавливает соединение с базой данных.
+     *
+     * @return активное соединение с базой данных
+     * @throws SQLException если произошла ошибка при установке соединения
+     */
+    private Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(
+                dbConfig.getUrl(),
+                dbConfig.getUser(),
+                dbConfig.getPassword());
+    }
 
-	/**
-	 * Сохраняет новый тест в базе данных.
-	 *
-	 * @param test объект TestModel для сохранения
-	 * @return сохраненный объект TestModel с присвоенным идентификатором
-	 * @throws RuntimeException если не удалось сохранить тест или произошла
-	 *                          SQL-ошибка
-	 */
+    /**
+     * Сохраняет новый тест в базе данных.
+     *
+     * @param test объект TestModel для сохранения
+     * @return сохраненный объект TestModel с присвоенным идентификатором
+     * @throws RuntimeException если не удалось сохранить тест или произошла
+     *                          SQL-ошибка
+     */
+    @Override
+    public TestModel save(TestModel test) {
+        test.validate();
+
+        String sql = """
+                INSERT INTO testing.testing.test_d (course_id, title, min_point, description)
+                VALUES (?, ?, ?, ?)
+                RETURNING id
+                """;
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            // КОРРЕКТНАЯ ОБРАБОТКА NULL ДЛЯ UUID
+            if (test.getCourseId() != null) {
+                stmt.setObject(1, test.getCourseId());
+            } else {
+                stmt.setNull(1, Types.OTHER); // Важно для PostgreSQL UUID
+            }
+
+            stmt.setString(2, test.getTitle());
+
+            if (test.getMinPoint() != null) {
+                stmt.setInt(3, test.getMinPoint());
+            } else {
+                stmt.setNull(3, Types.INTEGER);
+            }
+
+            stmt.setString(4, test.getDescription());
+
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                test.setId(rs.getObject("id", UUID.class));
+                return test;
+            }
+
+            throw new RuntimeException("Не удалось сохранить тест");
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка при сохранении теста: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Обновляет существующий тест в базе данных.
+     *
+     * @param test объект TestModel с обновленными данными
+     * @return обновленный объект TestModel
+     * @throws IllegalArgumentException если тест не имеет идентификатора
+     * @throws RuntimeException         если тест не найден или произошла SQL-ошибка
+     */
+    @Override
+    public TestModel update(TestModel test) {
+        if (test.getId() == null) {
+            throw new IllegalArgumentException("Тест должен иметь ID");
+        }
+
+        test.validate();
+
+        String sql = """
+                UPDATE testing.test_d
+                SET course_id = ?, title = ?, min_point = ?, description = ?
+                WHERE id = ?
+                """;
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            // КОРРЕКТНАЯ ОБРАБОТКА NULL ДЛЯ UUID
+            if (test.getCourseId() != null) {
+                stmt.setObject(1, test.getCourseId());
+            } else {
+                stmt.setNull(1, Types.OTHER);
+            }
+
+            stmt.setString(2, test.getTitle());
+
+            if (test.getMinPoint() != null) {
+                stmt.setInt(3, test.getMinPoint());
+            } else {
+                stmt.setNull(3, Types.INTEGER);
+            }
+
+            stmt.setString(4, test.getDescription());
+            stmt.setObject(5, test.getId());
+
+            int updated = stmt.executeUpdate();
+            if (updated == 0) {
+                throw new RuntimeException("Тест с ID " + test.getId() + " не найден");
+            }
+
+            return test;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка при обновлении теста: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Находит тест по его идентификатору.
+     *
+     * @param id уникальный идентификатор теста
+     * @return Optional с найденным тестом или пустой Optional, если тест не найден
+     * @throws RuntimeException если произошла SQL-ошибка
+     */
+    @Override
+    public Optional<TestModel> findById(UUID id) {
+        String sql = """
+                SELECT id, course_id, title, min_point, description
+                FROM testing.test_d
+                WHERE id = ?
+                """;
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setObject(1, id);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                return Optional.of(mapRowToTest(rs));
+            }
+
+            return Optional.empty();
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка при поиске теста по ID: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Получает все тесты из базы данных.
+     *
+     * @return список всех тестов, отсортированных по названию
+     * @throws RuntimeException если произошла SQL-ошибка
+     */
+    @Override
+    public List<TestModel> findAll() {
+        String sql = """
+                SELECT id, course_id, title, min_point, description
+                FROM testing.test_d
+                ORDER BY title
+                """;
+
+        List<TestModel> testing = new ArrayList<>();
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                testing.add(mapRowToTest(rs));
+            }
+
+            return testing;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка при получении всех тестов: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Удаляет тест по его идентификатору.
+     *
+     * @param id уникальный идентификатор теста для удаления
+     * @return true если тест был удален, false если тест не найден
+     * @throws RuntimeException если произошла SQL-ошибка
+     */
+    @Override
+    public boolean deleteById(UUID id) {
+        Connection conn = null;
+        
+        try {
+            conn = getConnection();
+            conn.setAutoCommit(false); // Начинаем транзакцию
+            
+            // 1. Находим все вопросы этого теста
+            String findQuestionsSQL = "SELECT id FROM testing.question_d WHERE test_id = ?";
+            List<UUID> questionIds = new ArrayList<>();
+            
+            try (PreparedStatement findQuestionsStmt = conn.prepareStatement(findQuestionsSQL)) {
+                findQuestionsStmt.setObject(1, id);
+                ResultSet rs = findQuestionsStmt.executeQuery();
+                
+                while (rs.next()) {
+                    questionIds.add(rs.getObject("id", UUID.class));
+                }
+            }
+            
+            System.out.println("Found " + questionIds.size() + " questions to delete");
+            
+            // 2. Удаляем все ответы для этих вопросов
+            if (!questionIds.isEmpty()) {
+                String deleteAnswersSQL = "DELETE FROM testing.answer_d WHERE question_id = ?";
+                try (PreparedStatement deleteAnswersStmt = conn.prepareStatement(deleteAnswersSQL)) {
+                    for (UUID questionId : questionIds) {
+                        deleteAnswersStmt.setObject(1, questionId);
+                        deleteAnswersStmt.addBatch();
+                    }
+                    int[] answerDeletions = deleteAnswersStmt.executeBatch();
+                    System.out.println("Deleted answers: " + Arrays.stream(answerDeletions).sum());
+                }
+            }
+            
+            // 3. Удаляем все вопросы
+            String deleteQuestionsSQL = "DELETE FROM testing.question_d WHERE test_id = ?";
+            try (PreparedStatement deleteQuestionsStmt = conn.prepareStatement(deleteQuestionsSQL)) {
+                deleteQuestionsStmt.setObject(1, id);
+                int questionsDeleted = deleteQuestionsStmt.executeUpdate();
+                System.out.println("Deleted " + questionsDeleted + " questions");
+            }
+            
+            // 4. Теперь удаляем сам тест
+            String deleteTestSQL = "DELETE FROM testing.test_d WHERE id = ?";
+            try (PreparedStatement deleteTestStmt = conn.prepareStatement(deleteTestSQL)) {
+                deleteTestStmt.setObject(1, id);
+                int testsDeleted = deleteTestStmt.executeUpdate();
+                
+                conn.commit(); // Фиксируем транзакцию
+                System.out.println("Deleted " + testsDeleted + " tests");
+                return testsDeleted > 0;
+            }
+            
+        } catch (SQLException e) {
+            // Откатываем транзакцию при ошибке
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException rollbackEx) {
+                    System.err.println("Ошибка при откате транзакции: " + rollbackEx.getMessage());
+                }
+            }
+            throw new RuntimeException("Ошибка при удалении теста: " + e.getMessage(), e);
+            
+        } finally {
+            // Закрываем соединение
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException closeEx) {
+                    System.err.println("Ошибка при закрытии соединения: " + closeEx.getMessage());
+                }
+            }
+        }
+    }
+
+    /**
+     * Проверяет существование теста по идентификатору.
+     *
+     * @param id уникальный идентификатор теста
+     * @return true если тест существует, false если нет
+     * @throws RuntimeException если произошла SQL-ошибка
+     */
+    @Override
+    public boolean existsById(UUID id) {
+        String sql = "SELECT 1 FROM testing.test_d WHERE id = ?";
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setObject(1, id);
+            return stmt.executeQuery().next();
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка при проверке существования теста: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Ищет тесты по частичному совпадению названия (без учета регистра).
+     *
+     * @param title часть названия для поиска
+     * @return список тестов, содержащих указанную строку в названии
+     * @throws RuntimeException если произошла SQL-ошибка
+     */
+    @Override
+    public List<TestModel> findByTitleContaining(String title) {
+        String sql = """
+                SELECT id, course_id, title, min_point, description
+                FROM testing.test_d
+                WHERE LOWER(title) LIKE LOWER(?)
+                ORDER BY title
+                """;
+
+        List<TestModel> testing = new ArrayList<>();
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, "%" + title + "%");
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                testing.add(mapRowToTest(rs));
+            }
+
+            return testing;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка при поиске тестов по названию: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Подсчитывает количество тестов для указанного курса.
+     *
+     * @param courseId уникальный идентификатор курса
+     * @return количество тестов в указанном курсе
+     * @throws RuntimeException если произошла SQL-ошибка
+     */
+    @Override
+    public int countByCourseId(UUID courseId) {
+        String sql = "SELECT COUNT(*) FROM testing.test_d WHERE course_id = ?";
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setObject(1, courseId);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+
+            return 0;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка при подсчёте тестов для курса: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public List<TestModel> findByCourseId(UUID courseId) {
+        String sql = """
+                SELECT id, course_id, title, min_point, description
+                FROM testing.test_d
+                WHERE course_id = ?
+                ORDER BY title
+                """;
+
+        List<TestModel> testing = new ArrayList<>();
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setObject(1, courseId);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                testing.add(mapRowToTest(rs));
+            }
+			return testing;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка при поиске тестов по course_id: " + e.getMessage(), e);
+        }
+    }
+
 	@Override
-	public TestModel save(TestModel test) {
-		test.validate();
-
-		String sql = """
-				INSERT INTO testing.test_d (course_id, title, min_point, description)
-				VALUES (?, ?, ?, ?)
-				RETURNING id
-				""";
+	public boolean existsByCourseId(UUID course_id) {
+		String sql = "SELECT 1 FROM testing.test_d WHERE course_id = ?";
 
 		try (Connection conn = getConnection();
 				PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-			stmt.setObject(1, test.getCourseId());
-			stmt.setString(2, test.getTitle());
+			stmt.setObject(1, course_id);
 
-			if (test.getMinPoint() != null)
-				stmt.setInt(3, test.getMinPoint());
-			else
-				stmt.setNull(3, Types.INTEGER);
-
-			stmt.setString(4, test.getDescription());
-
-			ResultSet rs = stmt.executeQuery();
-			if (rs.next()) {
-				test.setId(rs.getObject("id", UUID.class));
-				return test;
-			}
-
-			throw new RuntimeException("Не удалось сохранить тест");
-
-		} catch (SQLException e) {
-			throw new RuntimeException("Ошибка при сохранении теста", e);
-		}
-	}
-
-	/**
-	 * Обновляет существующий тест в базе данных.
-	 *
-	 * @param test объект TestModel с обновленными данными
-	 * @return обновленный объект TestModel
-	 * @throws IllegalArgumentException если тест не имеет идентификатора
-	 * @throws RuntimeException         если тест не найден или произошла SQL-ошибка
-	 */
-	@Override
-	public TestModel update(TestModel test) {
-		if (test.getId() == null) {
-			throw new IllegalArgumentException("Тест должен иметь ID");
-		}
-
-		test.validate();
-
-		String sql = """
-				UPDATE testing.test_d
-				SET course_id = ?, title = ?, min_point = ?, description = ?
-				WHERE id = ?
-				""";
-
-		try (Connection conn = getConnection();
-				PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-			stmt.setObject(1, test.getCourseId());
-			stmt.setString(2, test.getTitle());
-
-			if (test.getMinPoint() != null)
-				stmt.setInt(3, test.getMinPoint());
-			else
-				stmt.setNull(3, Types.INTEGER);
-
-			stmt.setString(4, test.getDescription());
-			stmt.setObject(5, test.getId());
-
-			int updated = stmt.executeUpdate();
-			if (updated == 0)
-				throw new RuntimeException("Тест с ID " + test.getId() + " не найден");
-
-			return test;
-
-		} catch (SQLException e) {
-			throw new RuntimeException("Ошибка при обновлении теста", e);
-		}
-	}
-
-	/**
-	 * Находит тест по его идентификатору.
-	 *
-	 * @param id уникальный идентификатор теста
-	 * @return Optional с найденным тестом или пустой Optional, если тест не найден
-	 * @throws RuntimeException если произошла SQL-ошибка
-	 */
-	@Override
-	public Optional<TestModel> findById(UUID id) {
-		String sql = """
-				SELECT id, course_id, title, min_point, description
-				FROM testing.test_d
-				WHERE id = ?
-				""";
-
-		try (Connection conn = getConnection();
-				PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-			stmt.setObject(1, id);
-			ResultSet rs = stmt.executeQuery();
-
-			if (rs.next())
-				return Optional.of(mapRowToTest(rs));
-
-			return Optional.empty();
-
-		} catch (SQLException e) {
-			throw new RuntimeException("Ошибка при поиске теста по ID", e);
-		}
-	}
-
-	/**
-	 * Получает все тесты из базы данных.
-	 *
-	 * @return список всех тестов, отсортированных по названию
-	 * @throws RuntimeException если произошла SQL-ошибка
-	 */
-	@Override
-	public List<TestModel> findAll() {
-		String sql = """
-				SELECT id, course_id, title, min_point, description
-				FROM testing.test_d
-				ORDER BY title
-				""";
-
-		List<TestModel> tests = new ArrayList<>();
-
-		try (Connection conn = getConnection();
-				PreparedStatement stmt = conn.prepareStatement(sql);
-				ResultSet rs = stmt.executeQuery()) {
-
-			while (rs.next())
-				tests.add(mapRowToTest(rs));
-
-			return tests;
-
-		} catch (SQLException e) {
-			throw new RuntimeException("Ошибка при получении всех тестов", e);
-		}
-	}
-
-	/**
-	 * Удаляет тест по его идентификатору.
-	 *
-	 * @param id уникальный идентификатор теста для удаления
-	 * @return true если тест был удален, false если тест не найден
-	 * @throws RuntimeException если произошла SQL-ошибка
-	 */
-	@Override
-	public boolean deleteById(UUID id) {
-		String sql = "DELETE FROM testing.test_d WHERE id = ?";
-
-		try (Connection conn = getConnection();
-				PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-			stmt.setObject(1, id);
-			return stmt.executeUpdate() > 0;
-
-		} catch (SQLException e) {
-			throw new RuntimeException("Ошибка при удалении теста", e);
-		}
-	}
-
-	/**
-	 * Проверяет существование теста по идентификатору.
-	 *
-	 * @param id уникальный идентификатор теста
-	 * @return true если тест существует, false если нет
-	 * @throws RuntimeException если произошла SQL-ошибка
-	 */
-	@Override
-	public boolean existsById(UUID id) {
-		String sql = "SELECT 1 FROM testing.test_d WHERE id = ?";
-
-		try (Connection conn = getConnection();
-				PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-			stmt.setObject(1, id);
 			return stmt.executeQuery().next();
 
 		} catch (SQLException e) {
-			throw new RuntimeException("Ошибка при проверке существования теста", e);
-		}
-	}
-
-	/**
-	 * Ищет тесты по частичному совпадению названия (без учета регистра).
-	 *
-	 * @param title часть названия для поиска
-	 * @return список тестов, содержащих указанную строку в названии
-	 * @throws RuntimeException если произошла SQL-ошибка
-	 */
-	@Override
-	public List<TestModel> findByTitleContaining(String title) {
-		String sql = """
-				SELECT id, course_id, title, min_point, description
-				FROM testing.test_d
-				WHERE LOWER(title) LIKE LOWER(?)
-				ORDER BY title
-				""";
-
-		List<TestModel> tests = new ArrayList<>();
-
-		try (Connection conn = getConnection();
-				PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-			stmt.setString(1, "%" + title + "%");
-			ResultSet rs = stmt.executeQuery();
-
-			while (rs.next())
-				tests.add(mapRowToTest(rs));
-
-			return tests;
-
-		} catch (SQLException e) {
-			throw new RuntimeException("Ошибка при поиске тестов по названию", e);
-		}
-	}
-
-	/**
-	 * Подсчитывает количество тестов для указанного курса.
-	 *
-	 * @param courseId уникальный идентификатор курса
-	 * @return количество тестов в указанном курсе
-	 * @throws RuntimeException если произошла SQL-ошибка
-	 */
-	@Override
-	public int countByCourseId(UUID courseId) {
-		String sql = "SELECT COUNT(*) FROM testing.test_d WHERE course_id = ?";
-
-		try (Connection conn = getConnection();
-				PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-			stmt.setObject(1, courseId);
-			ResultSet rs = stmt.executeQuery();
-
-			if (rs.next())
-				return rs.getInt(1);
-
-			return 0;
-
-		} catch (SQLException e) {
-			throw new RuntimeException("Ошибка при подсчёте тестов для курса", e);
-		}
-	}
-
-	@Override
-	public List<TestModel> findByCourseId(UUID courseId) {
-		String sql = """
-				SELECT id, course_id, title, min_point, description
-				FROM testing.test_d
-				WHERE course_id = ?
-				ORDER BY title
-				""";
-
-		List<TestModel> tests = new ArrayList<>();
-
-		try (Connection conn = getConnection();
-				PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-			stmt.setObject(1, courseId);
-			ResultSet rs = stmt.executeQuery();
-
-			while (rs.next())
-				tests.add(mapRowToTest(rs));
-
-			return tests;
-
-		} catch (SQLException e) {
-			throw new RuntimeException("Ошибка при поиске тестов по course_id", e);
+			throw new RuntimeException("Ошибка при поиске теста по ID курса", e);
 		}
 	}
 

@@ -1,0 +1,17 @@
+{{#if (gt Pagination.Pages 1)}}
+    <div class="pagination">
+        {{#if (gt Pagination.Page 1)}}
+            <a href="{{Pagination.BaseUrl}}?page={{subtract Pagination.Page 1}}&limit={{Pagination.Limit}}" class="pagination__btn">Назад</a>
+        {{/if}}
+
+        <div class="pagination__pages">
+            {{#each (range 1 Pagination.Pages)}}
+                <a {{#if (neq this Pagination.Page)}}href="{{Pagination.BaseUrl}}?page={{this}}&limit={{Pagination.Limit}}"{{/if}} class="pagination__page {{#if (eq this Pagination.Page)}}pagination__page--active{{/if}}">{{this}}</a>
+            {{/each}}
+        </div>
+
+        {{#if (lt Pagination.Page Pagination.Pages)}}
+            <a href="{{Pagination.BaseUrl}}?page={{add Pagination.Page 1}}&limit={{Pagination.Limit}}" class="pagination__btn">Вперёд</a>
+        {{/if}}
+    </div>
+{{/if}}

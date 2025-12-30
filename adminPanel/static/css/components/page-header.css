@@ -1,0 +1,39 @@
+/* Page Header */
+.page-header {
+    margin-bottom: 2.5rem;
+}
+
+.page-header__breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--gray-500);
+    margin-bottom: 0.75rem;
+}
+
+.page-header__breadcrumbs a {
+    color: var(--orange-300);
+    /* text-decoration: none; */
+}
+
+.page-header__breadcrumbs a:hover {
+    color: var(--orange-500);
+    /* text-decoration: underline; */
+}
+
+.page-header__separator {
+    color: var(--gray-500);
+}
+
+.page-header__title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--gray-900);
+}
+
+@media (max-width: 768px) {
+    .page-header__title {
+        font-size: 1.5rem;
+    }
+}

@@ -1,22 +1,11 @@
-// Package middleware содержит middleware-функции для обработки HTTP-запросов.
-// Этот пакет предоставляет функции для работы с прокси, валидации, аутентификации и обработки ошибок.
 package middleware
 
 import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// TrustProxyMiddleware доверяет заголовкам от прокси-сервера.
-// Этот middleware устанавливает заголовки X-Forwarded-For и X-Real-IP,
-// которые могут быть установлены прокси-сервером (например, nginx).
-//
-// Особенности:
-//   - Сохраняет оригинальные IP-адреса клиентов при работе через прокси
-//   - Устанавливает заголовки, которые могут быть использованы другими middleware
-//   - Должен быть установлен до других middleware, использующих IP-адреса
-//
-// Возвращает:
-//   - fiber.Handler: middleware-функцию для использования в Fiber приложении
+// TrustProxyMiddleware возвращает промежуточное ПО для обработки заголовков прокси.
+// Устанавливает заголовки X-Forwarded-For и X-Real-IP для корректного определения IP клиента.
 func TrustProxyMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		if forwardedFor := c.Get("X-Forwarded-For"); forwardedFor != "" {

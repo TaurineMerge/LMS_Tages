@@ -7,13 +7,14 @@ import java.util.UUID;
 import com.example.lms.question.domain.model.QuestionModel;
 
 /**
- * Репозиторий для работы с вопросами тестов.
+ * Репозиторий для работы с вопросами тестов и черновиков.
  *
  * Соответствует таблице question_d:
  * - id UUID (PK, not null)
- * - test_id UUID (FK → test_d.id, not null)
+ * - test_id UUID (FK → test_d.id, может быть null для черновиков)
+ * - draft_id UUID (FK → draft_b.id, может быть null для тестов)
  * - text_of_question TEXT (текст вопроса)
- * - order INT (порядок вопроса в тесте, может быть null)
+ * - order INT (порядок вопроса в тесте/черновике)
  */
 public interface QuestionRepositoryInterface {
 
@@ -53,9 +54,17 @@ public interface QuestionRepositoryInterface {
 	 * Найти все вопросы конкретного теста.
 	 *
 	 * @param testId идентификатор теста (question_d.test_id)
-	 * @return список вопросов теста, как правило, отсортированный по полю order
+	 * @return список вопросов теста, отсортированный по полю order
 	 */
 	List<QuestionModel> findByTestId(UUID testId);
+
+	/**
+	 * Найти все вопросы конкретного черновика.
+	 *
+	 * @param draftId идентификатор черновика (question_d.draft_id)
+	 * @return список вопросов черновика, отсортированный по полю order
+	 */
+	List<QuestionModel> findByDraftId(UUID draftId);
 
 	/**
 	 * Удалить вопрос по ID.
@@ -65,9 +74,13 @@ public interface QuestionRepositoryInterface {
 	 */
 	boolean deleteById(UUID id);
 
-	// int deleteByTestId(UUID testId);
-
-	// boolean existsById(UUID id);
+	/**
+	 * Удалить все вопросы черновика.
+	 *
+	 * @param draftId идентификатор черновика
+	 * @return true, если вопросы были удалены; false — если записей не найдено
+	 */
+	boolean deleteByDraftId(UUID draftId);
 
 	/**
 	 * Получить количество вопросов в тесте.
@@ -76,6 +89,14 @@ public interface QuestionRepositoryInterface {
 	 * @return количество вопросов
 	 */
 	int countByTestId(UUID testId);
+
+	/**
+	 * Получить количество вопросов в черновике.
+	 *
+	 * @param draftId идентификатор черновика
+	 * @return количество вопросов
+	 */
+	int countByDraftId(UUID draftId);
 
 	/**
 	 * Найти вопросы по тексту (регистронезависимый поиск).
@@ -93,13 +114,18 @@ public interface QuestionRepositoryInterface {
 	 * Как правило, реализуется как:
 	 * MAX(order) + 1 для заданного testId.
 	 *
-	 * Если в тесте пока нет вопросов, стратегия (с чего начинать: 0 или 1)
-	 * определяется реализацией.
-	 *
 	 * @param testId идентификатор теста
 	 * @return следующий доступный порядковый номер
 	 */
 	int getNextOrderForTest(UUID testId);
+
+	/**
+	 * Получить следующий порядковый номер для нового вопроса в черновике.
+	 *
+	 * @param draftId идентификатор черновика
+	 * @return следующий доступный порядковый номер
+	 */
+	int getNextOrderForDraft(UUID draftId);
 
 	/**
 	 * Обновить порядок вопросов в тесте.
@@ -108,14 +134,20 @@ public interface QuestionRepositoryInterface {
 	 * - при вставке/удалении вопроса "посередине" теста
 	 * нужно сдвинуть остальные вопросы.
 	 *
-	 * Реализует сдвиг всех вопросов с order >= fromOrder
-	 * на величину shiftBy (может быть отрицательной).
-	 *
 	 * @param testId    идентификатор теста
-	 * @param fromOrder порядок, с которого начинать сдвиг (ожидается
-	 *                  неотрицательный)
+	 * @param fromOrder порядок, с которого начинать сдвиг
 	 * @param shiftBy   на сколько сдвигать (может быть отрицательным)
 	 * @return количество обновлённых вопросов
 	 */
 	int shiftQuestionsOrder(UUID testId, int fromOrder, int shiftBy);
+
+	/**
+	 * Обновить порядок вопросов в черновике.
+	 *
+	 * @param draftId   идентификатор черновика
+	 * @param fromOrder порядок, с которого начинать сдвиг
+	 * @param shiftBy   на сколько сдвигать (может быть отрицательным)
+	 * @return количество обновлённых вопросов
+	 */
+	int shiftDraftQuestionsOrder(UUID draftId, int fromOrder, int shiftBy);
 }
